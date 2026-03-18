@@ -48,28 +48,39 @@ A premium chord dictionary web app for keyboard players.
 
 **Features:**
 - Home page with hero and benefits section
-- Dictionary page with search + category filters
-- Chord detail page with notes, formula, description, application
+- Dictionary page with search + category filters (218 chords, 18 categories)
+- Chord detail page: PDF variation photos (tabs Variação 1–5) for 120 mapped chords; SVG piano fallback for the rest
 - Study mode with flashcards (category-filtered)
 - Favorites (localStorage persistence)
+- Chord Sofisticador (suggest sophisticated substitutions)
 - Dark elegant musical theme (charcoal/navy + gold accents)
+
+**PDF image mapping** (`src/data/chord-images.ts`):
+- 660 images in `public/variacoes/` (pag018_var1.png … pag149_var5.png)
+- 9 categories mapped: 7M (p18-29), add9 (p30-41), 9M (p42-64 even), 6ª (p66-77), 7sus4 (p78-89), m7 (p90-101), madd9 (p102-113), m9 (p114-136 even), m11 (p138-149)
+- URL format: `pag${page.toString().padStart(3,'0')}_var${n}.png`
 
 **File structure:**
 ```
 artifacts/acordes/src/
-├── data/chords.ts         # All chord data (17 chords)
-├── hooks/use-favorites.ts # localStorage favorites hook
+├── data/
+│   ├── chords.ts          # 218 chord entries across 18 categories
+│   ├── chord-images.ts    # PDF page → chord ID mapping (120 chords)
+│   ├── applications.ts    # Harmonic application examples
+│   └── substitutions.ts   # Sofisticador substitution rules
 ├── components/
 │   ├── Layout.tsx         # Navbar + footer
 │   ├── ChordCard.tsx      # Chord card component
-│   └── CategoryBadge.tsx  # Color-coded category badge
+│   ├── CategoryBadge.tsx  # Color-coded category badge
+│   └── PianoKeyboard.tsx  # SVG piano (fallback for unmapped chords)
 └── pages/
-    ├── home.tsx           # Landing page
-    ├── dictionary.tsx     # Chord list with search/filter
-    ├── chord-detail.tsx   # Chord detail view
-    ├── study.tsx          # Flashcard study mode
-    ├── favorites.tsx      # Saved favorites
-    └── not-found.tsx      # 404 page
+    ├── home.tsx            # Landing page
+    ├── dictionary.tsx      # Chord list with search/filter
+    ├── chord-detail.tsx    # Chord detail with PDF tabs + fallback SVG
+    ├── study.tsx           # Flashcard study mode
+    ├── favorites.tsx       # Saved favorites
+    ├── chord-substitutor.tsx # Sofisticador de Cifra
+    └── not-found.tsx       # 404 page
 ```
 
 ## TypeScript & Composite Projects
