@@ -17,15 +17,16 @@ function splitHands(
   const isLeftHandCategory = category.startsWith("Mão Esquerda");
 
   if (isLeftHandCategory) {
+    // Todas as notas são da mão esquerda (voicings ME — Aberto/Fechado/Misto)
     return { leftHand: notes, rightHand: [] };
   }
 
-  // For regular chords: root in bass (left hand), upper voices (right hand)
-  // Chords with 5+ notes: first 2 notes for left hand
-  const leftCount = notes.length >= 5 ? 2 : 1;
+  // Para todos os demais acordes:
+  //   Mão Esquerda = apenas a FUNDAMENTAL (1ª nota) no registro grave
+  //   Mão Direita  = todas as demais notas (3ª, 5ª, 7ª, extensões)
   return {
-    leftHand: notes.slice(0, leftCount),
-    rightHand: notes.slice(leftCount),
+    leftHand: [notes[0]],
+    rightHand: notes.slice(1),
   };
 }
 
