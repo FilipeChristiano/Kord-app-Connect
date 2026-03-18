@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { ArrowLeft, Heart, Tag, Info, Lightbulb, Music, ChevronLeft, ChevronRight } from "lucide-react";
 import { getChordById, CHORDS } from "@/data/chords";
+import { getChordVariationImages } from "@/data/chord-images";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { useFavorites } from "@/hooks/use-favorites";
@@ -13,101 +14,232 @@ function findRelatedChord(variation: string) {
   return CHORDS.find((c) => c.id === variation || c.name === variation);
 }
 
-// ── Tipos ──────────────────────────────────────────────────────────────────────
+// ── Separação padrão de mãos (usado quando não há imagem PDF) ─────────────────
+function splitHands(notes: string[], category: string) {
+  if (category.startsWith("Mão Esquerda")) {
+    return { leftHand: notes, rightHand: [] as string[] };
+  }
+  const leftHand = notes.length >= 3 ? [notes[0], notes[2]] : [notes[0]];
+  const rightHand = [...notes];
+  return { leftHand, rightHand };
+}
+
+// ── Painel de imagem PDF ───────────────────────────────────────────────────────
+function ImageVariationPanel({ images }: { images: string[] }) {
+  const [active, setActive] = useState(0);
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+  return (
+    <div>
+      {/* Tabs */}
+      <div className="mb-3">
+        <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-white/5">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              className={cn(
+                "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200",
+                active === i
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+              )}
+            >
+              Variação {i + 1}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile: setas */}
+        <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-white/5">
+          <button
+            onClick={() => setActive((v) => (v - 1 + images.length) % images.length)}
+            className="p-1 text-muted-foreground hover:text-white transition-colors"
+            aria-label="Variação anterior"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <span className="text-sm font-semibold text-white">
+            Variação {active + 1} <span className="text-muted-foreground font-normal">/ {images.length}</span>
+          </span>
+          <button
+            onClick={() => setActive((v) => (v + 1) % images.length)}
+            className="p-1 text-muted-foreground hover:text-white transition-colors"
+            aria-label="Próxima variação"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Imagem */}
+      <div className="bg-white rounded-xl overflow-hidden border border-white/10">
+        <img
+          key={`${images[active]}-${active}`}
+          src={`${base}${images[active]}`}
+          alt={`Variação ${active + 1}`}
+          className="w-full h-auto block"
+          loading="lazy"
+        />
+      </div>
+
+      {/* Legenda de cores */}
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+          <span className="text-red-400 font-medium">Mão Esquerda</span>
+        </div>
+        <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2">
+          <span className="w-3 h-3 rounded-full bg-orange-500 flex-shrink-0" />
+          <span className="text-orange-400 font-medium">MD — tecla branca</span>
+        </div>
+        <div className="flex items-center gap-2 bg-zinc-700/50 border border-zinc-600/30 rounded-lg px-3 py-2">
+          <span className="w-3 h-3 rounded-full bg-zinc-900 border border-orange-500 flex-shrink-0" />
+          <span className="text-zinc-300 font-medium">MD — tecla preta</span>
+        </div>
+      </div>
+
+      {/* Dots de navegação */}
+      <div className="flex justify-center gap-1.5 mt-3">
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(i)}
+            className={cn(
+              "h-2 rounded-full transition-all duration-200",
+              i === active ? "bg-primary w-4" : "bg-white/20 w-2 hover:bg-white/40"
+            )}
+            aria-label={`Variação ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Painel de piano SVG (fallback para acordes sem imagem PDF) ─────────────────
 interface Voicing {
   label: string;
-  subtitle: string;
   leftHand: string[];
   rightHand: string[];
 }
 
-// ── Cálculo de voicings ────────────────────────────────────────────────────────
-//
-// Gera até 5 posições para um acorde a partir de suas notas, seguindo o padrão
-// do PDF: inversões rotacionando o baixo + voicing aberto (spread).
-//
-// Legenda de posições:
-//   Posição Fundamental — nota fundamental no baixo (padrão do dicionário)
-//   1ª Inversão         — 3ª (ou 2ª nota) no baixo
-//   2ª Inversão         — 5ª (ou 3ª nota) no baixo
-//   3ª Inversão         — 7ª (ou 4ª nota) no baixo — apenas acordes com ≥4 notas
-//   Voicing Aberto      — ME toca fundamental + 2ª nota; MD toca o restante
-//
 function computeVoicings(notes: string[], category: string): Voicing[] {
   if (category.startsWith("Mão Esquerda")) {
-    return [{
-      label: "Posição Única",
-      subtitle: "Voicing completo na mão esquerda",
-      leftHand: notes,
-      rightHand: [],
-    }];
+    return [{ label: "Variação 1", leftHand: notes, rightHand: [] }];
   }
-
   const n = notes.length;
   const voicings: Voicing[] = [];
-
-  const inversionLabels = [
-    { label: "Posição Fundamental", subtitle: "Fundamental no baixo (ME)" },
-    { label: "1ª Inversão",         subtitle: "3ª no baixo (ME)" },
-    { label: "2ª Inversão",         subtitle: "5ª no baixo (ME)" },
-    { label: "3ª Inversão",         subtitle: "7ª no baixo (ME)" },
-    { label: "4ª Inversão",         subtitle: "9ª no baixo (ME)" },
-  ];
-
-  // Inversões: roda as notas para cada posição
   const numInversions = Math.min(n, 4);
   for (let k = 0; k < numInversions; k++) {
     const rotated = [...notes.slice(k), ...notes.slice(0, k)];
-    const leftHand  = n >= 3 ? [rotated[0], rotated[2]] : [rotated[0]];
-    const rightHand = rotated;
     voicings.push({
-      label:    inversionLabels[k].label,
-      subtitle: inversionLabels[k].subtitle,
-      leftHand,
-      rightHand,
+      label:     `Variação ${k + 1}`,
+      leftHand:  n >= 3 ? [rotated[0], rotated[2]] : [rotated[0]],
+      rightHand: rotated,
     });
   }
-
-  // Voicing Aberto: ME = fundamental + 2ª nota, MD = notas restantes
   if (n >= 3) {
     voicings.push({
-      label:    "Voicing Aberto",
-      subtitle: "ME: fundamental + 3ª  |  MD: extensões",
+      label:     `Variação ${voicings.length + 1}`,
       leftHand:  [notes[0], notes[1]],
       rightHand: notes.slice(2),
     });
   }
-
-  // Garante exatamente 5 posições (repete a fundamental se acorde tiver ≤2 notas)
-  while (voicings.length < 5) voicings.push(voicings[0]);
-
+  while (voicings.length < 5) voicings.push({ ...voicings[0], label: `Variação ${voicings.length + 1}` });
   return voicings.slice(0, 5);
 }
 
-// ── Texto descritivo da legenda ───────────────────────────────────────────────
-function buildHandDescription(
-  leftHand: string[],
-  rightHand: string[],
-  category: string,
-  voicingLabel: string,
-): { leftDesc: string; rightDesc: string } {
-  if (category.startsWith("Mão Esquerda")) {
-    const subType = category.replace("Mão Esquerda — ", "");
-    const rightDescMap: Record<string, string> = {
-      Aberto:  "Mão direita executa as cores do acorde (3ª, 7ª, extensões)",
-      Fechado: "Mão direita toca a melodia ou ornamentos",
-      Misto:   "Mão direita acrescenta extensões e cor harmônica",
-    };
-    return {
-      leftDesc:  leftHand.join(" — "),
-      rightDesc: rightDescMap[subType] ?? "Mão direita livre para melodia",
-    };
-  }
+function SvgVariationPanel({ notes, category }: { notes: string[]; category: string }) {
+  const [active, setActive] = useState(0);
+  const voicings = computeVoicings(notes, category);
+  const v = voicings[active];
+  const isLeftOnly = category.startsWith("Mão Esquerda");
 
-  return {
-    leftDesc:  leftHand.join(" — "),
-    rightDesc: rightHand.length > 0 ? rightHand.join(" — ") : "—",
-  };
+  return (
+    <div>
+      {/* Tabs */}
+      {!isLeftOnly && (
+        <div className="mb-3">
+          <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-white/5">
+            {voicings.map((vx, i) => (
+              <button
+                key={i}
+                onClick={() => setActive(i)}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200",
+                  active === i
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-white hover:bg-white/5"
+                )}
+              >
+                {vx.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-white/5">
+            <button
+              onClick={() => setActive((a) => (a - 1 + voicings.length) % voicings.length)}
+              className="p-1 text-muted-foreground hover:text-white"
+              aria-label="Variação anterior"
+            ><ChevronLeft className="w-5 h-5" /></button>
+            <span className="text-sm font-semibold text-white">
+              {voicings[active].label} <span className="text-muted-foreground font-normal">/ {voicings.length}</span>
+            </span>
+            <button
+              onClick={() => setActive((a) => (a + 1) % voicings.length)}
+              className="p-1 text-muted-foreground hover:text-white"
+              aria-label="Próxima variação"
+            ><ChevronRight className="w-5 h-5" /></button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
+        <PianoKeyboard key={`${category}-${active}`} leftHandNotes={v.leftHand} rightHandNotes={v.rightHand} />
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+            <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
+            <div>
+              <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
+              <p className="text-sm text-white/80 font-mono">{v.leftHand.join(" — ")}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
+            <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-500 flex-shrink-0 ring-2 ring-orange-500/30" />
+            <div>
+              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
+              <p className="text-sm text-white/80 font-mono">
+                {isLeftOnly
+                  ? <span className="italic text-white/50">Livre para melodia ou extensões</span>
+                  : v.rightHand.join(" — ")}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {isLeftOnly && (
+          <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
+            Este voicing é executado integralmente pela mão esquerda.
+          </p>
+        )}
+      </div>
+
+      {!isLeftOnly && (
+        <div className="flex justify-center gap-1.5 mt-3">
+          {voicings.map((_, i) => (
+            <button key={i} onClick={() => setActive(i)}
+              className={cn("h-2 rounded-full transition-all duration-200",
+                i === active ? "bg-primary w-4" : "bg-white/20 w-2 hover:bg-white/40")}
+              aria-label={voicings[i].label}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Componente principal ───────────────────────────────────────────────────────
@@ -115,29 +247,11 @@ export default function ChordDetail() {
   const params = useParams<{ id: string }>();
   const chord  = params.id ? getChordById(params.id) : undefined;
   const { isFavorite, toggleFavorite } = useFavorites();
-  const [activeVoicing, setActiveVoicing] = useState(0);
 
   if (!chord) return <NotFound />;
 
-  const favorite = isFavorite(chord.id);
-  const isLeftHandOnly = chord.category.startsWith("Mão Esquerda");
-
-  const voicings = computeVoicings(chord.notes, chord.category);
-  const voicing  = voicings[activeVoicing];
-
-  const { leftDesc, rightDesc } = buildHandDescription(
-    voicing.leftHand,
-    voicing.rightHand,
-    chord.category,
-    voicing.label,
-  );
-
-  // Quais notas são ME, MD ou ambas (para o display de pílulas)
-  const lhSet = new Set(voicing.leftHand);
-  const rhSet = new Set(voicing.rightHand);
-
-  function prevVoicing() { setActiveVoicing(v => (v - 1 + voicings.length) % voicings.length); }
-  function nextVoicing() { setActiveVoicing(v => (v + 1) % voicings.length); }
+  const favorite  = isFavorite(chord.id);
+  const images    = getChordVariationImages(chord.id);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
@@ -172,123 +286,17 @@ export default function ChordDetail() {
           </div>
         </div>
 
-        {/* ── Piano Diagram + Voicings ──────────────────────────────────────── */}
+        {/* ── Variações (imagem PDF ou piano SVG) ──────────────────────────── */}
         <div className="px-6 md:px-10 pt-8 pb-6 border-b border-white/5 relative z-10">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-5 flex items-center gap-2">
-            <Music className="w-4 h-4 text-primary" /> Diagrama do Teclado
+            <Music className="w-4 h-4 text-primary" />
+            {images ? "Variações do PDF" : "Diagrama do Teclado"}
           </h3>
 
-          {/* ── Seletor de Posições ──────────────────────────────────────────── */}
-          {!isLeftHandOnly && (
-            <div className="mb-4">
-              {/* Tabs — desktop */}
-              <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-white/5 overflow-x-auto">
-                {voicings.map((v, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveVoicing(i)}
-                    className={cn(
-                      "flex-1 min-w-0 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap",
-                      activeVoicing === i
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "text-muted-foreground hover:text-white hover:bg-white/5"
-                    )}
-                  >
-                    <span className="block truncate">{v.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Controle compacto — mobile */}
-              <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-white/5">
-                <button
-                  onClick={prevVoicing}
-                  className="p-1 text-muted-foreground hover:text-white transition-colors"
-                  aria-label="Posição anterior"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-white">{voicing.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {activeVoicing + 1} / {voicings.length}
-                  </p>
-                </div>
-                <button
-                  onClick={nextVoicing}
-                  className="p-1 text-muted-foreground hover:text-white transition-colors"
-                  aria-label="Próxima posição"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Subtítulo da posição atual */}
-              <p className="mt-2 text-xs text-center text-muted-foreground">{voicing.subtitle}</p>
-            </div>
-          )}
-
-          {/* ── Teclado ─────────────────────────────────────────────────────── */}
-          <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
-            <PianoKeyboard
-              key={`${chord.id}-${activeVoicing}`}
-              leftHandNotes={voicing.leftHand}
-              rightHandNotes={voicing.rightHand}
-            />
-
-            {/* Legenda ME / MD */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                <span className="mt-0.5 flex-shrink-0 w-3 h-3 rounded-full bg-red-500 ring-2 ring-red-500/30" />
-                <div>
-                  <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">
-                    Mão Esquerda
-                  </p>
-                  <p className="text-sm text-white/80 font-mono">{leftDesc}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
-                <span className="mt-0.5 flex-shrink-0 w-3 h-3 rounded-full bg-orange-500 ring-2 ring-orange-500/30" />
-                <div>
-                  <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">
-                    Mão Direita
-                  </p>
-                  <p className="text-sm text-white/80 font-mono">
-                    {isLeftHandOnly ? (
-                      <span className="italic text-white/50">{rightDesc}</span>
-                    ) : (
-                      rightDesc
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Nota para categorias Mão Esquerda */}
-            {isLeftHandOnly && (
-              <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
-                Este voicing é executado integralmente pela mão esquerda. A mão direita complementa com notas adicionais do acorde.
-              </p>
-            )}
-          </div>
-
-          {/* Indicadores de posição — pontos */}
-          {!isLeftHandOnly && voicings.length > 1 && (
-            <div className="flex justify-center gap-1.5 mt-4">
-              {voicings.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveVoicing(i)}
-                  className={cn(
-                    "w-2 h-2 rounded-full transition-all duration-200",
-                    i === activeVoicing ? "bg-primary w-4" : "bg-white/20 hover:bg-white/40"
-                  )}
-                  aria-label={`Ir para ${voicings[i].label}`}
-                />
-              ))}
-            </div>
-          )}
+          {images
+            ? <ImageVariationPanel images={images} />
+            : <SvgVariationPanel notes={chord.notes} category={chord.category} />
+          }
         </div>
 
         {/* Content */}
@@ -296,42 +304,28 @@ export default function ChordDetail() {
 
           {/* Left Col */}
           <div className="space-y-10">
-            {/* Notes — atualiza com o voicing ativo */}
+            {/* Notes */}
             <section>
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Music className="w-4 h-4" /> Notas do Acorde
               </h3>
               <div className="flex flex-wrap gap-3">
-                {chord.notes.map((note, i) => {
-                  const inLeft  = lhSet.has(note);
-                  const inRight = rhSet.has(note);
-                  const both    = inLeft && inRight;
-                  const bg      = inLeft
-                    ? "linear-gradient(to bottom, #fca5a5, #f87171)"
-                    : inRight
-                      ? "linear-gradient(to bottom, #fed7aa, #fb923c)"
-                      : "linear-gradient(to bottom, #374151, #1f2937)";
-                  const border  = inLeft ? "#dc2626" : inRight ? "#ea580c" : "#4b5563";
-                  const labelColor = inLeft ? "#f87171" : inRight ? "#f97316" : "#6b7280";
-                  const label   = both ? "ME+MD" : inLeft ? "ME" : inRight ? "MD" : "—";
-                  return (
-                    <div key={i} className="relative flex flex-col items-center">
-                      <div
-                        className="w-14 h-16 rounded-lg shadow-md flex items-end justify-center pb-2 font-bold text-xl border-b-4"
-                        style={{ background: bg, borderColor: border, color: inLeft || inRight ? "#1a1a1a" : "#9ca3af" }}
-                      >
-                        {note}
-                      </div>
-                      <span className="mt-1 text-xs font-semibold" style={{ color: labelColor }}>
-                        {label}
-                      </span>
+                {chord.notes.map((note, i) => (
+                  <div key={i} className="relative flex flex-col items-center">
+                    <div
+                      className="w-14 h-16 rounded-lg shadow-md flex items-end justify-center pb-2 font-bold text-xl border-b-4"
+                      style={{
+                        background:   "linear-gradient(to bottom, #fbbf24, #d97706)",
+                        borderColor:  "#b45309",
+                        color:        "#1a1a1a",
+                      }}
+                    >
+                      {note}
                     </div>
-                  );
-                })}
+                    <span className="mt-1 text-xs font-semibold text-amber-400">{i + 1}ª</span>
+                  </div>
+                ))}
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Notas destacadas correspondem à posição selecionada acima.
-              </p>
             </section>
 
             {/* Formula */}
