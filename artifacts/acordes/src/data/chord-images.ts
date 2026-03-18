@@ -3,7 +3,7 @@
 // Estrutura das seções de variações (5 voicings por página):
 //   18-029 : Maiores com 7ªM      (1 pág/tom, 12 tons)
 //   30-041 : Maiores com 9ª (add9)(1 pág/tom, 12 tons)
-//   42-065 : Maiores com 7ªM e 9ª (2 págs/tom — usa só a ímpar inicial)
+//   42-065 : Maiores com 7ªM e 9ª (2 págs/tom — usa só a par inicial)
 //   66-077 : Maiores com 6ª       (1 pág/tom, 12 tons)
 //   78-089 : 7sus4                (1 pág/tom, 12 tons)
 //   90-101 : Menores com 7ª       (1 pág/tom, 12 tons)
@@ -53,10 +53,10 @@ const CHORD_PAGE_MAP: Record<string, number> = {
 
 /**
  * Retorna as 5 URLs de imagem de variação para o acorde especificado,
- * ou null se o acorde não possuir imagens do PDF.
+ * ou null se o acorde não possuir imagens de variações do PDF.
  *
  * Os arquivos ficam em /public/variacoes/ e são servidos como assets estáticos.
- * Nomeclatura: pag{XXX}_var{N}.png  (ex.: pag018_var1.png, pag100_var3.png)
+ * Nomenclatura: pag{XXX}_var{N}.png  (ex.: pag018_var1.png, pag100_var3.png)
  */
 export function getChordVariationImages(
   chordId: string,
@@ -69,4 +69,76 @@ export function getChordVariationImages(
   return [1, 2, 3, 4, 5].map(
     (v) => `${base}/variacoes/pag${ps}_var${v}.png`,
   );
+}
+
+// ── Mapeamento chord ID → imagem da visão geral ───────────────────────────────
+//
+// Para acordes que não têm 5 variações (tríades, sus4, sus2, dim, m7b5,
+// mão esquerda), há uma imagem de posição única extraída das páginas 1-17 do PDF.
+// Arquivos ficam em /public/visao_geral/
+//
+// Prefixos dos arquivos:
+//   01_triades_maiores_       → Tríades Maiores
+//   02_triades_menores_       → Tríades Menores
+//   05_sus4_                  → Sus4
+//   06_sus2_                  → Sus2
+//   07_diminutos_             → Diminutos
+//   08_meio_diminuto_m7b5_    → Meio-Diminutos
+//   09_abertos_mae_esquerda_  → Mão Esquerda — Aberto
+//   10_fechados_mae_esquerda_ → Mão Esquerda — Fechado
+//   11_misto_mae_esquerda_    → Mão Esquerda — Misto
+
+const KEYS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+
+function buildOverviewMap(): Record<string, string> {
+  const map: Record<string, string> = {};
+
+  for (const k of KEYS) {
+    // Tríades Maiores
+    map[`${k}-maior`] = `01_triades_maiores_${k}.png`;
+
+    // Tríades Menores
+    map[`${k}m`] = `02_triades_menores_${k}.png`;
+
+    // Sus4
+    map[`${k}sus4`] = `05_sus4_${k}.png`;
+
+    // Sus2
+    map[`${k}sus2`] = `06_sus2_${k}.png`;
+
+    // Diminutos
+    map[`${k}-dim`] = `07_diminutos_${k}.png`;
+
+    // Meio-Diminutos
+    map[`${k}m7b5`] = `08_meio_diminuto_m7b5_${k}.png`;
+
+    // Mão Esquerda — Aberto
+    map[`${k}-me-aberto`] = `09_abertos_mae_esquerda_${k}.png`;
+
+    // Mão Esquerda — Fechado
+    map[`${k}-me-fechado`] = `10_fechados_mae_esquerda_${k}.png`;
+
+    // Mão Esquerda — Misto
+    map[`${k}-me-misto`] = `11_misto_mae_esquerda_${k}.png`;
+  }
+
+  return map;
+}
+
+const CHORD_OVERVIEW_MAP = buildOverviewMap();
+
+/**
+ * Retorna a URL da imagem de posição única (visão geral) para o acorde,
+ * ou null se não houver imagem disponível.
+ *
+ * Usada para acordes que não possuem variações detalhadas (tríades, sus4,
+ * sus2, dim, m7b5, mão esquerda).
+ */
+export function getChordOverviewImage(
+  chordId: string,
+  base: string = "",
+): string | null {
+  const file = CHORD_OVERVIEW_MAP[chordId];
+  if (!file) return null;
+  return `${base}/visao_geral/${file}`;
 }

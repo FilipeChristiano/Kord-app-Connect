@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { ArrowLeft, Heart, Tag, Info, Lightbulb, Music, ChevronLeft, ChevronRight } from "lucide-react";
 import { getChordById, CHORDS } from "@/data/chords";
-import { getChordVariationImages } from "@/data/chord-images";
+import { getChordVariationImages, getChordOverviewImage } from "@/data/chord-images";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { useFavorites } from "@/hooks/use-favorites";
@@ -112,6 +112,39 @@ function ImageVariationPanel({ images }: { images: string[] }) {
             aria-label={`Variação ${i + 1}`}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Painel de imagem única (visão geral do PDF) ───────────────────────────────
+function ImageOverviewPanel({ src }: { src: string }) {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  return (
+    <div>
+      <div className="bg-white rounded-xl overflow-hidden border border-white/10">
+        <img
+          src={`${base}${src}`}
+          alt="Posição no teclado"
+          className="w-full h-auto block"
+          loading="lazy"
+        />
+      </div>
+
+      {/* Legenda de cores */}
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+          <span className="text-red-400 font-medium">Mão Esquerda</span>
+        </div>
+        <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2">
+          <span className="w-3 h-3 rounded-full bg-orange-500 flex-shrink-0" />
+          <span className="text-orange-400 font-medium">MD — tecla branca</span>
+        </div>
+        <div className="flex items-center gap-2 bg-zinc-700/50 border border-zinc-600/30 rounded-lg px-3 py-2">
+          <span className="w-3 h-3 rounded-full bg-zinc-900 border border-orange-500 flex-shrink-0" />
+          <span className="text-zinc-300 font-medium">MD — tecla preta</span>
+        </div>
       </div>
     </div>
   );
@@ -250,8 +283,9 @@ export default function ChordDetail() {
 
   if (!chord) return <NotFound />;
 
-  const favorite  = isFavorite(chord.id);
-  const images    = getChordVariationImages(chord.id);
+  const favorite       = isFavorite(chord.id);
+  const images         = getChordVariationImages(chord.id);
+  const overviewImage  = !images ? getChordOverviewImage(chord.id) : null;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
@@ -290,12 +324,14 @@ export default function ChordDetail() {
         <div className="px-6 md:px-10 pt-8 pb-6 border-b border-white/5 relative z-10">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-5 flex items-center gap-2">
             <Music className="w-4 h-4 text-primary" />
-            {images ? "Variações do PDF" : "Diagrama do Teclado"}
+            {images ? "Variações do PDF" : overviewImage ? "Posição do PDF" : "Diagrama do Teclado"}
           </h3>
 
           {images
             ? <ImageVariationPanel images={images} />
-            : <SvgVariationPanel notes={chord.notes} category={chord.category} />
+            : overviewImage
+              ? <ImageOverviewPanel src={overviewImage} />
+              : <SvgVariationPanel notes={chord.notes} category={chord.category} />
           }
         </div>
 
