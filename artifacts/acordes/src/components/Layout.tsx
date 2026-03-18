@@ -1,0 +1,128 @@
+import { ReactNode, useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
+import { Music, BookOpen, Heart, Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useFavorites } from "@/hooks/use-favorites";
+import { motion, AnimatePresence } from "framer-motion";
+
+export function Layout({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+  const { favoritesCount } = useFavorites();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const navItems = [
+    { href: "/dicionario", label: "Dicionário", icon: Music },
+    { href: "/estudo", label: "Modo Estudo", icon: BookOpen },
+    { href: "/favoritos", label: "Favoritos", icon: Heart, badge: favoritesCount },
+  ];
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className={cn(
+        "fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b border-transparent",
+        isScrolled ? "glass shadow-lg" : "bg-transparent py-2"
+      )}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/" className="flex items-center gap-2 group outline-none">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-amber-700 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all">
+                <Music className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <span className="font-display text-xl font-bold tracking-tight hidden sm:block bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+                Acordes Sofisticados
+              </span>
+            </Link>
+
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => (
+                <Link 
+                  key={item.href} 
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 outline-none",
+                    location === item.href 
+                      ? "bg-white/10 text-white" 
+                      : "text-muted-foreground hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-primary"
+                  )}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="ml-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Mobile Menu Toggle */}
+            <button 
+              className="md:hidden p-2 rounded-lg text-muted-foreground hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Nav Drawer */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden fixed top-[72px] inset-x-0 z-40 glass border-b border-white/10"
+          >
+            <div className="px-4 py-6 space-y-2 flex flex-col">
+              {navItems.map((item) => (
+                <Link 
+                  key={item.href} 
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium transition-all",
+                    location === item.href 
+                      ? "bg-primary/20 text-primary border border-primary/30" 
+                      : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                  )}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="ml-auto bg-primary text-primary-foreground text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <main className="flex-1 pt-20">
+        {children}
+      </main>
+
+      <footer className="border-t border-white/5 py-8 mt-12 bg-black/20">
+        <div className="max-w-7xl mx-auto px-4 text-center text-muted-foreground text-sm flex flex-col items-center gap-4">
+          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+            <Music className="w-4 h-4 text-white/50" />
+          </div>
+          <p>© {new Date().getFullYear()} Dicionário de Acordes Sofisticados. Uma ferramenta para tecladistas.</p>
+        </div>
+      </footer>
+    </div>
+  );
+}

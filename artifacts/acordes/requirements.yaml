@@ -1,0 +1,18 @@
+packages:
+  "framer-motion": "For page transitions, card hover effects, and the 3D flashcard flip animation."
+  "clsx": "Utility for constructing className strings conditionally."
+  "tailwind-merge": "Utility to cleanly merge Tailwind classes without style conflicts."
+
+images:
+  - path: "artifacts/acordes/public/images/hero-bg.png"
+    description: "Elegant, moody macro photography of grand piano keys and strings in deep charcoal and navy shadows, with soft, luxurious warm gold rim lighting."
+    aspect_ratio: "16:9"
+  - path: "artifacts/acordes/public/images/logo.png"
+    description: "Minimalist, sophisticated logo mark blending a musical note and a geometric spark, in pure glowing gold on a transparent background."
+    aspect_ratio: "1:1"
+
+notes:
+  - Fully frontend application using React and wouter.
+  - Data is mocked in src/data/chords.ts.
+  - Favorites are persisted using localStorage.
+  - Framer Motion is used heavily for the premium feel.

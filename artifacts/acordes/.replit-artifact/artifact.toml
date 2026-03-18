@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Dicionário de Acordes Sofisticados"
+version = "1.0.0"
+id = "artifacts/acordes"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 24375
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/acordes run dev"
+
+[services.env]
+PORT = "24375"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/acordes", "run", "build"]
+publicDir = "artifacts/acordes/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
