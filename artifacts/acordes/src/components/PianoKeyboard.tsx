@@ -55,12 +55,12 @@ const C = {
   lhBlackEdge:   "#b91c1c",
   lhBlackLabel:  "#fff",
 
-  rhWhiteFill:   "#f59e0b",   // tecla branca — mão direita (âmbar/amarelo)
-  rhWhiteEdge:   "#d97706",
+  rhWhiteFill:   "#f97316",   // tecla branca — mão direita (laranja)
+  rhWhiteEdge:   "#ea6a00",
   rhWhiteLabel:  "#1a1a1a",
-  rhBlackFill:   "#1c1917",   // tecla preta — mão direita ("bolinha preta")
-  rhBlackEdge:   "#f59e0b",   // borda âmbar para indicar ativa
-  rhBlackLabel:  "#f59e0b",
+  rhBlackFill:   "#1c1917",   // tecla preta — mão direita (tecla escura)
+  rhBlackEdge:   "#f97316",   // borda laranja para indicar ativa
+  rhBlackLabel:  "#f97316",
 
   inactiveWhite: "#f5f0e8",
   inactiveWhiteEdge: "#d1cdc4",
@@ -197,7 +197,7 @@ export function PianoKeyboard({ leftHandNotes, rightHandNotes, className }: Pian
           ← Mão Esquerda
         </text>
         <text x={SVG_W * 3 / 4} y={SVG_H - 4}
-          textAnchor="middle" fontSize={9} fill="#fbbf24" fontFamily="sans-serif" fontWeight="600">
+          textAnchor="middle" fontSize={9} fill="#f97316" fontFamily="sans-serif" fontWeight="600">
           Mão Direita →
         </text>
       </svg>

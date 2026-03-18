@@ -125,10 +125,10 @@ export default function ChordDetail() {
               </div>
 
               {/* Right hand */}
-              <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-                <span className="mt-0.5 flex-shrink-0 w-3 h-3 rounded-full bg-amber-500 ring-2 ring-amber-500/30" />
+              <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
+                <span className="mt-0.5 flex-shrink-0 w-3 h-3 rounded-full bg-orange-500 ring-2 ring-orange-500/30" />
                 <div>
-                  <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-0.5">
+                  <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">
                     Mão Direita
                   </p>
                   <p className="text-sm text-white/80 font-mono">
@@ -174,8 +174,8 @@ export default function ChordDetail() {
                         style={{
                           background: isLeft
                             ? "linear-gradient(to bottom, #fca5a5, #f87171)"
-                            : "linear-gradient(to bottom, #fef3c7, #fde68a)",
-                          borderColor: isLeft ? "#dc2626" : "#d97706",
+                            : "linear-gradient(to bottom, #fed7aa, #fb923c)",
+                          borderColor: isLeft ? "#dc2626" : "#ea580c",
                           color: "#1a1a1a",
                         }}
                       >
@@ -183,7 +183,7 @@ export default function ChordDetail() {
                       </div>
                       <span
                         className="mt-1 text-xs font-semibold"
-                        style={{ color: isLeft ? "#f87171" : "#fbbf24" }}
+                        style={{ color: isLeft ? "#f87171" : "#f97316" }}
                       >
                         {isLeft ? "ME" : "MD"}
                       </span>
