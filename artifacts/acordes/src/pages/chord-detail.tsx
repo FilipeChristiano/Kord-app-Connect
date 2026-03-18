@@ -7,38 +7,43 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import NotFound from "./not-found";
 
-// ── Determine which notes belong to each hand ─────────────────────────────────
-// "Mão Esquerda" categories: ALL notes are played by the left hand only.
-// All other chords: root (1st note) = left hand bass; remaining = right hand.
+// ── Separação de mãos — padrão do PDF ────────────────────────────────────────
+//
+// Para acordes regulares:
+//   Mão Esquerda = fundamental (notes[0]) + quinta (notes[2])
+//   Mão Direita  = TODAS as notas do acorde (incluindo as que estão na ME)
+//
+// Para categorias "Mão Esquerda — Aberto/Fechado/Misto":
+//   Mão Esquerda = todas as notas (voicing completo da ME)
+//   Mão Direita  = vazia (MD complementa livremente)
+//
 function splitHands(
   notes: string[],
   category: string
 ): { leftHand: string[]; rightHand: string[] } {
-  const isLeftHandCategory = category.startsWith("Mão Esquerda");
-
-  if (isLeftHandCategory) {
-    // Todas as notas são da mão esquerda (voicings ME — Aberto/Fechado/Misto)
+  if (category.startsWith("Mão Esquerda")) {
     return { leftHand: notes, rightHand: [] };
   }
 
-  // Para todos os demais acordes:
-  //   Mão Esquerda = apenas a FUNDAMENTAL (1ª nota) no registro grave
-  //   Mão Direita  = todas as demais notas (3ª, 5ª, 7ª, extensões)
-  return {
-    leftHand: [notes[0]],
-    rightHand: notes.slice(1),
-  };
+  // Mão Esquerda: fundamental + quinta (índice 0 e 2)
+  // Se o acorde tiver menos de 3 notas, usa só a fundamental
+  const leftHand = notes.length >= 3
+    ? [notes[0], notes[2]]
+    : [notes[0]];
+
+  // Mão Direita: acorde completo (todas as notas)
+  const rightHand = [...notes];
+
+  return { leftHand, rightHand };
 }
 
-// ── Descriptive text for the legend ──────────────────────────────────────────
+// ── Texto descritivo da legenda ───────────────────────────────────────────────
 function buildHandDescription(
   leftHand: string[],
   rightHand: string[],
   category: string
 ): { leftDesc: string; rightDesc: string } {
-  const isLeftHandCategory = category.startsWith("Mão Esquerda");
-
-  if (isLeftHandCategory) {
+  if (category.startsWith("Mão Esquerda")) {
     const subType = category.replace("Mão Esquerda — ", "");
     const rightDescMap: Record<string, string> = {
       Aberto:  "Mão direita executa as cores do acorde (3ª, 7ª, extensões)",
@@ -52,8 +57,8 @@ function buildHandDescription(
   }
 
   return {
-    leftDesc:  leftHand.join(" — ") + " (baixo / fundamental)",
-    rightDesc: rightHand.join(" — ") + " (harmonia superior)",
+    leftDesc:  leftHand.join(" — ") + " (fundamental + quinta)",
+    rightDesc: rightHand.join(" — ") + " (acorde completo)",
   };
 }
 
@@ -163,29 +168,26 @@ export default function ChordDetail() {
               </h3>
               <div className="flex flex-wrap gap-3">
                 {chord.notes.map((note, i) => {
-                  const isLeft = leftHand.includes(note);
+                  const inLeft  = leftHand.includes(note);
+                  const inRight = rightHand.includes(note);
+                  const both = inLeft && inRight;
+                  // Cor: vermelho se ME (incluso ME+MD), laranja se só MD
+                  const bg    = inLeft
+                    ? "linear-gradient(to bottom, #fca5a5, #f87171)"
+                    : "linear-gradient(to bottom, #fed7aa, #fb923c)";
+                  const border = inLeft ? "#dc2626" : "#ea580c";
+                  const labelColor = inLeft ? "#f87171" : "#f97316";
+                  const label = both ? "ME+MD" : inLeft ? "ME" : "MD";
                   return (
-                    <div
-                      key={i}
-                      className="relative flex flex-col items-center"
-                    >
+                    <div key={i} className="relative flex flex-col items-center">
                       <div
                         className="w-14 h-16 rounded-lg shadow-md flex items-end justify-center pb-2 font-bold text-xl border-b-4"
-                        style={{
-                          background: isLeft
-                            ? "linear-gradient(to bottom, #fca5a5, #f87171)"
-                            : "linear-gradient(to bottom, #fed7aa, #fb923c)",
-                          borderColor: isLeft ? "#dc2626" : "#ea580c",
-                          color: "#1a1a1a",
-                        }}
+                        style={{ background: bg, borderColor: border, color: "#1a1a1a" }}
                       >
                         {note}
                       </div>
-                      <span
-                        className="mt-1 text-xs font-semibold"
-                        style={{ color: isLeft ? "#f87171" : "#f97316" }}
-                      >
-                        {isLeft ? "ME" : "MD"}
+                      <span className="mt-1 text-xs font-semibold" style={{ color: labelColor }}>
+                        {label}
                       </span>
                     </div>
                   );
