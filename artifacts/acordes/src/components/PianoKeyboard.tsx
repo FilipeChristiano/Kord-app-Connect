@@ -1,19 +1,24 @@
 /**
- * PianoKeyboard — Diagrama de teclado com bolinhas coloridas
+ * PianoKeyboard — Diagrama de teclado SVG com 3 oitavas
  *
- * Padrão igual ao PDF:
- *   🔴 Bolinha vermelha  = Mão Esquerda
- *   🟠 Bolinha laranja   = Mão Direita em tecla branca
- *   ⚫ Bolinha preta      = Mão Direita em tecla preta
+ * Voicings de Mão Esquerda (isLeftOnly = sem mão direita):
+ *   Aberto  → baseOctave=0: Raiz+Quinta na região grave (oitava 0)
+ *   Fechado → baseOctave=1: Terça+Quinta na região média (oitava 1)
+ *   Misto   → baseOctave=0: Raiz+Terça+Quinta na região grave (oitava 0)
  *
- * Comportamento da Mão Esquerda (rightHandNotes vazio):
- *   - 1 nota (Aberto):      nota aparece nas DUAS oitavas (oitava span)
- *   - 2+ notas (Fechado/Misto): todas as notas aparecem APENAS na oitava 0
+ * Acordes normais (ME + MD): ME em oitava 0, MD em oitava 1. Oitava 2 vazia.
+ *
+ * Cor das bolinhas:
+ *   🔴 Vermelho = Mão Esquerda
+ *   🟠 Laranja  = Mão Direita tecla branca
+ *   ⚫ Preta    = Mão Direita tecla preta
  */
 
 interface PianoKeyboardProps {
   leftHandNotes: string[];
   rightHandNotes: string[];
+  /** Oitava base para a mão esquerda. 0 = grave (Aberto/Misto), 1 = média (Fechado) */
+  leftHandBaseOctave?: number;
   className?: string;
 }
 
@@ -23,7 +28,7 @@ const NOTE_SEMITONE: Record<string, number> = {
   "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11,
 };
 
-const WHITE_KEY_SEMITONES = [0, 2, 4, 5, 7, 9, 11]; // C D E F G A B
+const WHITE_KEY_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 
 const BLACK_KEYS = [
   { semitone: 1,  afterWhite: 0 },
@@ -33,78 +38,91 @@ const BLACK_KEYS = [
   { semitone: 10, afterWhite: 5 },
 ];
 
-const OCTAVES = 2;
-const WW = 38;
-const WH = 120;
-const BW = 24;
-const BH = 74;
+const OCTAVES = 3;
+const WW = 34;
+const WH = 110;
+const BW = 22;
+const BH = 68;
 const GAP = 2;
-const DOT_R_WHITE = 10;
-const DOT_R_BLACK = 8;
+const DOT_R_WHITE = 9;
+const DOT_R_BLACK = 7;
 const SVG_W = OCTAVES * 7 * WW;
-const SVG_H = WH + 28;
+const SVG_H = WH + 26;
 
 type Hand = "left" | "right" | null;
 
-function toSemitoneSet(notes: string[]): Set<number> {
-  const s = new Set<number>();
-  notes.forEach((n) => {
-    const v = NOTE_SEMITONE[n];
-    if (v !== undefined) s.add(v);
-  });
-  return s;
+interface PlacedNote {
+  semitone: number;
+  octave: number;
 }
 
-function labelMap(notes: string[]): Map<number, string> {
-  const m = new Map<number, string>();
-  notes.forEach((n) => {
-    const v = NOTE_SEMITONE[n];
-    if (v !== undefined && !m.has(v)) m.set(v, n);
-  });
-  return m;
+function toSemitone(note: string): number {
+  return NOTE_SEMITONE[note] ?? -1;
 }
 
-export function PianoKeyboard({ leftHandNotes, rightHandNotes, className }: PianoKeyboardProps) {
-  const lhSet    = toSemitoneSet(leftHandNotes);
-  const rhSet    = toSemitoneSet(rightHandNotes);
-  const lhLabels = labelMap(leftHandNotes);
-  const rhLabels = labelMap(rightHandNotes);
+/**
+ * Dado um array de notas em ordem ascendente de altura,
+ * coloca cada nota na menor oitava possível que seja >= a nota anterior,
+ * começando em baseOctave.
+ */
+function placeNotes(notes: string[], baseOctave: number): PlacedNote[] {
+  const placed: PlacedNote[] = [];
+  let currentOctave = baseOctave;
+  let prevSemitone = -1;
 
-  // Modo Aberto: 1 nota na mão esquerda, sem mão direita → aparece nas DUAS oitavas
-  const isAberto = rightHandNotes.length === 0 && leftHandNotes.length === 1;
-  // Modo Fechado/Misto: 2+ notas ME, sem MD → aparece APENAS na oitava 0
-  const isLeftOnly = rightHandNotes.length === 0 && leftHandNotes.length > 1;
+  for (const note of notes) {
+    const sem = toSemitone(note);
+    if (sem < 0) continue;
+    // Se essa nota tem semitone <= anterior, sobe de oitava
+    if (prevSemitone >= 0 && sem <= prevSemitone) {
+      currentOctave++;
+    }
+    placed.push({ semitone: sem, octave: currentOctave });
+    prevSemitone = sem;
+  }
+  return placed;
+}
+
+function dotFill(hand: Hand, isBlack: boolean): string {
+  if (hand === "left")  return "#ef4444";
+  if (hand === "right") return isBlack ? "#1c1917" : "#f97316";
+  return "none";
+}
+function dotStroke(hand: Hand, isBlack: boolean): string {
+  if (hand === "left")  return "#b91c1c";
+  if (hand === "right") return isBlack ? "#f97316" : "#ea6a00";
+  return "none";
+}
+
+export function PianoKeyboard({
+  leftHandNotes,
+  rightHandNotes,
+  leftHandBaseOctave = 0,
+  className,
+}: PianoKeyboardProps) {
+  const isLeftOnly = rightHandNotes.length === 0 && leftHandNotes.length > 0;
+
+  // Posiciona as notas de cada mão nas oitavas corretas
+  const lhPlaced = placeNotes(leftHandNotes, leftHandBaseOctave);
+  // MD sempre começa na oitava 1 (para acordes normais)
+  const rhPlaced = placeNotes(rightHandNotes, 1);
 
   function getHand(semitone: number, octave: number): Hand {
-    // Mão Direita: apenas na oitava 1
-    if (octave === 1 && rhSet.has(semitone)) return "right";
-
-    // Aberto (1 nota ME): aparece nas duas oitavas
-    if (isAberto && lhSet.has(semitone)) return "left";
-
-    // Fechado/Misto (2+ notas ME): apenas na oitava 0
-    if (isLeftOnly && octave === 0 && lhSet.has(semitone)) return "left";
-
-    // Normal (tem MD): ME na oitava 0
-    if (!isLeftOnly && !isAberto && octave === 0 && lhSet.has(semitone)) return "left";
-
+    for (const n of lhPlaced) {
+      if (n.semitone === semitone && n.octave === octave) return "left";
+    }
+    for (const n of rhPlaced) {
+      if (n.semitone === semitone && n.octave === octave) return "right";
+    }
     return null;
   }
 
-  function dotFill(hand: Hand, isBlack: boolean): string {
-    if (hand === "left")  return "#ef4444";
-    if (hand === "right") return isBlack ? "#1c1917" : "#f97316";
-    return "none";
-  }
-  function dotStroke(hand: Hand, isBlack: boolean): string {
-    if (hand === "left")  return "#b91c1c";
-    if (hand === "right") return isBlack ? "#f97316" : "#ea6a00";
-    return "none";
-  }
+  const hasLeft  = leftHandNotes.length > 0;
+  const hasRight = rightHandNotes.length > 0;
 
-  // Rótulos das oitavas
-  const showLeftLabel  = leftHandNotes.length > 0 && !isAberto;
-  const showRightLabel = rightHandNotes.length > 0 || isAberto;
+  // Determina os rótulos a mostrar
+  const leftLabel  = hasLeft && !isLeftOnly ? "← Mão Esquerda" : hasLeft ? "← Mão Esquerda" : null;
+  const rightLabel = hasRight ? "Mão Direita →" : null;
 
   return (
     <div className={className} style={{ overflowX: "auto" }}>
@@ -115,11 +133,11 @@ export function PianoKeyboard({ leftHandNotes, rightHandNotes, className }: Pian
         role="img"
         aria-label={`Teclado piano — ME: ${leftHandNotes.join(",")} | MD: ${rightHandNotes.join(",")}`}
       >
-        {/* ── Fundo do teclado ─────────────────────────────────────────── */}
+        {/* Fundo do teclado */}
         <rect x={0} y={0} width={SVG_W} height={WH} rx={4}
           fill="#2a1f0e" stroke="#4a3520" strokeWidth={1.5} />
 
-        {/* ── Teclas brancas ──────────────────────────────────────────── */}
+        {/* Teclas brancas */}
         {Array.from({ length: OCTAVES }).flatMap((_, octave) =>
           WHITE_KEY_SEMITONES.map((semitone, i) => {
             const x    = (octave * 7 + i) * WW + GAP;
@@ -130,11 +148,11 @@ export function PianoKeyboard({ leftHandNotes, rightHandNotes, className }: Pian
               <g key={`w-${octave}-${i}`}>
                 <rect x={x} y={2} width={w} height={WH - 4} rx={3}
                   fill="#f5ede0" stroke="#c8bfb0" strokeWidth={0.8} />
-                <rect x={x} y={WH - 10} width={w} height={8} rx={2}
+                <rect x={x} y={WH - 9} width={w} height={7} rx={2}
                   fill="#d4c8b8" />
                 {hand && (
                   <circle
-                    cx={x + w / 2} cy={WH - 20} r={DOT_R_WHITE}
+                    cx={x + w / 2} cy={WH - 18} r={DOT_R_WHITE}
                     fill={dotFill(hand, false)} stroke={dotStroke(hand, false)} strokeWidth={1.5}
                   />
                 )}
@@ -143,7 +161,7 @@ export function PianoKeyboard({ leftHandNotes, rightHandNotes, className }: Pian
           })
         )}
 
-        {/* ── Teclas pretas ──────────────────────────────────────────── */}
+        {/* Teclas pretas */}
         {Array.from({ length: OCTAVES }).flatMap((_, octave) =>
           BLACK_KEYS.map((bk, bi) => {
             const whiteX = (octave * 7 + bk.afterWhite + 1) * WW;
@@ -154,11 +172,11 @@ export function PianoKeyboard({ leftHandNotes, rightHandNotes, className }: Pian
               <g key={`b-${octave}-${bi}`}>
                 <rect x={x} y={2} width={BW} height={BH} rx={2}
                   fill="#1a1008" stroke="#000" strokeWidth={0.5} />
-                <rect x={x + 3} y={5} width={BW - 10} height={BH / 4} rx={1}
+                <rect x={x + 3} y={5} width={BW - 8} height={BH / 4} rx={1}
                   fill="rgba(255,255,255,0.07)" />
                 {hand && (
                   <circle
-                    cx={x + BW / 2} cy={BH - 12} r={DOT_R_BLACK}
+                    cx={x + BW / 2} cy={BH - 11} r={DOT_R_BLACK}
                     fill={dotFill(hand, true)} stroke={dotStroke(hand, true)}
                     strokeWidth={hand === "right" ? 2 : 1.5}
                   />
@@ -168,36 +186,32 @@ export function PianoKeyboard({ leftHandNotes, rightHandNotes, className }: Pian
           })
         )}
 
-        {/* ── Divisória central ─────────────────────────────────────────── */}
-        <line
-          x1={SVG_W / 2} y1={4} x2={SVG_W / 2} y2={WH - 4}
-          stroke="rgba(255,180,80,0.25)" strokeWidth={1.5} strokeDasharray="5,4"
-        />
+        {/* Divisórias entre oitavas */}
+        {[1, 2].map(oct => (
+          <line key={`div-${oct}`}
+            x1={oct * 7 * WW} y1={4} x2={oct * 7 * WW} y2={WH - 4}
+            stroke="rgba(255,180,80,0.2)" strokeWidth={1} strokeDasharray="4,3"
+          />
+        ))}
 
-        {/* ── Rótulos de registro ───────────────────────────────────────── */}
-        {showLeftLabel && (
+        {/* Rótulos */}
+        {leftLabel && !hasRight && (
           <text x={SVG_W / 4} y={SVG_H - 6}
+            textAnchor="middle" fontSize={9} fontFamily="sans-serif" fontWeight="600" fill="#f87171">
+            {leftLabel}
+          </text>
+        )}
+        {hasLeft && hasRight && (
+          <text x={SVG_W / 6} y={SVG_H - 6}
             textAnchor="middle" fontSize={9} fontFamily="sans-serif" fontWeight="600" fill="#f87171">
             ← Mão Esquerda
           </text>
         )}
-        {showRightLabel && rightHandNotes.length > 0 && (
-          <text x={SVG_W * 3 / 4} y={SVG_H - 6}
+        {rightLabel && (
+          <text x={hasLeft ? SVG_W * 2 / 3 : SVG_W / 2} y={SVG_H - 6}
             textAnchor="middle" fontSize={9} fontFamily="sans-serif" fontWeight="600" fill="#f97316">
-            Mão Direita →
+            {rightLabel}
           </text>
-        )}
-        {isAberto && (
-          <>
-            <text x={SVG_W / 4} y={SVG_H - 6}
-              textAnchor="middle" fontSize={9} fontFamily="sans-serif" fontWeight="600" fill="#f87171">
-              ← Grave (oitava baixa)
-            </text>
-            <text x={SVG_W * 3 / 4} y={SVG_H - 6}
-              textAnchor="middle" fontSize={9} fontFamily="sans-serif" fontWeight="600" fill="#f87171">
-              Agudo (oitava alta) →
-            </text>
-          </>
         )}
       </svg>
     </div>

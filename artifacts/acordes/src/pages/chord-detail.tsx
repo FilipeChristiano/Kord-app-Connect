@@ -48,23 +48,29 @@ function ColorLegend() {
 function SvgOverviewPanel({ notes, category }: { notes: string[]; category: string }) {
   const { leftHand, rightHand } = splitHands(notes, category);
   const isLeftOnly = category.startsWith("Mão Esquerda");
-  const isAberto   = category === "Mão Esquerda — Aberto";
+  const isFechado  = category === "Mão Esquerda — Fechado";
+  // Fechado: notas na região média (oitava 1). Aberto/Misto: região grave (oitava 0)
+  const leftHandBaseOctave = isFechado ? 1 : 0;
+
+  const meLabel = isFechado
+    ? `${leftHand[0]} — ${leftHand[1]} (região média)`
+    : leftHand.join(" — ");
 
   return (
     <div>
       <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
-        <PianoKeyboard leftHandNotes={leftHand} rightHandNotes={rightHand} />
+        <PianoKeyboard
+          leftHandNotes={leftHand}
+          rightHandNotes={rightHand}
+          leftHandBaseOctave={leftHandBaseOctave}
+        />
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
             <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
             <div>
               <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
-              <p className="text-sm text-white/80 font-mono">
-                {isAberto
-                  ? <span>{leftHand[0]} <span className="text-white/50 text-xs">(grave)</span> + {leftHand[0]} <span className="text-white/50 text-xs">(oitava)</span></span>
-                  : leftHand.join(" — ")}
-              </p>
+              <p className="text-sm text-white/80 font-mono">{meLabel}</p>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
@@ -82,8 +88,8 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
 
         {isLeftOnly && (
           <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
-            {isAberto
-              ? "A mão esquerda toca a fundamental nas duas oitavas (grave + oitava acima)."
+            {isFechado
+              ? "Mão esquerda toca a 3ª e a 5ª do acorde na região média do teclado."
               : "Este voicing é executado integralmente pela mão esquerda."}
           </p>
         )}
