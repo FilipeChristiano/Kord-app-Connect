@@ -28,7 +28,7 @@ export default function Dictionary() {
           <input
             type="text"
             className="w-full bg-secondary/50 border-2 border-white/5 rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all text-lg"
-            placeholder="Buscar por nome (ex: Cmaj7) ou nota..."
+            placeholder="Buscar por nome (ex: C, C7M, Cm7, sus4) ou categoria..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />

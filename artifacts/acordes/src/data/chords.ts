@@ -263,16 +263,34 @@ export function getChordById(id: string): Chord | undefined {
 }
 
 export function searchChords(query: string, category: string): Chord[] {
-  const q = query.toLowerCase().trim();
+  const q = query.trim();
+  const qLower = q.toLowerCase();
+
   return CHORDS.filter((chord) => {
     const matchesCategory = category === "Todos" || chord.category === category;
     if (!q) return matchesCategory;
+
+    // If query is a root note (A-G with optional b/#), match all chords starting with that root
+    const isRootQuery = /^[A-Ga-g][b#]?$/.test(q);
+    if (isRootQuery) {
+      const root = q[0].toUpperCase() + q.slice(1).toLowerCase().replace("b", "b").replace("#", "#");
+      const nameLower = chord.name.toLowerCase();
+      const rootLower = root.toLowerCase();
+      // Match: name starts with root, and next char is not a letter (to avoid "C" matching "Cb" as "C")
+      const startsWithRoot =
+        nameLower.startsWith(rootLower) &&
+        (chord.name.length === root.length || !/^[a-g]$/i.test(chord.name[root.length]));
+      return matchesCategory && startsWithRoot;
+    }
+
+    // General text search — match name, tags, description, category
+    // Only match notes by exact note name (not substring) to avoid false positives
     const matchesQuery =
-      chord.name.toLowerCase().includes(q) ||
-      chord.notes.some((n) => n.toLowerCase().includes(q)) ||
-      chord.tags.some((t) => t.toLowerCase().includes(q)) ||
-      chord.description.toLowerCase().includes(q) ||
-      chord.category.toLowerCase().includes(q);
+      chord.name.toLowerCase().includes(qLower) ||
+      chord.notes.some((n) => n.toLowerCase() === qLower) ||
+      chord.tags.some((t) => t.toLowerCase().includes(qLower)) ||
+      chord.description.toLowerCase().includes(qLower) ||
+      chord.category.toLowerCase().includes(qLower);
     return matchesCategory && matchesQuery;
   });
 }
