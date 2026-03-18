@@ -7,6 +7,55 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import NotFound from "./not-found";
 
+// ── Determine which notes belong to each hand ─────────────────────────────────
+// "Mão Esquerda" categories: ALL notes are played by the left hand only.
+// All other chords: root (1st note) = left hand bass; remaining = right hand.
+function splitHands(
+  notes: string[],
+  category: string
+): { leftHand: string[]; rightHand: string[] } {
+  const isLeftHandCategory = category.startsWith("Mão Esquerda");
+
+  if (isLeftHandCategory) {
+    return { leftHand: notes, rightHand: [] };
+  }
+
+  // For regular chords: root in bass (left hand), upper voices (right hand)
+  // Chords with 5+ notes: first 2 notes for left hand
+  const leftCount = notes.length >= 5 ? 2 : 1;
+  return {
+    leftHand: notes.slice(0, leftCount),
+    rightHand: notes.slice(leftCount),
+  };
+}
+
+// ── Descriptive text for the legend ──────────────────────────────────────────
+function buildHandDescription(
+  leftHand: string[],
+  rightHand: string[],
+  category: string
+): { leftDesc: string; rightDesc: string } {
+  const isLeftHandCategory = category.startsWith("Mão Esquerda");
+
+  if (isLeftHandCategory) {
+    const subType = category.replace("Mão Esquerda — ", "");
+    const rightDescMap: Record<string, string> = {
+      Aberto:  "Mão direita executa as cores do acorde (3ª, 7ª, extensões)",
+      Fechado: "Mão direita toca a melodia ou ornamentos",
+      Misto:   "Mão direita acrescenta extensões e cor harmônica",
+    };
+    return {
+      leftDesc:  leftHand.join(" — "),
+      rightDesc: rightDescMap[subType] ?? "Mão direita livre para melodia",
+    };
+  }
+
+  return {
+    leftDesc:  leftHand.join(" — ") + " (baixo / fundamental)",
+    rightDesc: rightHand.join(" — ") + " (harmonia superior)",
+  };
+}
+
 export default function ChordDetail() {
   const params = useParams<{ id: string }>();
   const chord = params.id ? getChordById(params.id) : undefined;
@@ -15,6 +64,9 @@ export default function ChordDetail() {
   if (!chord) return <NotFound />;
 
   const favorite = isFavorite(chord.id);
+  const { leftHand, rightHand } = splitHands(chord.notes, chord.category);
+  const { leftDesc, rightDesc } = buildHandDescription(leftHand, rightHand, chord.category);
+  const isLeftHandOnly = chord.category.startsWith("Mão Esquerda");
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
@@ -34,7 +86,6 @@ export default function ChordDetail() {
                 {chord.name}
               </h1>
             </div>
-
             <button
               onClick={() => toggleFavorite(chord.id)}
               className={cn(
@@ -50,16 +101,52 @@ export default function ChordDetail() {
           </div>
         </div>
 
-        {/* Piano diagram — full-width section */}
-        <div className="px-6 md:px-10 pt-8 pb-2 border-b border-white/5 relative z-10">
+        {/* ── Piano Diagram ─────────────────────────────────────────────── */}
+        <div className="px-6 md:px-10 pt-8 pb-6 border-b border-white/5 relative z-10">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-5 flex items-center gap-2">
             <Music className="w-4 h-4 text-primary" /> Diagrama do Teclado
           </h3>
+
           <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
-            <PianoKeyboard notes={chord.notes} />
-            <p className="text-center text-xs text-muted-foreground mt-3">
-              Teclas em destaque <span className="text-primary font-semibold">●</span> representam as notas do acorde
-            </p>
+            <PianoKeyboard leftHandNotes={leftHand} rightHandNotes={rightHand} />
+
+            {/* Legend */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Left hand */}
+              <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <span className="mt-0.5 flex-shrink-0 w-3 h-3 rounded-full bg-red-500 ring-2 ring-red-500/30" />
+                <div>
+                  <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">
+                    Mão Esquerda
+                  </p>
+                  <p className="text-sm text-white/80 font-mono">{leftDesc}</p>
+                </div>
+              </div>
+
+              {/* Right hand */}
+              <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
+                <span className="mt-0.5 flex-shrink-0 w-3 h-3 rounded-full bg-amber-500 ring-2 ring-amber-500/30" />
+                <div>
+                  <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-0.5">
+                    Mão Direita
+                  </p>
+                  <p className="text-sm text-white/80 font-mono">
+                    {isLeftHandOnly ? (
+                      <span className="italic text-white/50">{rightDesc}</span>
+                    ) : (
+                      rightDesc
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Extra note for Mão Esquerda categories */}
+            {isLeftHandOnly && (
+              <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
+                Este voicing é executado integralmente pela mão esquerda. A mão direita complementa com notas adicionais do acorde.
+              </p>
+            )}
           </div>
         </div>
 
@@ -68,21 +155,40 @@ export default function ChordDetail() {
 
           {/* Left Col */}
           <div className="space-y-10">
-
             {/* Notes */}
             <section>
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Music className="w-4 h-4" /> Notas do Acorde
               </h3>
               <div className="flex flex-wrap gap-3">
-                {chord.notes.map((note, i) => (
-                  <div
-                    key={i}
-                    className="w-14 h-16 bg-gradient-to-b from-white to-gray-200 text-black rounded-lg shadow-md flex items-end justify-center pb-2 font-bold text-xl border-b-4 border-gray-300"
-                  >
-                    {note}
-                  </div>
-                ))}
+                {chord.notes.map((note, i) => {
+                  const isLeft = leftHand.includes(note);
+                  return (
+                    <div
+                      key={i}
+                      className="relative flex flex-col items-center"
+                    >
+                      <div
+                        className="w-14 h-16 rounded-lg shadow-md flex items-end justify-center pb-2 font-bold text-xl border-b-4"
+                        style={{
+                          background: isLeft
+                            ? "linear-gradient(to bottom, #fca5a5, #f87171)"
+                            : "linear-gradient(to bottom, #fef3c7, #fde68a)",
+                          borderColor: isLeft ? "#dc2626" : "#d97706",
+                          color: "#1a1a1a",
+                        }}
+                      >
+                        {note}
+                      </div>
+                      <span
+                        className="mt-1 text-xs font-semibold"
+                        style={{ color: isLeft ? "#f87171" : "#fbbf24" }}
+                      >
+                        {isLeft ? "ME" : "MD"}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -116,8 +222,6 @@ export default function ChordDetail() {
 
           {/* Right Col */}
           <div className="space-y-10">
-
-            {/* Description */}
             <section>
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                 Sonoridade
@@ -125,7 +229,6 @@ export default function ChordDetail() {
               <p className="text-lg text-white/90 leading-relaxed">{chord.description}</p>
             </section>
 
-            {/* Application */}
             <section>
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-primary" /> Como Aplicar na Prática
@@ -136,7 +239,6 @@ export default function ChordDetail() {
               </div>
             </section>
 
-            {/* Variations */}
             {chord.variations && chord.variations.length > 0 && (
               <section>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
