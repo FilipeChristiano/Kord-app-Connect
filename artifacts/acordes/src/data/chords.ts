@@ -11,240 +11,268 @@ export interface Chord {
 }
 
 export const CATEGORIES = [
-  "Maiores Sofisticados",
-  "Menores Sofisticados",
-  "Acordes com Sétima",
-  "Acordes com Nona",
-  "Acordes com Décima Primeira",
-  "Acordes com Décima Terceira",
-  "Acordes Diminutos",
-  "Acordes Aumentados",
-  "Acordes Suspensos",
-  "Substituições e Variações",
+  "Tríades Maiores",
+  "Tríades Menores",
+  "Maiores com 7ªM",
+  "Menores com 7ª",
+  "Sus4",
+  "Sus2",
+  "Diminutos",
+  "Meio-Diminutos",
+  "Com 9ª",
+  "Com 7ªM e 9ª",
+  "Com 6ª",
+  "7sus4",
+  "Mão Esquerda — Aberto",
+  "Mão Esquerda — Fechado",
+  "Mão Esquerda — Misto",
 ];
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  "Maiores Sofisticados": "bg-amber-500/10 text-amber-500 border-amber-500/20",
-  "Menores Sofisticados": "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  "Acordes com Sétima": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  "Acordes com Nona": "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  "Acordes com Décima Primeira": "bg-pink-500/10 text-pink-400 border-pink-500/20",
-  "Acordes com Décima Terceira": "bg-rose-500/10 text-rose-400 border-rose-500/20",
-  "Acordes Diminutos": "bg-red-500/10 text-red-400 border-red-500/20",
-  "Acordes Aumentados": "bg-orange-500/10 text-orange-400 border-orange-500/20",
-  "Acordes Suspensos": "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-  "Substituições e Variações": "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+  "Tríades Maiores": "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  "Tríades Menores": "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  "Maiores com 7ªM": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  "Menores com 7ª": "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+  "Sus4": "bg-violet-500/10 text-violet-400 border-violet-500/20",
+  "Sus2": "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  "Diminutos": "bg-red-500/10 text-red-400 border-red-500/20",
+  "Meio-Diminutos": "bg-rose-500/10 text-rose-400 border-rose-500/20",
+  "Com 9ª": "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  "Com 7ªM e 9ª": "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  "Com 6ª": "bg-lime-500/10 text-lime-400 border-lime-500/20",
+  "7sus4": "bg-teal-500/10 text-teal-400 border-teal-500/20",
+  "Mão Esquerda — Aberto": "bg-sky-500/10 text-sky-400 border-sky-500/20",
+  "Mão Esquerda — Fechado": "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+  "Mão Esquerda — Misto": "bg-pink-500/10 text-pink-400 border-pink-500/20",
 };
 
 export const CHORDS: Chord[] = [
-  {
-    id: "c9",
-    name: "C9",
-    formula: "1 - 3 - 5 - b7 - 9",
-    notes: ["C", "E", "G", "Bb", "D"],
-    category: "Acordes com Nona",
-    description: "Acorde de nona dominante, cria tensão e sofisticação. Muito usado no gospel e jazz.",
-    application: "Use em passagens de tensão antes do repouso. Perfeito em progressões gospel.",
-    tags: ["gospel", "jazz", "tensão"],
-    variations: ["C7", "C13"]
-  },
-  {
-    id: "cmaj7",
-    name: "Cmaj7",
-    formula: "1 - 3 - 5 - 7M",
-    notes: ["C", "E", "G", "B"],
-    category: "Maiores Sofisticados",
-    description: "Som suave, elegante e sofisticado. Um dos acordes mais belos da harmonia.",
-    application: "Ideal para intros, finais e momentos de delicadeza na ministração.",
-    tags: ["suave", "jazz", "gospel", "elegante"],
-    variations: ["Cmaj9", "C6/9"]
-  },
-  {
-    id: "cm7",
-    name: "Cm7",
-    formula: "1 - b3 - 5 - b7",
-    notes: ["C", "Eb", "G", "Bb"],
-    category: "Menores Sofisticados",
-    description: "Menor com sétima menor. Som melancólico, profundo e sofisticado.",
-    application: "Funciona bem em progressões menores e músicas contemplativas.",
-    tags: ["melancólico", "suave", "jazz"],
-    variations: ["Cm9", "Cm11"]
-  },
-  {
-    id: "c7_9",
-    name: "C7(9)",
-    formula: "1 - 3 - 5 - b7 - 9",
-    notes: ["C", "E", "G", "Bb", "D"],
-    category: "Acordes com Nona",
-    description: "Dominante com nona, cria expectativa e movimento. Som rico e sofisticado.",
-    application: "Use como V7 em cadências com mais cor e sofisticação.",
-    tags: ["dominante", "jazz", "tensão"],
-    variations: ["C9", "C13"]
-  },
-  {
-    id: "c6_9",
-    name: "C6/9",
-    formula: "1 - 3 - 5 - 6 - 9",
-    notes: ["C", "E", "G", "A", "D"],
-    category: "Maiores Sofisticados",
-    description: "Acorde cheio e sofisticado. Combina a sexta e a nona, criando som rico.",
-    application: "Ótimo para finais e momentos de plenitude harmônica.",
-    tags: ["suave", "rico", "gospel"],
-    variations: ["Cmaj7", "Cadd9"]
-  },
-  {
-    id: "cadd9",
-    name: "Cadd9",
-    formula: "1 - 3 - 5 - 9",
-    notes: ["C", "E", "G", "D"],
-    category: "Maiores Sofisticados",
-    description: "O acorde add9 é mais simples que o maj9 mas traz sofisticação imediata.",
-    application: "Substituição fácil para C maior simples. Enriquece qualquer progressão básica.",
-    tags: ["iniciante", "suave"],
-    variations: ["C6/9", "Cmaj7"]
-  },
-  {
-    id: "cmaj9",
-    name: "Cmaj9",
-    formula: "1 - 3 - 5 - 7M - 9",
-    notes: ["C", "E", "G", "B", "D"],
-    category: "Acordes com Nona",
-    description: "Máximo de elegância e suavidade. Som sofisticado e etéreo.",
-    application: "Para momentos de grandiosidade e beleza. Climático em adorações.",
-    tags: ["elegante", "jazz", "gospel", "etéreo"],
-    variations: ["Cmaj7", "C6/9"]
-  },
-  {
-    id: "dm7",
-    name: "Dm7",
-    formula: "1 - b3 - 5 - b7",
-    notes: ["D", "F", "A", "C"],
-    category: "Menores Sofisticados",
-    description: "Menor com sétima. Um dos acordes mais usados no jazz e bossa nova.",
-    application: "Funciona como IIm7 em progressões IIm7-V7-I. Base da harmonia sofisticada.",
-    tags: ["jazz", "bossa", "gospel"],
-    variations: ["Dm9", "Dm11"]
-  },
-  {
-    id: "g7_13",
-    name: "G7(13)",
-    formula: "1 - 3 - 5 - b7 - 13",
-    notes: ["G", "B", "D", "F", "E"],
-    category: "Acordes com Décima Terceira",
-    description: "Dominante com décima terceira. Som rico, poderoso e cheio de sofisticação.",
-    application: "Use como V7 com cor extra antes do I grau. Aumenta tensão e expectativa.",
-    tags: ["dominante", "jazz", "tensão", "gospel"],
-    variations: ["G9", "G7"]
-  },
-  {
-    id: "fmaj7",
-    name: "Fmaj7",
-    formula: "1 - 3 - 5 - 7M",
-    notes: ["F", "A", "C", "E"],
-    category: "Maiores Sofisticados",
-    description: "O IV grau com sétima maior é um dos acordes mais suaves e bonitos.",
-    application: "Perfeito em progressões I-IVmaj7. Muito usado em gospel e adoração.",
-    tags: ["suave", "gospel", "adoração"],
-    variations: ["Fmaj9", "F6/9"]
-  },
-  {
-    id: "am9",
-    name: "Am9",
-    formula: "1 - b3 - 5 - b7 - 9",
-    notes: ["A", "C", "E", "G", "B"],
-    category: "Acordes com Nona",
-    description: "Menor com nona. Som profundo, rico e melancólico ao mesmo tempo.",
-    application: "Traz profundidade em músicas lentas e contemplativas.",
-    tags: ["melancólico", "profundo", "jazz"],
-    variations: ["Am7", "Am11"]
-  },
-  {
-    id: "e7_sharp9",
-    name: "E7(#9)",
-    formula: "1 - 3 - 5 - b7 - #9",
-    notes: ["E", "G#", "B", "D", "G"],
-    category: "Substituições e Variações",
-    description: "O acorde Hendrix! Combinação de maior e menor simultâneos. Muito expressivo.",
-    application: "Para momentos de tensão dramática, groove e expressividade máxima.",
-    tags: ["blues", "rock", "expressivo", "tensão"],
-    variations: ["E7", "E9"]
-  },
-  {
-    id: "bdim7",
-    name: "Bdim7",
-    formula: "1 - b3 - b5 - bb7",
-    notes: ["B", "D", "F", "Ab"],
-    category: "Acordes Diminutos",
-    description: "Diminuto com sétima diminuta. Cria suspense e tensão dramática.",
-    application: "Use como passagem cromática ou em momentos de clímax dramático.",
-    tags: ["tensão", "dramático", "clássico"],
-    variations: ["Bdim", "G#dim7"]
-  },
-  {
-    id: "caug",
-    name: "Caug",
-    formula: "1 - 3 - #5",
-    notes: ["C", "E", "G#"],
-    category: "Acordes Aumentados",
-    description: "Acorde aumentado. Som misterioso e instável que pede resolução.",
-    application: "Use como substituto do V grau para criar mais cor e tensão.",
-    tags: ["misterioso", "tensão", "passagem"],
-    variations: ["C+", "Eaug", "G#aug"]
-  },
-  {
-    id: "csus2",
-    name: "Csus2",
-    formula: "1 - 2 - 5",
-    notes: ["C", "D", "G"],
-    category: "Acordes Suspensos",
-    description: "Suspenso com segunda. Som aberto, etéreo e contemporâneo.",
-    application: "Muito usado no worship moderno. Cria espaço e leveza na harmonia.",
-    tags: ["worship", "contemporâneo", "aberto", "etéreo"],
-    variations: ["Csus4", "Cadd9"]
-  },
-  {
-    id: "csus4",
-    name: "Csus4",
-    formula: "1 - 4 - 5",
-    notes: ["C", "F", "G"],
-    category: "Acordes Suspensos",
-    description: "Suspenso com quarta. Som expectante que pede resolução para o maior.",
-    application: "Cria tensão e expectativa antes do I grau. Muito usado em codas.",
-    tags: ["tensão", "worship", "expectativa"],
-    variations: ["Csus2", "C"]
-  },
-  {
-    id: "dm11",
-    name: "Dm11",
-    formula: "1 - b3 - 5 - b7 - 9 - 11",
-    notes: ["D", "F", "A", "C", "E", "G"],
-    category: "Acordes com Décima Primeira",
-    description: "Menor com décima primeira. O acorde mais completo e cheio. Som denso e rico.",
-    application: "Para texturas complexas e momentos de clímax harmônico.",
-    tags: ["completo", "jazz", "avançado", "rico"],
-    variations: ["Dm7", "Dm9"]
-  }
+  // ─── TRÍADES MAIORES ───────────────────────────────────────────────────────
+  { id: "C-maior", name: "C", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["C", "E", "G"], description: "A tríade maior de Dó. Base de toda a harmonia tonal.", application: "Use como I grau em tons maiores. Ponto de repouso e resolução.", tags: ["básico", "repouso", "I grau"], variations: ["C7M", "Cadd9", "C6"] },
+  { id: "Db-maior", name: "Db", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["Db", "F", "Ab"], description: "Tríade maior de Ré bemol. Som encorpado e expressivo.", application: "I grau em Db maior. Muito usada em gospel e MPB.", tags: ["básico", "gospel"], variations: ["Db7M", "Dbadd9"] },
+  { id: "D-maior", name: "D", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["D", "F#", "A"], description: "Tríade maior de Ré. Tom brilhante e alegre.", application: "I grau em Ré maior. Ótima para músicas de louvor e celebração.", tags: ["básico", "brilhante"], variations: ["D7M", "Dadd9"] },
+  { id: "Eb-maior", name: "Eb", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["Eb", "G", "Bb"], description: "Tríade maior de Mi bemol. Tom nobre e poderoso.", application: "I grau em Eb maior. Tom favorito no gospel contemporâneo.", tags: ["básico", "gospel", "nobre"], variations: ["Eb7M", "Ebadd9"] },
+  { id: "E-maior", name: "E", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["E", "G#", "B"], description: "Tríade maior de Mi. Som vibrante e energético.", application: "I grau em Mi maior. Tom claro e penetrante.", tags: ["básico", "vibrante"], variations: ["E7M", "Eadd9"] },
+  { id: "F-maior", name: "F", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["F", "A", "C"], description: "Tríade maior de Fá. Tom quente e expressivo.", application: "I grau em Fá maior ou IV grau em Dó. Muito versátil.", tags: ["básico", "IV grau"], variations: ["F7M", "Fadd9"] },
+  { id: "Gb-maior", name: "F#/Gb", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["F#", "A#", "C#"], description: "Tríade maior de Fá# / Sol bemol. Tom rico e encorpado.", application: "I grau em F# ou Gb maior. Tom incomum que surpreende.", tags: ["básico", "incomum"], variations: ["F#7M", "Gbadd9"] },
+  { id: "G-maior", name: "G", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["G", "B", "D"], description: "Tríade maior de Sol. Tom brilhante e luminoso.", application: "I grau em Sol maior ou V grau em Dó. Um dos mais usados.", tags: ["básico", "V grau"], variations: ["G7M", "Gadd9"] },
+  { id: "Ab-maior", name: "Ab", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["Ab", "C", "Eb"], description: "Tríade maior de Lá bemol. Som amplo e majestoso.", application: "I grau em Ab maior. Tom muito usado em hinos e adoração.", tags: ["básico", "adoração", "majestoso"], variations: ["Ab7M", "Abadd9"] },
+  { id: "A-maior", name: "A", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["A", "C#", "E"], description: "Tríade maior de Lá. Tom brilhante com personalidade forte.", application: "I grau em Lá maior. Popular em músicas modernas de louvor.", tags: ["básico", "brilhante"], variations: ["A7M", "Aadd9"] },
+  { id: "Bb-maior", name: "Bb", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["Bb", "D", "F"], description: "Tríade maior de Si bemol. Tom quente e acolhedor.", application: "I grau em Bb maior. Muito usado no gospel e jazz.", tags: ["básico", "gospel", "jazz"], variations: ["Bb7M", "Bbadd9"] },
+  { id: "B-maior", name: "B", category: "Tríades Maiores", formula: "1 - 3 - 5", notes: ["B", "D#", "F#"], description: "Tríade maior de Si. Tom penetrante e distinto.", application: "I grau em Si maior. Menos comum, mas muito elegante.", tags: ["básico", "elegante"], variations: ["B7M", "Badd9"] },
+
+  // ─── TRÍADES MENORES ───────────────────────────────────────────────────────
+  { id: "Cm", name: "Cm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["C", "Eb", "G"], description: "Tríade menor de Dó. Som introspectivo e melancólico.", application: "Im em Dó menor. Tom de reflexão e contemplação.", tags: ["menor", "melancólico"], variations: ["Cm7", "Cm9"] },
+  { id: "Dbm", name: "Dbm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["Db", "E", "Ab"], description: "Tríade menor de Ré bemol. Som sombrio e profundo.", application: "Im em Db menor. Tom inusitado e de grande impacto.", tags: ["menor", "profundo", "incomum"], variations: ["Dbm7"] },
+  { id: "Dm", name: "Dm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["D", "F", "A"], description: "Tríade menor de Ré. Som melancólico e intenso.", application: "IIm em Dó maior, Im em Ré menor. Um dos menores mais usados.", tags: ["menor", "melancólico", "IIm"], variations: ["Dm7", "Dm9"] },
+  { id: "Ebm", name: "Ebm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["Eb", "Gb", "Bb"], description: "Tríade menor de Mi bemol. Som dramático e expressivo.", application: "Im em Eb menor. Muito expressivo em baladas.", tags: ["menor", "dramático"], variations: ["Ebm7"] },
+  { id: "Em", name: "Em", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["E", "G", "B"], description: "Tríade menor de Mi. Som nostálgico e profundo.", application: "IIIm em Dó maior, Im em Mi menor. Muito usado em worship.", tags: ["menor", "worship", "nostálgico"], variations: ["Em7", "Em9"] },
+  { id: "Fm", name: "Fm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["F", "Ab", "C"], description: "Tríade menor de Fá. Som escuro e intenso.", application: "Im em Fá menor. Muito usada em músicas dramáticas.", tags: ["menor", "escuro", "dramático"], variations: ["Fm7"] },
+  { id: "Gbm", name: "F#m/Gbm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["F#", "A", "C#"], description: "Tríade menor de Fá# / Sol bemol. Som sombrio e misterioso.", application: "VIm em Lá maior. Tom de muita expressividade.", tags: ["menor", "misterioso"], variations: ["F#m7"] },
+  { id: "Gm", name: "Gm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["G", "Bb", "D"], description: "Tríade menor de Sol. Som nobre e melancólico ao mesmo tempo.", application: "IIm em Fá maior, Im em Sol menor.", tags: ["menor", "nobre"], variations: ["Gm7", "Gm9"] },
+  { id: "Abm", name: "Abm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["Ab", "B", "Eb"], description: "Tríade menor de Lá bemol. Som profundo e expressivo.", application: "Im em Ab menor. Tom muito dramático.", tags: ["menor", "dramático", "expressivo"], variations: ["Abm7"] },
+  { id: "Am", name: "Am", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["A", "C", "E"], description: "Tríade menor de Lá. Um dos menores mais naturais ao piano.", application: "VIm em Dó maior, Im em Lá menor. Muito versátil.", tags: ["menor", "natural", "VIm"], variations: ["Am7", "Am9"] },
+  { id: "Bbm", name: "Bbm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["Bb", "Db", "F"], description: "Tríade menor de Si bemol. Som melancólico e encorpado.", application: "IIm em Ab maior. Tom muito usado no gospel.", tags: ["menor", "gospel", "encorpado"], variations: ["Bbm7"] },
+  { id: "Bm", name: "Bm", category: "Tríades Menores", formula: "1 - b3 - 5", notes: ["B", "D", "F#"], description: "Tríade menor de Si. Som distinto e expressivo.", application: "IIIm em Sol maior, Im em Si menor.", tags: ["menor", "expressivo"], variations: ["Bm7"] },
+
+  // ─── MAIORES COM 7ªM ────────────────────────────────────────────────────────
+  { id: "C7M", name: "C7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["C", "E", "G", "B"], description: "Acorde maior com sétima maior. Som suave, elegante e sofisticado.", application: "Ideal para intros, finais e momentos de delicadeza. Perfeito em adoração.", tags: ["elegante", "suave", "jazz", "gospel"], variations: ["Cmaj9", "C6/9", "C6"] },
+  { id: "Db7M", name: "Db7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["Db", "F", "Ab", "C"], description: "Maior com sétima maior de Ré bemol. Som luxuoso e envolvente.", application: "IV7M em Ab ou I7M em Db. Cria atmosfera densa e bela.", tags: ["elegante", "luxuoso", "gospel"], variations: ["Dbmaj9"] },
+  { id: "D7M", name: "D7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["D", "F#", "A", "C#"], description: "Maior com sétima maior de Ré. Som cintilante e sofisticado.", application: "I7M ou IV7M em Lá. Brilhante em músicas de adoração.", tags: ["elegante", "cintilante", "adoração"], variations: ["Dmaj9"] },
+  { id: "Eb7M", name: "Eb7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["Eb", "G", "Bb", "D"], description: "Maior com sétima maior de Mi bemol. Som grandioso e majestoso.", application: "I7M em Eb. Tom favorito no gospel moderno com muita sofisticação.", tags: ["elegante", "majestoso", "gospel"], variations: ["Ebmaj9"] },
+  { id: "E7M", name: "E7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["E", "G#", "B", "D#"], description: "Maior com sétima maior de Mi. Som reluzente e cristalino.", application: "I7M em Mi. Muito expressivo em músicas lentas e contemplativas.", tags: ["elegante", "cristalino"], variations: ["Emaj9"] },
+  { id: "F7M", name: "F7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["F", "A", "C", "E"], description: "Maior com sétima maior de Fá. Um dos mais belos acordes ao piano.", application: "IV7M em Dó ou I7M em Fá. Muito usado em arranjos gospel e jazz.", tags: ["elegante", "belo", "jazz", "gospel"], variations: ["Fmaj9", "F6/9"] },
+  { id: "Gb7M", name: "F#7M/Gb7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["F#", "A#", "C#", "F"], description: "Maior com sétima maior de Fá#. Som inusitado e sofisticadíssimo.", application: "Surpreende nas progressões. Muito criativo em arranjos avançados.", tags: ["elegante", "incomum", "avançado"], variations: ["F#maj9"] },
+  { id: "G7M", name: "G7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["G", "B", "D", "F#"], description: "Maior com sétima maior de Sol. Som luminoso e cheio de graciosidade.", application: "I7M em Sol ou IV7M em Ré. Ótimo em sequências de adoração.", tags: ["elegante", "luminoso", "adoração"], variations: ["Gmaj9", "G6/9"] },
+  { id: "Ab7M", name: "Ab7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["Ab", "C", "Eb", "G"], description: "Maior com sétima maior de Lá bemol. Som pleno e aveludado.", application: "I7M em Ab. Tom muito usado no gospel com grande beleza harmônica.", tags: ["elegante", "aveludado", "gospel"], variations: ["Abmaj9"] },
+  { id: "A7M", name: "A7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["A", "C#", "E", "G#"], description: "Maior com sétima maior de Lá. Som brilhante e sofisticado.", application: "I7M em Lá. Muito versátil em jazz e gospel contemporâneo.", tags: ["elegante", "jazz", "gospel"], variations: ["Amaj9", "A6/9"] },
+  { id: "Bb7M", name: "Bb7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["Bb", "D", "F", "A"], description: "Maior com sétima maior de Si bemol. Som quente e aconchegante.", application: "I7M em Bb ou IV7M em Fá. Muito suave em progressões gospel.", tags: ["elegante", "quente", "gospel"], variations: ["Bbmaj9"] },
+  { id: "B7M", name: "B7M", category: "Maiores com 7ªM", formula: "1 - 3 - 5 - 7M", notes: ["B", "D#", "F#", "A#"], description: "Maior com sétima maior de Si. Som distinto e requintado.", application: "I7M em Si. Tom incomum de grande elegância harmônica.", tags: ["elegante", "requintado", "incomum"], variations: ["Bmaj9"] },
+
+  // ─── MENORES COM 7ª ────────────────────────────────────────────────────────
+  { id: "Cm7", name: "Cm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["C", "Eb", "G", "Bb"], description: "Menor com sétima menor. Som suave, introspectivo e sofisticado.", application: "Im7 ou IIm7. Base da harmonia jazz e gospel em tonalidades menores.", tags: ["menor", "suave", "jazz", "gospel"], variations: ["Cm9", "Cm11"] },
+  { id: "Dbm7", name: "Dbm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["Db", "E", "Ab", "B"], description: "Menor com sétima de Ré bemol. Som profundo e misterioso.", application: "IIm7 em B ou Im7 em Db. Tom de grande expressividade.", tags: ["menor", "misterioso", "expressivo"], variations: [] },
+  { id: "Dm7", name: "Dm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["D", "F", "A", "C"], description: "Menor com sétima de Ré. Um dos acordes mais usados no jazz.", application: "IIm7 em Dó. Base da progressão IIm7-V7-I. Essencial no jazz e bossa.", tags: ["menor", "jazz", "bossa", "gospel"], variations: ["Dm9", "Dm11"] },
+  { id: "Ebm7", name: "Ebm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["Eb", "Gb", "Bb", "Db"], description: "Menor com sétima de Mi bemol. Som encorpado e dramático.", application: "IIm7 em Db ou Im7 em Eb. Muito expressivo em baladas.", tags: ["menor", "dramático", "encorpado"], variations: [] },
+  { id: "Em7", name: "Em7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["E", "G", "B", "D"], description: "Menor com sétima de Mi. Som aberto, natural e fluido.", application: "IIIm7 em Dó ou Im7 em Mi. Muito usado em worship contemporâneo.", tags: ["menor", "worship", "fluido"], variations: ["Em9"] },
+  { id: "Fm7", name: "Fm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["F", "Ab", "C", "Eb"], description: "Menor com sétima de Fá. Som denso e melancólico.", application: "IIm7 em Eb ou Im7 em Fá. Tom de grande profundidade emocional.", tags: ["menor", "melancólico", "profundo"], variations: ["Fm9"] },
+  { id: "Gbm7", name: "F#m7/Gbm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["F#", "A", "C#", "E"], description: "Menor com sétima de Fá#. Som fluido e sofisticado.", application: "IIm7 em E ou VIm7 em A. Muito versátil em progressões jazzy.", tags: ["menor", "jazz", "sofisticado"], variations: [] },
+  { id: "Gm7", name: "Gm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["G", "Bb", "D", "F"], description: "Menor com sétima de Sol. Um dos menores com 7ª mais expressivos.", application: "IIm7 em Fá ou Im7 em Sol menor.", tags: ["menor", "expressivo", "jazz"], variations: ["Gm9"] },
+  { id: "Abm7", name: "Abm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["Ab", "B", "Eb", "Gb"], description: "Menor com sétima de Lá bemol. Som escuro e dramático.", application: "IIm7 em Gb ou Im7 em Ab. Tom de forte impacto emocional.", tags: ["menor", "dramático", "escuro"], variations: [] },
+  { id: "Am7", name: "Am7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["A", "C", "E", "G"], description: "Menor com sétima de Lá. Som natural, aberto e muito musical.", application: "IIm7 em Sol, VIm7 em Dó. Coringa das progressões jazz e gospel.", tags: ["menor", "jazz", "natural", "gospel"], variations: ["Am9", "Am11"] },
+  { id: "Bbm7", name: "Bbm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["Bb", "Db", "F", "Ab"], description: "Menor com sétima de Si bemol. Som profundo e envolvente.", application: "IIm7 em Ab. Tom muito usado em gospel e músicas de adoração.", tags: ["menor", "gospel", "envolvente"], variations: [] },
+  { id: "Bm7", name: "Bm7", category: "Menores com 7ª", formula: "1 - b3 - 5 - b7", notes: ["B", "D", "F#", "A"], description: "Menor com sétima de Si. Som fluido e sofisticado.", application: "IIIm7 em Sol ou Im7 em Si. Muito versátil em jazz.", tags: ["menor", "sofisticado", "jazz"], variations: [] },
+
+  // ─── SUS4 ───────────────────────────────────────────────────────────────────
+  { id: "Csus4", name: "Csus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["C", "F", "G"], description: "Suspenso com quarta. Som aberto que cria expectativa antes do maior.", application: "Use antes do acorde maior correspondente. Muito usado em codas e finais.", tags: ["suspenso", "expectativa", "worship"], variations: ["Csus2", "C7sus4"] },
+  { id: "Dbsus4", name: "Dbsus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["Db", "Gb", "Ab"], description: "Suspenso com quarta de Ré bemol. Som amplo e etéreo.", application: "Cria suspense antes do Db maior. Muito eficaz em transições.", tags: ["suspenso", "etéreo"], variations: ["Dbsus2"] },
+  { id: "Dsus4", name: "Dsus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["D", "G", "A"], description: "Suspenso com quarta de Ré. Som aberto e luminoso.", application: "Antes do D maior ou como V suspenso em Sol.", tags: ["suspenso", "luminoso"], variations: ["Dsus2", "D7sus4"] },
+  { id: "Ebsus4", name: "Ebsus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["Eb", "Ab", "Bb"], description: "Suspenso com quarta de Mi bemol. Som grandioso e esperançoso.", application: "Muito usado no gospel antes do Eb ou Bb maior.", tags: ["suspenso", "gospel", "grandioso"], variations: ["Ebsus2"] },
+  { id: "Esus4", name: "Esus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["E", "A", "B"], description: "Suspenso com quarta de Mi. Som cintilante e aberto.", application: "Antes do E maior. Cria leveza e espaço harmônico.", tags: ["suspenso", "cintilante"], variations: ["Esus2"] },
+  { id: "Fsus4", name: "Fsus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["F", "Bb", "C"], description: "Suspenso com quarta de Fá. Som caloroso que pede resolução.", application: "Antes do F maior. Muito usado em progressões gospel.", tags: ["suspenso", "gospel"], variations: ["Fsus2", "F7sus4"] },
+  { id: "Gbsus4", name: "F#sus4/Gbsus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["F#", "B", "C#"], description: "Suspenso com quarta de Fá#. Som etéreo e inusitado.", application: "Tom criativo para passagens incomuns e arranjos diferenciados.", tags: ["suspenso", "etéreo", "incomum"], variations: [] },
+  { id: "Gsus4", name: "Gsus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["G", "C", "D"], description: "Suspenso com quarta de Sol. Um dos suspensos mais naturais ao teclado.", application: "Antes do G maior. Muito usado no worship contemporâneo.", tags: ["suspenso", "worship", "natural"], variations: ["Gsus2", "G7sus4"] },
+  { id: "Absus4", name: "Absus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["Ab", "Db", "Eb"], description: "Suspenso com quarta de Lá bemol. Som pleno e esperançoso.", application: "Muito presente no gospel. Cria espaço antes do Ab.", tags: ["suspenso", "gospel"], variations: [] },
+  { id: "Asus4", name: "Asus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["A", "D", "E"], description: "Suspenso com quarta de Lá. Som amplo e respirável.", application: "Antes do A maior. Muito usado em louvor e adoração.", tags: ["suspenso", "adoração"], variations: ["Asus2", "A7sus4"] },
+  { id: "Bbsus4", name: "Bbsus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["Bb", "Eb", "F"], description: "Suspenso com quarta de Si bemol. Som caloroso e encorpado.", application: "Antes do Bb maior. Tom clássico no gospel.", tags: ["suspenso", "gospel", "caloroso"], variations: ["Bbsus2"] },
+  { id: "Bsus4", name: "Bsus4", category: "Sus4", formula: "1 - 4 - 5", notes: ["B", "E", "F#"], description: "Suspenso com quarta de Si. Som distinto e luminoso.", application: "Antes do B maior. Incomum mas muito elegante.", tags: ["suspenso", "elegante", "incomum"], variations: [] },
+
+  // ─── SUS2 ───────────────────────────────────────────────────────────────────
+  { id: "Csus2", name: "Csus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["C", "D", "G"], description: "Suspenso com segunda. Som etéreo e contemporâneo. Muito usado no worship moderno.", application: "Cria leveza e abertura. Substituto sofisticado do C maior simples.", tags: ["suspenso", "etéreo", "worship", "contemporâneo"], variations: ["Csus4", "Cadd9"] },
+  { id: "Dbsus2", name: "Dbsus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["Db", "Eb", "Ab"], description: "Suspenso com segunda de Ré bemol. Som amplo e onírico.", application: "Muito criativo em arranjos que precisam de abertura e modernidade.", tags: ["suspenso", "onírico", "moderno"], variations: ["Dbsus4"] },
+  { id: "Dsus2", name: "Dsus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["D", "E", "A"], description: "Suspenso com segunda de Ré. Som brilhante e aberto.", application: "Substitui o D maior com mais elegância contemporânea.", tags: ["suspenso", "brilhante", "contemporâneo"], variations: ["Dsus4"] },
+  { id: "Ebsus2", name: "Ebsus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["Eb", "F", "Bb"], description: "Suspenso com segunda de Mi bemol. Som grande e esperançoso.", application: "Muito eficaz em aberturas e introduções no gospel.", tags: ["suspenso", "gospel", "intro"], variations: ["Ebsus4"] },
+  { id: "Esus2", name: "Esus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["E", "F#", "B"], description: "Suspenso com segunda de Mi. Som brilhante e etéreo.", application: "Cria texturas abertas em qualquer progressão.", tags: ["suspenso", "etéreo", "brilhante"], variations: ["Esus4"] },
+  { id: "Fsus2", name: "Fsus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["F", "G", "C"], description: "Suspenso com segunda de Fá. Som cálido e levemente suspenso.", application: "Substitui o F com mais modernidade. Ótimo em worship.", tags: ["suspenso", "worship", "moderno"], variations: ["Fsus4"] },
+  { id: "Gbsus2", name: "F#sus2/Gbsus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["F#", "G#", "C#"], description: "Suspenso com segunda de Fá#. Som incomum e muito criativo.", application: "Para arranjos criativos e diferenciados.", tags: ["suspenso", "incomum", "criativo"], variations: [] },
+  { id: "Gsus2", name: "Gsus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["G", "A", "D"], description: "Suspenso com segunda de Sol. Um dos sus2 mais naturais e bonitos.", application: "Muito usado em worship. Substitui o G com elegância.", tags: ["suspenso", "worship", "elegante"], variations: ["Gsus4"] },
+  { id: "Absus2", name: "Absus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["Ab", "Bb", "Eb"], description: "Suspenso com segunda de Lá bemol. Som pleno e contemporâneo.", application: "Abre espaço em progressões de Ab. Muito moderno.", tags: ["suspenso", "moderno", "gospel"], variations: [] },
+  { id: "Asus2", name: "Asus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["A", "B", "E"], description: "Suspenso com segunda de Lá. Som aberto, brilhante e contemporâneo.", application: "Muito usado em worship em tom de Lá.", tags: ["suspenso", "worship", "contemporâneo"], variations: ["Asus4"] },
+  { id: "Bbsus2", name: "Bbsus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["Bb", "C", "F"], description: "Suspenso com segunda de Si bemol. Som caloroso e etéreo.", application: "Muito eficaz em introduções e passagens em Bb.", tags: ["suspenso", "etéreo", "gospel"], variations: ["Bbsus4"] },
+  { id: "Bsus2", name: "Bsus2", category: "Sus2", formula: "1 - 2 - 5", notes: ["B", "C#", "F#"], description: "Suspenso com segunda de Si. Som cristalino e distinto.", application: "Tom incomum com grande beleza harmônica.", tags: ["suspenso", "cristalino", "elegante"], variations: [] },
+
+  // ─── DIMINUTOS ──────────────────────────────────────────────────────────────
+  { id: "C-dim", name: "C°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["C", "Eb", "Gb"], description: "Acorde diminuto. Som instável e tenso que pede resolução imediata.", application: "Passagem cromática ou acorde de tensão antes de resolução. Muito expressivo.", tags: ["diminuto", "tensão", "dramático"], variations: ["Cm7(b5)"] },
+  { id: "Db-dim", name: "Db°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["Db", "E", "G"], description: "Diminuto de Ré bemol. Cria suspense e dramaticidade.", application: "Use como passagem entre acordes. Muito eficaz em cadências.", tags: ["diminuto", "tensão", "suspense"], variations: [] },
+  { id: "D-dim", name: "D°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["D", "F", "Ab"], description: "Diminuto de Ré. Som dramático e tenso.", application: "Passagem cromática antes de Em ou Eb. Muito dramático.", tags: ["diminuto", "dramático", "tensão"], variations: ["Dm7(b5)"] },
+  { id: "Eb-dim", name: "Eb°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["Eb", "Gb", "A"], description: "Diminuto de Mi bemol. Som denso e tenso.", application: "Use como acorde de passagem em tons de Ab ou Eb.", tags: ["diminuto", "denso", "tensão"], variations: [] },
+  { id: "E-dim", name: "E°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["E", "G", "Bb"], description: "Diminuto de Mi. Cria forte tensão harmônica.", application: "Muito usado antes do F ou Fm. Tom altamente expressivo.", tags: ["diminuto", "tensão", "dramático"], variations: [] },
+  { id: "F-dim", name: "F°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["F", "Ab", "B"], description: "Diminuto de Fá. Som misterioso e instável.", application: "Passagem cromática antes de F# ou G. Muito criativo.", tags: ["diminuto", "misterioso", "passagem"], variations: [] },
+  { id: "Gb-dim", name: "F#°/Gb°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["F#", "A", "C"], description: "Diminuto de Fá# / Sol bemol. Som tenso e expressivo.", application: "Substituto do G7 em alguns contextos. Muito jazz.", tags: ["diminuto", "jazz", "tensão"], variations: [] },
+  { id: "G-dim", name: "G°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["G", "Bb", "Db"], description: "Diminuto de Sol. Som sombrio e dramático.", application: "Use como passagem ou substituição de dominante.", tags: ["diminuto", "sombrio", "dramático"], variations: [] },
+  { id: "Ab-dim", name: "Ab°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["Ab", "B", "D"], description: "Diminuto de Lá bemol. Som tenso e instável.", application: "Passagem cromática antes de A ou Am. Tom de grande efeito.", tags: ["diminuto", "tensão", "passagem"], variations: [] },
+  { id: "A-dim", name: "A°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["A", "C", "Eb"], description: "Diminuto de Lá. Som intensamente tenso e dramático.", application: "Antes do Bb ou A maior. Cria muita expectativa.", tags: ["diminuto", "intenso", "dramático"], variations: ["Am7(b5)"] },
+  { id: "Bb-dim", name: "Bb°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["Bb", "Db", "E"], description: "Diminuto de Si bemol. Som escuro e expressivo.", application: "Use como substituição de dominante em tons de Bb.", tags: ["diminuto", "escuro", "expressivo"], variations: [] },
+  { id: "B-dim", name: "B°", category: "Diminutos", formula: "1 - b3 - b5", notes: ["B", "D", "F"], description: "Diminuto de Si. O diminuto mais natural ao piano. Muito tenso.", application: "VII° em Dó maior. Clássico como acorde de passagem.", tags: ["diminuto", "clássico", "tensão"], variations: ["Bm7(b5)"] },
+
+  // ─── MEIO-DIMINUTOS ─────────────────────────────────────────────────────────
+  { id: "Cm7b5", name: "Cm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["C", "Eb", "Gb", "Bb"], description: "Meio-diminuto ou m7 com quinta bemol. Som tenso com movimento suave.", application: "IIm7(b5) em Bb menor. Progressão IIm7b5-V7-Im. Essencial no jazz.", tags: ["meio-dim", "jazz", "tensão"], variations: ["C°"] },
+  { id: "Dbm7b5", name: "Dbm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["Db", "E", "G", "B"], description: "Meio-diminuto de Ré bemol. Tom incomum com grande expressividade.", application: "IIm7(b5) em B menor. Acorde de tensão sofisticado.", tags: ["meio-dim", "jazz", "incomum"], variations: [] },
+  { id: "Dm7b5", name: "Dm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["D", "F", "Ab", "C"], description: "Meio-diminuto de Ré. Som tenso e sofisticado.", application: "IIm7(b5) em Dó menor. Essencial na progressão cadencial menor.", tags: ["meio-dim", "jazz", "tensão"], variations: ["D°"] },
+  { id: "Ebm7b5", name: "Ebm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["Eb", "Gb", "A", "Db"], description: "Meio-diminuto de Mi bemol. Som escuro e expressivo.", application: "IIm7(b5) em Db menor. Tom de grande impacto.", tags: ["meio-dim", "dramático", "jazz"], variations: [] },
+  { id: "Em7b5", name: "Em7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["E", "G", "Bb", "D"], description: "Meio-diminuto de Mi. Som instável que cria muito movimento.", application: "IIm7(b5) em Ré menor. Muito usado no jazz clássico.", tags: ["meio-dim", "jazz", "movimento"], variations: [] },
+  { id: "Fm7b5", name: "Fm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["F", "Ab", "B", "Eb"], description: "Meio-diminuto de Fá. Som complexo e tenso.", application: "IIm7(b5) em Eb menor. Tom de arranjos avançados.", tags: ["meio-dim", "avançado", "tensão"], variations: [] },
+  { id: "Gbm7b5", name: "F#m7(b5)/Gbm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["F#", "A", "C", "E"], description: "Meio-diminuto de Fá#. Som muito fluido e jazzístico.", application: "IIm7(b5) em Mi menor. Muito elegante em progressões jazz.", tags: ["meio-dim", "jazz", "fluido"], variations: [] },
+  { id: "Gm7b5", name: "Gm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["G", "Bb", "Db", "F"], description: "Meio-diminuto de Sol. Som sombrio e expressivo.", application: "IIm7(b5) em Fá menor. Muito usado em jazz e bossa nova.", tags: ["meio-dim", "jazz", "bossa", "sombrio"], variations: [] },
+  { id: "Abm7b5", name: "Abm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["Ab", "B", "D", "Gb"], description: "Meio-diminuto de Lá bemol. Tom escuro e profundo.", application: "IIm7(b5) em Sol menor. Tom de forte impacto dramático.", tags: ["meio-dim", "escuro", "dramático"], variations: [] },
+  { id: "Am7b5", name: "Am7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["A", "C", "Eb", "G"], description: "Meio-diminuto de Lá. Som fluido que puxa para o dominante.", application: "IIm7(b5) em Sol menor. Clássico no jazz e gospel.", tags: ["meio-dim", "jazz", "gospel", "clássico"], variations: ["A°"] },
+  { id: "Bbm7b5", name: "Bbm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["Bb", "Db", "E", "Ab"], description: "Meio-diminuto de Si bemol. Som denso e expressivo.", application: "IIm7(b5) em Ab menor. Tom de grande expressividade.", tags: ["meio-dim", "expressivo", "denso"], variations: [] },
+  { id: "Bm7b5", name: "Bm7(b5)", category: "Meio-Diminutos", formula: "1 - b3 - b5 - b7", notes: ["B", "D", "F", "A"], description: "Meio-diminuto de Si. O meio-dim mais natural na tonalidade de Dó.", application: "IIm7(b5) em Lá menor. Muito elegante em progressões menores.", tags: ["meio-dim", "jazz", "elegante", "natural"], variations: ["B°"] },
+
+  // ─── COM 9ª ─────────────────────────────────────────────────────────────────
+  { id: "Cadd9", name: "Cadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["C", "E", "G", "D"], description: "Maior com nona acrescentada. Enriquece o C simples com suavidade e modernidade.", application: "Substitua o C maior por Cadd9 em qualquer progressão para ganhar sofisticação imediata.", tags: ["add9", "suave", "moderno", "iniciante"], variations: ["Cmaj9", "C6/9", "Csus2"] },
+  { id: "Dbadd9", name: "Dbadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["Db", "F", "Ab", "Eb"], description: "Maior com nona de Ré bemol. Som pleno e sofisticado.", application: "Muito eficaz como substituto do Db simples em progressões gospel.", tags: ["add9", "gospel", "sofisticado"], variations: ["Dbmaj9"] },
+  { id: "Dadd9", name: "Dadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["D", "F#", "A", "E"], description: "Maior com nona de Ré. Som luminoso e contemporâneo.", application: "Substitui o D simples com muito mais elegância. Ótimo em worship.", tags: ["add9", "luminoso", "worship"], variations: ["Dmaj9"] },
+  { id: "Ebadd9", name: "Ebadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["Eb", "G", "Bb", "F"], description: "Maior com nona de Mi bemol. Som grandioso e cheio.", application: "Tom favorito no gospel contemporâneo com o add9. Muito poderoso.", tags: ["add9", "gospel", "grandioso"], variations: ["Ebmaj9"] },
+  { id: "Eadd9", name: "Eadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["E", "G#", "B", "F#"], description: "Maior com nona de Mi. Som brilhante e cintilante.", application: "Substitui o E simples com muita elegância.", tags: ["add9", "brilhante", "cintilante"], variations: ["Emaj9"] },
+  { id: "Fadd9", name: "Fadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["F", "A", "C", "G"], description: "Maior com nona de Fá. Som caloroso e sofisticado.", application: "IV grau enriquecido. Muito usado em arranjos gospel e adoração.", tags: ["add9", "caloroso", "IV grau", "gospel"], variations: ["Fmaj9"] },
+  { id: "Gbadd9", name: "F#add9/Gbadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["F#", "A#", "C#", "G#"], description: "Maior com nona de Fá#. Som inusitado e criativo.", application: "Arranjos sofisticados em tons menos comuns.", tags: ["add9", "incomum", "criativo"], variations: [] },
+  { id: "Gadd9", name: "Gadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["G", "B", "D", "A"], description: "Maior com nona de Sol. Um dos add9 mais naturais e belos.", application: "Substitui o G simples com grande elegância. Muito usado em worship.", tags: ["add9", "worship", "natural", "elegante"], variations: ["Gmaj9", "G6/9"] },
+  { id: "Abadd9", name: "Abadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["Ab", "C", "Eb", "Bb"], description: "Maior com nona de Lá bemol. Som cheio e sofisticado.", application: "Tom muito rico no gospel. Enriquece progressões em Ab.", tags: ["add9", "gospel", "cheio"], variations: ["Abmaj9"] },
+  { id: "Aadd9", name: "Aadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["A", "C#", "E", "B"], description: "Maior com nona de Lá. Som brilhante e contemporâneo.", application: "Substitui o A simples com muito mais cor harmônica.", tags: ["add9", "brilhante", "contemporâneo"], variations: ["Amaj9"] },
+  { id: "Bbadd9", name: "Bbadd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["Bb", "D", "F", "C"], description: "Maior com nona de Si bemol. Som quente e sofisticado.", application: "Muito popular no gospel. Enriquece qualquer progressão em Bb.", tags: ["add9", "gospel", "quente"], variations: ["Bbmaj9"] },
+  { id: "Badd9", name: "Badd9", category: "Com 9ª", formula: "1 - 3 - 5 - 9", notes: ["B", "D#", "F#", "C#"], description: "Maior com nona de Si. Som distinto e sofisticado.", application: "Tom incomum com grande beleza harmônica.", tags: ["add9", "elegante", "incomum"], variations: ["Bmaj9"] },
+
+  // ─── COM 7ªM E 9ª ────────────────────────────────────────────────────────────
+  { id: "Cmaj9", name: "Cmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["C", "E", "G", "B", "D"], description: "Máximo de elegância: 7ª maior + 9ª. Som etéreo, grandioso e sofisticadíssimo.", application: "Momentos de clímax em adoração. Um dos acordes mais belos da harmonia tonal.", tags: ["maj9", "etéreo", "grandioso", "jazz", "gospel"], variations: ["C7M", "Cadd9", "C6/9"] },
+  { id: "Dbmaj9", name: "Dbmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["Db", "F", "Ab", "C", "Eb"], description: "Maior com 7ªM e 9ª de Ré bemol. Som pleno, luxuoso e muito sofisticado.", application: "Tom rico para momentos de clímax e grandiosidade em Db.", tags: ["maj9", "luxuoso", "sofisticado"], variations: ["Db7M"] },
+  { id: "Dmaj9", name: "Dmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["D", "F#", "A", "C#", "E"], description: "Maior com 7ªM e 9ª de Ré. Som cintilante e luxuoso.", application: "Ótimo para abertura de músicas e momentos de plenitude harmônica.", tags: ["maj9", "cintilante", "adoração"], variations: ["D7M"] },
+  { id: "Ebmaj9", name: "Ebmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["Eb", "G", "Bb", "D", "F"], description: "Maior com 7ªM e 9ª de Mi bemol. Som grandioso e envolvente.", application: "Tom clímax no gospel contemporâneo. Poderoso em momentos de adoração.", tags: ["maj9", "grandioso", "gospel", "adoração"], variations: ["Eb7M"] },
+  { id: "Emaj9", name: "Emaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["E", "G#", "B", "D#", "F#"], description: "Maior com 7ªM e 9ª de Mi. Som cristalino e grandioso.", application: "Tom raro de grande beleza. Ótimo para momentos contemplativos.", tags: ["maj9", "cristalino", "contemplativo"], variations: ["E7M"] },
+  { id: "Fmaj9", name: "Fmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["F", "A", "C", "E", "G"], description: "Maior com 7ªM e 9ª de Fá. Um dos maj9 mais usados no jazz e gospel.", application: "IV grau com máxima sofisticação. Muito belo em finais e resoluções.", tags: ["maj9", "jazz", "gospel", "belo"], variations: ["F7M", "F6/9"] },
+  { id: "Gbmaj9", name: "F#maj9/Gbmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["F#", "A#", "C#", "F", "G#"], description: "Maior com 7ªM e 9ª de Fá#. Tom muito incomum e sofisticadíssimo.", application: "Arranjos diferenciados. Surpreende pelo som único e requintado.", tags: ["maj9", "incomum", "requintado"], variations: [] },
+  { id: "Gmaj9", name: "Gmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["G", "B", "D", "F#", "A"], description: "Maior com 7ªM e 9ª de Sol. Som luminoso e grandioso.", application: "I grau com máxima beleza em Sol. Muito usado em adoração.", tags: ["maj9", "luminoso", "adoração", "gospel"], variations: ["G7M", "Gadd9"] },
+  { id: "Abmaj9", name: "Abmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["Ab", "C", "Eb", "G", "Bb"], description: "Maior com 7ªM e 9ª de Lá bemol. Som aveludado e grandioso.", application: "Tom favorito no gospel contemporâneo com máxima sofisticação.", tags: ["maj9", "gospel", "aveludado", "grandioso"], variations: ["Ab7M"] },
+  { id: "Amaj9", name: "Amaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["A", "C#", "E", "G#", "B"], description: "Maior com 7ªM e 9ª de Lá. Som brilhante e luxuoso.", application: "Tom muito versátil em jazz e gospel contemporâneo.", tags: ["maj9", "jazz", "gospel", "luxuoso"], variations: ["A7M"] },
+  { id: "Bbmaj9", name: "Bbmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["Bb", "D", "F", "A", "C"], description: "Maior com 7ªM e 9ª de Si bemol. Som quente, amplo e sofisticado.", application: "Muito popular no gospel. Tom de grande beleza e plenitude harmônica.", tags: ["maj9", "gospel", "quente", "amplo"], variations: ["Bb7M"] },
+  { id: "Bmaj9", name: "Bmaj9", category: "Com 7ªM e 9ª", formula: "1 - 3 - 5 - 7M - 9", notes: ["B", "D#", "F#", "A#", "C#"], description: "Maior com 7ªM e 9ª de Si. Som distinto e muito requintado.", application: "Tom incomum com grande impacto. Surpreende por sua raridade e beleza.", tags: ["maj9", "requintado", "elegante"], variations: [] },
+
+  // ─── COM 6ª ─────────────────────────────────────────────────────────────────
+  { id: "C6-9", name: "C6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["C", "E", "G", "A", "D"], description: "Seis-nove: combina 6ª e 9ª. Som completo, rico e muito sofisticado. Sensação de plenitude.", application: "Final de músicas e progressões. Uma das sonoridades mais belas e completas do piano.", tags: ["6/9", "completo", "jazz", "gospel", "plenitude"], variations: ["Cmaj7", "Cadd9", "C6"] },
+  { id: "Db6-9", name: "Db6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["Db", "F", "Ab", "Bb", "Eb"], description: "Seis-nove de Ré bemol. Som luxuoso e completo.", application: "Final e resoluções em Db. Tom de grande elegância.", tags: ["6/9", "luxuoso", "gospel"], variations: ["Db7M"] },
+  { id: "D6-9", name: "D6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["D", "F#", "A", "B", "E"], description: "Seis-nove de Ré. Som brilhante e pleno.", application: "Muito belo em finais e intros em Ré.", tags: ["6/9", "brilhante", "pleno"], variations: ["D7M"] },
+  { id: "Eb6-9", name: "Eb6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["Eb", "G", "Bb", "C", "F"], description: "Seis-nove de Mi bemol. Som grandioso e cheio.", application: "Muito rico no gospel. Final de músicas em Eb com máxima beleza.", tags: ["6/9", "grandioso", "gospel"], variations: ["Eb7M"] },
+  { id: "E6-9", name: "E6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["E", "G#", "B", "C#", "F#"], description: "Seis-nove de Mi. Som cintilante e pleno.", application: "Tom rico para finais e momentos de resolução em Mi.", tags: ["6/9", "cintilante", "elegante"], variations: [] },
+  { id: "F6-9", name: "F6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["F", "A", "C", "D", "G"], description: "Seis-nove de Fá. Som caloroso, rico e muito musical.", application: "IV grau com máxima beleza. Muito usado no jazz e gospel.", tags: ["6/9", "caloroso", "jazz", "gospel"], variations: ["F7M"] },
+  { id: "Gb6-9", name: "F#6/9/Gb6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["F#", "A#", "C#", "D#", "G#"], description: "Seis-nove de Fá#. Tom incomum com sonoridade muito rica.", application: "Arranjos sofisticados em tons incomuns.", tags: ["6/9", "incomum", "sofisticado"], variations: [] },
+  { id: "G6-9", name: "G6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["G", "B", "D", "E", "A"], description: "Seis-nove de Sol. Um dos 6/9 mais bonitos e usados.", application: "Final de músicas em Sol. Tom luminoso e muito elegante.", tags: ["6/9", "luminoso", "adoração", "elegante"], variations: ["G7M"] },
+  { id: "Ab6-9", name: "Ab6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["Ab", "C", "Eb", "F", "Bb"], description: "Seis-nove de Lá bemol. Som pleno e aveludado.", application: "Muito apreciado no gospel. Final rico em Ab.", tags: ["6/9", "aveludado", "gospel"], variations: ["Ab7M"] },
+  { id: "A6-9", name: "A6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["A", "C#", "E", "F#", "B"], description: "Seis-nove de Lá. Som brilhante e sofisticado.", application: "Muito versátil em jazz e gospel contemporâneo.", tags: ["6/9", "jazz", "gospel", "sofisticado"], variations: ["A7M"] },
+  { id: "Bb6-9", name: "Bb6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["Bb", "D", "F", "G", "C"], description: "Seis-nove de Si bemol. Som quente, rico e aconchegante.", application: "Tom favorito no gospel com máxima beleza e completude.", tags: ["6/9", "gospel", "quente", "rico"], variations: ["Bb7M"] },
+  { id: "B6-9", name: "B6/9", category: "Com 6ª", formula: "1 - 3 - 5 - 6 - 9", notes: ["B", "D#", "F#", "G#", "C#"], description: "Seis-nove de Si. Som distinto e muito requintado.", application: "Tom incomum com grande elegância harmônica.", tags: ["6/9", "requintado", "elegante"], variations: [] },
+
+  // ─── 7sus4 ──────────────────────────────────────────────────────────────────
+  { id: "C7sus4", name: "C7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["C", "F", "G", "Bb"], description: "Dominante suspenso com quarta. Som flutuante e expectante. Pode incluir a 9ª.", application: "Antes do F maior ou como V7 em Fá. Muito usado em gospel e funk.", tags: ["7sus4", "gospel", "groove", "dominante"], variations: ["C9sus4", "Csus4"] },
+  { id: "Db7sus4", name: "Db7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["Db", "Gb", "Ab", "B"], description: "Dominante suspenso de Ré bemol. Som amplo e etéreo.", application: "Passagem antes do Gb ou como V7 em Gb. Tom incomum e criativo.", tags: ["7sus4", "etéreo", "incomum"], variations: [] },
+  { id: "D7sus4", name: "D7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["D", "G", "A", "C"], description: "Dominante suspenso de Ré. Som aberto e flutuante.", application: "V7sus4 em Sol. Muito versátil em jazz e gospel.", tags: ["7sus4", "gospel", "jazz", "aberto"], variations: ["D9sus4"] },
+  { id: "Eb7sus4", name: "Eb7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["Eb", "Ab", "Bb", "Db"], description: "Dominante suspenso de Mi bemol. Som grandioso e esperançoso.", application: "V7sus4 em Ab. Tom muito usado no gospel com grande efeito.", tags: ["7sus4", "gospel", "grandioso"], variations: [] },
+  { id: "E7sus4", name: "E7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["E", "A", "B", "D"], description: "Dominante suspenso de Mi. Som brilhante e suspenso.", application: "V7sus4 em Lá. Muito eficaz antes do A maior.", tags: ["7sus4", "brilhante", "expectativa"], variations: [] },
+  { id: "F7sus4", name: "F7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["F", "Bb", "C", "Eb"], description: "Dominante suspenso de Fá. Som caloroso e flutuante.", application: "V7sus4 em Bb. Muito presente no gospel contemporâneo.", tags: ["7sus4", "gospel", "caloroso"], variations: ["F9sus4"] },
+  { id: "Gb7sus4", name: "F#7sus4/Gb7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["F#", "B", "C#", "E"], description: "Dominante suspenso de Fá#. Tom incomum e muito expressivo.", application: "V7sus4 em B ou Gb. Arranjos criativos e diferenciados.", tags: ["7sus4", "incomum", "expressivo"], variations: [] },
+  { id: "G7sus4", name: "G7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["G", "C", "D", "F"], description: "Dominante suspenso de Sol. Um dos 7sus4 mais naturais ao teclado.", application: "V7sus4 em Dó. Muito usado em gospel e adoração.", tags: ["7sus4", "gospel", "adoração", "natural"], variations: ["G9sus4", "Gsus4"] },
+  { id: "Ab7sus4", name: "Ab7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["Ab", "Db", "Eb", "Gb"], description: "Dominante suspenso de Lá bemol. Som pleno e suspenso.", application: "V7sus4 em Db. Tom com grande impacto no gospel.", tags: ["7sus4", "gospel", "pleno"], variations: [] },
+  { id: "A7sus4", name: "A7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["A", "D", "E", "G"], description: "Dominante suspenso de Lá. Som aberto e muito musical.", application: "V7sus4 em Ré. Muito versátil em jazz e gospel.", tags: ["7sus4", "jazz", "gospel", "musical"], variations: ["A9sus4"] },
+  { id: "Bb7sus4", name: "Bb7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["Bb", "Eb", "F", "Ab"], description: "Dominante suspenso de Si bemol. Som caloroso e amplo.", application: "V7sus4 em Eb. Tom clássico no gospel com muito groove.", tags: ["7sus4", "gospel", "groove", "clássico"], variations: ["Bb9sus4"] },
+  { id: "B7sus4", name: "B7sus4", category: "7sus4", formula: "1 - 4 - 5 - b7", notes: ["B", "E", "F#", "A"], description: "Dominante suspenso de Si. Som distinto e expressivo.", application: "V7sus4 em Mi. Tom elegante para progressões diferenciadas.", tags: ["7sus4", "expressivo", "elegante"], variations: [] },
+
+  // ─── MÃO ESQUERDA — ABERTO ──────────────────────────────────────────────────
+  { id: "C-me-aberto", name: "C (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["C", "G"], description: "Voicing aberto na mão esquerda: fundamental e quinta. Deixa espaço para a mão direita tocar as cores do acorde.", application: "Ideal quando a mão direita toca acordes completos. Cria profundidade sem poluir o espaço harmônico.", tags: ["voicing", "mão esquerda", "aberto", "técnica"], variations: ["C (Fechado ME)", "C (Misto ME)"] },
+  { id: "Db-me-aberto", name: "Db (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["Db", "Ab"], description: "Voicing aberto mão esquerda em Ré bemol.", application: "Deixa a mão direita livre para executar as extensões do acorde.", tags: ["voicing", "mão esquerda", "aberto"], variations: [] },
+  { id: "D-me-aberto", name: "D (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["D", "A"], description: "Voicing aberto mão esquerda em Ré.", application: "Cria base sólida e deixa espaço para harmonia da mão direita.", tags: ["voicing", "mão esquerda", "aberto"], variations: [] },
+  { id: "Eb-me-aberto", name: "Eb (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["Eb", "Bb"], description: "Voicing aberto mão esquerda em Mi bemol.", application: "Tom amplo. Muito eficaz no gospel com bass e quinta separados.", tags: ["voicing", "gospel", "aberto"], variations: [] },
+  { id: "E-me-aberto", name: "E (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["E", "B"], description: "Voicing aberto mão esquerda em Mi.", application: "Base profunda. Mão direita toca as notas superiores do acorde.", tags: ["voicing", "mão esquerda", "aberto"], variations: [] },
+  { id: "F-me-aberto", name: "F (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["F", "C"], description: "Voicing aberto mão esquerda em Fá.", application: "Muito usado no gospel. Abre espaço para a harmonia superior.", tags: ["voicing", "gospel", "aberto"], variations: [] },
+  { id: "Gb-me-aberto", name: "F#/Gb (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["F#", "C#"], description: "Voicing aberto mão esquerda em Fá#.", application: "Base profunda em tons menos comuns.", tags: ["voicing", "mão esquerda", "aberto"], variations: [] },
+  { id: "G-me-aberto", name: "G (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["G", "D"], description: "Voicing aberto mão esquerda em Sol. Um dos mais usados.", application: "Cria uma base sólida e ampla. Muito eficaz em adoração.", tags: ["voicing", "mão esquerda", "adoração", "aberto"], variations: [] },
+  { id: "Ab-me-aberto", name: "Ab (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["Ab", "Eb"], description: "Voicing aberto mão esquerda em Lá bemol.", application: "Base ampla e profunda no tom de Ab. Muito gospel.", tags: ["voicing", "gospel", "aberto"], variations: [] },
+  { id: "A-me-aberto", name: "A (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["A", "E"], description: "Voicing aberto mão esquerda em Lá.", application: "Cria base sólida e deixa espaço harmônico.", tags: ["voicing", "mão esquerda", "aberto"], variations: [] },
+  { id: "Bb-me-aberto", name: "Bb (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["Bb", "F"], description: "Voicing aberto mão esquerda em Si bemol.", application: "Muito usado no gospel. Base profunda e eficiente.", tags: ["voicing", "gospel", "aberto"], variations: [] },
+  { id: "B-me-aberto", name: "B (Aberto ME)", category: "Mão Esquerda — Aberto", formula: "1 - 5 (8ª)", notes: ["B", "F#"], description: "Voicing aberto mão esquerda em Si.", application: "Base profunda. Mão direita toca as notas superiores.", tags: ["voicing", "mão esquerda", "aberto"], variations: [] },
+
+  // ─── MÃO ESQUERDA — FECHADO ─────────────────────────────────────────────────
+  { id: "C-me-fechado", name: "C (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["C", "E", "G"], description: "Voicing fechado na mão esquerda: tríade completa em posição fechada. Som denso e definido.", application: "Use quando a mão direita toca melodia simples. A mão esquerda sustenta a harmonia completa.", tags: ["voicing", "mão esquerda", "fechado", "técnica"], variations: ["C (Aberto ME)", "C (Misto ME)"] },
+  { id: "Db-me-fechado", name: "Db (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["Db", "F", "Ab"], description: "Voicing fechado mão esquerda em Ré bemol.", application: "Tríade completa na mão esquerda. Harmonia densa e definida.", tags: ["voicing", "fechado"], variations: [] },
+  { id: "D-me-fechado", name: "D (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["D", "F#", "A"], description: "Voicing fechado mão esquerda em Ré.", application: "Sustenta a harmonia completa enquanto a MD faz melodia.", tags: ["voicing", "fechado"], variations: [] },
+  { id: "Eb-me-fechado", name: "Eb (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["Eb", "G", "Bb"], description: "Voicing fechado mão esquerda em Mi bemol.", application: "Muito usado no gospel. A ME define toda a harmonia em posição fechada.", tags: ["voicing", "gospel", "fechado"], variations: [] },
+  { id: "E-me-fechado", name: "E (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["E", "G#", "B"], description: "Voicing fechado mão esquerda em Mi.", application: "Tríade completa. Mão direita livre para ornamentos e melodia.", tags: ["voicing", "fechado"], variations: [] },
+  { id: "F-me-fechado", name: "F (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["F", "A", "C"], description: "Voicing fechado mão esquerda em Fá.", application: "Sustenta a harmonia. Muito eficaz em músicas de adoração.", tags: ["voicing", "adoração", "fechado"], variations: [] },
+  { id: "Gb-me-fechado", name: "F#/Gb (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["F#", "A#", "C#"], description: "Voicing fechado mão esquerda em Fá#.", application: "Tríade completa em posição fechada no tom de F#.", tags: ["voicing", "fechado"], variations: [] },
+  { id: "G-me-fechado", name: "G (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["G", "B", "D"], description: "Voicing fechado mão esquerda em Sol. Muito natural ao teclado.", application: "A ME sustenta a tríade completa. Muito usado em acompanhamentos.", tags: ["voicing", "fechado", "acompanhamento"], variations: [] },
+  { id: "Ab-me-fechado", name: "Ab (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["Ab", "C", "Eb"], description: "Voicing fechado mão esquerda em Lá bemol.", application: "Tríade completa. Harmonia definida no tom de Ab.", tags: ["voicing", "gospel", "fechado"], variations: [] },
+  { id: "A-me-fechado", name: "A (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["A", "C#", "E"], description: "Voicing fechado mão esquerda em Lá.", application: "Sustenta a harmonia completa. A MD canta a melodia.", tags: ["voicing", "fechado"], variations: [] },
+  { id: "Bb-me-fechado", name: "Bb (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["Bb", "D", "F"], description: "Voicing fechado mão esquerda em Si bemol.", application: "Muito usado no gospel. A ME define toda a tríade.", tags: ["voicing", "gospel", "fechado"], variations: [] },
+  { id: "B-me-fechado", name: "B (Fechado ME)", category: "Mão Esquerda — Fechado", formula: "1 - 3 - 5", notes: ["B", "D#", "F#"], description: "Voicing fechado mão esquerda em Si.", application: "Tríade completa de Si na mão esquerda.", tags: ["voicing", "fechado"], variations: [] },
+
+  // ─── MÃO ESQUERDA — MISTO ───────────────────────────────────────────────────
+  { id: "C-me-misto", name: "C (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["C", "G", "E"], description: "Voicing misto: combina abertura com completude. Fundamental grave, quinta e terça mais acima. Muito rico.", application: "O melhor dos dois mundos: profundidade do aberto + completude do fechado. Ideal para acompanhamentos sofisticados.", tags: ["voicing", "misto", "sofisticado", "técnica"], variations: ["C (Aberto ME)", "C (Fechado ME)"] },
+  { id: "Db-me-misto", name: "Db (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["Db", "Ab", "F"], description: "Voicing misto em Ré bemol. Som amplo e completo.", application: "Cria base profunda com a terça inserida no espaço médio.", tags: ["voicing", "misto"], variations: [] },
+  { id: "D-me-misto", name: "D (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["D", "A", "F#"], description: "Voicing misto em Ré. Som equilibrado e cheio.", application: "Profundidade + completude harmônica na mão esquerda.", tags: ["voicing", "misto"], variations: [] },
+  { id: "Eb-me-misto", name: "Eb (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["Eb", "Bb", "G"], description: "Voicing misto em Mi bemol. Som grandioso e equilibrado.", application: "Muito eficaz no gospel. Combina base profunda com harmonia rica.", tags: ["voicing", "gospel", "misto"], variations: [] },
+  { id: "E-me-misto", name: "E (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["E", "B", "G#"], description: "Voicing misto em Mi. Som equilibrado e luminoso.", application: "Profundidade com completude na mão esquerda.", tags: ["voicing", "misto", "luminoso"], variations: [] },
+  { id: "F-me-misto", name: "F (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["F", "C", "A"], description: "Voicing misto em Fá. Som caloroso e profundo.", application: "Muito usado em adoração e gospel com acompanhamento rico.", tags: ["voicing", "gospel", "misto"], variations: [] },
+  { id: "Gb-me-misto", name: "F#/Gb (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["F#", "C#", "A#"], description: "Voicing misto em Fá#.", application: "Cria base rica e equilibrada no tom de F#.", tags: ["voicing", "misto"], variations: [] },
+  { id: "G-me-misto", name: "G (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["G", "D", "B"], description: "Voicing misto em Sol. Um dos mais elegantes e usados no piano.", application: "Profundidade + completude harmônica. Muito eficaz em adoração.", tags: ["voicing", "adoração", "misto", "elegante"], variations: [] },
+  { id: "Ab-me-misto", name: "Ab (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["Ab", "Eb", "C"], description: "Voicing misto em Lá bemol. Som aveludado e profundo.", application: "Muito rico no gospel. Combina as vantagens dos dois voicings.", tags: ["voicing", "gospel", "misto", "aveludado"], variations: [] },
+  { id: "A-me-misto", name: "A (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["A", "E", "C#"], description: "Voicing misto em Lá. Som equilibrado e completo.", application: "Base profunda com terça harmônica no espaço médio.", tags: ["voicing", "misto"], variations: [] },
+  { id: "Bb-me-misto", name: "Bb (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["Bb", "F", "D"], description: "Voicing misto em Si bemol. Som quente e completo.", application: "Muito usado no gospel. Cria base profunda e harmonia rica.", tags: ["voicing", "gospel", "misto", "quente"], variations: [] },
+  { id: "B-me-misto", name: "B (Misto ME)", category: "Mão Esquerda — Misto", formula: "1 - 5 - 3 (spread)", notes: ["B", "F#", "D#"], description: "Voicing misto em Si. Som equilibrado e distinto.", application: "Cria base profunda e completa no tom de Si.", tags: ["voicing", "misto"], variations: [] },
 ];
 
 export function getChordById(id: string): Chord | undefined {
   return CHORDS.find((c) => c.id === id);
 }
 
-export function searchChords(query: string, category?: string): Chord[] {
-  let filtered = CHORDS;
-  
-  if (category && category !== "Todos") {
-    filtered = filtered.filter((c) => c.category === category);
-  }
-  
-  if (query) {
-    const lowerQuery = query.toLowerCase();
-    filtered = filtered.filter((c) => 
-      c.name.toLowerCase().includes(lowerQuery) || 
-      c.notes.some(n => n.toLowerCase().includes(lowerQuery)) ||
-      c.tags.some(t => t.toLowerCase().includes(lowerQuery))
-    );
-  }
-  
-  return filtered;
+export function searchChords(query: string, category: string): Chord[] {
+  const q = query.toLowerCase().trim();
+  return CHORDS.filter((chord) => {
+    const matchesCategory = category === "Todos" || chord.category === category;
+    if (!q) return matchesCategory;
+    const matchesQuery =
+      chord.name.toLowerCase().includes(q) ||
+      chord.notes.some((n) => n.toLowerCase().includes(q)) ||
+      chord.tags.some((t) => t.toLowerCase().includes(q)) ||
+      chord.description.toLowerCase().includes(q) ||
+      chord.category.toLowerCase().includes(q);
+    return matchesCategory && matchesQuery;
+  });
 }
