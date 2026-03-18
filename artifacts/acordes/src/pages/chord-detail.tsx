@@ -48,6 +48,7 @@ function ColorLegend() {
 function SvgOverviewPanel({ notes, category }: { notes: string[]; category: string }) {
   const { leftHand, rightHand } = splitHands(notes, category);
   const isLeftOnly = category.startsWith("Mão Esquerda");
+  const isAberto   = category === "Mão Esquerda — Aberto";
 
   return (
     <div>
@@ -59,7 +60,11 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
             <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
             <div>
               <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
-              <p className="text-sm text-white/80 font-mono">{leftHand.join(" — ")}</p>
+              <p className="text-sm text-white/80 font-mono">
+                {isAberto
+                  ? <span>{leftHand[0]} <span className="text-white/50 text-xs">(grave)</span> + {leftHand[0]} <span className="text-white/50 text-xs">(oitava)</span></span>
+                  : leftHand.join(" — ")}
+              </p>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
@@ -77,7 +82,9 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
 
         {isLeftOnly && (
           <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
-            Este voicing é executado integralmente pela mão esquerda.
+            {isAberto
+              ? "A mão esquerda toca a fundamental nas duas oitavas (grave + oitava acima)."
+              : "Este voicing é executado integralmente pela mão esquerda."}
           </p>
         )}
       </div>
