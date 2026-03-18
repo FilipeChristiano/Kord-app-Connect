@@ -9,6 +9,8 @@ import Dictionary from "@/pages/dictionary";
 import ChordDetail from "@/pages/chord-detail";
 import StudyMode from "@/pages/study";
 import Favorites from "@/pages/favorites";
+import Applications from "@/pages/applications";
+import ChordSubstitutor from "@/pages/chord-substitutor";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -20,6 +22,8 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/dicionario" component={Dictionary} />
         <Route path="/acorde/:id" component={ChordDetail} />
+        <Route path="/aplicacoes" component={Applications} />
+        <Route path="/sofisticador" component={ChordSubstitutor} />
         <Route path="/estudo" component={StudyMode} />
         <Route path="/favoritos" component={Favorites} />
         <Route component={NotFound} />

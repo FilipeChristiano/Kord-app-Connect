@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Layers, Star, Search } from "lucide-react";
+import { ArrowRight, BookOpen, Layers, Star, Search, Lightbulb, Wand2 } from "lucide-react";
 import { CHORDS, CATEGORIES } from "@/data/chords";
 
 export default function Home() {
@@ -95,19 +95,38 @@ export default function Home() {
               icon={<Search />}
               title="Busca Rápida"
               desc="Encontre acordes pelo nome ou pelas notas que o compõem instantaneamente."
+              href="/dicionario"
               delay={0.1}
             />
             <FeatureCard 
               icon={<Layers />}
-              title="Categorias Organizadas"
-              desc="Explore de acordes com nona a opções suspensas e substituições avançadas."
+              title="180 Acordes — 15 Categorias"
+              desc="Tríades, 7ªM, 9ª, 6/9, sus4, sus2, diminutos, meio-diminutos, voicings de mão esquerda e mais."
+              href="/dicionario"
               delay={0.2}
+            />
+            <FeatureCard 
+              icon={<Lightbulb />}
+              title="Guia de Aplicações"
+              desc="Para cada categoria, veja onde usar, dicas práticas e progressões de exemplo reais."
+              href="/aplicacoes"
+              delay={0.3}
+              highlight
+            />
+            <FeatureCard 
+              icon={<Wand2 />}
+              title="Sofisticador de Cifra"
+              desc="Cole a cifra de qualquer música e receba versões sofisticadas dos acordes em 3 níveis."
+              href="/sofisticador"
+              delay={0.4}
+              highlight
             />
             <FeatureCard 
               icon={<BookOpen />}
               title="Modo Estudo"
-              desc="Pratique a memorização com flashcards interativos por categoria."
-              delay={0.3}
+              desc="Pratique a memorização com flashcards interativos por categoria de acordes."
+              href="/estudo"
+              delay={0.5}
             />
           </div>
         </div>
@@ -116,20 +135,34 @@ export default function Home() {
   );
 }
 
-function FeatureCard({ icon, title, desc, delay }: { icon: React.ReactNode, title: string, desc: string, delay: number }) {
+function FeatureCard({ icon, title, desc, delay, href, highlight }: { icon: React.ReactNode, title: string, desc: string, delay: number, href?: string, highlight?: boolean }) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.5, delay }}
-      className="glass-card rounded-2xl p-8 hover:border-primary/30 transition-colors group"
+      className={`rounded-2xl p-8 transition-all group cursor-pointer ${highlight ? "bg-primary/10 border border-primary/25 hover:border-primary/50 hover:bg-primary/15" : "glass-card hover:border-primary/30"}`}
     >
-      <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
+      {href ? (
+        <Link href={href} className="block h-full">
+          <FeatureCardInner icon={icon} title={title} desc={desc} highlight={highlight} />
+        </Link>
+      ) : (
+        <FeatureCardInner icon={icon} title={title} desc={desc} highlight={highlight} />
+      )}
+    </motion.div>
+  );
+}
+
+function FeatureCardInner({ icon, title, desc, highlight }: { icon: React.ReactNode, title: string, desc: string, highlight?: boolean }) {
+  return (
+    <>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${highlight ? "bg-primary/20 text-primary" : "bg-secondary text-primary"}`}>
         {icon}
       </div>
       <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
       <p className="text-muted-foreground leading-relaxed">{desc}</p>
-    </motion.div>
+    </>
   );
 }

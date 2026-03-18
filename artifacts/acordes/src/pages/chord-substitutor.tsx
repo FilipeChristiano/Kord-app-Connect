@@ -1,0 +1,317 @@
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight } from "lucide-react";
+import { useLocation } from "wouter";
+import {
+  processChordChart,
+  SophisticationLevel,
+  ProcessedLine,
+} from "@/data/substitutions";
+
+const LEVELS: { key: SophisticationLevel; label: string; description: string; color: string }[] =
+  [
+    {
+      key: "suave",
+      label: "Suave",
+      description: "add9, m7, sus4 — primeiros passos na sofisticação",
+      color: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+    },
+    {
+      key: "intermediario",
+      label: "Intermediário",
+      description: "7M, m9, 7sus4 — nível jazz/gospel moderno",
+      color: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+    },
+    {
+      key: "avancado",
+      label: "Avançado",
+      description: "6/9, maj9, 9sus4 — harmonia de alto nível",
+      color: "border-rose-500/50 bg-rose-500/10 text-rose-400",
+    },
+  ];
+
+const EXAMPLES = [
+  { label: "Louvor simples", text: "C  G  Am  F\nC  G  F  C" },
+  { label: "Gospel em Bb", text: "Bb  Eb  F  Bb\nGm  Cm  F  Bb" },
+  { label: "Tom de G", text: "G  Em  C  D\nG  D  Em  C" },
+  { label: "Adoração em Ab", text: "Ab  Db  Eb  Ab\nFm  Db  Eb  Ab" },
+];
+
+function RenderedLine({ line, onChordClick }: { line: ProcessedLine; onChordClick: (id: string) => void }) {
+  return (
+    <span className="block whitespace-pre-wrap font-mono text-sm leading-loose">
+      {line.tokens.map((token, i) => {
+        if (token.type === "chord" && token.substitution) {
+          const sub = token.substitution;
+          return (
+            <span
+              key={i}
+              className={`inline-flex items-center gap-1 group relative cursor-pointer ${
+                sub.original !== sub.substituted
+                  ? "text-primary font-bold"
+                  : "text-white/70"
+              }`}
+              onClick={() => sub.chordId && onChordClick(sub.chordId)}
+              title={
+                sub.original !== sub.substituted
+                  ? `${sub.original} → ${sub.substituted}`
+                  : sub.original
+              }
+            >
+              <span className="bg-primary/15 border border-primary/30 rounded px-1.5 py-0.5 hover:bg-primary/25 transition-colors">
+                {sub.substituted}
+              </span>
+              {sub.original !== sub.substituted && (
+                <span className="absolute -top-6 left-0 text-[10px] text-white/40 whitespace-nowrap hidden group-hover:block bg-black/80 rounded px-1.5 py-0.5 pointer-events-none z-10">
+                  era: {sub.original}
+                </span>
+              )}
+            </span>
+          );
+        }
+        return (
+          <span key={i} className="text-white/40">
+            {token.value}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+export default function ChordSubstitutor() {
+  const [inputText, setInputText] = useState("");
+  const [level, setLevel] = useState<SophisticationLevel>("intermediario");
+  const [copied, setCopied] = useState(false);
+  const [, navigate] = useLocation();
+
+  const processed = useMemo<ProcessedLine[]>(() => {
+    if (!inputText.trim()) return [];
+    return processChordChart(inputText, level);
+  }, [inputText, level]);
+
+  const outputText = useMemo(() => {
+    return processed
+      .map((line) =>
+        line.tokens
+          .map((t) =>
+            t.type === "chord" && t.substitution ? t.substitution.substituted : t.value
+          )
+          .join("")
+      )
+      .join("\n");
+  }, [processed]);
+
+  const chordsChanged = useMemo(() => {
+    const changes: Array<{ original: string; substituted: string; category: string }> = [];
+    const seen = new Set<string>();
+    processed.forEach((line) => {
+      line.tokens.forEach((t) => {
+        if (
+          t.type === "chord" &&
+          t.substitution &&
+          t.substitution.original !== t.substitution.substituted
+        ) {
+          const key = `${t.substitution.original}→${t.substitution.substituted}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            changes.push(t.substitution);
+          }
+        }
+      });
+    });
+    return changes;
+  }, [processed]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(outputText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleChordClick = (id: string) => {
+    navigate(`/acorde/${id}`);
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+            <Wand2 className="w-5 h-5 text-primary" />
+          </div>
+          <h1 className="font-display text-3xl font-bold text-white">Sofisticador de Cifra</h1>
+        </div>
+        <p className="text-muted-foreground text-base leading-relaxed">
+          Cole a cifra de uma música e o app substitui automaticamente os acordes por versões
+          mais sofisticadas, de acordo com o nível escolhido.
+        </p>
+      </div>
+
+      {/* Level selector */}
+      <div className="mb-6">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
+          Nível de sofisticação
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {LEVELS.map((l) => (
+            <button
+              key={l.key}
+              onClick={() => setLevel(l.key)}
+              className={`flex flex-col items-start gap-1 p-4 rounded-xl border-2 transition-all text-left ${
+                level === l.key
+                  ? l.color
+                  : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:bg-white/[0.04]"
+              }`}
+            >
+              <span className="font-bold text-sm">{l.label}</span>
+              <span className={`text-xs leading-snug ${level === l.key ? "opacity-90" : "opacity-50"}`}>
+                {l.description}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Examples */}
+      <div className="mb-4">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+          Exemplos rápidos
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {EXAMPLES.map((ex) => (
+            <button
+              key={ex.label}
+              onClick={() => setInputText(ex.text)}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-all"
+            >
+              {ex.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Input / Output */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Input */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-white/50 uppercase tracking-widest">
+              Cifra original
+            </p>
+            {inputText && (
+              <button
+                onClick={() => setInputText("")}
+                className="flex items-center gap-1 text-xs text-white/30 hover:text-white/60 transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" /> Limpar
+              </button>
+            )}
+          </div>
+          <textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder={`Cole a cifra aqui...\n\nExemplo:\nC  G  Am  F\nC  G  F  C`}
+            className="flex-1 min-h-[280px] w-full bg-secondary/40 border border-white/10 rounded-xl px-5 py-4 text-white font-mono text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none leading-loose"
+          />
+        </div>
+
+        {/* Output */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-primary/70 uppercase tracking-widest">
+              Cifra sofisticada
+            </p>
+            {outputText && (
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all"
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copied ? "Copiado!" : "Copiar"}
+              </button>
+            )}
+          </div>
+
+          <div className="flex-1 min-h-[280px] bg-primary/5 border border-primary/20 rounded-xl px-5 py-4 overflow-auto">
+            {processed.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center text-muted-foreground/40">
+                  <Wand2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Cole uma cifra ao lado para ver a mágica</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-0">
+                {processed.map((line, i) => (
+                  <RenderedLine key={i} line={line} onChordClick={handleChordClick} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Changes summary */}
+      <AnimatePresence>
+        {chordsChanged.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="mt-6"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Info className="w-4 h-4 text-primary" />
+              <p className="text-xs font-bold text-primary uppercase tracking-widest">
+                Substituições realizadas ({chordsChanged.length})
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {chordsChanged.map((change, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.04 }}
+                  className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2"
+                >
+                  <span className="text-white/50 font-mono text-xs">{change.original}</span>
+                  <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                  <button
+                    onClick={() => {
+                      const ch = chordsChanged[i];
+                      if (ch) {
+                        const processed2 = processChordChart(inputText, level);
+                        const found = processed2
+                          .flatMap((l) => l.tokens)
+                          .find(
+                            (t) =>
+                              t.type === "chord" &&
+                              t.substitution?.substituted === ch.substituted &&
+                              t.substitution?.chordId
+                          );
+                        if (found?.substitution?.chordId) {
+                          handleChordClick(found.substitution.chordId);
+                        }
+                      }
+                    }}
+                    className="text-primary font-mono text-xs font-bold hover:underline"
+                  >
+                    {change.substituted}
+                  </button>
+                  <span className="text-xs text-white/30">({change.category})</span>
+                </motion.div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground/50 mt-3">
+              Clique em qualquer acorde na cifra ou nas substituições acima para ver os detalhes.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
