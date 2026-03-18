@@ -25,7 +25,7 @@ const LEVELS: { key: SophisticationLevel; label: string; description: string; co
     {
       key: "avancado",
       label: "Avançado",
-      description: "6/9, maj9, 9sus4 — harmonia de alto nível",
+      description: "6/9, 9M, 9sus4 — harmonia de alto nível",
       color: "border-rose-500/50 bg-rose-500/10 text-rose-400",
     },
   ];

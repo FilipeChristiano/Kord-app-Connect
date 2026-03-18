@@ -133,7 +133,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "Use em progressões paralelas",
         description:
-          "Progressões como C7M → Fmaj9 → G7sus4 criam movimento harmônico refinado muito comum no gospel moderno e no jazz.",
+          "Progressões como C7M → F9M → G7sus4 criam movimento harmônico refinado muito comum no gospel moderno e no jazz.",
       },
       {
         title: "Atenção ao semiton entre a 7ªM e a fundamental",
@@ -155,8 +155,8 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       },
       {
         label: "Jazz-gospel clássico",
-        chords: ["Fmaj7", "Dm7", "G7", "Cmaj7"],
-        context: "IVmaj7-IIm7-V7-Imaj7. A progressão mais elegante do jazz.",
+        chords: ["F7M", "Dm7", "G7", "C7M"],
+        context: "IV7M-IIm7-V7-I7M. A progressão mais elegante do jazz.",
       },
     ],
   },
@@ -176,12 +176,12 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "A progressão IIm7-V7-I é fundamental",
         description:
-          "Aprenda Dm7-G7-Cmaj7 em todas as tonalidades. Essa é a base do jazz e aparece em todas as músicas sofisticadas, incluindo gospel moderno.",
+          "Aprenda Dm7-G7-C7M em todas as tonalidades. Essa é a base do jazz e aparece em todas as músicas sofisticadas, incluindo gospel moderno.",
       },
       {
         title: "VIm7 como substituto suave do I",
         description:
-          "Em Dó maior, o Am7 compartilha três notas com o Cmaj7. Use o VIm7 para criar uma resolução mais suave e melancólica.",
+          "Em Dó maior, o Am7 compartilha três notas com o C7M. Use o VIm7 para criar uma resolução mais suave e melancólica.",
       },
       {
         title: "Stacking: empilhe os m7 em sequência",
@@ -192,7 +192,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
     progressions: [
       {
         label: "II-V-I clássico",
-        chords: ["Dm7", "G7", "Cmaj7"],
+        chords: ["Dm7", "G7", "C7M"],
         context:
           "A progressão mais importante da harmonia sofisticada. Aprenda em todas as tonalidades.",
       },
@@ -419,7 +419,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "Add9 vs. Maj9",
         description:
-          "O add9 (1-3-5-9) não tem a 7ª. O maj9 (1-3-5-7M-9) tem. O add9 é mais simples e mais fácil de aplicar. O maj9 é mais luxuoso.",
+          "O add9 (1-3-5-9) não tem a 7ª. O 9M (1-3-5-7M-9) tem. O add9 é mais simples e mais fácil de aplicar. O 9M é mais luxuoso.",
       },
       {
         title: "Use a 9ª na melodia da mão direita",
@@ -450,7 +450,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
     category: "Com 7ªM e 9ª",
     icon: "💎",
     summary:
-      "Os acordes com 7ªM e 9ª (maj9) são o pico da elegância harmônica. Combinam a suavidade da 7ª maior com a abertura da 9ª, criando texturas sonoras de beleza incomparável.",
+      "Os acordes com 7ªM e 9ª (9M) são o pico da elegância harmônica. Combinam a suavidade da 7ª maior com a abertura da 9ª, criando texturas sonoras de beleza incomparável.",
     contexts: [
       "Momentos climáticos em adoração e ministração",
       "Intros e finais grandiosamente belos",
@@ -460,38 +460,38 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
     ],
     tips: [
       {
-        title: "Dois acordes maj9 criam progressões mágicas",
+        title: "Dois acordes 9M criam progressões mágicas",
         description:
-          "Ab7M(9) → Eb7M(9) ou Fmaj9 → Cmaj9 são progressões de dois acordes que criam atmosferas belíssimas. Menos é mais quando os acordes são ricos.",
+          "Ab7M(9) → Eb7M(9) ou F9M → C9M são progressões de dois acordes que criam atmosferas belíssimas. Menos é mais quando os acordes são ricos.",
       },
       {
-        title: "Use voicings abertos para o maj9",
+        title: "Use voicings abertos para o 9M",
         description:
-          "Com 5 notas, o maj9 pode ficar denso. Omita a quinta (1-3-7M-9) para um voicing mais aberto e musical. Isso é o que os pianistas de jazz fazem.",
+          "Com 5 notas, o 9M pode ficar denso. Omita a quinta (1-3-7M-9) para um voicing mais aberto e musical. Isso é o que os pianistas de jazz fazem.",
       },
       {
         title: "Maj9 como I e IV grau",
         description:
-          "Na tonalidade de Dó: Cmaj9 (I) e Fmaj9 (IV) criam a base de uma harmonia extremamente refinada. Adicione um G7sus4 e você tem uma progressão de nível profissional.",
+          "Na tonalidade de Dó: C9M (I) e F9M (IV) criam a base de uma harmonia extremamente refinada. Adicione um G7sus4 e você tem uma progressão de nível profissional.",
       },
     ],
     progressions: [
       {
         label: "Progressão ultra-elegante",
-        chords: ["Cmaj9", "Fmaj9", "G7sus4", "Cmaj9"],
+        chords: ["C9M", "F9M", "G7sus4", "C9M"],
         context:
-          "Imaj9-IVmaj9-V7sus4-Imaj9. Progressão de altíssimo nível harmônico.",
+          "I9M-IV9M-V7sus4-I9M. Progressão de altíssimo nível harmônico.",
       },
       {
         label: "Dois acordes de adoração",
-        chords: ["Abmaj9", "Ebmaj9"],
+        chords: ["Ab9M", "Eb9M"],
         context:
-          "Imaj9-V/IV. Riqueza harmônica em apenas dois acordes. Eterno.",
+          "I9M-V/IV. Riqueza harmônica em apenas dois acordes. Eterno.",
       },
       {
         label: "Jazz gospel completo",
-        chords: ["Fmaj9", "Em7", "Am7", "Dm7", "G7", "Cmaj9"],
-        context: "Progressão jazz completa terminando em Imaj9 grandioso.",
+        chords: ["F9M", "Em7", "Am7", "Dm7", "G7", "C9M"],
+        context: "Progressão jazz completa terminando em I9M grandioso.",
       },
     ],
   },
@@ -511,12 +511,12 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "Use o 6/9 no final das músicas",
         description:
-          "Em vez de terminar em C simples ou Cmaj7, finalize em C6/9. Isso dá uma sensação de completude e beleza que o acorde simples não consegue.",
+          "Em vez de terminar em C simples ou C7M, finalize em C6/9. Isso dá uma sensação de completude e beleza que o acorde simples não consegue.",
       },
       {
         title: "O 6/9 é estável — não tem sétima",
         description:
-          "Diferente do maj7 (que tem uma tensão suave), o 6/9 é perfeitamente estável. Isso o torna ideal para finais prolongados e texturas estáticas.",
+          "Diferente do 7M (que tem uma tensão suave), o 6/9 é perfeitamente estável. Isso o torna ideal para finais prolongados e texturas estáticas.",
       },
       {
         title: "Combine 6/9 com pedal na fundamental",
@@ -560,7 +560,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "7sus4 → I7M é uma das cadências mais belas",
         description:
-          "Em vez de G7→C, tente G7sus4→Cmaj9. Esse movimento do 7sus4 para o maj9 é extremamente sofisticado e muito usado no gospel moderno.",
+          "Em vez de G7→C, tente G7sus4→C9M. Esse movimento do 7sus4 para o 9M é extremamente sofisticado e muito usado no gospel moderno.",
       },
       {
         title: "Adicione a 9ª ao 7sus4 para o 9sus4",
@@ -587,8 +587,8 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       },
       {
         label: "Resolução luxuosa",
-        chords: ["G9sus4", "Cmaj9"],
-        context: "9sus4 → maj9. O movimento cadencial mais elegante do gospel.",
+        chords: ["G9sus4", "C9M"],
+        context: "9sus4 → 9M. O movimento cadencial mais elegante do gospel.",
       },
     ],
   },
