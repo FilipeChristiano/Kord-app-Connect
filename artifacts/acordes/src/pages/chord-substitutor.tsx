@@ -256,34 +256,40 @@ export default function ChordSubstitutor() {
             <p className="text-xs font-bold text-primary/70 uppercase tracking-widest">
               Cifra sofisticada
             </p>
-            {outputText && (
-              <div className="flex items-center gap-2">
-                {/* Botão salvar cifra */}
-                <button
-                  onClick={salvoId ? undefined : handleAbrirModal}
-                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
-                    salvoId
-                      ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400 cursor-default"
-                      : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
-                  }`}
-                >
-                  {salvoId ? (
-                    <><BookmarkCheck className="w-3 h-3" /> Salva!</>
-                  ) : (
-                    <><Heart className="w-3 h-3" /> Salvar cifra</>
-                  )}
-                </button>
+            <div className="flex items-center gap-2">
+              {/* Botão salvar cifra — sempre visível */}
+              <button
+                disabled={!outputText}
+                onClick={salvoId ? undefined : handleAbrirModal}
+                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
+                  !outputText
+                    ? "border-white/10 text-white/20 cursor-not-allowed"
+                    : salvoId
+                    ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400 cursor-default"
+                    : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/25 cursor-pointer"
+                }`}
+              >
+                {salvoId ? (
+                  <><BookmarkCheck className="w-3 h-3" /> Salva!</>
+                ) : (
+                  <><Heart className={`w-3 h-3 ${outputText ? "fill-rose-400" : ""}`} /> Salvar cifra</>
+                )}
+              </button>
 
-                {/* Botão copiar */}
-                <button
-                  onClick={handleCopy}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all"
-                >
-                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copied ? "Copiado!" : "Copiar"}
-                </button>
-              </div>
-            )}
+              {/* Botão copiar — sempre visível */}
+              <button
+                disabled={!outputText}
+                onClick={handleCopy}
+                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
+                  !outputText
+                    ? "border-white/10 text-white/20 cursor-not-allowed"
+                    : "bg-primary/20 border-primary/30 text-primary hover:bg-primary/30 cursor-pointer"
+                }`}
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copied ? "Copiado!" : "Copiar"}
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 min-h-[280px] bg-primary/5 border border-primary/20 rounded-xl px-5 py-4 overflow-auto">
