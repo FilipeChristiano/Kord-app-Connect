@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight } from "lucide-react";
+import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight, Heart, BookmarkCheck } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   processChordChart,
   SophisticationLevel,
   ProcessedLine,
 } from "@/data/substitutions";
+import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 
 const LEVELS: { key: SophisticationLevel; label: string; description: string; color: string }[] =
   [
@@ -84,6 +85,12 @@ export default function ChordSubstitutor() {
   const [level, setLevel] = useState<SophisticationLevel>("intermediario");
   const [copied, setCopied] = useState(false);
   const [, navigate] = useLocation();
+  const { salvarCifra } = useCifrasFavoritas();
+
+  const [salvando, setSalvando] = useState(false);
+  const [salvoId, setSalvoId] = useState<string | null>(null);
+  const [tituloInput, setTituloInput] = useState("");
+  const [showTituloModal, setShowTituloModal] = useState(false);
 
   const processed = useMemo<ProcessedLine[]>(() => {
     if (!inputText.trim()) return [];
@@ -134,6 +141,31 @@ export default function ChordSubstitutor() {
     navigate(`/acorde/${id}`);
   };
 
+  const handleAbrirModal = () => {
+    const primeiraLinha = inputText.trim().split("\n")[0].trim();
+    setTituloInput(primeiraLinha || "Minha cifra sofisticada");
+    setShowTituloModal(true);
+    setSalvando(false);
+    setSalvoId(null);
+  };
+
+  const handleConfirmarSalvar = () => {
+    if (!outputText || salvando) return;
+    setSalvando(true);
+    const id = salvarCifra({
+      titulo: tituloInput.trim() || "Cifra sem título",
+      textoOriginal: inputText,
+      textoSofisticado: outputText,
+      nivel: level,
+      mudancas: chordsChanged,
+    });
+    setSalvoId(id);
+    setSalvando(false);
+    setShowTituloModal(false);
+  };
+
+  const levelAtual = LEVELS.find((l) => l.key === level);
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
       {/* Header */}
@@ -159,7 +191,7 @@ export default function ChordSubstitutor() {
           {LEVELS.map((l) => (
             <button
               key={l.key}
-              onClick={() => setLevel(l.key)}
+              onClick={() => { setLevel(l.key); setSalvoId(null); }}
               className={`flex flex-col items-start gap-1 p-4 rounded-xl border-2 transition-all text-left ${
                 level === l.key
                   ? l.color
@@ -184,7 +216,7 @@ export default function ChordSubstitutor() {
           {EXAMPLES.map((ex) => (
             <button
               key={ex.label}
-              onClick={() => setInputText(ex.text)}
+              onClick={() => { setInputText(ex.text); setSalvoId(null); }}
               className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-all"
             >
               {ex.label}
@@ -203,7 +235,7 @@ export default function ChordSubstitutor() {
             </p>
             {inputText && (
               <button
-                onClick={() => setInputText("")}
+                onClick={() => { setInputText(""); setSalvoId(null); }}
                 className="flex items-center gap-1 text-xs text-white/30 hover:text-white/60 transition-colors"
               >
                 <RotateCcw className="w-3 h-3" /> Limpar
@@ -212,7 +244,7 @@ export default function ChordSubstitutor() {
           </div>
           <textarea
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={(e) => { setInputText(e.target.value); setSalvoId(null); }}
             placeholder={`Cole a cifra aqui...\n\nExemplo:\nC  G  Am  F\nC  G  F  C`}
             className="flex-1 min-h-[280px] w-full bg-secondary/40 border border-white/10 rounded-xl px-5 py-4 text-white font-mono text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none leading-loose"
           />
@@ -225,13 +257,32 @@ export default function ChordSubstitutor() {
               Cifra sofisticada
             </p>
             {outputText && (
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all"
-              >
-                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                {copied ? "Copiado!" : "Copiar"}
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Botão salvar cifra */}
+                <button
+                  onClick={salvoId ? undefined : handleAbrirModal}
+                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
+                    salvoId
+                      ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400 cursor-default"
+                      : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
+                  }`}
+                >
+                  {salvoId ? (
+                    <><BookmarkCheck className="w-3 h-3" /> Salva!</>
+                  ) : (
+                    <><Heart className="w-3 h-3" /> Salvar cifra</>
+                  )}
+                </button>
+
+                {/* Botão copiar */}
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all"
+                >
+                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied ? "Copiado!" : "Copiar"}
+                </button>
+              </div>
             )}
           </div>
 
@@ -309,6 +360,64 @@ export default function ChordSubstitutor() {
             <p className="text-xs text-muted-foreground/50 mt-3">
               Clique em qualquer acorde na cifra ou nas substituições acima para ver os detalhes.
             </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: nomear cifra antes de salvar */}
+      <AnimatePresence>
+        {showTituloModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowTituloModal(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/20 flex items-center justify-center">
+                  <Heart className="w-4 h-4 text-rose-400" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-white text-lg">Salvar cifra sofisticada</h2>
+                  <p className="text-xs text-muted-foreground">Nível: {levelAtual?.label}</p>
+                </div>
+              </div>
+
+              <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
+                Nome da cifra
+              </label>
+              <input
+                autoFocus
+                type="text"
+                value={tituloInput}
+                onChange={(e) => setTituloInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleConfirmarSalvar(); }}
+                placeholder="Ex: Louvor em C — Gospel Intermediário"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-5"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowTituloModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm font-medium hover:bg-white/5 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmarSalvar}
+                  className="flex-1 py-2.5 rounded-xl bg-rose-500/80 hover:bg-rose-500 text-white text-sm font-bold transition-all flex items-center justify-center gap-2"
+                >
+                  <Heart className="w-4 h-4" /> Salvar
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

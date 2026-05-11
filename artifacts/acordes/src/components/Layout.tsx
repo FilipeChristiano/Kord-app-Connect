@@ -3,11 +3,14 @@ import { Link, useLocation } from "wouter";
 import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { favoritesCount } = useFavorites();
+  const { cifrasCount } = useCifrasFavoritas();
+  const totalFavoritos = favoritesCount + cifrasCount;
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -22,7 +25,7 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: "/aplicacoes", label: "Aplicações", icon: Lightbulb },
     { href: "/sofisticador", label: "Sofisticador", icon: Wand2 },
     { href: "/estudo", label: "Modo Estudo", icon: BookOpen },
-    { href: "/favoritos", label: "Favoritos", icon: Heart, badge: favoritesCount },
+    { href: "/favoritos", label: "Favoritos", icon: Heart, badge: totalFavoritos },
   ];
 
   return (
