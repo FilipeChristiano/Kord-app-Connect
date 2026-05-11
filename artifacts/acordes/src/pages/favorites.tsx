@@ -48,7 +48,7 @@ function CifraModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 bg-black/70 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
@@ -82,40 +82,20 @@ function CifraModal({
           </button>
         </div>
 
-        {/* Corpo: cifras lado a lado */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6">
-          {/* Original */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Cifra original</p>
-              <button
-                onClick={() => copy(cifra.textoOriginal, "original")}
-                className="flex items-center gap-1 text-xs text-white/30 hover:text-white/70 transition-colors"
-              >
-                {copied === "original" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                {copied === "original" ? "Copiado!" : "Copiar"}
-              </button>
-            </div>
-            <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-4 font-mono text-sm text-white/60 leading-loose whitespace-pre-wrap min-h-[160px]">
-              {cifra.textoOriginal}
-            </div>
+        {/* Corpo: apenas cifra sofisticada */}
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold text-primary/80 uppercase tracking-widest">Cifra sofisticada</p>
+            <button
+              onClick={() => copy(cifra.textoSofisticado, "sofisticada")}
+              className="flex items-center gap-1.5 text-xs text-primary/60 hover:text-primary transition-colors"
+            >
+              {copied === "sofisticada" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied === "sofisticada" ? "Copiado!" : "Copiar cifra"}
+            </button>
           </div>
-
-          {/* Sofisticada */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-primary/80 uppercase tracking-widest">Cifra sofisticada</p>
-              <button
-                onClick={() => copy(cifra.textoSofisticado, "sofisticada")}
-                className="flex items-center gap-1 text-xs text-primary/60 hover:text-primary transition-colors"
-              >
-                {copied === "sofisticada" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                {copied === "sofisticada" ? "Copiado!" : "Copiar"}
-              </button>
-            </div>
-            <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-4 font-mono text-sm text-white/80 leading-loose whitespace-pre-wrap min-h-[160px]">
-              {cifra.textoSofisticado}
-            </div>
+          <div className="bg-primary/5 border border-primary/20 rounded-xl px-5 py-5 font-mono text-sm text-white/90 leading-loose whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+            {cifra.textoSofisticado}
           </div>
         </div>
 
