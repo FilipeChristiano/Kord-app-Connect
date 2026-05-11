@@ -9,7 +9,7 @@ export interface CifraFavorita {
   textoSofisticado: string;
   nivel: "suave" | "intermediario" | "avancado";
   salvoEm: number;
-  mudancas: Array<{ original: string; substituted: string; category: string }>;
+  mudancas: Array<{ original: string; substituted: string; category: string; chordId?: string }>;
 }
 
 function loadCifras(): CifraFavorita[] {

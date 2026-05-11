@@ -110,7 +110,7 @@ export default function ChordSubstitutor() {
   }, [processed]);
 
   const chordsChanged = useMemo(() => {
-    const changes: Array<{ original: string; substituted: string; category: string }> = [];
+    const changes: Array<{ original: string; substituted: string; category: string; chordId?: string }> = [];
     const seen = new Set<string>();
     processed.forEach((line) => {
       line.tokens.forEach((t) => {

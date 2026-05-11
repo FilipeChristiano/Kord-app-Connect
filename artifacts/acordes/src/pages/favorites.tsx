@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { Heart, Search, Music2, Wand2, Trash2, ArrowRight, Copy, Check, BookOpen } from "lucide-react";
+import {
+  Heart, Search, Music2, Wand2, Trash2, ArrowRight,
+  Copy, Check, X, FileText, ArrowLeft, ExternalLink,
+} from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { CHORDS } from "@/data/chords";
 import { ChordCard } from "@/components/ChordCard";
@@ -13,13 +16,195 @@ const NIVEL_LABELS: Record<string, { label: string; color: string }> = {
   avancado: { label: "Avançado", color: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
 };
 
-function CifraCard({ cifra, onRemover }: { cifra: CifraFavorita; onRemover: (id: string) => void }) {
+/* ─── Modal de visualização completa ───────────────────────────────────────── */
+function CifraModal({
+  cifra,
+  onClose,
+  onRemover,
+}: {
+  cifra: CifraFavorita;
+  onClose: () => void;
+  onRemover: (id: string) => void;
+}) {
   const [, navigate] = useLocation();
+  const [copied, setCopied] = useState<"original" | "sofisticada" | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const nivel = NIVEL_LABELS[cifra.nivel] ?? NIVEL_LABELS.intermediario;
+
+  const copy = (text: string, which: "original" | "sofisticada") => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(which);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
+  const handleDelete = () => {
+    onRemover(cifra.id);
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 bg-black/70 backdrop-blur-sm overflow-y-auto"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ scale: 0.94, opacity: 0, y: 16 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.94, opacity: 0, y: 16 }}
+        className="bg-[#12121f] border border-white/10 rounded-2xl w-full max-w-3xl shadow-2xl mb-8"
+      >
+        {/* Header do modal */}
+        <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4 border-b border-white/10">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${nivel.color}`}>
+                {nivel.label}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {new Date(cifra.salvoEm).toLocaleDateString("pt-BR", {
+                  day: "2-digit", month: "short", year: "numeric",
+                })}
+              </span>
+            </div>
+            <h2 className="font-display font-bold text-white text-xl leading-tight">
+              {cifra.titulo}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 hover:text-white transition-all shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Corpo: cifras lado a lado */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6">
+          {/* Original */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Cifra original</p>
+              <button
+                onClick={() => copy(cifra.textoOriginal, "original")}
+                className="flex items-center gap-1 text-xs text-white/30 hover:text-white/70 transition-colors"
+              >
+                {copied === "original" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copied === "original" ? "Copiado!" : "Copiar"}
+              </button>
+            </div>
+            <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-4 font-mono text-sm text-white/60 leading-loose whitespace-pre-wrap min-h-[160px]">
+              {cifra.textoOriginal}
+            </div>
+          </div>
+
+          {/* Sofisticada */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-primary/80 uppercase tracking-widest">Cifra sofisticada</p>
+              <button
+                onClick={() => copy(cifra.textoSofisticado, "sofisticada")}
+                className="flex items-center gap-1 text-xs text-primary/60 hover:text-primary transition-colors"
+              >
+                {copied === "sofisticada" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copied === "sofisticada" ? "Copiado!" : "Copiar"}
+              </button>
+            </div>
+            <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-4 font-mono text-sm text-white/80 leading-loose whitespace-pre-wrap min-h-[160px]">
+              {cifra.textoSofisticado}
+            </div>
+          </div>
+        </div>
+
+        {/* Substituições */}
+        {cifra.mudancas.length > 0 && (
+          <div className="px-6 pb-4">
+            <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-3">
+              Substituições realizadas ({cifra.mudancas.length})
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {cifra.mudancas.map((m, i) => (
+                <button
+                  key={i}
+                  onClick={() => m.chordId && navigate(`/acorde/${m.chordId}`)}
+                  disabled={!m.chordId}
+                  className={`flex items-center gap-1.5 bg-white/[0.04] border border-white/10 rounded-lg px-3 py-1.5 transition-colors ${
+                    m.chordId ? "hover:bg-white/[0.08] cursor-pointer" : "cursor-default"
+                  }`}
+                >
+                  <span className="text-white/40 font-mono text-xs">{m.original}</span>
+                  <ArrowRight className="w-3 h-3 text-white/20" />
+                  <span className="text-primary font-mono text-xs font-bold">{m.substituted}</span>
+                  {m.chordId && <ExternalLink className="w-2.5 h-2.5 text-white/20" />}
+                </button>
+              ))}
+            </div>
+            {cifra.mudancas.some((m) => m.chordId) && (
+              <p className="text-[11px] text-white/20 mt-2">
+                Clique em um acorde para ver os detalhes no dicionário.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Rodapé do modal */}
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/10">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </button>
+
+          {confirmDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/40">Excluir esta cifra?</span>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-white/40 hover:bg-white/5"
+              >
+                Não
+              </button>
+              <button
+                onClick={handleDelete}
+                className="text-xs px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30"
+              >
+                Sim, excluir
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 text-xs text-white/30 hover:text-red-400 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Excluir cifra
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─── Card da cifra ─────────────────────────────────────────────────────────── */
+function CifraCard({
+  cifra,
+  onRemover,
+  onAbrir,
+}: {
+  cifra: CifraFavorita;
+  onRemover: (id: string) => void;
+  onAbrir: (cifra: CifraFavorita) => void;
+}) {
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const nivel = NIVEL_LABELS[cifra.nivel] ?? NIVEL_LABELS.intermediario;
 
-  const handleCopy = () => {
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(cifra.textoSofisticado).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -34,12 +219,13 @@ function CifraCard({ cifra, onRemover }: { cifra: CifraFavorita; onRemover: (id:
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-white/20 transition-all"
+      onClick={() => onAbrir(cifra)}
+      className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-primary/30 hover:bg-white/[0.05] transition-all cursor-pointer group"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-display font-bold text-white text-base leading-tight truncate">
+          <h3 className="font-display font-bold text-white text-base leading-tight truncate group-hover:text-primary transition-colors">
             {cifra.titulo}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -54,40 +240,36 @@ function CifraCard({ cifra, onRemover }: { cifra: CifraFavorita; onRemover: (id:
       </div>
 
       {/* Preview da cifra sofisticada */}
-      <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 font-mono text-xs text-white/70 leading-loose overflow-hidden max-h-[100px]">
-        {linhas.slice(0, 4).map((linha, i) => (
+      <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 font-mono text-xs text-white/70 leading-loose overflow-hidden max-h-[90px]">
+        {linhas.slice(0, 3).map((linha, i) => (
           <span key={i} className="block whitespace-pre-wrap">{linha || "\u00A0"}</span>
         ))}
-        {linhas.length > 4 && (
-          <span className="text-white/30">+ {linhas.length - 4} linhas...</span>
+        {linhas.length > 3 && (
+          <span className="text-white/30">+ {linhas.length - 3} linhas...</span>
         )}
       </div>
 
-      {/* Substituições */}
+      {/* Substituições resumidas */}
       {cifra.mudancas.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {cifra.mudancas.slice(0, 6).map((m, i) => (
-            <button
+          {cifra.mudancas.slice(0, 5).map((m, i) => (
+            <span
               key={i}
-              onClick={() => {
-                const chordId = m.substituted.replace(/[^a-zA-Z0-9#b]/g, "").toLowerCase();
-                navigate(`/acorde/${encodeURIComponent(m.substituted)}`);
-              }}
-              className="flex items-center gap-1 bg-white/[0.04] border border-white/10 rounded-md px-2 py-1 hover:bg-white/[0.08] transition-colors"
+              className="flex items-center gap-1 bg-white/[0.04] border border-white/10 rounded-md px-2 py-0.5"
             >
               <span className="text-white/40 text-[10px] font-mono">{m.original}</span>
-              <ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
+              <ArrowRight className="w-2 h-2 text-muted-foreground" />
               <span className="text-primary text-[10px] font-mono font-bold">{m.substituted}</span>
-            </button>
+            </span>
           ))}
-          {cifra.mudancas.length > 6 && (
-            <span className="text-[10px] text-white/30 self-center">+{cifra.mudancas.length - 6}</span>
+          {cifra.mudancas.length > 5 && (
+            <span className="text-[10px] text-white/30 self-center">+{cifra.mudancas.length - 5}</span>
           )}
         </div>
       )}
 
       {/* Ações */}
-      <div className="flex gap-2 mt-auto pt-1">
+      <div className="flex gap-2 mt-auto pt-1" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={handleCopy}
           className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all"
@@ -96,24 +278,31 @@ function CifraCard({ cifra, onRemover }: { cifra: CifraFavorita; onRemover: (id:
           {copied ? "Copiado!" : "Copiar cifra"}
         </button>
 
+        <button
+          onClick={() => onAbrir(cifra)}
+          className="flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white transition-all"
+        >
+          <FileText className="w-3.5 h-3.5" /> Ver completa
+        </button>
+
         {confirmDelete ? (
           <div className="flex gap-1">
             <button
-              onClick={() => setConfirmDelete(false)}
-              className="text-xs px-3 py-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 transition-all"
+              onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
+              className="text-xs px-2 py-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5"
             >
               Não
             </button>
             <button
-              onClick={() => onRemover(cifra.id)}
-              className="text-xs px-3 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all"
+              onClick={(e) => { e.stopPropagation(); onRemover(cifra.id); }}
+              className="text-xs px-2 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30"
             >
-              Sim, excluir
+              Excluir
             </button>
           </div>
         ) : (
           <button
-            onClick={() => setConfirmDelete(true)}
+            onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
             className="p-2 rounded-lg border border-white/10 text-white/30 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -124,10 +313,12 @@ function CifraCard({ cifra, onRemover }: { cifra: CifraFavorita; onRemover: (id:
   );
 }
 
+/* ─── Página principal ──────────────────────────────────────────────────────── */
 type Tab = "acordes" | "cifras";
 
 export default function Favorites() {
   const [tab, setTab] = useState<Tab>("acordes");
+  const [cifraAberta, setCifraAberta] = useState<CifraFavorita | null>(null);
   const { favorites, favoritesCount } = useFavorites();
   const { cifras, cifrasCount, removerCifra } = useCifrasFavoritas();
 
@@ -161,9 +352,7 @@ export default function Favorites() {
         <button
           onClick={() => setTab("acordes")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            tab === "acordes"
-              ? "bg-white/10 text-white"
-              : "text-muted-foreground hover:text-white"
+            tab === "acordes" ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white"
           }`}
         >
           <Music2 className="w-4 h-4" />
@@ -177,9 +366,7 @@ export default function Favorites() {
         <button
           onClick={() => setTab("cifras")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            tab === "cifras"
-              ? "bg-white/10 text-white"
-              : "text-muted-foreground hover:text-white"
+            tab === "cifras" ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white"
           }`}
         >
           <Wand2 className="w-4 h-4" />
@@ -239,7 +426,12 @@ export default function Favorites() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 <AnimatePresence>
                   {cifras.map((cifra) => (
-                    <CifraCard key={cifra.id} cifra={cifra} onRemover={removerCifra} />
+                    <CifraCard
+                      key={cifra.id}
+                      cifra={cifra}
+                      onRemover={removerCifra}
+                      onAbrir={setCifraAberta}
+                    />
                   ))}
                 </AnimatePresence>
               </div>
@@ -262,6 +454,17 @@ export default function Favorites() {
               </div>
             )}
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de visualização */}
+      <AnimatePresence>
+        {cifraAberta && (
+          <CifraModal
+            cifra={cifraAberta}
+            onClose={() => setCifraAberta(null)}
+            onRemover={(id) => { removerCifra(id); setCifraAberta(null); }}
+          />
         )}
       </AnimatePresence>
     </div>
