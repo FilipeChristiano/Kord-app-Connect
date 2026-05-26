@@ -52,7 +52,29 @@ const CHORD_SVG_OVERRIDES = new Set([
   // Tríades Menores
   "Cm", "Dbm", "Dm", "Ebm", "Em", "Fm",
   "Gbm", "Gm", "Abm", "Am", "Bbm", "Bm",
+  // Maiores com 7ªM
+  "C7M", "Db7M", "D7M", "Eb7M", "E7M", "F7M",
+  "Gb7M", "G7M", "Ab7M", "A7M", "Bb7M", "B7M",
 ]);
+
+// ── Voicings para acordes de 4 notas (7M, m7, etc.) ──────────────────────────
+interface Voicing {
+  label: string;
+  leftHand: string[];
+  rightHand: string[];
+}
+
+function computeVoicings4(notes: string[]): Voicing[] {
+  // notes = [R, 3, 5, 7] em ordem ascendente de grau
+  const [n0, n1, n2, n3] = notes;
+  return [
+    { label: "Posição fundamental", leftHand: [n0, n2], rightHand: [n0, n1, n2, n3] },
+    { label: "1ª inversão",         leftHand: [n1, n3], rightHand: [n1, n2, n3, n0] },
+    { label: "2ª inversão",         leftHand: [n2, n0], rightHand: [n2, n3, n0, n1] },
+    { label: "3ª inversão",         leftHand: [n3, n1], rightHand: [n3, n0, n1, n2] },
+    { label: "Shell voicing",       leftHand: [n0, n1], rightHand: [n2, n3]          },
+  ];
+}
 
 // ── Painel SVG para acordes básicos (usados como override) ────────────────────
 function SvgOverviewPanel({ notes, category }: { notes: string[]; category: string }) {
@@ -99,6 +121,94 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
               : "Este voicing é executado integralmente pela mão esquerda."}
           </p>
         )}
+      </div>
+      <ColorLegend />
+    </div>
+  );
+}
+
+// ── Painel SVG com 5 variações (acordes de 4 notas) ───────────────────────────
+function SvgVariationPanel({ notes }: { notes: string[] }) {
+  const [active, setActive] = useState(0);
+  const voicings = computeVoicings4(notes);
+  const v = voicings[active];
+
+  return (
+    <div>
+      {/* Tabs desktop */}
+      <div className="mb-3">
+        <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-white/5">
+          {voicings.map((vo, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              className={cn(
+                "flex-1 px-2 py-2 rounded-lg text-xs font-semibold transition-all duration-200",
+                active === i
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+              )}
+            >
+              Variação {i + 1}
+            </button>
+          ))}
+        </div>
+
+        {/* Navegação mobile */}
+        <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-white/5">
+          <button
+            onClick={() => setActive((a) => (a - 1 + voicings.length) % voicings.length)}
+            className="p-1 text-muted-foreground hover:text-white"
+            aria-label="Variação anterior"
+          ><ChevronLeft className="w-5 h-5" /></button>
+          <span className="text-sm font-semibold text-white">
+            Variação {active + 1} <span className="text-muted-foreground font-normal">/ {voicings.length}</span>
+          </span>
+          <button
+            onClick={() => setActive((a) => (a + 1) % voicings.length)}
+            className="p-1 text-muted-foreground hover:text-white"
+            aria-label="Próxima variação"
+          ><ChevronRight className="w-5 h-5" /></button>
+        </div>
+      </div>
+
+      <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
+        <p className="text-center text-xs text-muted-foreground mb-3 font-medium">{v.label}</p>
+        <PianoKeyboard
+          leftHandNotes={v.leftHand}
+          rightHandNotes={v.rightHand}
+        />
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+            <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
+            <div>
+              <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
+              <p className="text-sm text-white/80 font-mono">{v.leftHand.join(" — ")}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
+            <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 ring-2 ring-orange-400/30" />
+            <div>
+              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
+              <p className="text-sm text-white/80 font-mono">{v.rightHand.join(" — ")}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Indicadores */}
+      <div className="flex justify-center gap-1.5 mt-3">
+        {voicings.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(i)}
+            className={cn(
+              "h-2 rounded-full transition-all duration-200",
+              i === active ? "bg-primary w-4" : "bg-white/20 w-2 hover:bg-white/40"
+            )}
+            aria-label={`Variação ${i + 1}`}
+          />
+        ))}
       </div>
       <ColorLegend />
     </div>
@@ -244,7 +354,9 @@ export default function ChordDetail() {
           </h3>
 
           {CHORD_SVG_OVERRIDES.has(chord.id)
-            ? <SvgOverviewPanel notes={chord.notes} category={chord.category} />
+            ? chord.notes.length >= 4
+              ? <SvgVariationPanel notes={chord.notes} />
+              : <SvgOverviewPanel notes={chord.notes} category={chord.category} />
             : hasVariations
               ? <ImageVariationPanel images={getChordVariationImages(chord.id)!} />
               : hasOverview
