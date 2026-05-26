@@ -45,7 +45,11 @@ function ColorLegend() {
 }
 
 // ── Acordes que usam SVG em vez de imagem do PDF ──────────────────────────────
-const CHORD_SVG_OVERRIDES = new Set(["C-maior"]);
+const CHORD_SVG_OVERRIDES = new Set([
+  // Tríades Maiores
+  "C-maior", "Db-maior", "D-maior", "Eb-maior", "E-maior", "F-maior",
+  "Gb-maior", "G-maior", "Ab-maior", "A-maior", "Bb-maior", "B-maior",
+]);
 
 // ── Painel SVG para acordes básicos (usados como override) ────────────────────
 function SvgOverviewPanel({ notes, category }: { notes: string[]; category: string }) {
