@@ -44,186 +44,87 @@ function ColorLegend() {
   );
 }
 
-// ── Painel de posição única (acordes básicos: tríades, sus, dim, ME) ───────────
-function SvgOverviewPanel({ notes, category }: { notes: string[]; category: string }) {
-  const { leftHand, rightHand } = splitHands(notes, category);
-  const isLeftOnly = category.startsWith("Mão Esquerda");
-  const isFechado  = category === "Mão Esquerda — Fechado";
-  // Fechado: notas na região média (oitava 1). Aberto/Misto: região grave (oitava 0)
-  const leftHandBaseOctave = isFechado ? 1 : 0;
-
-  const meLabel = isFechado
-    ? `${leftHand[0]} — ${leftHand[1]} (região média)`
-    : leftHand.join(" — ");
-
+// ── Painel de imagem única (tríades, sus4, sus2, dim, m7b5, ME) ────────────────
+function ImageOverviewPanel({ imageUrl }: { imageUrl: string }) {
   return (
-    <div>
-      <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
-        <PianoKeyboard
-          leftHandNotes={leftHand}
-          rightHandNotes={rightHand}
-          leftHandBaseOctave={leftHandBaseOctave}
-        />
-
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-            <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
-            <div>
-              <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
-              <p className="text-sm text-white/80 font-mono">{meLabel}</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
-            <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 ring-2 ring-orange-400/30" />
-            <div>
-              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
-              <p className="text-sm text-white/80 font-mono">
-                {isLeftOnly
-                  ? <span className="italic text-white/50">Livre para melodia ou extensões</span>
-                  : rightHand.join(" — ")}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {isLeftOnly && (
-          <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
-            {isFechado
-              ? "Mão esquerda toca a 3ª e a 5ª do acorde na região média do teclado."
-              : "Este voicing é executado integralmente pela mão esquerda."}
-          </p>
-        )}
-      </div>
-      <ColorLegend />
+    <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex justify-center">
+      <img
+        src={imageUrl}
+        alt="Posição no teclado"
+        className="max-w-full rounded-xl object-contain"
+        style={{ maxHeight: 320 }}
+      />
     </div>
   );
 }
 
-// ── Voicings computados (5 variações por acorde sofisticado) ───────────────────
-interface Voicing {
-  label: string;
-  leftHand: string[];
-  rightHand: string[];
-}
-
-function computeVoicings(notes: string[], category: string): Voicing[] {
-  if (category.startsWith("Mão Esquerda")) {
-    return [{ label: "Variação 1", leftHand: notes, rightHand: [] }];
-  }
-  const n = notes.length;
-  const voicings: Voicing[] = [];
-  const numInversions = Math.min(n, 4);
-  for (let k = 0; k < numInversions; k++) {
-    const rotated = [...notes.slice(k), ...notes.slice(0, k)];
-    voicings.push({
-      label:     `Variação ${k + 1}`,
-      leftHand:  n >= 3 ? [rotated[0], rotated[2]] : [rotated[0]],
-      rightHand: rotated,
-    });
-  }
-  if (n >= 3) {
-    voicings.push({
-      label:     `Variação ${voicings.length + 1}`,
-      leftHand:  [notes[0], notes[1]],
-      rightHand: notes.slice(2),
-    });
-  }
-  while (voicings.length < 5) voicings.push({ ...voicings[0], label: `Variação ${voicings.length + 1}` });
-  return voicings.slice(0, 5);
-}
-
-// ── Painel com 5 variações SVG (acordes sofisticados) ─────────────────────────
-function SvgVariationPanel({ notes, category }: { notes: string[]; category: string }) {
+// ── Painel com 5 variações em imagem (acordes sofisticados) ───────────────────
+function ImageVariationPanel({ images }: { images: string[] }) {
   const [active, setActive] = useState(0);
-  const voicings = computeVoicings(notes, category);
-  const v = voicings[active];
-  const isLeftOnly = category.startsWith("Mão Esquerda");
 
   return (
     <div>
-      {/* Tabs */}
-      {!isLeftOnly && (
-        <div className="mb-3">
-          <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-white/5">
-            {voicings.map((vx, i) => (
-              <button
-                key={i}
-                onClick={() => setActive(i)}
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200",
-                  active === i
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:text-white hover:bg-white/5"
-                )}
-              >
-                {vx.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-white/5">
+      {/* Tabs desktop */}
+      <div className="mb-3">
+        <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-white/5">
+          {images.map((_, i) => (
             <button
-              onClick={() => setActive((a) => (a - 1 + voicings.length) % voicings.length)}
-              className="p-1 text-muted-foreground hover:text-white"
-              aria-label="Variação anterior"
-            ><ChevronLeft className="w-5 h-5" /></button>
-            <span className="text-sm font-semibold text-white">
-              {voicings[active].label} <span className="text-muted-foreground font-normal">/ {voicings.length}</span>
-            </span>
-            <button
-              onClick={() => setActive((a) => (a + 1) % voicings.length)}
-              className="p-1 text-muted-foreground hover:text-white"
-              aria-label="Próxima variação"
-            ><ChevronRight className="w-5 h-5" /></button>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
-        <PianoKeyboard key={`${category}-${active}`} leftHandNotes={v.leftHand} rightHandNotes={v.rightHand} />
-
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-            <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
-            <div>
-              <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
-              <p className="text-sm text-white/80 font-mono">{v.leftHand.join(" — ")}</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
-            <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 ring-2 ring-orange-400/30" />
-            <div>
-              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
-              <p className="text-sm text-white/80 font-mono">
-                {isLeftOnly
-                  ? <span className="italic text-white/50">Livre para melodia ou extensões</span>
-                  : v.rightHand.join(" — ")}
-              </p>
-            </div>
-          </div>
+              key={i}
+              onClick={() => setActive(i)}
+              className={cn(
+                "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200",
+                active === i
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+              )}
+            >
+              Variação {i + 1}
+            </button>
+          ))}
         </div>
 
-        {isLeftOnly && (
-          <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
-            Este voicing é executado integralmente pela mão esquerda.
-          </p>
-        )}
+        {/* Navegação mobile */}
+        <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-white/5">
+          <button
+            onClick={() => setActive((a) => (a - 1 + images.length) % images.length)}
+            className="p-1 text-muted-foreground hover:text-white"
+            aria-label="Variação anterior"
+          ><ChevronLeft className="w-5 h-5" /></button>
+          <span className="text-sm font-semibold text-white">
+            Variação {active + 1} <span className="text-muted-foreground font-normal">/ {images.length}</span>
+          </span>
+          <button
+            onClick={() => setActive((a) => (a + 1) % images.length)}
+            className="p-1 text-muted-foreground hover:text-white"
+            aria-label="Próxima variação"
+          ><ChevronRight className="w-5 h-5" /></button>
+        </div>
       </div>
 
-      {!isLeftOnly && (
-        <>
-          <ColorLegend />
-          <div className="flex justify-center gap-1.5 mt-3">
-            {voicings.map((_, i) => (
-              <button key={i} onClick={() => setActive(i)}
-                className={cn("h-2 rounded-full transition-all duration-200",
-                  i === active ? "bg-primary w-4" : "bg-white/20 w-2 hover:bg-white/40")}
-                aria-label={voicings[i].label}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex justify-center">
+        <img
+          key={active}
+          src={images[active]}
+          alt={`Variação ${active + 1}`}
+          className="max-w-full rounded-xl object-contain"
+          style={{ maxHeight: 380 }}
+        />
+      </div>
+
+      {/* Indicadores */}
+      <div className="flex justify-center gap-1.5 mt-3">
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(i)}
+            className={cn(
+              "h-2 rounded-full transition-all duration-200",
+              i === active ? "bg-primary w-4" : "bg-white/20 w-2 hover:bg-white/40"
+            )}
+            aria-label={`Variação ${i + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -278,12 +179,14 @@ export default function ChordDetail() {
         <div className="px-6 md:px-10 pt-8 pb-6 border-b border-white/5 relative z-10">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-5 flex items-center gap-2">
             <Music className="w-4 h-4 text-primary" />
-            {hasVariations ? "Variações do Teclado" : "Posição no Teclado"}
+            {hasVariations ? "Variações no Teclado" : "Posição no Teclado"}
           </h3>
 
-          {hasOverview
-            ? <SvgOverviewPanel notes={chord.notes} category={chord.category} />
-            : <SvgVariationPanel notes={chord.notes} category={chord.category} />
+          {hasVariations
+            ? <ImageVariationPanel images={getChordVariationImages(chord.id)!} />
+            : hasOverview
+              ? <ImageOverviewPanel imageUrl={getChordOverviewImage(chord.id)!} />
+              : null
           }
         </div>
 
