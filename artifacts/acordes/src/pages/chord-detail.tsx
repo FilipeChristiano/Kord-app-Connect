@@ -49,6 +49,9 @@ const CHORD_SVG_OVERRIDES = new Set([
   // Tríades Maiores
   "C-maior", "Db-maior", "D-maior", "Eb-maior", "E-maior", "F-maior",
   "Gb-maior", "G-maior", "Ab-maior", "A-maior", "Bb-maior", "B-maior",
+  // Tríades Menores
+  "Cm", "Dbm", "Dm", "Ebm", "Em", "Fm",
+  "Gbm", "Gm", "Abm", "Am", "Bbm", "Bm",
 ]);
 
 // ── Painel SVG para acordes básicos (usados como override) ────────────────────
