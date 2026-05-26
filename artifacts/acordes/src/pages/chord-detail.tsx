@@ -44,6 +44,60 @@ function ColorLegend() {
   );
 }
 
+// ── Acordes que usam SVG em vez de imagem do PDF ──────────────────────────────
+const CHORD_SVG_OVERRIDES = new Set(["C-maior"]);
+
+// ── Painel SVG para acordes básicos (usados como override) ────────────────────
+function SvgOverviewPanel({ notes, category }: { notes: string[]; category: string }) {
+  const { leftHand, rightHand } = splitHands(notes, category);
+  const isLeftOnly = category.startsWith("Mão Esquerda");
+  const isFechado  = category === "Mão Esquerda — Fechado";
+  const leftHandBaseOctave = isFechado ? 1 : 0;
+  const meLabel = isFechado
+    ? `${leftHand[0]} — ${leftHand[1]} (região média)`
+    : leftHand.join(" — ");
+
+  return (
+    <div>
+      <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
+        <PianoKeyboard
+          leftHandNotes={leftHand}
+          rightHandNotes={rightHand}
+          leftHandBaseOctave={leftHandBaseOctave}
+        />
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+            <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
+            <div>
+              <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
+              <p className="text-sm text-white/80 font-mono">{meLabel}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
+            <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 ring-2 ring-orange-400/30" />
+            <div>
+              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
+              <p className="text-sm text-white/80 font-mono">
+                {isLeftOnly
+                  ? <span className="italic text-white/50">Livre para melodia ou extensões</span>
+                  : rightHand.join(" — ")}
+              </p>
+            </div>
+          </div>
+        </div>
+        {isLeftOnly && (
+          <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
+            {isFechado
+              ? "Mão esquerda toca a 3ª e a 5ª do acorde na região média do teclado."
+              : "Este voicing é executado integralmente pela mão esquerda."}
+          </p>
+        )}
+      </div>
+      <ColorLegend />
+    </div>
+  );
+}
+
 // ── Painel de imagem única (tríades, sus4, sus2, dim, m7b5, ME) ────────────────
 function ImageOverviewPanel({ imageUrl }: { imageUrl: string }) {
   return (
@@ -182,11 +236,13 @@ export default function ChordDetail() {
             {hasVariations ? "Variações no Teclado" : "Posição no Teclado"}
           </h3>
 
-          {hasVariations
-            ? <ImageVariationPanel images={getChordVariationImages(chord.id)!} />
-            : hasOverview
-              ? <ImageOverviewPanel imageUrl={getChordOverviewImage(chord.id)!} />
-              : null
+          {CHORD_SVG_OVERRIDES.has(chord.id)
+            ? <SvgOverviewPanel notes={chord.notes} category={chord.category} />
+            : hasVariations
+              ? <ImageVariationPanel images={getChordVariationImages(chord.id)!} />
+              : hasOverview
+                ? <ImageOverviewPanel imageUrl={getChordOverviewImage(chord.id)!} />
+                : null
           }
         </div>
 
