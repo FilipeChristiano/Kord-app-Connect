@@ -21,7 +21,15 @@ export function useAccess() {
       }
       return res.json();
     },
-    staleTime: 60_000,
+    staleTime: 10_000,
     retry: 1,
+    // Auto-poll while the user is on a "not allowed yet" state so the page
+    // unlocks as soon as the Hotmart webhook arrives — without manual refresh.
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (data?.authenticated && !data?.allowed) return 8_000;
+      return false;
+    },
+    refetchOnWindowFocus: true,
   });
 }

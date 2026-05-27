@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSignIn } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ type Step = "email" | "code";
 function messageForCode(code: string | undefined, fallback: string): string {
   switch (code) {
     case "form_identifier_not_found":
-      return "Não encontramos uma conta com esse e-mail. Cadastre-se primeiro.";
+      return "Conta não encontrada. Clique em 'Cadastre-se' abaixo para criar.";
     case "form_code_incorrect":
     case "verification_failed":
       return "Código incorreto. Confira o e-mail e tente novamente.";
@@ -43,6 +43,13 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  // Prefill email if redirected from sign-up with ?email=... query param.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get("email");
+    if (prefill) setEmail(prefill);
+  }, []);
+
   async function handleSubmitEmail(e: React.FormEvent) {
     e.preventDefault();
     if (!signIn || loading) return;
@@ -50,8 +57,16 @@ export default function SignInPage() {
     setInfo(null);
     setLoading(true);
     try {
-      const createRes = await signIn.create({ identifier: email.trim() });
+      const trimmed = email.trim();
+      const createRes = await signIn.create({ identifier: trimmed });
       if (createRes.error) {
+        // If the account doesn't exist yet, send them to sign-up flow.
+        if (createRes.error.code === "form_identifier_not_found") {
+          setLocation(
+            `${basePath || ""}/sign-up?email=${encodeURIComponent(trimmed)}`,
+          );
+          return;
+        }
         setError(messageForCode(createRes.error.code, createRes.error.message || "Não foi possível iniciar o login."));
         return;
       }

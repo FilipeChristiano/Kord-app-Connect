@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSignUp } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,20 @@ import {
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type Step = "email" | "code";
+
+function deriveNameFromEmail(email: string): string {
+  const local = email.split("@")[0] ?? "";
+  const cleaned = local
+    .replace(/[._-]+/g, " ")
+    .replace(/\d+/g, "")
+    .trim();
+  if (!cleaned) return "Usuário";
+  return cleaned
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
 
 function messageForCode(code: string | undefined, fallback: string): string {
   switch (code) {
@@ -43,6 +57,13 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  // Prefill email if redirected from sign-in with ?email=... query param.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get("email");
+    if (prefill) setEmail(prefill);
+  }, []);
+
   async function handleSubmitEmail(e: React.FormEvent) {
     e.preventDefault();
     if (!signUp || loading) return;
@@ -51,28 +72,45 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       const trimmedEmail = email.trim();
-      const derivedName =
-        trimmedEmail
-          .split("@")[0]
-          ?.replace(/[._-]+/g, " ")
-          .replace(/\d+/g, "")
-          .trim()
-          .split(" ")
-          .filter(Boolean)
-          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-          .join(" ") || "Usuário";
+      const derivedName = deriveNameFromEmail(trimmedEmail);
+
+      // Reset any stale sign-up state from previous attempts.
+      try {
+        signUp.reset?.();
+      } catch {
+        // ignore
+      }
+
       const createRes = await signUp.create({
         emailAddress: trimmedEmail,
         firstName: derivedName,
         lastName: "Harmonic",
       } as Parameters<typeof signUp.create>[0]);
+
       if (createRes.error) {
-        setError(messageForCode(createRes.error.code, createRes.error.message || "Não foi possível iniciar o cadastro."));
+        // If the account already exists, push them to sign-in seamlessly.
+        if (createRes.error.code === "form_identifier_exists") {
+          setLocation(
+            `${basePath || ""}/sign-in?email=${encodeURIComponent(trimmedEmail)}`,
+          );
+          return;
+        }
+        setError(
+          messageForCode(
+            createRes.error.code,
+            createRes.error.message || "Não foi possível iniciar o cadastro.",
+          ),
+        );
         return;
       }
       const sendRes = await signUp.verifications.sendEmailCode();
       if (sendRes.error) {
-        setError(messageForCode(sendRes.error.code, sendRes.error.message || "Não foi possível enviar o código."));
+        setError(
+          messageForCode(
+            sendRes.error.code,
+            sendRes.error.message || "Não foi possível enviar o código.",
+          ),
+        );
         return;
       }
       setStep("code");
@@ -91,17 +129,48 @@ export default function SignUpPage() {
     setError(null);
     setLoading(true);
     try {
-      const verifyRes = await signUp.verifications.verifyEmailCode({ code: code.trim() });
+      const verifyRes = await signUp.verifications.verifyEmailCode({
+        code: code.trim(),
+      });
       const alreadyVerified =
         verifyRes.error?.code === "verification_already_verified" ||
         /already.*verified/i.test(verifyRes.error?.message || "");
       if (verifyRes.error && !alreadyVerified) {
-        setError(messageForCode(verifyRes.error.code, verifyRes.error.message || "Código inválido."));
+        setError(
+          messageForCode(
+            verifyRes.error.code,
+            verifyRes.error.message || "Código inválido.",
+          ),
+        );
         return;
       }
+
+      // If Clerk reports missing requirements (e.g. name fields), backfill
+      // them now so finalize() can produce a session.
+      const status = (signUp as unknown as { status?: string }).status;
+      if (status && status !== "complete") {
+        const derivedName = deriveNameFromEmail(email.trim());
+        try {
+          await (signUp as unknown as {
+            update: (p: { firstName: string; lastName: string }) => Promise<unknown>;
+          }).update({
+            firstName: derivedName,
+            lastName: "Harmonic",
+          });
+        } catch {
+          // best effort — finalize will surface the real error below
+        }
+      }
+
       const finalizeRes = await signUp.finalize();
       if (finalizeRes.error) {
-        setError(messageForCode(finalizeRes.error.code, finalizeRes.error.message || "Não foi possível concluir o cadastro."));
+        setError(
+          messageForCode(
+            finalizeRes.error.code,
+            finalizeRes.error.message ||
+              "Não foi possível concluir o cadastro.",
+          ),
+        );
         return;
       }
       setLocation(basePath || "/");
@@ -120,7 +189,12 @@ export default function SignUpPage() {
     try {
       const sendRes = await signUp.verifications.sendEmailCode();
       if (sendRes.error) {
-        setError(messageForCode(sendRes.error.code, sendRes.error.message || "Não foi possível reenviar."));
+        setError(
+          messageForCode(
+            sendRes.error.code,
+            sendRes.error.message || "Não foi possível reenviar.",
+          ),
+        );
         return;
       }
       setInfo("Um novo código foi enviado.");
@@ -151,7 +225,9 @@ export default function SignUpPage() {
 
             <form onSubmit={handleSubmitEmail} className="mt-6 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white/90">E-mail</Label>
+                <Label htmlFor="email" className="text-white/90">
+                  E-mail
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -196,12 +272,18 @@ export default function SignUpPage() {
               Confirme seu e-mail
             </h1>
             <p className="mt-1 text-center text-sm text-white/70">
-              Enviamos um código para <strong className="text-white">{email}</strong>
+              Enviamos um código para{" "}
+              <strong className="text-white">{email}</strong>
             </p>
 
             <form onSubmit={handleSubmitCode} className="mt-6 space-y-4">
               <div className="flex justify-center">
-                <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus>
+                <InputOTP
+                  maxLength={6}
+                  value={code}
+                  onChange={setCode}
+                  autoFocus
+                >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} className="h-12 w-12 text-lg text-white" />
                     <InputOTPSlot index={1} className="h-12 w-12 text-lg text-white" />
@@ -240,6 +322,11 @@ export default function SignUpPage() {
                     setCode("");
                     setError(null);
                     setInfo(null);
+                    try {
+                      signUp?.reset?.();
+                    } catch {
+                      // ignore
+                    }
                   }}
                   className="text-white/70 hover:text-white"
                 >
