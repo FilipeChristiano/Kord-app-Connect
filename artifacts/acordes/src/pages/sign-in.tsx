@@ -14,6 +14,25 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type Step = "email" | "code";
 
+interface ClerkApiError {
+  code?: string;
+  message?: string;
+  longMessage?: string;
+}
+interface ClerkThrown {
+  errors?: ClerkApiError[];
+  code?: string;
+  message?: string;
+}
+
+function extractClerkError(err: unknown): { code?: string; message?: string } {
+  console.error("[auth]", err);
+  const e = err as ClerkThrown;
+  const first = e?.errors?.[0];
+  if (first) return { code: first.code, message: first.longMessage || first.message };
+  return { code: e?.code, message: e?.message };
+}
+
 function messageForCode(code: string | undefined, _fallback: string): string {
   switch (code) {
     case "form_identifier_not_found":
@@ -83,8 +102,15 @@ export default function SignInPage() {
       }
       setStep("code");
       setInfo("Enviamos um código de 6 dígitos para o seu e-mail.");
-    } catch {
-      setError("Algo deu errado. Tente novamente em alguns instantes.");
+    } catch (err) {
+      const { code } = extractClerkError(err);
+      if (code === "form_identifier_not_found") {
+        setLocation(
+          `${basePath || ""}/sign-up?email=${encodeURIComponent(email.trim())}`,
+        );
+        return;
+      }
+      setError(messageForCode(code, ""));
     } finally {
       setLoading(false);
     }
@@ -126,8 +152,9 @@ export default function SignInPage() {
         return;
       }
       setLocation(basePath || "/");
-    } catch {
-      setError("Algo deu errado. Tente novamente em alguns instantes.");
+    } catch (err) {
+      const { code } = extractClerkError(err);
+      setError(messageForCode(code, ""));
     } finally {
       setLoading(false);
     }
