@@ -14,7 +14,7 @@ export const clerkAppearance = {
         : `${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: "hsl(35, 75%, 55%)",
+    colorPrimary: "hsl(20, 100%, 55%)",
     colorForeground: "hsl(40, 33%, 96%)",
     colorMutedForeground: "hsl(40, 15%, 70%)",
     colorDanger: "hsl(0, 75%, 60%)",
@@ -36,10 +36,10 @@ export const clerkAppearance = {
     socialButtonsBlockButtonText: "text-white font-medium",
     formFieldLabel: "text-white/90 font-medium",
     footerActionLink:
-      "text-[hsl(35,75%,60%)] hover:text-[hsl(35,75%,70%)] font-medium",
+      "text-[hsl(20,100%,60%)] hover:text-[hsl(20,100%,70%)] font-medium",
     footerActionText: "text-white/70",
     dividerText: "text-white/50",
-    identityPreviewEditButton: "text-[hsl(35,75%,60%)] hover:text-[hsl(35,75%,70%)]",
+    identityPreviewEditButton: "text-[hsl(20,100%,60%)] hover:text-[hsl(20,100%,70%)]",
     formFieldSuccessText: "text-green-400",
     alertText: "text-white",
     logoBox: "flex justify-center mb-4",
@@ -47,9 +47,9 @@ export const clerkAppearance = {
     socialButtonsBlockButton:
       "bg-white/5 hover:bg-white/10 border border-white/10 transition-colors",
     formButtonPrimary:
-      "bg-gradient-to-br from-[hsl(35,75%,55%)] to-[hsl(28,70%,42%)] hover:brightness-110 text-white font-semibold shadow-lg shadow-[hsl(35,75%,55%)]/20 transition-all",
+      "bg-gradient-to-br from-[hsl(20, 100%, 55%)] to-[hsl(14,90%,42%)] hover:brightness-110 text-white font-semibold shadow-lg shadow-[hsl(20, 100%, 55%)]/20 transition-all",
     formFieldInput:
-      "bg-[hsl(224,35%,12%)] border border-white/10 text-white placeholder:text-white/40 focus:border-[hsl(35,75%,55%)]",
+      "bg-[hsl(224,35%,12%)] border border-white/10 text-white placeholder:text-white/40 focus:border-[hsl(20, 100%, 55%)]",
     footerAction: "text-center",
     dividerLine: "bg-white/10",
     alert: "bg-red-950/40 border border-red-500/30 text-red-200",

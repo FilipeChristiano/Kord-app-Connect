@@ -369,7 +369,7 @@ export default function ChordDetail() {
               className={cn(
                 "flex items-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg",
                 favorite
-                  ? "bg-primary text-primary-foreground shadow-primary/20 hover:bg-amber-400"
+                  ? "bg-primary text-primary-foreground shadow-primary/20 hover:bg-orange-400"
                   : "bg-secondary text-white hover:bg-secondary/80 border border-white/10"
               )}
             >
@@ -421,7 +421,7 @@ export default function ChordDetail() {
                     >
                       {note}
                     </div>
-                    <span className="mt-1 text-xs font-semibold text-amber-400">{i + 1}ª</span>
+                    <span className="mt-1 text-xs font-semibold text-orange-400">{i + 1}ª</span>
                   </div>
                 ))}
               </div>

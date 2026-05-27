@@ -32,7 +32,7 @@ export const CATEGORIES = [
 ];
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  "Tríades Maiores": "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  "Tríades Maiores": "bg-orange-500/10 text-orange-400 border-orange-500/20",
   "Tríades Menores": "bg-blue-500/10 text-blue-400 border-blue-500/20",
   "Maiores com 7ªM": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   "Menores com 7ª": "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
@@ -44,7 +44,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Diminutos": "bg-red-500/10 text-red-400 border-red-500/20",
   "Meio-Diminutos": "bg-rose-500/10 text-rose-400 border-rose-500/20",
   "Com 9ª": "bg-orange-500/10 text-orange-400 border-orange-500/20",
-  "Com 7ªM e 9ª": "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  "Com 7ªM e 9ª": "bg-orange-400/10 text-orange-300 border-orange-400/20",
   "Com 6ª": "bg-lime-500/10 text-lime-400 border-lime-500/20",
   "7sus4": "bg-teal-500/10 text-teal-400 border-teal-500/20",
   "Mão Esquerda — Aberto": "bg-sky-500/10 text-sky-400 border-sky-500/20",

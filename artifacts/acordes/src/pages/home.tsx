@@ -52,7 +52,7 @@ export default function Home() {
             </motion.p>
             
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <Link href="/dicionario" className="px-8 py-4 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-amber-400 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2">
+              <Link href="/dicionario" className="px-8 py-4 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-orange-400 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2">
                 Explorar Acordes <ArrowRight className="w-5 h-5" />
               </Link>
               <Link href="/estudo" className="px-8 py-4 rounded-xl font-bold bg-secondary text-white hover:bg-secondary/80 border border-white/5 hover:border-white/10 transition-all duration-300 flex items-center justify-center gap-2">

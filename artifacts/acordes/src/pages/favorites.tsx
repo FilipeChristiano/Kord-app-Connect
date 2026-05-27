@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const NIVEL_LABELS: Record<string, { label: string; color: string }> = {
   suave: { label: "Suave", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
-  intermediario: { label: "Intermediário", color: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
+  intermediario: { label: "Intermediário", color: "text-orange-400 bg-orange-500/10 border-orange-500/30" },
   avancado: { label: "Avançado", color: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
 };
 
@@ -385,7 +385,7 @@ export default function Favorites() {
                 </p>
                 <Link
                   href="/dicionario"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-amber-400 transition-colors shadow-lg shadow-primary/20"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-orange-400 transition-colors shadow-lg shadow-primary/20"
                 >
                   <Search className="w-5 h-5" /> Explorar Dicionário
                 </Link>

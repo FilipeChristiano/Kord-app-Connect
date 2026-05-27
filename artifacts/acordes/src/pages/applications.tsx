@@ -25,7 +25,7 @@ function CategoryCard({ app }: { app: CategoryApplication }) {
   const [expanded, setExpanded] = useState(false);
   const badgeClass =
     CATEGORY_COLORS[app.category] ||
-    "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    "bg-orange-500/10 text-orange-400 border-orange-500/20";
 
   return (
     <motion.div
@@ -86,8 +86,8 @@ function CategoryCard({ app }: { app: CategoryApplication }) {
               {/* Tips */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Zap className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest">
+                  <Zap className="w-4 h-4 text-orange-400" />
+                  <h3 className="text-xs font-bold text-orange-400 uppercase tracking-widest">
                     Dicas práticas
                   </h3>
                 </div>

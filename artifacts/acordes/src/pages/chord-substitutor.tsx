@@ -22,7 +22,7 @@ const LEVELS: { key: SophisticationLevel; label: string; description: string; co
       key: "intermediario",
       label: "Intermediário",
       description: "7M(9), m7(9), 7sus4 — worship moderno e emocional",
-      color: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+      color: "border-orange-500/50 bg-orange-500/10 text-orange-400",
     },
     {
       key: "avancado",

@@ -156,7 +156,7 @@ export default function SignUpPage() {
               <Button
                 type="submit"
                 disabled={loading || !email}
-                className="w-full bg-gradient-to-br from-[hsl(35,75%,55%)] to-[hsl(28,70%,42%)] text-white font-semibold shadow-lg shadow-[hsl(35,75%,55%)]/20 hover:brightness-110"
+                className="w-full bg-gradient-to-br from-[hsl(20, 100%, 55%)] to-[hsl(14,90%,42%)] text-white font-semibold shadow-lg shadow-[hsl(20, 100%, 55%)]/20 hover:brightness-110"
               >
                 {loading ? "Enviando código..." : "Receber código por e-mail"}
               </Button>
@@ -166,7 +166,7 @@ export default function SignUpPage() {
               Já tem conta?{" "}
               <Link
                 href="/sign-in"
-                className="font-medium text-[hsl(35,75%,60%)] hover:text-[hsl(35,75%,70%)]"
+                className="font-medium text-[hsl(20,100%,60%)] hover:text-[hsl(20,100%,70%)]"
               >
                 Entrar
               </Link>
@@ -209,7 +209,7 @@ export default function SignUpPage() {
               <Button
                 type="submit"
                 disabled={loading || code.length < 6}
-                className="w-full bg-gradient-to-br from-[hsl(35,75%,55%)] to-[hsl(28,70%,42%)] text-white font-semibold shadow-lg shadow-[hsl(35,75%,55%)]/20 hover:brightness-110"
+                className="w-full bg-gradient-to-br from-[hsl(20, 100%, 55%)] to-[hsl(14,90%,42%)] text-white font-semibold shadow-lg shadow-[hsl(20, 100%, 55%)]/20 hover:brightness-110"
               >
                 {loading ? "Finalizando..." : "Finalizar cadastro"}
               </Button>
@@ -231,7 +231,7 @@ export default function SignUpPage() {
                   type="button"
                   onClick={handleResend}
                   disabled={loading}
-                  className="font-medium text-[hsl(35,75%,60%)] hover:text-[hsl(35,75%,70%)] disabled:opacity-50"
+                  className="font-medium text-[hsl(20,100%,60%)] hover:text-[hsl(20,100%,70%)] disabled:opacity-50"
                 >
                   Reenviar código
                 </button>

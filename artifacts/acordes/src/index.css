@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @layer theme, base, clerk, components, utilities;
 @import "tailwindcss";
 
 @theme inline {
   --font-sans: 'Space Grotesk', system-ui, sans-serif;
-  --font-display: 'Orbitron', 'Space Grotesk', sans-serif;
+  --font-display: 'Unbounded', 'Space Grotesk', sans-serif;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -30,8 +30,8 @@
   --background: 224 40% 6%;
   --foreground: 40 33% 96%;
   
-  /* Primary: Warm Gold/Amber */
-  --primary: 45 93% 47%;
+  /* Primary: Harmonic Orange */
+  --primary: 20 100% 55%;
   --primary-foreground: 224 40% 6%;
   
   /* Secondary: Soft metallic tone */
@@ -51,7 +51,7 @@
   --card-foreground: 40 33% 96%;
   
   --border: 215 20% 20%;
-  --ring: 45 93% 47%;
+  --ring: 20 100% 55%;
   
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
