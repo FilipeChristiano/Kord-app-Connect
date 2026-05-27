@@ -1,0 +1,275 @@
+CAMPOS HARMÔNICOS MAIORES
+
+C MAIOR
+I   = C
+ii  = Dm
+iii = Em
+IV  = F
+V   = G
+vi  = Am
+vii = Bm7(b5)
+
+Db MAIOR
+I   = Db
+ii  = Ebm
+iii = Fm
+IV  = Gb
+V   = Ab
+vi  = Bbm
+vii = Cm7(b5)
+
+D MAIOR
+I   = D
+ii  = Em
+iii = F#m
+IV  = G
+V   = A
+vi  = Bm
+vii = C#m7(b5)
+
+Eb MAIOR
+I   = Eb
+ii  = Fm
+iii = Gm
+IV  = Ab
+V   = Bb
+vi  = Cm
+vii = Dm7(b5)
+
+E MAIOR
+I   = E
+ii  = F#m
+iii = G#m
+IV  = A
+V   = B
+vi  = C#m
+vii = D#m7(b5)
+
+F MAIOR
+I   = F
+ii  = Gm
+iii = Am
+IV  = Bb
+V   = C
+vi  = Dm
+vii = Em7(b5)
+
+Gb MAIOR
+I   = Gb
+ii  = Abm
+iii = Bbm
+IV  = B
+V   = Db
+vi  = Ebm
+vii = Fm7(b5)
+
+G MAIOR
+I   = G
+ii  = Am
+iii = Bm
+IV  = C
+V   = D
+vi  = Em
+vii = F#m7(b5)
+
+Ab MAIOR
+I   = Ab
+ii  = Bbm
+iii = Cm
+IV  = Db
+V   = Eb
+vi  = Fm
+vii = Gm7(b5)
+
+A MAIOR
+I   = A
+ii  = Bm
+iii = C#m
+IV  = D
+V   = E
+vi  = F#m
+vii = G#m7(b5)
+
+Bb MAIOR
+I   = Bb
+ii  = Cm
+iii = Dm
+IV  = Eb
+V   = F
+vi  = Gm
+vii = Am7(b5)
+
+B MAIOR
+I   = B
+ii  = C#m
+iii = D#m
+IV  = E
+V   = F#
+vi  = G#m
+vii = A#m7(b5)
+
+==================================================
+
+CAMPOS HARMÔNICOS MENORES NATURAIS
+
+Cm
+i   = Cm
+ii° = Dm7(b5)
+III = Eb
+iv  = Fm
+v   = Gm
+VI  = Ab
+VII = Bb
+
+C#m / Dbm
+i   = C#m
+ii° = D#m7(b5)
+III = E
+iv  = F#m
+v   = G#m
+VI  = A
+VII = B
+
+Dm
+i   = Dm
+ii° = Em7(b5)
+III = F
+iv  = Gm
+v   = Am
+VI  = Bb
+VII = C
+
+Ebm / D#m
+i   = Ebm
+ii° = Fm7(b5)
+III = Gb
+iv  = Abm
+v   = Bbm
+VI  = B
+VII = Db
+
+Em
+i   = Em
+ii° = F#m7(b5)
+III = G
+iv  = Am
+v   = Bm
+VI  = C
+VII = D
+
+Fm
+i   = Fm
+ii° = Gm7(b5)
+III = Ab
+iv  = Bbm
+v   = Cm
+VI  = Db
+VII = Eb
+
+F#m / Gbm
+i   = F#m
+ii° = G#m7(b5)
+III = A
+iv  = Bm
+v   = C#m
+VI  = D
+VII = E
+
+Gm
+i   = Gm
+ii° = Am7(b5)
+III = Bb
+iv  = Cm
+v   = Dm
+VI  = Eb
+VII = F
+
+G#m / Abm
+i   = G#m
+ii° = A#m7(b5)
+III = B
+iv  = C#m
+v   = D#m
+VI  = E
+VII = F#
+
+Am
+i   = Am
+ii° = Bm7(b5)
+III = C
+iv  = Dm
+v   = Em
+VI  = F
+VII = G
+
+Bbm / A#m
+i   = Bbm
+ii° = Cm7(b5)
+III = Db
+iv  = Ebm
+v   = Fm
+VI  = Gb
+VII = Ab
+
+Bm
+i   = Bm
+ii° = C#m7(b5)
+III = D
+iv  = Em
+v   = F#m
+VI  = G
+VII = A
+
+==================================================
+
+FAMÍLIAS DE SOFISTICAÇÃO POR FUNÇÃO
+
+FUNÇÃO MAIOR
+
+* 7M
+* 9
+* 7M(9)
+* 6
+* sus2
+* sus4
+
+FUNÇÃO MENOR
+
+* m7
+* m9
+* m7(9)
+* m7(11)
+* m7(9/11)
+
+FUNÇÃO DOMINANTE
+
+* 7sus4
+* 7sus4(9)
+
+FUNÇÃO DIMINUTA
+
+* º
+* m7(b5)
+
+==================================================
+
+EXEMPLOS DE SOFISTICAÇÃO
+
+C → C7M(9)
+Dm → Dm7(9)
+Em → Em7
+F → F7M(9)
+G → G7sus4
+Am → Am7(11)
+Bm7(b5) → Bm7(b5)
+
+==================================================
+
+REGRAS IMPORTANTES
+
+* Nunca alterar função harmônica
+* Nunca transformar acorde maior em menor
+* Nunca usar acordes fora da base oficial
+* Nunca usar tensões não presentes no PDF
+* Priorizar sonoridade worship/gospel moderna
+* Priorizar fluidez e resolução harmônica
