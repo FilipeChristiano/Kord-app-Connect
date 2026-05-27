@@ -50,7 +50,22 @@ export default function SignUpPage() {
     setInfo(null);
     setLoading(true);
     try {
-      const createRes = await signUp.create({ emailAddress: email.trim() });
+      const trimmedEmail = email.trim();
+      const derivedName =
+        trimmedEmail
+          .split("@")[0]
+          ?.replace(/[._-]+/g, " ")
+          .replace(/\d+/g, "")
+          .trim()
+          .split(" ")
+          .filter(Boolean)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(" ") || "Usuário";
+      const createRes = await signUp.create({
+        emailAddress: trimmedEmail,
+        firstName: derivedName,
+        lastName: "Harmonic",
+      } as Parameters<typeof signUp.create>[0]);
       if (createRes.error) {
         setError(messageForCode(createRes.error.code, createRes.error.message || "Não foi possível iniciar o cadastro."));
         return;
