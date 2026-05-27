@@ -14,7 +14,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type Step = "email" | "code";
 
-function messageForCode(code: string | undefined, fallback: string): string {
+function messageForCode(code: string | undefined, _fallback: string): string {
   switch (code) {
     case "form_identifier_exists":
       return "Esse e-mail já tem conta. Vá para a tela de Entrar.";
@@ -24,11 +24,17 @@ function messageForCode(code: string | undefined, fallback: string): string {
     case "verification_failed":
       return "Código incorreto. Confira o e-mail e tente novamente.";
     case "verification_expired":
-      return "O código expirou. Peça um novo.";
+    case "verification_attempts_exceeded":
+      return "O código expirou. Clique em 'Reenviar código'.";
     case "too_many_requests":
-      return "Muitas tentativas. Aguarde alguns minutos.";
+      return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
+    case "form_param_unknown":
+    case "form_param_nil":
+      return "Não foi possível concluir o cadastro. Recarregue a página e tente de novo.";
+    case "session_exists":
+      return "Você já está logado. Recarregue a página.";
     default:
-      return fallback;
+      return "Algo deu errado. Tente novamente em alguns instantes.";
   }
 }
 
@@ -101,9 +107,8 @@ export default function SignUpPage() {
       }
       setStep("code");
       setInfo("Enviamos um código de 6 dígitos para o seu e-mail.");
-    } catch (err) {
-      const e = err as { message?: string };
-      setError(e?.message || "Algo deu errado. Tente novamente.");
+    } catch {
+      setError("Algo deu errado. Tente novamente em alguns instantes.");
     } finally {
       setLoading(false);
     }
@@ -162,9 +167,8 @@ export default function SignUpPage() {
         return;
       }
       setLocation(basePath || "/");
-    } catch (err) {
-      const e = err as { message?: string };
-      setError(e?.message || "Algo deu errado. Tente novamente.");
+    } catch {
+      setError("Algo deu errado. Tente novamente em alguns instantes.");
     } finally {
       setLoading(false);
     }
@@ -208,7 +212,7 @@ export default function SignUpPage() {
               Crie sua conta
             </h1>
             <p className="mt-1 text-center text-sm text-white/70">
-              Use o mesmo e-mail da sua compra na Hotmart
+              Sem senha — use o mesmo e-mail da sua compra na Hotmart
             </p>
 
             <form onSubmit={handleSubmitEmail} className="mt-6 space-y-4">

@@ -14,7 +14,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type Step = "email" | "code";
 
-function messageForCode(code: string | undefined, fallback: string): string {
+function messageForCode(code: string | undefined, _fallback: string): string {
   switch (code) {
     case "form_identifier_not_found":
       return "Conta não encontrada. Clique em 'Cadastre-se' abaixo para criar.";
@@ -22,13 +22,16 @@ function messageForCode(code: string | undefined, fallback: string): string {
     case "verification_failed":
       return "Código incorreto. Confira o e-mail e tente novamente.";
     case "verification_expired":
-      return "O código expirou. Peça um novo.";
+    case "verification_attempts_exceeded":
+      return "O código expirou. Clique em 'Reenviar código'.";
     case "too_many_requests":
-      return "Muitas tentativas. Aguarde alguns minutos.";
+      return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
     case "form_param_format_invalid":
       return "E-mail inválido. Confira a digitação.";
+    case "session_exists":
+      return "Você já está logado. Recarregue a página.";
     default:
-      return fallback;
+      return "Algo deu errado. Tente novamente em alguns instantes.";
   }
 }
 
@@ -80,9 +83,8 @@ export default function SignInPage() {
       }
       setStep("code");
       setInfo("Enviamos um código de 6 dígitos para o seu e-mail.");
-    } catch (err) {
-      const e = err as { message?: string };
-      setError(e?.message || "Algo deu errado. Tente novamente.");
+    } catch {
+      setError("Algo deu errado. Tente novamente em alguns instantes.");
     } finally {
       setLoading(false);
     }
@@ -124,9 +126,8 @@ export default function SignInPage() {
         return;
       }
       setLocation(basePath || "/");
-    } catch (err) {
-      const e = err as { message?: string };
-      setError(e?.message || "Algo deu errado. Tente novamente.");
+    } catch {
+      setError("Algo deu errado. Tente novamente em alguns instantes.");
     } finally {
       setLoading(false);
     }
@@ -165,7 +166,7 @@ export default function SignInPage() {
               Bem-vindo de volta
             </h1>
             <p className="mt-1 text-center text-sm text-white/70">
-              Use o e-mail da sua compra para entrar
+              Sem senha — só o e-mail da sua compra
             </p>
 
             <form onSubmit={handleSubmitEmail} className="mt-6 space-y-4">
