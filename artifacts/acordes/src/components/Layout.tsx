@@ -1,10 +1,13 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2 } from "lucide-react";
+import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2, LogOut } from "lucide-react";
+import { useClerk } from "@clerk/react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 import { motion, AnimatePresence } from "framer-motion";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -13,6 +16,12 @@ export function Layout({ children }: { children: ReactNode }) {
   const totalFavoritos = favoritesCount + cifrasCount;
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { signOut } = useClerk();
+
+  const handleSignOut = () => {
+    setMobileMenuOpen(false);
+    signOut({ redirectUrl: basePath || "/" });
+  };
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -67,6 +76,15 @@ export function Layout({ children }: { children: ReactNode }) {
                   )}
                 </Link>
               ))}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="ml-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-white transition-all"
+                title="Sair"
+              >
+                <LogOut className="w-4 h-4" />
+                Sair
+              </button>
             </nav>
 
             {/* Mobile Menu Toggle */}
@@ -111,6 +129,14 @@ export function Layout({ children }: { children: ReactNode }) {
                   )}
                 </Link>
               ))}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:bg-white/5 hover:text-white transition-all w-full text-left"
+              >
+                <LogOut className="w-5 h-5" />
+                Sair
+              </button>
             </div>
           </motion.div>
         )}
