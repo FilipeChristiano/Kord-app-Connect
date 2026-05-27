@@ -52,9 +52,6 @@ const CHORD_SVG_OVERRIDES = new Set([
   // Tríades Menores
   "Cm", "Dbm", "Dm", "Ebm", "Em", "Fm",
   "Gbm", "Gm", "Abm", "Am", "Bbm", "Bm",
-  // Maiores com 7ªM
-  "C7M", "Db7M", "D7M", "Eb7M", "E7M", "F7M",
-  "Gb7M", "G7M", "Ab7M", "A7M", "Bb7M", "B7M",
 ]);
 
 // ── Voicings para acordes de 4 notas (7M, m7, etc.) ──────────────────────────
