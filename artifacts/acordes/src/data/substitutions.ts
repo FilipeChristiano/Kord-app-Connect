@@ -80,7 +80,7 @@ const CAMPO_MAIOR: Record<number, QualityMap> = {
     "m7(9)":     { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
     "m7(11)":    { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
     "":          { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    }, // II maior
-    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" }, // V/V
+    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    }, // V/V
     "add9":      { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
   },
   2: { // iii — Mediante Menor
@@ -89,7 +89,7 @@ const CAMPO_MAIOR: Record<number, QualityMap> = {
     "m9":        { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(9)"    },
     "m7(9)":     { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(9)"    },
     "":          { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    },
-    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
+    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
     "add9":      { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(9)"    },
   },
   3: { // IV — Subdominante Maior   suave=7M  intermediário=7M(9)  avançado=7M(9)
@@ -107,15 +107,15 @@ const CAMPO_MAIOR: Record<number, QualityMap> = {
     "m7":        { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
   },
   4: { // V — Dominante   suave=sus4  intermediário=7sus4  avançado=7sus4(9)
-    "":          { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4(9)" },
-    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
-    "sus4":      { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4(9)" },
-    "7sus4":     { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
-    "7sus4(9)":  { suave: "7sus4",    intermediario: "7sus4(9)", avancado: "7sus4(9)" },
-    "add9":      { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4(9)" },
-    "9":         { suave: "7sus4",    intermediario: "7sus4(9)", avancado: "7sus4(9)" },
-    "9sus4":     { suave: "7sus4",    intermediario: "7sus4(9)", avancado: "7sus4(9)" },
-    "sus2":      { suave: "sus2",     intermediario: "7sus4",    avancado: "7sus4(9)" },
+    "":          { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4"    },
+    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
+    "sus4":      { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4"    },
+    "7sus4":     { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
+    "7sus4(9)":  { suave: "7sus4",    intermediario: "7sus4"   , avancado: "7sus4"    },
+    "add9":      { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4"    },
+    "9":         { suave: "7sus4",    intermediario: "7sus4"   , avancado: "7sus4"    },
+    "9sus4":     { suave: "7sus4",    intermediario: "7sus4"   , avancado: "7sus4"    },
+    "sus2":      { suave: "sus2",     intermediario: "7sus4",    avancado: "7sus4"    },
     "7M":        { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    }, // V com função tônica
     "m":         { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(9)"    },
   },
@@ -127,7 +127,7 @@ const CAMPO_MAIOR: Record<number, QualityMap> = {
     "m7(11)":    { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
     "add9":      { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
     "":          { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    }, // VI maior
-    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
+    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
   },
   6: { // vii° — Sensível / Diminuto
     "":          { suave: "°",        intermediario: "m7(b5)",   avancado: "m7(b5)"   },
@@ -188,11 +188,11 @@ const CAMPO_MENOR: Record<number, QualityMap> = {
   4: { // v — Dominante (em menor natural = menor; gospel usa o V maior/7sus4)
     "m":         { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(9)"    },
     "m7":        { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(9)"    },
-    "":          { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" }, // V maior → dominante harmônico
-    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
-    "sus4":      { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4(9)" },
-    "7sus4":     { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
-    "add9":      { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
+    "":          { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    }, // V maior → dominante harmônico
+    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
+    "sus4":      { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4"    },
+    "7sus4":     { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
+    "add9":      { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
   },
   5: { // VI — Submediante Maior   suave=7M  intermediário=7M(9)  avançado=7M(9)
     "":          { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    },
@@ -210,8 +210,8 @@ const CAMPO_MENOR: Record<number, QualityMap> = {
     "7M(9)":     { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    },
     "add9":      { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    },
     "maj7":      { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    },
-    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" }, // VII7
-    "sus4":      { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4(9)" },
+    "7":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    }, // VII7
+    "sus4":      { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4"    },
   },
 };
 
@@ -230,73 +230,55 @@ const FALLBACK: QualityMap = {
   "m9":         { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
   "m7(9)":      { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
   "m7(11)":     { suave: "m7",       intermediario: "m7(9)",    avancado: "m7(11)"   },
-  "7":          { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
-  "7sus4":      { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
-  "7sus4(9)":   { suave: "7sus4",    intermediario: "7sus4(9)", avancado: "7sus4(9)" },
-  "sus4":       { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4(9)" },
+  "7":          { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
+  "7sus4":      { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
+  "7sus4(9)":   { suave: "7sus4",    intermediario: "7sus4"   , avancado: "7sus4"    },
+  "sus4":       { suave: "sus4",     intermediario: "7sus4",    avancado: "7sus4"    },
   "sus2":       { suave: "sus2",     intermediario: "sus2",     avancado: "sus2"     },
-  "9sus4":      { suave: "7sus4",    intermediario: "7sus4(9)", avancado: "7sus4(9)" },
+  "9sus4":      { suave: "7sus4",    intermediario: "7sus4"   , avancado: "7sus4"    },
   "°":          { suave: "°",        intermediario: "m7(b5)",   avancado: "m7(b5)"   },
   "dim":        { suave: "°",        intermediario: "m7(b5)",   avancado: "m7(b5)"   },
   "m7(b5)":     { suave: "m7(b5)",   intermediario: "m7(b5)",   avancado: "m7(b5)"   },
   "m7b5":       { suave: "m7(b5)",   intermediario: "m7(b5)",   avancado: "m7(b5)"   },
-  "11":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4(9)" },
+  "11":         { suave: "7sus4",    intermediario: "7sus4",    avancado: "7sus4"    },
   "13":         { suave: "7M",       intermediario: "7M(9)",    avancado: "7M(9)"    },
 };
 
-// ── Chord ID map — root + nova qualidade → ID no dicionário ───────────────────
-const CHORD_ID_MAP: Record<string, Record<string, string>> = {
-  C:  { "7M":"C7M",  "9":"C9",  "7M(9)":"C7M9",  "6":"C6",  "sus4":"Csus4",  "sus2":"Csus2",
-        "m7":"Cm7",  "m9":"Cm9", "m7(9)":"Cm79",  "m7(11)":"Cm711",
-        "7sus4":"C7sus4",  "7sus4(9)":"C7sus49",  "°":"Cdim",  "m7(b5)":"Cm7b5" },
-  Db: { "7M":"Db7M", "9":"Db9", "7M(9)":"Db7M9", "6":"Db6", "sus4":"Dbsus4", "sus2":"Dbsus2",
-        "m7":"Dbm7", "m9":"Dbm9","m7(9)":"Dbm79", "m7(11)":"Dbm711",
-        "7sus4":"Db7sus4", "7sus4(9)":"Db7sus49", "°":"Dbdim", "m7(b5)":"Dbm7b5" },
-  D:  { "7M":"D7M",  "9":"D9",  "7M(9)":"D7M9",  "6":"D6",  "sus4":"Dsus4",  "sus2":"Dsus2",
-        "m7":"Dm7",  "m9":"Dm9", "m7(9)":"Dm79",  "m7(11)":"Dm711",
-        "7sus4":"D7sus4",  "7sus4(9)":"D7sus49",  "°":"Ddim",  "m7(b5)":"Dm7b5" },
-  Eb: { "7M":"Eb7M", "9":"Eb9", "7M(9)":"Eb7M9", "6":"Eb6", "sus4":"Ebsus4", "sus2":"Ebsus2",
-        "m7":"Ebm7", "m9":"Ebm9","m7(9)":"Ebm79", "m7(11)":"Ebm711",
-        "7sus4":"Eb7sus4", "7sus4(9)":"Eb7sus49", "°":"Ebdim", "m7(b5)":"Ebm7b5" },
-  E:  { "7M":"E7M",  "9":"E9",  "7M(9)":"E7M9",  "6":"E6",  "sus4":"Esus4",  "sus2":"Esus2",
-        "m7":"Em7",  "m9":"Em9", "m7(9)":"Em79",  "m7(11)":"Em711",
-        "7sus4":"E7sus4",  "7sus4(9)":"E7sus49",  "°":"Edim",  "m7(b5)":"Em7b5" },
-  F:  { "7M":"F7M",  "9":"F9",  "7M(9)":"F7M9",  "6":"F6",  "sus4":"Fsus4",  "sus2":"Fsus2",
-        "m7":"Fm7",  "m9":"Fm9", "m7(9)":"Fm79",  "m7(11)":"Fm711",
-        "7sus4":"F7sus4",  "7sus4(9)":"F7sus49",  "°":"Fdim",  "m7(b5)":"Fm7b5" },
-  Gb: { "7M":"Gb7M", "9":"Gb9", "7M(9)":"Gb7M9", "6":"Gb6", "sus4":"Gbsus4", "sus2":"Gbsus2",
-        "m7":"Gbm7", "m9":"Gbm9","m7(9)":"Gbm79", "m7(11)":"Gbm711",
-        "7sus4":"Gb7sus4", "7sus4(9)":"Gb7sus49", "°":"Gbdim", "m7(b5)":"Gbm7b5" },
-  G:  { "7M":"G7M",  "9":"G9",  "7M(9)":"G7M9",  "6":"G6",  "sus4":"Gsus4",  "sus2":"Gsus2",
-        "m7":"Gm7",  "m9":"Gm9", "m7(9)":"Gm79",  "m7(11)":"Gm711",
-        "7sus4":"G7sus4",  "7sus4(9)":"G7sus49",  "°":"Gdim",  "m7(b5)":"Gm7b5" },
-  Ab: { "7M":"Ab7M", "9":"Ab9", "7M(9)":"Ab7M9", "6":"Ab6", "sus4":"Absus4", "sus2":"Absus2",
-        "m7":"Abm7", "m9":"Abm9","m7(9)":"Abm79", "m7(11)":"Abm711",
-        "7sus4":"Ab7sus4", "7sus4(9)":"Ab7sus49", "°":"Abdim", "m7(b5)":"Abm7b5" },
-  A:  { "7M":"A7M",  "9":"A9",  "7M(9)":"A7M9",  "6":"A6",  "sus4":"Asus4",  "sus2":"Asus2",
-        "m7":"Am7",  "m9":"Am9", "m7(9)":"Am79",  "m7(11)":"Am711",
-        "7sus4":"A7sus4",  "7sus4(9)":"A7sus49",  "°":"Adim",  "m7(b5)":"Am7b5" },
-  Bb: { "7M":"Bb7M", "9":"Bb9", "7M(9)":"Bb7M9", "6":"Bb6", "sus4":"Bbsus4", "sus2":"Bbsus2",
-        "m7":"Bbm7", "m9":"Bbm9","m7(9)":"Bbm79", "m7(11)":"Bbm711",
-        "7sus4":"Bb7sus4", "7sus4(9)":"Bb7sus49", "°":"Bbdim", "m7(b5)":"Bbm7b5" },
-  B:  { "7M":"B7M",  "9":"B9",  "7M(9)":"B7M9",  "6":"B6",  "sus4":"Bsus4",  "sus2":"Bsus2",
-        "m7":"Bm7",  "m9":"Bm9", "m7(9)":"Bm79",  "m7(11)":"Bm711",
-        "7sus4":"B7sus4",  "7sus4(9)":"B7sus49",  "°":"Bdim",  "m7(b5)":"Bm7b5" },
-};
+// ── Chord ID map — root + nova qualidade → ID REAL no dicionário ──────────────
+// IMPORTANTE: todos os IDs aqui DEVEM existir em chords.ts. Qualidades sem
+// entrada no dicionário (ex.: 7sus4(9)) NÃO devem ser geradas pelo sofisticador.
+const ROOTS = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"] as const;
+const CHORD_ID_MAP: Record<string, Record<string, string>> = Object.fromEntries(
+  ROOTS.map((r) => [r, {
+    "":         `${r}-maior`,
+    "7M":       `${r}7M`,
+    "7M(9)":    `${r}9M`,        // dicionário: "Com 7ªM e 9ª"
+    "6":        `${r}6-9`,       // dicionário: "Com 6ª" (6/9)
+    "sus4":     `${r}sus4`,
+    "sus2":     `${r}sus2`,
+    "m":        `${r}m`,
+    "m7":       `${r}m7`,
+    "m7(9)":    `${r}m9`,        // dicionário: "Menores com 7ª e 9ª"
+    "m7(11)":   `${r}m11`,       // dicionário: "Menores com 7ª e 11ª"
+    "7sus4":    `${r}7sus4`,
+    "°":        `${r}-dim`,
+    "m7(b5)":   `${r}m7b5`,
+  }])
+);
 
+// Categoria correspondente à nova qualidade gerada
 const QUALITY_TO_CATEGORY: Record<string, string> = {
+  "":         "Tríades Maiores",
   "7M":       "Maiores com 7ªM",
-  "9":        "Com 9ª",
-  "7M(9)":    "Maiores com 7ªM",
+  "7M(9)":    "Com 7ªM e 9ª",
   "6":        "Com 6ª",
   "sus4":     "Sus4",
   "sus2":     "Sus2",
+  "m":        "Tríades Menores",
   "m7":       "Menores com 7ª",
-  "m9":       "Com 9ª",
-  "m7(9)":    "Menores com 7ª",
-  "m7(11)":   "Menores com 7ª",
+  "m7(9)":    "Menores com 7ª e 9ª",
+  "m7(11)":   "Menores com 7ª e 11ª",
   "7sus4":    "7sus4",
-  "7sus4(9)": "7sus4",
   "°":        "Diminutos",
   "m7(b5)":   "Meio-Diminutos",
 };
