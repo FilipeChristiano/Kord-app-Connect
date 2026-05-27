@@ -15,19 +15,19 @@ const LEVELS: { key: SophisticationLevel; label: string; description: string; co
     {
       key: "suave",
       label: "Suave",
-      description: "7M, m7, 7sus4 — sofisticação básica e natural",
+      description: "7M, m7, sus4 — refinamento leve e natural",
       color: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
     },
     {
       key: "intermediario",
       label: "Intermediário",
-      description: "9, m7(9), 7sus4(9) — nível gospel/worship moderno",
+      description: "7M(9), m7(9), 7sus4 — worship moderno e emocional",
       color: "border-amber-500/50 bg-amber-500/10 text-amber-400",
     },
     {
       key: "avancado",
       label: "Avançado",
-      description: "7M(9), m7(11), 7sus4(9) — harmonia de alto nível",
+      description: "7M(9), m7(11), 7sus4(9) — harmonia cinematográfica",
       color: "border-rose-500/50 bg-rose-500/10 text-rose-400",
     },
   ];
