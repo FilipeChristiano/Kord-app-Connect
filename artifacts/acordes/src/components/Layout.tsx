@@ -51,7 +51,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 alt="Harmonic"
                 className="w-10 h-10 rounded-xl shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all"
               />
-              <span className="font-display text-xl font-bold tracking-tight hidden sm:block bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+              <span className="font-brand text-2xl tracking-wide hidden sm:block bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent uppercase">
                 Harmonic
               </span>
             </Link>
