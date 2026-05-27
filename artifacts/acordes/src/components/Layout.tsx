@@ -45,12 +45,14 @@ export function Layout({ children }: { children: ReactNode }) {
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2 group outline-none">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-amber-700 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all">
-                <Music className="w-5 h-5 text-primary-foreground" />
-              </div>
+            <Link href="/" className="flex items-center gap-2.5 group outline-none">
+              <img
+                src={`${basePath}/logo.png`}
+                alt="Harmonic"
+                className="w-10 h-10 rounded-xl shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all"
+              />
               <span className="font-display text-xl font-bold tracking-tight hidden sm:block bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                Acordes Sofisticados
+                Harmonic
               </span>
             </Link>
 
@@ -148,10 +150,12 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <footer className="border-t border-white/5 py-8 mt-12 bg-black/20">
         <div className="max-w-7xl mx-auto px-4 text-center text-muted-foreground text-sm flex flex-col items-center gap-4">
-          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-            <Music className="w-4 h-4 text-white/50" />
-          </div>
-          <p>© {new Date().getFullYear()} Dicionário de Acordes Sofisticados. Uma ferramenta para tecladistas.</p>
+          <img
+            src={`${basePath}/logo.png`}
+            alt="Harmonic"
+            className="w-8 h-8 rounded-lg opacity-70"
+          />
+          <p>© {new Date().getFullYear()} Harmonic. Uma ferramenta para tecladistas.</p>
         </div>
       </footer>
     </div>

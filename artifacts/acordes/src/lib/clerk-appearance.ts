@@ -73,7 +73,7 @@ export const clerkLocalization = {
   signIn: {
     start: {
       title: "Bem-vindo de volta",
-      subtitle: "Entre para acessar o Dicionário de Acordes Sofisticados",
+      subtitle: "Entre para acessar o Harmonic",
       actionText: "Não tem conta?",
       actionLink: "Cadastre-se",
     },

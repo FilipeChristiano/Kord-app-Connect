@@ -37,8 +37,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
-        name: "Dicionário de Acordes Sofisticados",
-        short_name: "Acordes",
+        name: "Harmonic",
+        short_name: "Harmonic",
         description:
           "Dicionário interativo de acordes sofisticados para teclado e piano, com sofisticador de cifra gospel/worship.",
         theme_color: "#0d121e",
