@@ -22,7 +22,7 @@ export const clerkAppearance = {
     colorInput: "hsl(224, 35%, 12%)",
     colorInputForeground: "hsl(40, 33%, 96%)",
     colorNeutral: "hsl(40, 20%, 80%)",
-    fontFamily: "'DM Sans', sans-serif",
+    fontFamily: "'Space Grotesk', system-ui, sans-serif",
     borderRadius: "0.75rem",
   },
   elements: {
