@@ -453,7 +453,7 @@ interface Token {
 }
 
 const CHORD_REGEX =
-  /\b([A-G][b#]?(?:m7\(b5\)|m7b5|7sus4\(9\)|7sus4|9sus4|m7\(11\)|m7\(9\)|7M\(9\)|maj9|maj7|add9|7M|7\+|m7|m9|m6|m|°|dim7|dim|aug|sus4|sus2|6\/9|7|9|11|13|6|\+)?(?:\/[A-G][b#]?)?)\b/g;
+  /(?<![A-Za-z])([A-G][b#]?(?:m7\(b5\)|m7b5|7sus4\(9\)|7sus4|9sus4|m7\(11\)|m7\(9\)|7M\(9\)|maj9|maj7|add9|7M|7\+|m7|m9|m6|m|°|dim7|dim|aug|sus4|sus2|6\/9|7|9|11|13|6|\+)?(?:\/[A-G][b#]?)?)(?![A-Za-z0-9])/g;
 
 function tokenizeLine(
   line: string,
@@ -501,7 +501,7 @@ export interface DetectedTonality {
 
 function extractAllParsed(text: string): Array<{ root: string; quality: string }> {
   const allParsed: Array<{ root: string; quality: string }> = [];
-  const scanRegex = /\b([A-G][b#]?(?:m7\(b5\)|m7b5|7sus4\(9\)|7sus4|9sus4|m7\(11\)|m7\(9\)|7M\(9\)|maj9|maj7|add9|7M|7\+|m7|m9|m6|m|°|dim7|dim|aug|sus4|sus2|6\/9|7|9|11|13|6|\+)?(?:\/[A-G][b#]?)?)\b/g;
+  const scanRegex = /(?<![A-Za-z])([A-G][b#]?(?:m7\(b5\)|m7b5|7sus4\(9\)|7sus4|9sus4|m7\(11\)|m7\(9\)|7M\(9\)|maj9|maj7|add9|7M|7\+|m7|m9|m6|m|°|dim7|dim|aug|sus4|sus2|6\/9|7|9|11|13|6|\+)?(?:\/[A-G][b#]?)?)(?![A-Za-z0-9])/g;
   let m: RegExpExecArray | null;
   while ((m = scanRegex.exec(text)) !== null) {
     const parsed = parseChordToken(m[1]);
