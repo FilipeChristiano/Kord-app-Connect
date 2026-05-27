@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { VitePWA } from "vite-plugin-pwa";
 
 const rawPort = process.env.PORT;
 
@@ -32,6 +33,41 @@ export default defineConfig({
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.svg", "apple-touch-icon.png"],
+      manifest: {
+        name: "Dicionário de Acordes Sofisticados",
+        short_name: "Acordes",
+        description:
+          "Dicionário interativo de acordes sofisticados para teclado e piano, com sofisticador de cifra gospel/worship.",
+        theme_color: "#0d121e",
+        background_color: "#0d121e",
+        display: "standalone",
+        orientation: "portrait",
+        lang: "pt-BR",
+        start_url: basePath,
+        scope: basePath,
+        icons: [
+          { src: "pwa-192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "pwa-512-maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,woff2}"],
+        navigateFallback: `${basePath}index.html`,
+        navigateFallbackDenylist: [/^\/api/],
+      },
+      devOptions: {
+        enabled: false,
+      },
+    }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
