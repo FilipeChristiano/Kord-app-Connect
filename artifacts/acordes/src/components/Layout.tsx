@@ -44,12 +44,12 @@ export function Layout({ children }: { children: ReactNode }) {
         isScrolled ? "glass shadow-lg" : "bg-transparent py-2"
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             <Link href="/" className="flex items-center group outline-none">
               <img
                 src={`${basePath}/harmonic-logo-horizontal.png`}
                 alt="Harmonic"
-                className="h-9 sm:h-10 w-auto select-none group-hover:opacity-90 transition-opacity"
+                className="h-14 sm:h-16 w-auto select-none group-hover:opacity-90 transition-opacity"
                 draggable={false}
               />
             </Link>
