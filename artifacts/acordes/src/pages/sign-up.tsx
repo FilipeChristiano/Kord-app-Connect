@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSignUp } from "@clerk/react";
+import { useSignUp, useClerk } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,20 +13,6 @@ import {
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type Step = "email" | "code";
-
-function deriveNameFromEmail(email: string): string {
-  const local = email.split("@")[0] ?? "";
-  const cleaned = local
-    .replace(/[._-]+/g, " ")
-    .replace(/\d+/g, "")
-    .trim();
-  if (!cleaned) return "Usuário";
-  return cleaned
-    .split(" ")
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
-}
 
 function messageForCode(code: string | undefined, fallback: string): string {
   switch (code) {
@@ -48,6 +34,9 @@ function messageForCode(code: string | undefined, fallback: string): string {
 
 export default function SignUpPage() {
   const { signUp } = useSignUp();
+  const clerk = useClerk() as unknown as {
+    setActive?: (params: { session: string }) => Promise<void>;
+  };
   const [, setLocation] = useLocation();
 
   const [step, setStep] = useState<Step>("email");
@@ -72,20 +61,17 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       const trimmedEmail = email.trim();
-      const derivedName = deriveNameFromEmail(trimmedEmail);
 
       // Reset any stale sign-up state from previous attempts.
       try {
-        signUp.reset?.();
+        (signUp as unknown as { reset?: () => void }).reset?.();
       } catch {
         // ignore
       }
 
       const createRes = await signUp.create({
         emailAddress: trimmedEmail,
-        firstName: derivedName,
-        lastName: "Harmonic",
-      } as Parameters<typeof signUp.create>[0]);
+      });
 
       if (createRes.error) {
         // If the account already exists, push them to sign-in seamlessly.
@@ -145,23 +131,25 @@ export default function SignUpPage() {
         return;
       }
 
-      // If Clerk reports missing requirements (e.g. name fields), backfill
-      // them now so finalize() can produce a session.
-      const status = (signUp as unknown as { status?: string }).status;
-      if (status && status !== "complete") {
-        const derivedName = deriveNameFromEmail(email.trim());
-        try {
-          await (signUp as unknown as {
-            update: (p: { firstName: string; lastName: string }) => Promise<unknown>;
-          }).update({
-            firstName: derivedName,
-            lastName: "Harmonic",
-          });
-        } catch {
-          // best effort — finalize will surface the real error below
-        }
+      // Prefer the session id returned directly by the verify response —
+      // this avoids races where the cached signUp ref hasn't refreshed yet.
+      const verifyData = (verifyRes as unknown as {
+        data?: { createdSessionId?: string | null };
+      }).data;
+      const signUpAny = signUp as unknown as {
+        createdSessionId?: string | null;
+        status?: string;
+      };
+      const sessionId =
+        verifyData?.createdSessionId || signUpAny.createdSessionId;
+
+      if (sessionId && clerk.setActive) {
+        await clerk.setActive({ session: sessionId });
+        setLocation(basePath || "/");
+        return;
       }
 
+      // Fallback: try finalize() (older flow).
       const finalizeRes = await signUp.finalize();
       if (finalizeRes.error) {
         setError(

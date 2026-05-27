@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSignIn } from "@clerk/react";
+import { useSignIn, useClerk } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,9 @@ function messageForCode(code: string | undefined, fallback: string): string {
 
 export default function SignInPage() {
   const { signIn } = useSignIn();
+  const clerk = useClerk() as unknown as {
+    setActive?: (params: { session: string }) => Promise<void>;
+  };
   const [, setLocation] = useLocation();
 
   const [step, setStep] = useState<Step>("email");
@@ -99,6 +102,22 @@ export default function SignInPage() {
         setError(messageForCode(verifyRes.error.code, verifyRes.error.message || "Código inválido."));
         return;
       }
+
+      const verifyData = (verifyRes as unknown as {
+        data?: { createdSessionId?: string | null };
+      }).data;
+      const signInAny = signIn as unknown as {
+        createdSessionId?: string | null;
+      };
+      const sessionId =
+        verifyData?.createdSessionId || signInAny.createdSessionId;
+
+      if (sessionId && clerk.setActive) {
+        await clerk.setActive({ session: sessionId });
+        setLocation(basePath || "/");
+        return;
+      }
+
       const finalizeRes = await signIn.finalize();
       if (finalizeRes.error) {
         setError(messageForCode(finalizeRes.error.code, finalizeRes.error.message || "Não foi possível concluir o login."));
