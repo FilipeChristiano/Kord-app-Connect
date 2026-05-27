@@ -42,18 +42,12 @@ export default function Home() {
               Para tecladistas e pianistas
             </motion.div>
             
-            <motion.div variants={itemVariants} className="flex flex-col items-center gap-5 mb-6">
-              <img
-                src={`${import.meta.env.BASE_URL}logo.png`}
-                alt=""
-                aria-hidden="true"
-                className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl shadow-2xl shadow-primary/30"
-              />
+            <motion.div variants={itemVariants} className="flex flex-col items-center mb-6">
               <h1 className="sr-only">Harmonic — Acordes Sofisticados</h1>
               <img
-                src={`${import.meta.env.BASE_URL}wordmark.png`}
+                src={`${import.meta.env.BASE_URL}harmonic-logo-hero.png`}
                 alt="Harmonic"
-                className="w-full max-w-[520px] sm:max-w-[640px] md:max-w-[760px] h-auto select-none"
+                className="w-full max-w-[420px] sm:max-w-[520px] md:max-w-[620px] h-auto select-none drop-shadow-2xl"
                 draggable={false}
               />
             </motion.div>
