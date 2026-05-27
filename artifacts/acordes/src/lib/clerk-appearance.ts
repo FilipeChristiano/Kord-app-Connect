@@ -130,9 +130,10 @@ export const clerkLocalization = {
     form_identifier_not_found:
       "E-mail não cadastrado. Use o mesmo e-mail da compra na Hotmart.",
     form_password_incorrect: "Senha incorreta. Tente novamente.",
-    form_password_pwned:
-      "Esta senha foi exposta em vazamentos. Use uma senha mais segura.",
     form_password_length_too_short: "A senha precisa ter pelo menos 8 caracteres.",
+    form_password_no_uppercase: "A senha precisa ter pelo menos uma letra maiúscula.",
+    form_password_no_number: "A senha precisa ter pelo menos um número.",
+    form_password_no_special_char: "A senha precisa ter pelo menos um caractere especial (!@#$%&*).",
     form_identifier_exists: "Este e-mail já está cadastrado. Faça login.",
   },
 };
