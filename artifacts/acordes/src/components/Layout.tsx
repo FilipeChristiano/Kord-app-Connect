@@ -45,15 +45,13 @@ export function Layout({ children }: { children: ReactNode }) {
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2.5 group outline-none">
+            <Link href="/" className="flex items-center group outline-none">
               <img
-                src={`${basePath}/logo.png`}
+                src={`${basePath}/harmonic-logo-horizontal.png`}
                 alt="Harmonic"
-                className="w-10 h-10 rounded-xl shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all"
+                className="h-9 sm:h-10 w-auto select-none group-hover:opacity-90 transition-opacity"
+                draggable={false}
               />
-              <span className="font-brand text-2xl tracking-wide hidden sm:block bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent uppercase">
-                Harmonic
-              </span>
             </Link>
 
             {/* Desktop Nav */}
