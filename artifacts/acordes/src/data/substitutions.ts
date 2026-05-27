@@ -406,8 +406,9 @@ function substituteChordInKey(
   if (!parsed) return null;
 
   const { quality } = parsed;
-  const root = normalizeRoot(parsed.root);
-  const rootSemitone = NOTE_TO_SEMITONE[root];
+  const originalRoot = parsed.root;               // preserva C# / F# / Bb etc.
+  const normalRoot   = normalizeRoot(parsed.root); // Db / Gb / Bb — para busca no dicionário
+  const rootSemitone = NOTE_TO_SEMITONE[normalRoot];
   if (rootSemitone === undefined) return null;
 
   const { keySemitone, isMinor } = tonality;
@@ -423,14 +424,18 @@ function substituteChordInKey(
 
   if (degree >= 0 && campo[degree]) {
     const degreeMap = campo[degree];
-    const levelMap = degreeMap[quality] ?? degreeMap[""];
+    // Usa o mapa específico da qualidade. Só usa degreeMap[""] se o
+    // acorde original também não tinha qualidade (tríade pura).
+    const levelMap = degreeMap[quality] ?? (quality === "" ? degreeMap[""] : undefined);
     if (levelMap) {
       newQuality = levelMap[level];
       harmonicFunction = functionNames[degree];
     } else {
+      // Qualidade não mapeada para este grau → fallback por família
       const fb = FALLBACK[quality];
       if (!fb) return null;
       newQuality = fb[level];
+      harmonicFunction = functionNames[degree];
     }
   } else {
     const fb = FALLBACK[quality];
@@ -438,9 +443,11 @@ function substituteChordInKey(
     newQuality = fb[level];
   }
 
-  const substituted = root + newQuality;
+  // Monta o acorde de saída preservando a notação original (# ou b)
+  const substituted = originalRoot + newQuality;
   const category    = QUALITY_TO_CATEGORY[newQuality] || "Tríades Maiores";
-  const chordId     = CHORD_ID_MAP[root]?.[newQuality];
+  // ID no dicionário usa a raiz normalizada (Db, Gb…) pois o PDF usa bemóis
+  const chordId     = CHORD_ID_MAP[normalRoot]?.[newQuality];
 
   return { original: token, substituted, category, chordId, harmonicFunction };
 }
