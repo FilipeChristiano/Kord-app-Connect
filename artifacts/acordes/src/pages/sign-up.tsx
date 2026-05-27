@@ -77,7 +77,10 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       const verifyRes = await signUp.verifications.verifyEmailCode({ code: code.trim() });
-      if (verifyRes.error) {
+      const alreadyVerified =
+        verifyRes.error?.code === "verification_already_verified" ||
+        /already.*verified/i.test(verifyRes.error?.message || "");
+      if (verifyRes.error && !alreadyVerified) {
         setError(messageForCode(verifyRes.error.code, verifyRes.error.message || "Código inválido."));
         return;
       }
