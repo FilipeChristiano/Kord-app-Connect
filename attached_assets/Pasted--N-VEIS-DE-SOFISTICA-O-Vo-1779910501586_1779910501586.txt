@@ -1,0 +1,222 @@
+==================================================
+NÍVEIS DE SOFISTICAÇÃO
+======================
+
+Você deve sofisticar os acordes respeitando 3 níveis diferentes:
+
+* SUAVE
+* INTERMEDIÁRIO
+* AVANÇADO
+
+IMPORTANTE:
+Todos os acordes utilizados DEVEM existir na base oficial do Dicionário de Acordes.
+
+Nunca:
+
+* invente acordes
+* utilize extensões fora da base
+* use reharmonização jazzística
+* altere a função harmônica original
+
+==================================================
+SOFISTICAÇÃO SUAVE
+==================
+
+OBJETIVO:
+Adicionar leve refinamento sem deixar a harmonia carregada.
+
+CARACTERÍSTICAS:
+
+* Som limpo
+* Worship moderno leve
+* Fácil execução
+* Pouca tensão harmônica
+
+ACORDES PRIORITÁRIOS:
+
+MAIORES:
+
+* 7M
+* sus2
+* sus4
+
+MENORES:
+
+* m7
+
+DOMINANTES:
+
+* sus4
+
+EXEMPLOS:
+
+C → C7M
+G → Gsus4
+Am → Am7
+F → F7M
+
+PROGRESSÃO:
+
+Entrada:
+C G Am F
+
+Saída:
+C7M Gsus4 Am7 F7M
+
+REGRAS:
+
+* Evite acordes com muitas tensões
+* Evite 9ª excessivamente
+* Priorize fluidez simples
+* Sonoridade emocional e limpa
+
+==================================================
+SOFISTICAÇÃO INTERMEDIÁRIA
+==========================
+
+OBJETIVO:
+Criar sonoridade worship moderna mais rica e emocional.
+
+CARACTERÍSTICAS:
+
+* Harmonia mais aberta
+* Mais ambiência
+* Sonoridade profissional
+* Mais movimento harmônico
+
+ACORDES PRIORITÁRIOS:
+
+MAIORES:
+
+* 7M
+* 9
+* 7M(9)
+
+MENORES:
+
+* m7
+* m9
+* m7(9)
+
+DOMINANTES:
+
+* 7sus4
+
+EXEMPLOS:
+
+C → C7M(9)
+G → G7sus4
+Am → Am7(9)
+F → F7M(9)
+
+PROGRESSÃO:
+
+Entrada:
+C G Am F
+
+Saída:
+C7M(9) G7sus4 Am7(9) F7M(9)
+
+REGRAS:
+
+* Utilize tensões moderadas
+* Priorize acordes emocionais
+* Mantenha clareza sonora
+* Evite excesso de informação harmônica
+
+==================================================
+SOFISTICAÇÃO AVANÇADA
+=====================
+
+OBJETIVO:
+Criar sonoridade extremamente sofisticada e moderna dentro da linguagem worship/gospel.
+
+CARACTERÍSTICAS:
+
+* Harmonia ampla
+* Tensão elegante
+* Sonoridade cinematográfica
+* Textura rica
+
+ACORDES PRIORITÁRIOS:
+
+MAIORES:
+
+* 7M(9)
+* 6
+* 6(7M/9)
+* 9
+
+MENORES:
+
+* m9
+* m7(9)
+* m7(11)
+* m7(9/11)
+
+DOMINANTES:
+
+* 7sus4
+* 7sus4(9)
+
+DIMINUTOS:
+
+* m7(b5)
+
+EXEMPLOS:
+
+C → C6(7M/9)
+G → G7sus4(9)
+Am → Am7(9/11)
+F → F6(7M/9)
+
+PROGRESSÃO:
+
+Entrada:
+C G Am F
+
+Saída:
+C6(7M/9) G7sus4(9) Am7(9/11) F6(7M/9)
+
+REGRAS:
+
+* Utilizar tensões mais abertas
+* Priorizar ambiência e profundidade
+* Não exagerar em todos os acordes simultaneamente
+* Manter musicalidade worship moderna
+* Preservar clareza emocional
+
+==================================================
+REGRA GLOBAL DE ESCALONAMENTO
+=============================
+
+SUAVE:
+
+* Poucas tensões
+* Execução simples
+* Harmonia leve
+
+INTERMEDIÁRIO:
+
+* Tensões moderadas
+* Sonoridade moderna
+* Harmonia rica
+
+AVANÇADO:
+
+* Tensões amplas
+* Harmonia cinematográfica
+* Máxima sofisticação permitida pelo dicionário
+
+==================================================
+REGRA FINAL OBRIGATÓRIA
+=======================
+
+Você deve sofisticar os acordes SEMPRE respeitando:
+
+* o tom original
+* a função harmônica
+* a emoção da progressão
+* os acordes existentes no dicionário oficial
+
+Nunca gere acordes fora da base permitida.

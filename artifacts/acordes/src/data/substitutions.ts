@@ -484,14 +484,22 @@ function tokenizeLine(
   return tokens;
 }
 
+// ── Nota por semitom (padrão do PDF — bemóis) ────────────────────────────────
+const SEMITONE_TO_NOTE = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+
 // ── API pública ───────────────────────────────────────────────────────────────
 export interface ProcessedLine {
   tokens: Token[];
   hasChords: boolean;
 }
 
-export function processChordChart(text: string, level: SophisticationLevel): ProcessedLine[] {
-  // 1. Extrai todos os acordes para detecção tonal
+export interface DetectedTonality {
+  keyName: string;   // e.g. "C", "Am", "Bb", "F#m"
+  isMinor: boolean;
+  keySemitone: number;
+}
+
+function extractAllParsed(text: string): Array<{ root: string; quality: string }> {
   const allParsed: Array<{ root: string; quality: string }> = [];
   const scanRegex = /\b([A-G][b#]?(?:m7\(b5\)|m7b5|7sus4\(9\)|7sus4|9sus4|m7\(11\)|m7\(9\)|7M\(9\)|maj9|maj7|add9|7M|7\+|m7|m9|m6|m|°|dim7|dim|aug|sus4|sus2|6\/9|7|9|11|13|6|\+)?(?:\/[A-G][b#]?)?)\b/g;
   let m: RegExpExecArray | null;
@@ -501,16 +509,39 @@ export function processChordChart(text: string, level: SophisticationLevel): Pro
       allParsed.push(parsed);
     }
   }
+  return allParsed;
+}
 
-  // 2. Detecta tonalidade (maior ou menor)
-  const tonality = detectTonality(allParsed, text);
-
-  // 3. Tokeniza linha a linha
+export function processChordChart(text: string, level: SophisticationLevel): ProcessedLine[] {
+  const allParsed = extractAllParsed(text);
+  const tonality  = detectTonality(allParsed, text);
   return text.split("\n").map((line) => {
     const tokens = tokenizeLine(line, level, tonality);
     const hasChords = tokens.some((t) => t.type === "chord" && t.substitution);
     return { tokens, hasChords };
   });
+}
+
+export function processChordChartFull(
+  text: string,
+  level: SophisticationLevel
+): { lines: ProcessedLine[]; tonality: DetectedTonality } {
+  const allParsed = extractAllParsed(text);
+  const tonality  = detectTonality(allParsed, text);
+
+  const keyNote = SEMITONE_TO_NOTE[tonality.keySemitone] ?? "C";
+  const keyName = tonality.isMinor ? `${keyNote}m` : keyNote;
+
+  const lines = text.split("\n").map((line) => {
+    const tokens = tokenizeLine(line, level, tonality);
+    const hasChords = tokens.some((t) => t.type === "chord" && t.substitution);
+    return { tokens, hasChords };
+  });
+
+  return {
+    lines,
+    tonality: { keyName, isMinor: tonality.isMinor, keySemitone: tonality.keySemitone },
+  };
 }
 
 export type { Token };

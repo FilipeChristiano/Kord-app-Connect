@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight, Heart, BookmarkCheck } from "lucide-react";
+import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight, Heart, BookmarkCheck, Music2 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
-  processChordChart,
+  processChordChartFull,
   SophisticationLevel,
   ProcessedLine,
+  DetectedTonality,
 } from "@/data/substitutions";
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 
@@ -92,10 +93,13 @@ export default function ChordSubstitutor() {
   const [tituloInput, setTituloInput] = useState("");
   const [showTituloModal, setShowTituloModal] = useState(false);
 
-  const processed = useMemo<ProcessedLine[]>(() => {
-    if (!inputText.trim()) return [];
-    return processChordChart(inputText, level);
+  const result = useMemo(() => {
+    if (!inputText.trim()) return null;
+    return processChordChartFull(inputText, level);
   }, [inputText, level]);
+
+  const processed: ProcessedLine[] = result?.lines ?? [];
+  const detectedTonality: DetectedTonality | null = result?.tonality ?? null;
 
   const outputText = useMemo(() => {
     return processed
@@ -110,7 +114,13 @@ export default function ChordSubstitutor() {
   }, [processed]);
 
   const chordsChanged = useMemo(() => {
-    const changes: Array<{ original: string; substituted: string; category: string; chordId?: string }> = [];
+    const changes: Array<{
+      original: string;
+      substituted: string;
+      category: string;
+      chordId?: string;
+      harmonicFunction?: string;
+    }> = [];
     const seen = new Set<string>();
     processed.forEach((line) => {
       line.tokens.forEach((t) => {
@@ -253,9 +263,26 @@ export default function ChordSubstitutor() {
         {/* Output */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-primary/70 uppercase tracking-widest">
-              Cifra sofisticada
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-bold text-primary/70 uppercase tracking-widest">
+                Cifra sofisticada
+              </p>
+              {detectedTonality && (
+                <motion.span
+                  key={detectedTonality.keyName}
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    detectedTonality.isMinor
+                      ? "bg-violet-500/15 border-violet-500/30 text-violet-300"
+                      : "bg-primary/15 border-primary/30 text-primary"
+                  }`}
+                >
+                  <Music2 className="w-2.5 h-2.5" />
+                  Tom: {detectedTonality.keyName} {detectedTonality.isMinor ? "menor" : "maior"}
+                </motion.span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {/* Botão salvar cifra — sempre visível */}
               <button
@@ -341,8 +368,7 @@ export default function ChordSubstitutor() {
                     onClick={() => {
                       const ch = chordsChanged[i];
                       if (ch) {
-                        const processed2 = processChordChart(inputText, level);
-                        const found = processed2
+                        const found = processed
                           .flatMap((l) => l.tokens)
                           .find(
                             (t) =>
@@ -359,7 +385,11 @@ export default function ChordSubstitutor() {
                   >
                     {change.substituted}
                   </button>
-                  <span className="text-xs text-white/30">({change.category})</span>
+                  {change.harmonicFunction ? (
+                    <span className="text-[10px] text-white/40 italic">{change.harmonicFunction}</span>
+                  ) : (
+                    <span className="text-[10px] text-white/30">({change.category})</span>
+                  )}
                 </motion.div>
               ))}
             </div>
