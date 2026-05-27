@@ -42,10 +42,12 @@ export default function Home() {
               Para tecladistas e pianistas
             </motion.div>
             
-            <motion.h1 variants={itemVariants} className="font-display text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 mb-6 leading-tight">
-              Dicionário de <br className="hidden sm:block" />
-              <span className="text-primary bg-none">Acordes Sofisticados</span>
+            <motion.h1 variants={itemVariants} className="font-display text-6xl sm:text-7xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 mb-4 leading-tight tracking-tight">
+              <span className="text-primary bg-none">Harmonic</span>
             </motion.h1>
+            <motion.p variants={itemVariants} className="font-display text-base sm:text-lg text-white/70 mb-6 tracking-[0.3em] uppercase">
+              Acordes Sofisticados
+            </motion.p>
             
             <motion.p variants={itemVariants} className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed">
               Saia do som básico. Descubra harmonias ricas, entenda suas construções e aplique acordes profissionais nas suas músicas com clareza visual.
