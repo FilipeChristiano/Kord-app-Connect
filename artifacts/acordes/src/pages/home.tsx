@@ -79,7 +79,7 @@ export default function Home() {
               { label: "Acesso", value: "Offline" },
             ].map((stat, i) => (
               <div key={i} className="text-center px-4">
-                <div className="font-display text-3xl font-bold text-white mb-1">{stat.value}</div>
+                <div className="font-display text-3xl font-bold text-white mb-1 notranslate" translate="no">{stat.value}</div>
                 <div className="text-sm text-muted-foreground uppercase tracking-wider">{stat.label}</div>
               </div>
             ))}

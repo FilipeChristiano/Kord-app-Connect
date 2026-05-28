@@ -132,16 +132,16 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
             <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
             <div>
               <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
-              <p className="text-sm text-white/80 font-mono">{meLabel}</p>
+              <p className="text-sm text-white/80 font-mono notranslate" translate="no">{meLabel}</p>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
             <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 ring-2 ring-orange-400/30" />
             <div>
               <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
-              <p className="text-sm text-white/80 font-mono">
+              <p className="text-sm text-white/80 font-mono notranslate" translate="no">
                 {isLeftOnly
-                  ? <span className="italic text-white/50">Livre para melodia ou extensões</span>
+                  ? <span className="italic text-white/50" translate="yes">Livre para melodia ou extensões</span>
                   : rightHand.join(" — ")}
               </p>
             </div>
@@ -216,14 +216,14 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
             <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
             <div>
               <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
-              <p className="text-sm text-white/80 font-mono">{v.leftHand.join(" — ")}</p>
+              <p className="text-sm text-white/80 font-mono notranslate" translate="no">{v.leftHand.join(" — ")}</p>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
             <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 ring-2 ring-orange-400/30" />
             <div>
               <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
-              <p className="text-sm text-white/80 font-mono">{v.rightHand.join(" — ")}</p>
+              <p className="text-sm text-white/80 font-mono notranslate" translate="no">{v.rightHand.join(" — ")}</p>
             </div>
           </div>
         </div>
@@ -360,7 +360,7 @@ export default function ChordDetail() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <CategoryBadge category={chord.category} className="mb-4" />
-              <h1 className="font-display text-5xl md:text-7xl font-bold text-white tracking-tight">
+              <h1 className="font-display text-5xl md:text-7xl font-bold text-white tracking-tight notranslate" translate="no">
                 {chord.name}
               </h1>
             </div>
@@ -412,7 +412,8 @@ export default function ChordDetail() {
                 {chord.notes.map((note, i) => (
                   <div key={i} className="relative flex flex-col items-center">
                     <div
-                      className="w-14 h-16 rounded-lg shadow-md flex items-end justify-center pb-2 font-bold text-xl border-b-4"
+                      className="w-14 h-16 rounded-lg shadow-md flex items-end justify-center pb-2 font-bold text-xl border-b-4 notranslate"
+                      translate="no"
                       style={{
                         background:   "linear-gradient(to bottom, #fbbf24, #d97706)",
                         borderColor:  "#b45309",
@@ -433,7 +434,7 @@ export default function ChordDetail() {
                 <Info className="w-4 h-4" /> Fórmula
               </h3>
               <div className="bg-secondary/50 rounded-xl p-4 border border-white/5">
-                <code className="text-xl font-mono text-primary font-bold">{chord.formula}</code>
+                <code className="text-xl font-mono text-primary font-bold notranslate" translate="no">{chord.formula}</code>
               </div>
             </section>
 
@@ -486,7 +487,8 @@ export default function ChordDetail() {
                       <Link
                         key={variation}
                         href={`/acorde/${related.id}`}
-                        className="px-4 py-2 bg-secondary text-white rounded-lg font-medium border border-white/5 hover:border-primary/40 hover:bg-secondary/80 transition-all"
+                        className="px-4 py-2 bg-secondary text-white rounded-lg font-medium border border-white/5 hover:border-primary/40 hover:bg-secondary/80 transition-all notranslate"
+                        translate="no"
                       >
                         {related.name}
                       </Link>

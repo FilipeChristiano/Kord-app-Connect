@@ -86,14 +86,14 @@ export default function StudyMode() {
             >
               {/* Front of card */}
               <div className="absolute inset-0 backface-hidden w-full h-full">
-                <div className="w-full h-full glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-2xl border-2 border-white/5 hover:border-primary/30 transition-colors">
-                  <div className="absolute top-6 left-0 w-full flex justify-center">
+                <div className="relative w-full h-full glass-card rounded-3xl px-6 py-16 sm:px-10 sm:py-20 flex flex-col items-center justify-between text-center shadow-2xl border-2 border-white/5 hover:border-primary/30 transition-colors">
+                  <div className="flex justify-center">
                     <CategoryBadge category={currentChord.category} />
                   </div>
-                  <h2 className="font-display text-7xl sm:text-8xl font-bold text-white mb-4">
+                  <h2 className="font-display text-5xl sm:text-7xl font-bold text-white leading-tight break-words max-w-full notranslate" translate="no">
                     {currentChord.name}
                   </h2>
-                  <p className="text-muted-foreground font-medium animate-pulse mt-8">
+                  <p className="text-muted-foreground text-sm font-medium animate-pulse">
                     Clique para revelar detalhes
                   </p>
                 </div>
@@ -102,7 +102,7 @@ export default function StudyMode() {
               {/* Back of card */}
               <div className="absolute inset-0 backface-hidden w-full h-full rotate-y-180">
                 <div className="w-full h-full bg-primary/10 backdrop-blur-xl border-2 border-primary/40 rounded-3xl p-6 sm:p-10 flex flex-col justify-center shadow-2xl shadow-primary/20">
-                  <h3 className="font-display text-4xl font-bold text-primary mb-6 text-center">
+                  <h3 className="font-display text-4xl font-bold text-primary mb-6 text-center notranslate" translate="no">
                     {currentChord.name}
                   </h3>
                   
@@ -111,7 +111,7 @@ export default function StudyMode() {
                       <div className="text-xs text-primary/70 uppercase tracking-widest font-bold mb-2">Notas</div>
                       <div className="flex flex-wrap gap-2">
                         {currentChord.notes.map((n, i) => (
-                          <span key={i} className="bg-white/10 text-white font-bold px-4 py-2 rounded-lg border border-white/20">
+                          <span key={i} className="bg-white/10 text-white font-bold px-4 py-2 rounded-lg border border-white/20 notranslate" translate="no">
                             {n}
                           </span>
                         ))}
@@ -120,7 +120,7 @@ export default function StudyMode() {
                     
                     <div>
                       <div className="text-xs text-primary/70 uppercase tracking-widest font-bold mb-2">Fórmula</div>
-                      <code className="text-lg text-white font-mono">{currentChord.formula}</code>
+                      <code className="text-lg text-white font-mono notranslate" translate="no">{currentChord.formula}</code>
                     </div>
 
                     <div>

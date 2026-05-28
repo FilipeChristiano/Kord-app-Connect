@@ -40,13 +40,13 @@ export function ChordCard({ chord, index = 0 }: ChordCardProps) {
             </button>
           </div>
           
-          <h3 className="font-display text-3xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
+          <h3 className="font-display text-3xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors notranslate" translate="no">
             {chord.name}
           </h3>
           
           <div className="flex flex-wrap gap-1.5 mb-4">
             {chord.notes.map((note, i) => (
-              <span key={i} className="w-8 h-8 rounded-full bg-secondary text-secondary-foreground border border-white/5 flex items-center justify-center text-xs font-semibold">
+              <span key={i} className="w-8 h-8 rounded-full bg-secondary text-secondary-foreground border border-white/5 flex items-center justify-center text-xs font-semibold notranslate" translate="no">
                 {note}
               </span>
             ))}
