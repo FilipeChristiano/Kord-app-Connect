@@ -42,7 +42,7 @@ export default function Home() {
               Para tecladistas e pianistas
             </motion.div>
             
-            <motion.div variants={itemVariants} className="flex flex-col items-center mb-6">
+            <motion.div variants={itemVariants} className="flex flex-col items-center mb-2">
               <h1 className="sr-only">Harmonic — Acordes Sofisticados</h1>
               <img
                 src={`${import.meta.env.BASE_URL}harmonic-logo-hero.png`}
@@ -51,10 +51,7 @@ export default function Home() {
                 draggable={false}
               />
             </motion.div>
-            <motion.p variants={itemVariants} className="font-display text-xs sm:text-sm text-white/60 mb-6 tracking-[0.35em] uppercase">
-              Acordes Sofisticados
-            </motion.p>
-            
+
             <motion.p variants={itemVariants} className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed">
               Saia do som básico. Descubra harmonias ricas, entenda suas construções e aplique acordes profissionais nas suas músicas com clareza visual.
             </motion.p>
@@ -63,8 +60,8 @@ export default function Home() {
               <Link href="/dicionario" className="px-8 py-4 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-orange-400 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2">
                 Explorar Acordes <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link href="/estudo" className="px-8 py-4 rounded-xl font-bold bg-secondary text-white hover:bg-secondary/80 border border-white/5 hover:border-white/10 transition-all duration-300 flex items-center justify-center gap-2">
-                <BookOpen className="w-5 h-5" /> Modo Estudo
+              <Link href="/sofisticador" className="px-8 py-4 rounded-xl font-bold bg-secondary text-white hover:bg-secondary/80 border border-white/5 hover:border-white/10 transition-all duration-300 flex items-center justify-center gap-2">
+                <Wand2 className="w-5 h-5" /> Sofisticador de Cifras
               </Link>
             </motion.div>
           </motion.div>
