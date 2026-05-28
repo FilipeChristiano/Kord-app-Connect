@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import BpmDetector from "@/components/bpm-detector";
 
 type TimeSignature = "2/4" | "3/4" | "4/4" | "6/8";
 type Subdivision = "none" | "eighth" | "sixteenth";
@@ -418,6 +419,19 @@ export default function Metronome() {
     currentTickRef.current = 0;
   };
 
+  // Aplica o BPM (e compasso, se detectado) vindo do detector de BPM
+  const handleDetectedBpm = (detectedBpm: number, ts: "3/4" | "4/4" | null) => {
+    setActivePresetId(null);
+    setBpmClamped(detectedBpm);
+    if (ts && ts !== timeSignature) {
+      setTimeSignature(ts);
+      const saved = loadSavedAccents();
+      setAccentPattern(sanitizeAccents(saved[ts], ts));
+      currentTickRef.current = 0;
+      setCurrentBeat(0);
+    }
+  };
+
   const activePreset = useMemo(
     () => PRESETS.find((p) => p.id === activePresetId) ?? null,
     [activePresetId],
@@ -745,6 +759,11 @@ export default function Metronome() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* ── Detectar BPM ──────────────────────────────────────────────────── */}
+      <div className="mt-6">
+        <BpmDetector onApply={handleDetectedBpm} />
       </div>
 
       <style>{`
