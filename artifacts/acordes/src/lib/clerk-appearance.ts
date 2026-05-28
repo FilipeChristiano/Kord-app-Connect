@@ -72,14 +72,14 @@ export const clerkLocalization = {
   formButtonPrimary: "Continuar",
   signIn: {
     start: {
-      title: "Bem-vindo de volta",
-      subtitle: "Entre para acessar o Harmonic",
-      actionText: "Não tem conta?",
-      actionLink: "Cadastre-se",
+      title: "Entrar no Harmonic",
+      subtitle: "Use o e-mail e senha que você cadastrou",
+      actionText: "É seu primeiro acesso?",
+      actionLink: "Criar conta",
     },
     password: {
       title: "Digite sua senha",
-      subtitle: "Use a senha que você criou",
+      subtitle: "Use a senha que você criou no cadastro",
       actionLink: "Esqueci minha senha",
     },
     forgotPasswordAlternativeMethods: {
@@ -104,8 +104,8 @@ export const clerkLocalization = {
     start: {
       title: "Crie sua conta",
       subtitle:
-        "Use o mesmo e-mail da sua compra na Hotmart para liberar o acesso",
-      actionText: "Já tem conta?",
+        "Use o mesmo e-mail da compra na Hotmart e crie uma senha de acesso",
+      actionText: "Já criou sua conta antes?",
       actionLink: "Entrar",
     },
     emailCode: {

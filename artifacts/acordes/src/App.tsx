@@ -105,7 +105,7 @@ function AppRoutes() {
           <ProtectedAppRoutes />
         </Show>
         <Show when="signed-out">
-          <Redirect to="/sign-in" />
+          <Redirect to="/sign-up" />
         </Show>
       </Route>
     </Switch>
