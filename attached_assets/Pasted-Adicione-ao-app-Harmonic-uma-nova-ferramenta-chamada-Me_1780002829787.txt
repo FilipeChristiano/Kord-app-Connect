@@ -1,0 +1,109 @@
+Adicione ao app Harmonic uma nova ferramenta chamada “Metrônomo Inteligente”.
+
+Objetivo:
+Criar um metrônomo completo, moderno e responsivo, pensado para músicos de teclado, worship e gospel.
+
+Funcionalidades obrigatórias:
+
+1. Controles principais
+
+* BPM ajustável de 40 a 240
+* Botões +1, -1, +5 e -5 BPM
+* Botão Play/Pause
+* Botão Tap Tempo
+* Campo para digitar BPM manualmente
+* Botão Reset para voltar ao BPM padrão
+
+2. Assinatura de tempo
+
+* Permitir escolher:
+
+  * 4/4
+  * 3/4
+  * 6/8
+
+3. Subdivisões
+
+* Sem subdivisão
+* Colcheia
+* Semicolcheia
+
+4. Acento no tempo 1
+
+* O primeiro tempo do compasso deve ter som diferente
+* Os outros tempos devem ter som mais leve
+
+5. Visual
+
+* Interface premium seguindo a identidade Harmonic:
+
+  * fundo escuro
+  * detalhes em laranja
+  * textos em prata/branco
+  * botões arredondados
+  * visual moderno de app musical
+* Criar animação visual sincronizada com o clique
+* Mostrar o tempo atual do compasso, exemplo: 1 / 4, 2 / 4, 3 / 4, 4 / 4
+* Criar um círculo ou pulso visual que acende a cada batida
+
+6. Metrônomo inteligente
+   Criar presets automáticos com nome, BPM, compasso e subdivisão:
+
+* Adoração Profunda
+  BPM: 68
+  Compasso: 4/4
+  Subdivisão: colcheia
+
+* Worship Moderno
+  BPM: 74
+  Compasso: 4/4
+  Subdivisão: colcheia
+
+* Balada Gospel
+  BPM: 82
+  Compasso: 4/4
+  Subdivisão: sem subdivisão
+
+* Pentecostal Moderado
+  BPM: 96
+  Compasso: 4/4
+  Subdivisão: colcheia
+
+* Pentecostal Rápido
+  BPM: 126
+  Compasso: 4/4
+  Subdivisão: semicolcheia
+
+* Valsa / 3 por 4
+  BPM: 72
+  Compasso: 3/4
+  Subdivisão: sem subdivisão
+
+* 6 por 8 Worship
+  BPM: 58
+  Compasso: 6/8
+  Subdivisão: colcheia
+
+7. Comportamento dos presets
+
+* Ao clicar em um preset, atualizar automaticamente BPM, compasso e subdivisão
+* Mostrar o nome do preset ativo
+* Permitir que o usuário edite o BPM depois de escolher o preset
+* Se o usuário alterar BPM manualmente, manter o nome do preset, mas indicar “ajustado”
+
+8. Tecnologia
+
+* Implementar com Web Audio API para baixa latência
+* Não usar áudio MP3 externo
+* Gerar o som do clique pelo próprio navegador
+* Garantir que funcione em desktop e mobile
+* Evitar setInterval simples se causar atraso; usar scheduler com AudioContext quando possível
+
+9. Integração
+
+* Adicionar o metrônomo no menu principal do Harmonic
+* Criar uma página ou aba chamada “Metrônomo”
+* Manter o padrão visual do restante do app
+
+Resultado esperado:
+O usuário deve conseguir abrir o Harmonic, entrar em Metrônomo, escolher um estilo como “Adoração Profunda” ou “Pentecostal Rápido”, apertar Play e estudar com um metrônomo musical, bonito e funcional.

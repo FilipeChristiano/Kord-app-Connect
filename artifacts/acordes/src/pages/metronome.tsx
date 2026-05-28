@@ -1,0 +1,613 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Play,
+  Pause,
+  Minus,
+  Plus,
+  RotateCcw,
+  Hand,
+  Music2,
+  Sparkles,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type TimeSignature = "4/4" | "3/4" | "6/8";
+type Subdivision = "none" | "eighth" | "sixteenth";
+
+interface Preset {
+  id: string;
+  name: string;
+  bpm: number;
+  timeSignature: TimeSignature;
+  subdivision: Subdivision;
+  description: string;
+}
+
+const PRESETS: Preset[] = [
+  { id: "adoracao-profunda", name: "Adoração Profunda", bpm: 68, timeSignature: "4/4", subdivision: "eighth", description: "Momentos íntimos e contemplativos" },
+  { id: "worship-moderno", name: "Worship Moderno", bpm: 74, timeSignature: "4/4", subdivision: "eighth", description: "Pop worship contemporâneo" },
+  { id: "balada-gospel", name: "Balada Gospel", bpm: 82, timeSignature: "4/4", subdivision: "none", description: "Baladas clássicas do gospel" },
+  { id: "pentecostal-moderado", name: "Pentecostal Moderado", bpm: 96, timeSignature: "4/4", subdivision: "eighth", description: "Levada pentecostal padrão" },
+  { id: "pentecostal-rapido", name: "Pentecostal Rápido", bpm: 126, timeSignature: "4/4", subdivision: "sixteenth", description: "Avivamento e celebração" },
+  { id: "valsa", name: "Valsa / 3 por 4", bpm: 72, timeSignature: "3/4", subdivision: "none", description: "Hinos antigos e valsas" },
+  { id: "seis-por-oito", name: "6 por 8 Worship", bpm: 58, timeSignature: "6/8", subdivision: "eighth", description: "Compasso composto fluído" },
+];
+
+const SUBDIVISION_LABELS: Record<Subdivision, string> = {
+  none: "Sem subdivisão",
+  eighth: "Colcheia",
+  sixteenth: "Semicolcheia",
+};
+
+const TIME_SIGNATURES: TimeSignature[] = ["4/4", "3/4", "6/8"];
+const SUBDIVISIONS: Subdivision[] = ["none", "eighth", "sixteenth"];
+
+const DEFAULT_BPM = 90;
+const MIN_BPM = 40;
+const MAX_BPM = 240;
+
+function getBeatsPerBar(ts: TimeSignature): number {
+  if (ts === "3/4") return 3;
+  if (ts === "6/8") return 6;
+  return 4;
+}
+
+function getSubdivisionMultiplier(sub: Subdivision, ts: TimeSignature): number {
+  if (ts === "6/8") {
+    // Em 6/8 cada "tempo" já é uma colcheia — então colcheia = 1x, semicolcheia = 2x.
+    if (sub === "sixteenth") return 2;
+    return 1;
+  }
+  if (sub === "sixteenth") return 4;
+  if (sub === "eighth") return 2;
+  return 1;
+}
+
+export default function Metronome() {
+  const [bpm, setBpm] = useState(DEFAULT_BPM);
+  const [bpmInput, setBpmInput] = useState(String(DEFAULT_BPM));
+  const [timeSignature, setTimeSignature] = useState<TimeSignature>("4/4");
+  const [subdivision, setSubdivision] = useState<Subdivision>("none");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentBeat, setCurrentBeat] = useState(0);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [presetAdjusted, setPresetAdjusted] = useState(false);
+
+  const beatsPerBar = getBeatsPerBar(timeSignature);
+
+  // ── Refs para o scheduler (Web Audio) ──────────────────────────────────────
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const nextNoteTimeRef = useRef(0);
+  const currentTickRef = useRef(0);
+  const schedulerIdRef = useRef<number | null>(null);
+  const bpmRef = useRef(bpm);
+  const timeSignatureRef = useRef(timeSignature);
+  const subdivisionRef = useRef(subdivision);
+  const beatQueueRef = useRef<{ tick: number; time: number }[]>([]);
+  const rafIdRef = useRef<number | null>(null);
+
+  useEffect(() => { bpmRef.current = bpm; }, [bpm]);
+  useEffect(() => { timeSignatureRef.current = timeSignature; }, [timeSignature]);
+  useEffect(() => { subdivisionRef.current = subdivision; }, [subdivision]);
+
+  // ── Som do clique (oscilador sintetizado) ──────────────────────────────────
+  const playClick = useCallback((time: number, kind: "accent" | "beat" | "subdivision") => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    let freq = 880;
+    let peak = 0.5;
+    let duration = 0.04;
+
+    if (kind === "accent") {
+      freq = 1500;
+      peak = 0.7;
+      duration = 0.06;
+    } else if (kind === "beat") {
+      freq = 900;
+      peak = 0.45;
+      duration = 0.045;
+    } else {
+      freq = 600;
+      peak = 0.18;
+      duration = 0.025;
+    }
+
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq, time);
+
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(peak, time + 0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(time);
+    osc.stop(time + duration + 0.02);
+  }, []);
+
+  // ── Scheduler com lookahead (padrão Chris Wilson) ──────────────────────────
+  const SCHEDULE_AHEAD = 0.1; // segundos
+  const LOOKAHEAD_MS = 25;
+
+  const scheduler = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+
+    while (nextNoteTimeRef.current < ctx.currentTime + SCHEDULE_AHEAD) {
+      const ts = timeSignatureRef.current;
+      const sub = subdivisionRef.current;
+      const mult = getSubdivisionMultiplier(sub, ts);
+      const beats = getBeatsPerBar(ts);
+      const totalTicks = beats * mult;
+      const tick = currentTickRef.current;
+      const beatIndex = Math.floor(tick / mult);
+      const isOnBeat = tick % mult === 0;
+
+      let kind: "accent" | "beat" | "subdivision";
+      if (isOnBeat) {
+        kind = beatIndex === 0 ? "accent" : "beat";
+      } else {
+        kind = "subdivision";
+      }
+
+      playClick(nextNoteTimeRef.current, kind);
+
+      if (isOnBeat) {
+        beatQueueRef.current.push({ tick: beatIndex, time: nextNoteTimeRef.current });
+      }
+
+      // Avança o tempo: 1 beat = 60/bpm; cada tick = (60/bpm) / mult
+      const secondsPerTick = 60 / bpmRef.current / mult;
+      nextNoteTimeRef.current += secondsPerTick;
+      currentTickRef.current = (tick + 1) % totalTicks;
+    }
+  }, [playClick]);
+
+  // ── Loop visual sincronizado com o áudio ───────────────────────────────────
+  const visualLoop = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (ctx) {
+      const now = ctx.currentTime;
+      while (
+        beatQueueRef.current.length > 0 &&
+        beatQueueRef.current[0].time <= now
+      ) {
+        const beat = beatQueueRef.current.shift()!;
+        setCurrentBeat(beat.tick);
+      }
+    }
+    rafIdRef.current = requestAnimationFrame(visualLoop);
+  }, []);
+
+  // ── Start / Stop ───────────────────────────────────────────────────────────
+  const stop = useCallback(() => {
+    if (schedulerIdRef.current !== null) {
+      window.clearInterval(schedulerIdRef.current);
+      schedulerIdRef.current = null;
+    }
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    beatQueueRef.current = [];
+    currentTickRef.current = 0;
+    setCurrentBeat(0);
+    setIsPlaying(false);
+    isRunningRef.current = false;
+  }, []);
+
+  const isRunningRef = useRef(false);
+
+  const start = useCallback(async () => {
+    if (isRunningRef.current) return;
+    isRunningRef.current = true;
+
+    // Defensive: limpa qualquer loop órfão antes de iniciar
+    if (schedulerIdRef.current !== null) {
+      window.clearInterval(schedulerIdRef.current);
+      schedulerIdRef.current = null;
+    }
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+
+    if (!audioCtxRef.current) {
+      const Ctor: typeof AudioContext =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioCtxRef.current = new Ctor();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
+    currentTickRef.current = 0;
+    beatQueueRef.current = [];
+    nextNoteTimeRef.current = ctx.currentTime + 0.05;
+    setIsPlaying(true);
+    schedulerIdRef.current = window.setInterval(scheduler, LOOKAHEAD_MS);
+    rafIdRef.current = requestAnimationFrame(visualLoop);
+  }, [scheduler, visualLoop]);
+
+  const togglePlay = useCallback(() => {
+    if (isPlaying) stop();
+    else start();
+  }, [isPlaying, start, stop]);
+
+  useEffect(() => {
+    return () => {
+      if (schedulerIdRef.current !== null) window.clearInterval(schedulerIdRef.current);
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+      if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
+    };
+  }, []);
+
+  // Atalho: tecla espaço dá play/pause
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        togglePlay();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [togglePlay]);
+
+  // ── BPM helpers ────────────────────────────────────────────────────────────
+  const setBpmClamped = useCallback((value: number, fromUser = true) => {
+    const next = Math.max(MIN_BPM, Math.min(MAX_BPM, Math.round(value)));
+    setBpm(next);
+    setBpmInput(String(next));
+    if (fromUser && activePresetId) {
+      const preset = PRESETS.find((p) => p.id === activePresetId);
+      if (preset && preset.bpm !== next) setPresetAdjusted(true);
+    }
+  }, [activePresetId]);
+
+  const adjustBpm = (delta: number) => setBpmClamped(bpm + delta);
+  const handleBpmInputBlur = () => {
+    const parsed = parseInt(bpmInput, 10);
+    if (Number.isFinite(parsed)) setBpmClamped(parsed);
+    else setBpmInput(String(bpm));
+  };
+
+  const resetBpm = () => {
+    setBpmClamped(DEFAULT_BPM);
+    setActivePresetId(null);
+    setPresetAdjusted(false);
+  };
+
+  // ── Tap Tempo ──────────────────────────────────────────────────────────────
+  const tapsRef = useRef<number[]>([]);
+  const handleTap = () => {
+    const now = performance.now();
+    const taps = tapsRef.current;
+    // Reset se passou mais de 2s
+    if (taps.length && now - taps[taps.length - 1] > 2000) {
+      tapsRef.current = [];
+    }
+    tapsRef.current.push(now);
+    if (tapsRef.current.length > 6) tapsRef.current.shift();
+    if (tapsRef.current.length >= 2) {
+      const arr = tapsRef.current;
+      const intervals: number[] = [];
+      for (let i = 1; i < arr.length; i++) intervals.push(arr[i] - arr[i - 1]);
+      const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const computed = 60000 / avg;
+      setBpmClamped(computed);
+    }
+  };
+
+  // ── Presets ────────────────────────────────────────────────────────────────
+  const applyPreset = (preset: Preset) => {
+    setActivePresetId(preset.id);
+    setPresetAdjusted(false);
+    setBpm(preset.bpm);
+    setBpmInput(String(preset.bpm));
+    setTimeSignature(preset.timeSignature);
+    setSubdivision(preset.subdivision);
+    currentTickRef.current = 0;
+    setCurrentBeat(0);
+  };
+
+  // Se mudar compasso/subdivisão manualmente, sinaliza ajuste
+  const handleTimeSignatureChange = (ts: TimeSignature) => {
+    setTimeSignature(ts);
+    currentTickRef.current = 0;
+    if (activePresetId) {
+      const p = PRESETS.find((x) => x.id === activePresetId);
+      if (p && p.timeSignature !== ts) setPresetAdjusted(true);
+    }
+  };
+
+  const handleSubdivisionChange = (sub: Subdivision) => {
+    setSubdivision(sub);
+    currentTickRef.current = 0;
+    if (activePresetId) {
+      const p = PRESETS.find((x) => x.id === activePresetId);
+      if (p && p.subdivision !== sub) setPresetAdjusted(true);
+    }
+  };
+
+  const activePreset = useMemo(
+    () => PRESETS.find((p) => p.id === activePresetId) ?? null,
+    [activePresetId],
+  );
+
+  const beatDots = Array.from({ length: beatsPerBar }, (_, i) => i);
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      {/* Header */}
+      <div className="mb-8 text-center lg:text-left">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-4 uppercase tracking-wider">
+          <Music2 className="w-3.5 h-3.5" /> Ferramenta de Estudo
+        </div>
+        <h1 className="font-display text-4xl md:text-5xl font-bold text-white mb-3">
+          Metrônomo Inteligente
+        </h1>
+        <p className="text-muted-foreground max-w-2xl lg:mx-0 mx-auto">
+          Pratique no tempo certo com presets pensados para worship, gospel e estudo de teclado.
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6">
+        {/* ── Painel principal ──────────────────────────────────────────────── */}
+        <div className="glass-card rounded-3xl p-6 sm:p-10 border border-white/10 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+
+          {/* Preset ativo */}
+          {activePreset && (
+            <div className="mb-6 flex items-center justify-center gap-2 text-center">
+              <span className="text-xs uppercase tracking-widest text-primary/70 font-semibold">Preset ativo</span>
+              <span className="text-sm font-bold text-white">{activePreset.name}</span>
+              {presetAdjusted && (
+                <span className="text-[10px] uppercase tracking-wider bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/30">
+                  ajustado
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Pulso visual + BPM */}
+          <div className="relative flex flex-col items-center justify-center py-6">
+            <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
+              {/* Círculos pulsantes */}
+              <motion.div
+                key={`pulse-${currentBeat}-${isPlaying}`}
+                initial={{ scale: 0.8, opacity: 0.6 }}
+                animate={isPlaying ? { scale: 1.15, opacity: 0 } : { scale: 0.8, opacity: 0 }}
+                transition={{ duration: Math.min(0.6, 60 / bpm * 0.8) }}
+                className={cn(
+                  "absolute inset-0 rounded-full border-2",
+                  currentBeat === 0 ? "border-primary" : "border-primary/40",
+                )}
+              />
+              <div className={cn(
+                "absolute inset-4 rounded-full border border-white/10 transition-colors duration-100",
+                isPlaying && currentBeat === 0 ? "bg-primary/15" : isPlaying ? "bg-white/5" : "bg-transparent",
+              )} />
+              {/* Núcleo com BPM */}
+              <div className="relative z-10 text-center">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">BPM</div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={bpmInput}
+                  onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ""))}
+                  onBlur={handleBpmInputBlur}
+                  onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
+                  className="font-display text-6xl sm:text-7xl font-bold text-white bg-transparent text-center w-40 outline-none focus:text-primary transition-colors notranslate"
+                  translate="no"
+                  aria-label="BPM"
+                />
+                <div className="text-xs text-muted-foreground mt-1">{MIN_BPM} – {MAX_BPM}</div>
+              </div>
+            </div>
+
+            {/* Indicador de beats */}
+            <div className="flex items-center justify-center gap-2 mt-6">
+              {beatDots.map((i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "rounded-full transition-all duration-100",
+                    i === 0 ? "w-3.5 h-3.5" : "w-3 h-3",
+                    isPlaying && currentBeat === i
+                      ? i === 0
+                        ? "bg-primary scale-125 shadow-lg shadow-primary/50"
+                        : "bg-white scale-110"
+                      : i === 0
+                        ? "bg-primary/30"
+                        : "bg-white/15",
+                  )}
+                />
+              ))}
+              <span className="ml-3 text-sm font-mono text-muted-foreground notranslate" translate="no">
+                {isPlaying ? currentBeat + 1 : 1} / {beatsPerBar}
+              </span>
+            </div>
+          </div>
+
+          {/* Controles +/- BPM */}
+          <div className="grid grid-cols-4 gap-2 mt-6 max-w-md mx-auto">
+            <button onClick={() => adjustBpm(-5)} className="bpm-btn">
+              <Minus className="w-3 h-3" /> 5
+            </button>
+            <button onClick={() => adjustBpm(-1)} className="bpm-btn">
+              <Minus className="w-3 h-3" /> 1
+            </button>
+            <button onClick={() => adjustBpm(1)} className="bpm-btn">
+              <Plus className="w-3 h-3" /> 1
+            </button>
+            <button onClick={() => adjustBpm(5)} className="bpm-btn">
+              <Plus className="w-3 h-3" /> 5
+            </button>
+          </div>
+
+          {/* Play / Tap / Reset */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+            <button
+              onClick={togglePlay}
+              className={cn(
+                "flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 shadow-lg",
+                isPlaying
+                  ? "bg-white text-background hover:bg-white/90 shadow-white/20"
+                  : "bg-primary text-primary-foreground hover:bg-orange-400 shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5",
+              )}
+              aria-label={isPlaying ? "Pausar" : "Tocar"}
+            >
+              {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
+              {isPlaying ? "Pausar" : "Tocar"}
+            </button>
+            <button
+              onClick={handleTap}
+              className="flex items-center gap-2 px-5 py-4 rounded-2xl font-semibold text-white bg-secondary hover:bg-secondary/80 border border-white/10 transition-all"
+              aria-label="Tap Tempo"
+            >
+              <Hand className="w-5 h-5" />
+              Tap
+            </button>
+            <button
+              onClick={resetBpm}
+              className="flex items-center gap-2 px-5 py-4 rounded-2xl font-semibold text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 hover:border-white/10 transition-all"
+              aria-label="Reset"
+            >
+              <RotateCcw className="w-5 h-5" />
+              Reset
+            </button>
+          </div>
+
+          {/* Time Signature + Subdivisão */}
+          <div className="grid sm:grid-cols-2 gap-6 mt-10">
+            <div>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">Compasso</div>
+              <div className="flex gap-2">
+                {TIME_SIGNATURES.map((ts) => (
+                  <button
+                    key={ts}
+                    onClick={() => handleTimeSignatureChange(ts)}
+                    aria-pressed={timeSignature === ts}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl font-bold transition-all border notranslate",
+                      timeSignature === ts
+                        ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                        : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
+                    )}
+                    translate="no"
+                  >
+                    {ts}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">Subdivisão</div>
+              <div className="flex gap-2">
+                {SUBDIVISIONS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleSubdivisionChange(s)}
+                    aria-pressed={subdivision === s}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl text-sm font-semibold transition-all border",
+                      subdivision === s
+                        ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                        : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
+                    )}
+                  >
+                    {SUBDIVISION_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground/70 text-center mt-6">
+            Dica: pressione <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/80 font-mono text-[10px]">espaço</kbd> para tocar/pausar.
+          </p>
+        </div>
+
+        {/* ── Presets ───────────────────────────────────────────────────────── */}
+        <div className="glass-card rounded-3xl p-6 border border-white/10">
+          <div className="flex items-center gap-2 mb-5">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h2 className="font-display text-xl font-bold text-white">Presets Inteligentes</h2>
+          </div>
+          <div className="space-y-2">
+            {PRESETS.map((preset) => {
+              const isActive = activePresetId === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  onClick={() => applyPreset(preset)}
+                  className={cn(
+                    "w-full text-left p-4 rounded-xl border transition-all duration-200 group",
+                    isActive
+                      ? "bg-primary/15 border-primary/50 shadow-md shadow-primary/10"
+                      : "bg-secondary/30 border-white/5 hover:bg-secondary/50 hover:border-white/15",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className={cn(
+                        "font-bold mb-0.5 transition-colors",
+                        isActive ? "text-white" : "text-white/90 group-hover:text-white",
+                      )}>
+                        {preset.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground line-clamp-1">{preset.description}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={cn(
+                        "font-display font-bold text-lg notranslate",
+                        isActive ? "text-primary" : "text-white/80",
+                      )} translate="no">
+                        {preset.bpm}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider notranslate" translate="no">
+                        {preset.timeSignature}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .bpm-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.25rem;
+          padding: 0.625rem 0.5rem;
+          border-radius: 0.75rem;
+          background: hsl(var(--secondary) / 0.5);
+          color: hsl(var(--muted-foreground));
+          font-weight: 600;
+          font-size: 0.875rem;
+          border: 1px solid hsl(0 0% 100% / 0.05);
+          transition: all 200ms;
+        }
+        .bpm-btn:hover {
+          background: hsl(var(--secondary));
+          color: white;
+          border-color: hsl(0 0% 100% / 0.15);
+        }
+      `}</style>
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Layers, Star, Search, Lightbulb, Wand2 } from "lucide-react";
+import { ArrowRight, BookOpen, Layers, Star, Search, Lightbulb, Wand2, Timer } from "lucide-react";
 import { CHORDS, CATEGORIES } from "@/data/chords";
 
 export default function Home() {
@@ -127,11 +127,19 @@ export default function Home() {
               highlight
             />
             <FeatureCard 
+              icon={<Timer />}
+              title="Metrônomo Inteligente"
+              desc="Presets de worship, gospel e pentecostal. Tap tempo, subdivisões e som por Web Audio."
+              href="/metronomo"
+              delay={0.5}
+              highlight
+            />
+            <FeatureCard 
               icon={<BookOpen />}
               title="Modo Estudo"
               desc="Pratique a memorização com flashcards interativos por categoria de acordes."
               href="/estudo"
-              delay={0.5}
+              delay={0.6}
             />
           </div>
         </div>
