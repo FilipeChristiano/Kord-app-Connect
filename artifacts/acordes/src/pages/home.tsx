@@ -75,8 +75,8 @@ export default function Home() {
             {[
               { label: "Acordes", value: CHORDS.length },
               { label: "Categorias", value: CATEGORIES.length },
-              { label: "Aplicações", value: "Práticas" },
-              { label: "Acesso", value: "Offline" },
+              { label: "Ferramentas", value: 5 },
+              { label: "100% Offline", value: "PWA" },
             ].map((stat, i) => (
               <div key={i} className="text-center px-4">
                 <div className="font-display text-3xl font-bold text-white mb-1 notranslate" translate="no">{stat.value}</div>
