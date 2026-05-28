@@ -1,7 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Layers, Star, Search, Lightbulb, Wand2, Timer } from "lucide-react";
-import { CHORDS, CATEGORIES } from "@/data/chords";
 
 export default function Home() {
   const containerVariants = {
@@ -68,31 +67,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Slogan + Stats Strip */}
+      {/* Slogan Strip */}
       <section className="relative border-y border-primary/20 bg-gradient-to-r from-primary/15 via-orange-500/10 to-primary/15 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--primary)/0.18),_transparent_70%)] pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
-          <div className="text-center max-w-3xl mx-auto mb-10">
-            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
-              O <span className="text-primary">próximo nível</span> do seu teclado.
-            </h2>
-            <p className="text-sm md:text-base text-white/70 mt-3 max-w-2xl mx-auto">
-              Acordes profissionais, sofisticador de cifras, metrônomo inteligente e estudo guiado — tudo em um só app pensado para tecladistas de worship, gospel e MPB.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto divide-x divide-primary/20">
-            {[
-              { label: "Acordes", value: CHORDS.length },
-              { label: "Categorias", value: CATEGORIES.length },
-              { label: "Ferramentas", value: 5 },
-            ].map((stat, i) => (
-              <div key={i} className="text-center px-2 sm:px-4">
-                <div className="font-display text-3xl sm:text-4xl font-bold text-primary mb-1 notranslate" translate="no">{stat.value}</div>
-                <div className="text-xs sm:text-sm text-white/80 uppercase tracking-wider font-medium">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 relative">
+          <h2 className="font-display text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight text-center max-w-4xl mx-auto">
+            O <span className="text-primary">próximo nível</span> do seu teclado.
+          </h2>
         </div>
       </section>
 
