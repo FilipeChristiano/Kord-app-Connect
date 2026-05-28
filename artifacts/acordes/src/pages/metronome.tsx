@@ -3,8 +3,6 @@ import { motion } from "framer-motion";
 import {
   Play,
   Pause,
-  Minus,
-  Plus,
   RotateCcw,
   Hand,
   Music2,
@@ -107,8 +105,32 @@ const SUBDIVISION_LABELS: Record<Subdivision, string> = {
   sixteenth: "Semicolcheias",
 };
 
+const SUBDIVISION_GLYPHS: Record<Subdivision, string> = {
+  none: "♩",
+  eighth: "♫",
+  sixteenth: "♬",
+};
+
 const TIME_SIGNATURES: TimeSignature[] = ["2/4", "3/4", "4/4", "6/8"];
 const SUBDIVISIONS: Subdivision[] = ["none", "eighth", "sixteenth"];
+
+// ── Geometria do seletor circular de BPM ──────────────────────────────────────
+const DIAL_CENTER = 120; // centro do viewBox 240x240
+const DIAL_RADIUS = 104; // raio da trilha
+const GAUGE_START = 135; // ângulo inicial (graus) — canto inferior esquerdo
+const GAUGE_SWEEP = 270; // varredura total (lacuna de 90° embaixo)
+
+const dialPolar = (r: number, deg: number): [number, number] => {
+  const a = (deg * Math.PI) / 180;
+  return [DIAL_CENTER + r * Math.cos(a), DIAL_CENTER + r * Math.sin(a)];
+};
+
+const dialArc = (r: number, a0: number, a1: number): string => {
+  const [x0, y0] = dialPolar(r, a0);
+  const [x1, y1] = dialPolar(r, a1);
+  const large = a1 - a0 > 180 ? 1 : 0;
+  return `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}`;
+};
 
 const DEFAULT_BPM = 90;
 const MIN_BPM = 40;
@@ -348,7 +370,57 @@ export default function Metronome() {
     setBpmInput(String(next));
   }, []);
 
-  const adjustBpm = (delta: number) => setBpmClamped(bpm + delta);
+  // ── Seletor circular (arrastar para mudar BPM) ──────────────────────────────
+  const dialRef = useRef<SVGSVGElement | null>(null);
+  const [isDraggingBpm, setIsDraggingBpm] = useState(false);
+
+  const bpmFromPointer = useCallback(
+    (clientX: number, clientY: number) => {
+      const svg = dialRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const deg = (Math.atan2(clientY - cy, clientX - cx) * 180) / Math.PI;
+      const a = (deg + 360) % 360;
+      const rel = (a - GAUGE_START + 360) % 360; // 0..360
+      let t: number;
+      if (rel > GAUGE_SWEEP) {
+        // ponteiro caiu na lacuna inferior: prende na ponta mais próxima
+        t = rel - GAUGE_SWEEP < (360 - GAUGE_SWEEP) / 2 ? 1 : 0;
+      } else {
+        t = rel / GAUGE_SWEEP;
+      }
+      setBpmClamped(MIN_BPM + t * (MAX_BPM - MIN_BPM));
+    },
+    [setBpmClamped],
+  );
+
+  const handleDialPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    setIsDraggingBpm(true);
+    bpmFromPointer(e.clientX, e.clientY);
+  };
+  const handleDialPointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingBpm) return;
+    bpmFromPointer(e.clientX, e.clientY);
+  };
+  const handleDialPointerUp = (e: React.PointerEvent) => {
+    setIsDraggingBpm(false);
+    try {
+      (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const bpmFraction = (bpm - MIN_BPM) / (MAX_BPM - MIN_BPM);
+  const [dialHandleX, dialHandleY] = dialPolar(
+    DIAL_RADIUS,
+    GAUGE_START + bpmFraction * GAUGE_SWEEP,
+  );
+
   const handleBpmInputBlur = () => {
     const parsed = parseInt(bpmInput, 10);
     if (Number.isFinite(parsed)) setBpmClamped(parsed);
@@ -493,20 +565,81 @@ export default function Metronome() {
               {/* Círculos pulsantes */}
               <motion.div
                 key={`pulse-${currentBeat}-${isPlaying}`}
-                initial={{ scale: 0.8, opacity: 0.6 }}
-                animate={isPlaying ? { scale: 1.15, opacity: 0 } : { scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.78, opacity: 0.6 }}
+                animate={isPlaying ? { scale: 1.05, opacity: 0 } : { scale: 0.78, opacity: 0 }}
                 transition={{ duration: Math.min(0.6, 60 / bpm * 0.8) }}
                 className={cn(
-                  "absolute inset-0 rounded-full border-2",
+                  "absolute inset-8 rounded-full border-2",
                   currentBeat === 0 ? "border-primary" : "border-primary/40",
                 )}
               />
               <div className={cn(
-                "absolute inset-4 rounded-full border border-white/10 transition-colors duration-100",
+                "absolute inset-10 rounded-full transition-colors duration-100",
                 isPlaying && currentBeat === 0 ? "bg-primary/15" : isPlaying ? "bg-white/5" : "bg-transparent",
               )} />
+
+              {/* Seletor circular (arrastável) */}
+              <svg
+                ref={dialRef}
+                viewBox="0 0 240 240"
+                className="absolute inset-0 w-full h-full"
+                style={{ overflow: "visible", touchAction: "none" }}
+              >
+                {/* Trilha de fundo */}
+                <path
+                  d={dialArc(DIAL_RADIUS, GAUGE_START, GAUGE_START + GAUGE_SWEEP)}
+                  fill="none"
+                  stroke="hsl(0 0% 100% / 0.08)"
+                  strokeWidth={6}
+                  strokeLinecap="round"
+                />
+                {/* Progresso (laranja) */}
+                {bpmFraction > 0.001 && (
+                  <path
+                    d={dialArc(DIAL_RADIUS, GAUGE_START, GAUGE_START + bpmFraction * GAUGE_SWEEP)}
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={6}
+                    strokeLinecap="round"
+                  />
+                )}
+                {/* Área de toque invisível sobre a trilha */}
+                <path
+                  d={dialArc(DIAL_RADIUS, GAUGE_START, GAUGE_START + GAUGE_SWEEP)}
+                  fill="none"
+                  stroke="transparent"
+                  strokeWidth={30}
+                  strokeLinecap="round"
+                  style={{ cursor: "grab", pointerEvents: "stroke" }}
+                  onPointerDown={handleDialPointerDown}
+                  onPointerMove={handleDialPointerMove}
+                  onPointerUp={handleDialPointerUp}
+                  onPointerCancel={handleDialPointerUp}
+                />
+                {/* Marcador */}
+                <g
+                  style={{ cursor: isDraggingBpm ? "grabbing" : "grab", pointerEvents: "all" }}
+                  onPointerDown={handleDialPointerDown}
+                  onPointerMove={handleDialPointerMove}
+                  onPointerUp={handleDialPointerUp}
+                  onPointerCancel={handleDialPointerUp}
+                >
+                  <circle cx={dialHandleX} cy={dialHandleY} r={16} fill="hsl(var(--primary) / 0.18)" />
+                  <circle
+                    cx={dialHandleX}
+                    cy={dialHandleY}
+                    r={9}
+                    fill="hsl(var(--primary))"
+                    stroke="hsl(var(--background))"
+                    strokeWidth={3}
+                    className={cn("transition-transform", isDraggingBpm && "scale-110")}
+                    style={{ transformOrigin: `${dialHandleX}px ${dialHandleY}px` } as React.CSSProperties}
+                  />
+                </g>
+              </svg>
+
               {/* Núcleo com BPM */}
-              <div className="relative z-10 text-center">
+              <div className="relative z-10 text-center pointer-events-none">
                 <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">BPM</div>
                 <input
                   type="text"
@@ -516,11 +649,11 @@ export default function Metronome() {
                   onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ""))}
                   onBlur={handleBpmInputBlur}
                   onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-                  className="font-display text-6xl sm:text-7xl font-bold text-white bg-transparent text-center w-40 outline-none focus:text-primary transition-colors notranslate"
+                  className="font-display text-6xl sm:text-7xl font-bold text-white bg-transparent text-center w-40 outline-none focus:text-primary transition-colors notranslate pointer-events-auto"
                   translate="no"
                   aria-label="BPM"
                 />
-                <div className="text-xs text-muted-foreground mt-1">{MIN_BPM} – {MAX_BPM}</div>
+                <div className="text-xs text-muted-foreground mt-1 notranslate" translate="no">{MIN_BPM} – {MAX_BPM}</div>
               </div>
             </div>
 
@@ -589,22 +722,6 @@ export default function Metronome() {
             </div>
           </div>
 
-          {/* Controles +/- BPM */}
-          <div className="grid grid-cols-4 gap-2 mt-6 max-w-md mx-auto">
-            <button onClick={() => adjustBpm(-5)} className="bpm-btn">
-              <Minus className="w-3 h-3" /> 5
-            </button>
-            <button onClick={() => adjustBpm(-1)} className="bpm-btn">
-              <Minus className="w-3 h-3" /> 1
-            </button>
-            <button onClick={() => adjustBpm(1)} className="bpm-btn">
-              <Plus className="w-3 h-3" /> 1
-            </button>
-            <button onClick={() => adjustBpm(5)} className="bpm-btn">
-              <Plus className="w-3 h-3" /> 5
-            </button>
-          </div>
-
           {/* Play / Tap / Reset */}
           <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
             <button
@@ -669,14 +786,17 @@ export default function Metronome() {
                     key={s}
                     onClick={() => handleSubdivisionChange(s)}
                     aria-pressed={subdivision === s}
+                    aria-label={SUBDIVISION_LABELS[s]}
+                    title={SUBDIVISION_LABELS[s]}
                     className={cn(
-                      "flex-1 py-3 rounded-xl text-sm font-semibold transition-all border",
+                      "flex-1 py-3 rounded-xl text-xl leading-none font-bold transition-all border notranslate",
                       subdivision === s
                         ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
                         : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
                     )}
+                    translate="no"
                   >
-                    {SUBDIVISION_LABELS[s]}
+                    {SUBDIVISION_GLYPHS[s]}
                   </button>
                 ))}
               </div>
@@ -767,25 +887,6 @@ export default function Metronome() {
       </div>
 
       <style>{`
-        .bpm-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.25rem;
-          padding: 0.625rem 0.5rem;
-          border-radius: 0.75rem;
-          background: hsl(var(--secondary) / 0.5);
-          color: hsl(var(--muted-foreground));
-          font-weight: 600;
-          font-size: 0.875rem;
-          border: 1px solid hsl(0 0% 100% / 0.05);
-          transition: all 200ms;
-        }
-        .bpm-btn:hover {
-          background: hsl(var(--secondary));
-          color: white;
-          border-color: hsl(0 0% 100% / 0.15);
-        }
         .metro-scroll::-webkit-scrollbar { width: 6px; }
         .metro-scroll::-webkit-scrollbar-track { background: transparent; }
         .metro-scroll::-webkit-scrollbar-thumb {
