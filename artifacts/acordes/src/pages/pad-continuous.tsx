@@ -2,9 +2,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Play, Pause, Square, Volume2, Waves, Loader2 } from "lucide-react";
 
-type Quality = "major" | "minor";
-type PresetId = "shimmer" | "cathedral" | "prayer";
-
 const KEYS: { label: string; pc: number; code: string }[] = [
   { label: "C", pc: 0, code: "C" },
   { label: "C# / Db", pc: 1, code: "Cs" },
@@ -20,64 +17,7 @@ const KEYS: { label: string; pc: number; code: string }[] = [
   { label: "B", pc: 11, code: "B" },
 ];
 
-const PRESETS: Record<PresetId, {
-  name: string;
-  desc: string;
-  cutoff: number;
-  reverbMix: number;
-  synthMix: number;
-  width: number;
-}> = {
-  shimmer: {
-    name: "Worship Shimmer",
-    desc: "O timbre original dos pads, brilhante e aéreo. Ideal para espontâneos.",
-    cutoff: 16000,
-    reverbMix: 0.5,
-    synthMix: 0.1,
-    width: 0.6,
-  },
-  cathedral: {
-    name: "Deep Cathedral",
-    desc: "Mais escuro e profundo, com reverb de catedral. Para ministração e oração.",
-    cutoff: 5200,
-    reverbMix: 0.82,
-    synthMix: 0.14,
-    width: 0.85,
-  },
-  prayer: {
-    name: "Soft Prayer",
-    desc: "Suave e contido, brilho reduzido. Cama discreta para tocar por cima.",
-    cutoff: 8500,
-    reverbMix: 0.62,
-    synthMix: 0.07,
-    width: 0.7,
-  },
-};
-
 const XFADE = 2.0;
-
-function midiToFreq(midi: number) {
-  return 440 * Math.pow(2, (midi - 69) / 12);
-}
-
-function synthChord(pc: number, quality: Quality): number[] {
-  const root = 60 + pc;
-  if (quality === "major") return [root, root + 4, root + 7, root + 11];
-  return [root, root + 3, root + 7, root + 10];
-}
-
-function makeReverbImpulse(ctx: AudioContext, seconds: number, decay: number): AudioBuffer {
-  const rate = ctx.sampleRate;
-  const length = Math.floor(rate * seconds);
-  const impulse = ctx.createBuffer(2, length, rate);
-  for (let ch = 0; ch < 2; ch++) {
-    const data = impulse.getChannelData(ch);
-    for (let i = 0; i < length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
-    }
-  }
-  return impulse;
-}
 
 // Equal-power crossfade curves
 function makeCurve(fadeIn: boolean): Float32Array {
@@ -108,15 +48,8 @@ type SamplePlayer = {
   stop: (fade: number) => void;
 };
 
-type SynthVoice = {
-  gain: GainNode;
-  stop: (fade: number) => void;
-};
-
 export default function PadContinuous() {
   const [selectedPc, setSelectedPc] = useState<number>(0);
-  const [quality, setQuality] = useState<Quality>("major");
-  const [preset, setPreset] = useState<PresetId>("cathedral");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [volume, setVolume] = useState(0.7);
@@ -125,16 +58,11 @@ export default function PadContinuous() {
 
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
-  const sampleBusRef = useRef<BiquadFilterNode | null>(null);
-  const reverbSendRef = useRef<GainNode | null>(null);
-  const wetReverbRef = useRef<GainNode | null>(null);
-  const synthBusRef = useRef<GainNode | null>(null);
 
   const bufferCache = useRef<Map<string, AudioBuffer>>(new Map());
   const samplePlayerRef = useRef<SamplePlayer | null>(null);
-  const synthVoiceRef = useRef<SynthVoice | null>(null);
   const playingRef = useRef(false);
-  const currentRef = useRef<{ pc: number; quality: Quality } | null>(null);
+  const currentPcRef = useRef<number | null>(null);
   const switchTokenRef = useRef(0);
 
   // ---- Audio graph setup ----
@@ -142,45 +70,13 @@ export default function PadContinuous() {
     if (ctxRef.current) return ctxRef.current;
     const Ctx = window.AudioContext || (window as any).webkitAudioContext;
     const ctx: AudioContext = new Ctx();
-    const p = PRESETS[preset];
-
     const master = ctx.createGain();
     master.gain.value = volume;
     master.connect(ctx.destination);
-
-    // Sample bus: lowpass filter to tame brightness, then to master + reverb
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.Q.value = 0.3;
-    filter.frequency.value = p.cutoff;
-    filter.connect(master);
-
-    const reverb = ctx.createConvolver();
-    reverb.buffer = makeReverbImpulse(ctx, 5.5, 2.6);
-    const wetReverb = ctx.createGain();
-    wetReverb.gain.value = p.reverbMix;
-    reverb.connect(wetReverb);
-    wetReverb.connect(master);
-
-    // Reverb send (sources connect here in addition to dry filter)
-    const reverbSend = ctx.createGain();
-    reverbSend.gain.value = 1;
-    reverbSend.connect(reverb);
-
-    // Synth atmospheric layer bus -> filter (shares dry + reverb path)
-    const synthBus = ctx.createGain();
-    synthBus.gain.value = p.synthMix;
-    synthBus.connect(filter);
-    synthBus.connect(reverbSend);
-
     ctxRef.current = ctx;
     masterRef.current = master;
-    sampleBusRef.current = filter;
-    reverbSendRef.current = reverbSend;
-    wetReverbRef.current = wetReverb;
-    synthBusRef.current = synthBus;
     return ctx;
-  }, [volume, preset]);
+  }, [volume]);
 
   // ---- Buffer loading / preload ----
   const loadBuffer = useCallback(async (code: string): Promise<AudioBuffer> => {
@@ -195,42 +91,12 @@ export default function PadContinuous() {
     return buf;
   }, [initAudio]);
 
-  // ---- Stereo widener: duplicate buffer source path with small L/R delays ----
+  // ---- Seamless infinite loop player (plays the real sample, crossfaded) ----
   const createSamplePlayer = useCallback((buffer: AudioBuffer): SamplePlayer => {
     const ctx = ctxRef.current!;
-    const p = PRESETS[preset];
     const gain = ctx.createGain();
     gain.gain.value = 0;
-
-    // Stereo widening via Haas-style split
-    const widthAmt = p.width;
-    const merger = ctx.createGain();
-    merger.connect(sampleBusRef.current!);
-    merger.connect(reverbSendRef.current!);
-
-    // center path
-    const center = ctx.createGain();
-    center.gain.value = 1 - widthAmt * 0.35;
-    center.connect(merger);
-    // wide path with tiny delay + opposite panning
-    const wideL = ctx.createDelay(0.05);
-    wideL.delayTime.value = 0.012;
-    const panL = ctx.createStereoPanner();
-    panL.pan.value = -widthAmt;
-    const wideLgain = ctx.createGain();
-    wideLgain.gain.value = widthAmt * 0.5;
-    const wideR = ctx.createDelay(0.05);
-    wideR.delayTime.value = 0.019;
-    const panR = ctx.createStereoPanner();
-    panR.pan.value = widthAmt;
-    const wideRgain = ctx.createGain();
-    wideRgain.gain.value = widthAmt * 0.5;
-    wideL.connect(panL); panL.connect(wideLgain); wideLgain.connect(merger);
-    wideR.connect(panR); panR.connect(wideRgain); wideRgain.connect(merger);
-
-    gain.connect(center);
-    gain.connect(wideL);
-    gain.connect(wideR);
+    gain.connect(masterRef.current!);
 
     const period = Math.max(0.5, buffer.duration - XFADE);
     let nextStart = ctx.currentTime + 0.05;
@@ -265,7 +131,6 @@ export default function PadContinuous() {
       if (stopped) return;
       const horizon = ctx.currentTime + 1.0;
       while (nextStart < horizon) {
-        // Clamp overdue events to the near future so fade-in curves never throw
         const at = Math.max(nextStart, ctx.currentTime + 0.05);
         scheduleOne(at);
         nextStart = at + period;
@@ -284,13 +149,11 @@ export default function PadContinuous() {
       window.setTimeout(() => {
         activeSrcs.forEach(s => { try { s.stop(); } catch {} });
         try { gain.disconnect(); } catch {}
-        try { center.disconnect(); } catch {}
-        try { merger.disconnect(); } catch {}
       }, (f + 0.3) * 1000);
     };
 
     return { gain, stop };
-  }, [preset]);
+  }, []);
 
   const fadeInPlayer = useCallback((player: SamplePlayer, fade: number) => {
     const ctx = ctxRef.current!;
@@ -301,57 +164,8 @@ export default function PadContinuous() {
     player.gain.gain.linearRampToValueAtTime(1, now + f);
   }, []);
 
-  // ---- Synth atmospheric layer ----
-  const createSynthVoice = useCallback((pc: number, q: Quality): SynthVoice => {
-    const ctx = ctxRef.current!;
-    const gain = ctx.createGain();
-    gain.gain.value = 0;
-    gain.connect(synthBusRef.current!);
-
-    const oscs: OscillatorNode[] = [];
-    const notes = synthChord(pc, q);
-    notes.forEach((midi, idx) => {
-      const freq = midiToFreq(midi);
-      const mk = (type: OscillatorType, level: number, detune: number) => {
-        const osc = ctx.createOscillator();
-        osc.type = type;
-        osc.frequency.value = freq;
-        osc.detune.value = detune;
-        const g = ctx.createGain();
-        g.gain.value = (level / Math.sqrt(notes.length)) * (idx === 0 ? 1.15 : 1);
-        osc.connect(g);
-        g.connect(gain);
-        osc.start();
-        oscs.push(osc);
-      };
-      mk("sine", 0.7, 0);
-      mk("triangle", 0.4, idx % 2 === 0 ? -4 : 4);
-    });
-
-    const stop = (fade: number) => {
-      const now = ctx.currentTime;
-      const f = Math.max(0.05, fade);
-      holdParam(gain.gain, now);
-      gain.gain.linearRampToValueAtTime(0.0001, now + f);
-      const stopAt = now + f + 0.2;
-      oscs.forEach(o => { try { o.stop(stopAt); } catch {} });
-      window.setTimeout(() => { try { gain.disconnect(); } catch {} }, (f + 0.4) * 1000);
-    };
-
-    return { gain, stop };
-  }, []);
-
-  const fadeInSynth = useCallback((voice: SynthVoice, fade: number) => {
-    const ctx = ctxRef.current!;
-    const now = ctx.currentTime;
-    const f = Math.max(0.05, fade);
-    voice.gain.gain.cancelScheduledValues(now);
-    voice.gain.gain.setValueAtTime(0.0001, now);
-    voice.gain.gain.linearRampToValueAtTime(1, now + f);
-  }, []);
-
   // ---- Transport ----
-  const startAt = useCallback(async (pc: number, q: Quality, fade: number) => {
+  const startAt = useCallback(async (pc: number, fade: number) => {
     const ctx = initAudio();
     if (ctx.state === "suspended") await ctx.resume();
     const code = KEYS[pc].code;
@@ -363,22 +177,19 @@ export default function PadContinuous() {
     } finally {
       setIsLoading(false);
     }
-    if (token !== switchTokenRef.current) return; // superseded
+    if (token !== switchTokenRef.current) return;
     const player = createSamplePlayer(buffer);
     samplePlayerRef.current = player;
     fadeInPlayer(player, fade);
-    const voice = createSynthVoice(pc, q);
-    synthVoiceRef.current = voice;
-    fadeInSynth(voice, fade);
-    currentRef.current = { pc, quality: q };
-  }, [initAudio, loadBuffer, createSamplePlayer, fadeInPlayer, createSynthVoice, fadeInSynth]);
+    currentPcRef.current = pc;
+  }, [initAudio, loadBuffer, createSamplePlayer, fadeInPlayer]);
 
   const handlePlay = useCallback(async () => {
     if (playingRef.current) return;
     playingRef.current = true;
     setIsPlaying(true);
-    await startAt(selectedPc, quality, fadeIn);
-  }, [startAt, selectedPc, quality, fadeIn]);
+    await startAt(selectedPc, fadeIn);
+  }, [startAt, selectedPc, fadeIn]);
 
   const handlePause = useCallback(() => {
     if (!playingRef.current) return;
@@ -386,9 +197,7 @@ export default function PadContinuous() {
     setIsPlaying(false);
     switchTokenRef.current++;
     samplePlayerRef.current?.stop(fadeOut);
-    synthVoiceRef.current?.stop(fadeOut);
     samplePlayerRef.current = null;
-    synthVoiceRef.current = null;
   }, [fadeOut]);
 
   const handleStop = useCallback(() => {
@@ -397,19 +206,16 @@ export default function PadContinuous() {
     setIsPlaying(false);
     switchTokenRef.current++;
     samplePlayerRef.current?.stop(0.4);
-    synthVoiceRef.current?.stop(0.4);
     samplePlayerRef.current = null;
-    synthVoiceRef.current = null;
   }, []);
 
-  // ---- Crossfade on key / quality change while playing ----
+  // ---- Crossfade on key change while playing ----
   useEffect(() => {
     if (!playingRef.current) {
-      currentRef.current = { pc: selectedPc, quality };
+      currentPcRef.current = selectedPc;
       return;
     }
-    const cur = currentRef.current;
-    if (cur && cur.pc === selectedPc && cur.quality === quality) return;
+    if (currentPcRef.current === selectedPc) return;
 
     let cancelled = false;
     (async () => {
@@ -426,20 +232,15 @@ export default function PadContinuous() {
       }
       if (cancelled || token !== switchTokenRef.current || !playingRef.current) return;
       const oldPlayer = samplePlayerRef.current;
-      const oldVoice = synthVoiceRef.current;
       const newPlayer = createSamplePlayer(buffer);
       samplePlayerRef.current = newPlayer;
       fadeInPlayer(newPlayer, XFADE);
-      const newVoice = createSynthVoice(selectedPc, quality);
-      synthVoiceRef.current = newVoice;
-      fadeInSynth(newVoice, XFADE);
-      currentRef.current = { pc: selectedPc, quality };
+      currentPcRef.current = selectedPc;
       oldPlayer?.stop(XFADE);
-      oldVoice?.stop(XFADE);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPc, quality]);
+  }, [selectedPc]);
 
   // ---- Live volume ----
   useEffect(() => {
@@ -450,33 +251,7 @@ export default function PadContinuous() {
     m.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.1);
   }, [volume]);
 
-  // ---- Live preset (effects) + rebuild voices via crossfade ----
-  useEffect(() => {
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-    const p = PRESETS[preset];
-    sampleBusRef.current?.frequency.setTargetAtTime(p.cutoff, ctx.currentTime, 0.3);
-    wetReverbRef.current?.gain.setTargetAtTime(p.reverbMix, ctx.currentTime, 0.3);
-    synthBusRef.current?.gain.setTargetAtTime(p.synthMix, ctx.currentTime, 0.3);
-    if (playingRef.current) {
-      const oldPlayer = samplePlayerRef.current;
-      const oldVoice = synthVoiceRef.current;
-      const buffer = bufferCache.current.get(KEYS[selectedPc].code);
-      if (buffer) {
-        const newPlayer = createSamplePlayer(buffer);
-        samplePlayerRef.current = newPlayer;
-        fadeInPlayer(newPlayer, XFADE);
-        oldPlayer?.stop(XFADE);
-      }
-      const newVoice = createSynthVoice(selectedPc, quality);
-      synthVoiceRef.current = newVoice;
-      fadeInSynth(newVoice, XFADE);
-      oldVoice?.stop(XFADE);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preset]);
-
-  // ---- Background preload of all tones (after first init) ----
+  // ---- Background preload of all tones ----
   useEffect(() => {
     let cancelled = false;
     const id = window.setTimeout(async () => {
@@ -493,9 +268,7 @@ export default function PadContinuous() {
     return () => {
       switchTokenRef.current++;
       samplePlayerRef.current?.stop(0.1);
-      synthVoiceRef.current?.stop(0.1);
       samplePlayerRef.current = null;
-      synthVoiceRef.current = null;
       playingRef.current = false;
       const ctx = ctxRef.current;
       if (ctx) window.setTimeout(() => { ctx.close().catch(() => {}); }, 400);
@@ -515,7 +288,7 @@ export default function PadContinuous() {
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
           Pads worship reais, gravados em todos os 12 tons, tocando em loop infinito com transição
-          suave. Cama harmônica profunda para estudo, oração, ministração e prática.
+          suave. Cama harmônica para estudo, oração, ministração e prática.
         </p>
       </div>
 
@@ -535,11 +308,8 @@ export default function PadContinuous() {
             translate="no"
           >
             {KEYS[selectedPc].label.split(" / ")[0]}
-            <span className="text-primary ml-2">{quality === "major" ? "" : "m"}</span>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {quality === "major" ? "Maior" : "Menor"} · {PRESETS[preset].name}
-          </div>
+          <div className="text-sm text-muted-foreground">Worship Shimmer</div>
         </div>
       </motion.div>
 
@@ -604,28 +374,8 @@ export default function PadContinuous() {
         </div>
       </div>
 
-      {/* Quality */}
-      <div className="glass-card rounded-2xl p-6 md:p-8 mb-8">
-        <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-4">Modo</h3>
-        <div className="grid grid-cols-2 gap-3 max-w-sm">
-          {(["major", "minor"] as Quality[]).map((q) => (
-            <button
-              key={q}
-              onClick={() => setQuality(q)}
-              className={`px-4 py-3 rounded-xl font-medium transition-all border ${
-                quality === q
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25"
-                  : "bg-secondary text-white border-white/5 hover:border-white/15"
-              }`}
-            >
-              {q === "major" ? "Maior" : "Menor"}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Key Selection */}
-      <div className="glass-card rounded-2xl p-6 md:p-8 mb-8">
+      <div className="glass-card rounded-2xl p-6 md:p-8">
         <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-4">Tom</h3>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 md:gap-3">
           {KEYS.map((k) => (
@@ -648,31 +398,6 @@ export default function PadContinuous() {
             Trocar de tom enquanto toca faz transição suave (crossfade) entre os pads reais, sem cortes.
           </p>
         )}
-      </div>
-
-      {/* Presets */}
-      <div className="glass-card rounded-2xl p-6 md:p-8">
-        <h3 className="text-sm uppercase tracking-wider text-muted-foreground mb-4">Sonoridade</h3>
-        <div className="grid md:grid-cols-3 gap-3">
-          {(Object.keys(PRESETS) as PresetId[]).map((id) => {
-            const p = PRESETS[id];
-            const active = preset === id;
-            return (
-              <button
-                key={id}
-                onClick={() => setPreset(id)}
-                className={`text-left p-5 rounded-xl border transition-all ${
-                  active
-                    ? "bg-primary/15 border-primary/50 shadow-lg shadow-primary/10"
-                    : "bg-secondary border-white/5 hover:border-primary/30"
-                }`}
-              >
-                <div className={`font-bold mb-1 ${active ? "text-primary" : "text-white"}`}>{p.name}</div>
-                <div className="text-xs text-muted-foreground leading-relaxed">{p.desc}</div>
-              </button>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
