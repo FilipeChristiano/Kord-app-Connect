@@ -71,7 +71,7 @@ export default function Home() {
       <section className="relative border-y border-primary/20 bg-gradient-to-r from-primary/15 via-orange-500/10 to-primary/15 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--primary)/0.18),_transparent_70%)] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 relative">
-          <h2 className="font-display text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight text-center max-w-4xl mx-auto">
+          <h2 className="font-display font-bold text-white leading-tight text-center whitespace-nowrap text-[clamp(1.1rem,4.6vw,3.75rem)]">
             O <span className="text-primary">próximo nível</span> do seu teclado.
           </h2>
         </div>
