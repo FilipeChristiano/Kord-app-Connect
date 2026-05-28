@@ -1,0 +1,151 @@
+Atualize o Metrônomo Inteligente do app Harmonic.
+
+Objetivo:
+Criar presets de estilos musicais com BPM médio, compasso e subdivisão já pré-configurados.
+
+Quando o usuário escolher um estilo, o metrônomo deve atualizar automaticamente:
+- BPM
+- Compasso
+- Subdivisão
+- Nome do preset ativo
+
+Também deve permitir que o usuário ajuste manualmente o BPM depois, mantendo o nome do preset como “ajustado”.
+
+Presets obrigatórios:
+
+1. Adoração Profunda
+Compasso: 4/4
+BPM: 68
+Faixa comum: 60-72
+Subdivisão: Colcheias
+
+2. Worship Moderno
+Compasso: 4/4
+BPM: 74
+Faixa comum: 72-80
+Subdivisão: Colcheias
+
+3. Worship 6/8
+Compasso: 6/8
+BPM: 58
+Faixa comum: 55-68
+Subdivisão: Colcheias
+
+4. Balada Gospel
+Compasso: 4/4
+BPM: 82
+Faixa comum: 76-90
+Subdivisão: Sem subdivisão
+
+5. Pentecostal Moderado
+Compasso: 4/4
+BPM: 96
+Faixa comum: 90-105
+Subdivisão: Colcheias
+
+6. Pentecostal Rápido
+Compasso: 4/4
+BPM: 126
+Faixa comum: 120-140
+Subdivisão: Semicolcheias
+
+7. Valsa
+Compasso: 3/4
+BPM: 90
+Faixa comum: 80-110
+Subdivisão: Sem subdivisão
+
+8. Forró Pé de Serra
+Compasso: 4/4
+BPM: 120
+Faixa comum: 110-135
+Subdivisão: Colcheias
+
+9. Xote
+Compasso: 4/4
+BPM: 90
+Faixa comum: 80-100
+Subdivisão: Colcheias
+
+10. Baião
+Compasso: 2/4
+BPM: 120
+Faixa comum: 110-140
+Subdivisão: Colcheias
+
+11. Frevo
+Compasso: 2/4
+BPM: 150
+Faixa comum: 140-180
+Subdivisão: Semicolcheias
+
+12. Samba
+Compasso: 2/4
+BPM: 100
+Faixa comum: 90-120
+Subdivisão: Semicolcheias
+
+13. Pagode
+Compasso: 4/4
+BPM: 92
+Faixa comum: 85-105
+Subdivisão: Colcheias
+
+14. Bossa Nova
+Compasso: 4/4
+BPM: 130
+Faixa comum: 120-145
+Subdivisão: Colcheias
+
+15. Oração
+Compasso: 4/4
+BPM: 60
+Faixa comum: 55-68
+Subdivisão: Colcheias
+
+16. Ministração
+Compasso: 4/4
+BPM: 66
+Faixa comum: 60-72
+Subdivisão: Colcheias
+
+17. Espontâneo Worship
+Compasso: 6/8
+BPM: 58
+Faixa comum: 55-68
+Subdivisão: Colcheias
+
+18. Fundo de Pregação
+Compasso: 4/4
+BPM: 62
+Faixa comum: 55-70
+Subdivisão: Sem subdivisão
+
+19. Encerramento
+Compasso: 4/4
+BPM: 70
+Faixa comum: 65-78
+Subdivisão: Colcheias
+
+Interface:
+- Criar uma área chamada “Estilos”
+- Mostrar os presets em cards ou botões
+- Ao selecionar um estilo, destacar visualmente o preset ativo
+- Mostrar BPM, compasso e subdivisão do preset escolhido
+- Manter identidade visual do Harmonic:
+  - fundo escuro
+  - laranja como cor principal
+  - textos em branco/prata
+  - botões arredondados
+  - visual premium e moderno
+
+Comportamento:
+- O tempo 1 do compasso deve ter som/acento diferente
+- Os demais tempos devem ter som mais leve
+- O metrônomo deve respeitar corretamente compassos 2/4, 3/4, 4/4 e 6/8
+- O Tap Tempo deve continuar funcionando
+- O Play/Pause deve continuar funcionando
+- Os controles manuais de BPM devem continuar funcionando
+
+Resultado esperado:
+O usuário abre o metrônomo, escolhe um estilo como “Samba”, “Frevo”, “Worship 6/8” ou “Ministração”, e o app já configura automaticamente o BPM, o compasso e a subdivisão ideais para estudar naquele estilo.

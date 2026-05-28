@@ -12,35 +12,54 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type TimeSignature = "4/4" | "3/4" | "6/8";
+type TimeSignature = "2/4" | "3/4" | "4/4" | "6/8";
 type Subdivision = "none" | "eighth" | "sixteenth";
 
 interface Preset {
   id: string;
   name: string;
   bpm: number;
+  range: string;
   timeSignature: TimeSignature;
   subdivision: Subdivision;
   description: string;
+  group: string;
 }
 
 const PRESETS: Preset[] = [
-  { id: "adoracao-profunda", name: "Adoração Profunda", bpm: 68, timeSignature: "4/4", subdivision: "eighth", description: "Momentos íntimos e contemplativos" },
-  { id: "worship-moderno", name: "Worship Moderno", bpm: 74, timeSignature: "4/4", subdivision: "eighth", description: "Pop worship contemporâneo" },
-  { id: "balada-gospel", name: "Balada Gospel", bpm: 82, timeSignature: "4/4", subdivision: "none", description: "Baladas clássicas do gospel" },
-  { id: "pentecostal-moderado", name: "Pentecostal Moderado", bpm: 96, timeSignature: "4/4", subdivision: "eighth", description: "Levada pentecostal padrão" },
-  { id: "pentecostal-rapido", name: "Pentecostal Rápido", bpm: 126, timeSignature: "4/4", subdivision: "sixteenth", description: "Avivamento e celebração" },
-  { id: "valsa", name: "Valsa / 3 por 4", bpm: 72, timeSignature: "3/4", subdivision: "none", description: "Hinos antigos e valsas" },
-  { id: "seis-por-oito", name: "6 por 8 Worship", bpm: 58, timeSignature: "6/8", subdivision: "eighth", description: "Compasso composto fluído" },
+  // Worship & Gospel
+  { id: "adoracao-profunda", name: "Adoração Profunda", bpm: 68, range: "60–72", timeSignature: "4/4", subdivision: "eighth", description: "Momentos íntimos e contemplativos", group: "Worship & Gospel" },
+  { id: "worship-moderno", name: "Worship Moderno", bpm: 74, range: "72–80", timeSignature: "4/4", subdivision: "eighth", description: "Pop worship contemporâneo", group: "Worship & Gospel" },
+  { id: "worship-6-8", name: "Worship 6/8", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", description: "Compasso composto, fluido", group: "Worship & Gospel" },
+  { id: "balada-gospel", name: "Balada Gospel", bpm: 82, range: "76–90", timeSignature: "4/4", subdivision: "none", description: "Baladas clássicas do gospel", group: "Worship & Gospel" },
+  { id: "pentecostal-moderado", name: "Pentecostal Moderado", bpm: 96, range: "90–105", timeSignature: "4/4", subdivision: "eighth", description: "Levada pentecostal padrão", group: "Worship & Gospel" },
+  { id: "pentecostal-rapido", name: "Pentecostal Rápido", bpm: 126, range: "120–140", timeSignature: "4/4", subdivision: "sixteenth", description: "Avivamento e celebração", group: "Worship & Gospel" },
+  { id: "valsa", name: "Valsa", bpm: 90, range: "80–110", timeSignature: "3/4", subdivision: "none", description: "Hinos antigos e valsas", group: "Worship & Gospel" },
+  // Ritmos Brasileiros
+  { id: "forro-pe-de-serra", name: "Forró Pé de Serra", bpm: 120, range: "110–135", timeSignature: "4/4", subdivision: "eighth", description: "Forró tradicional nordestino", group: "Ritmos Brasileiros" },
+  { id: "xote", name: "Xote", bpm: 90, range: "80–100", timeSignature: "4/4", subdivision: "eighth", description: "Forró lento e dançante", group: "Ritmos Brasileiros" },
+  { id: "baiao", name: "Baião", bpm: 120, range: "110–140", timeSignature: "2/4", subdivision: "eighth", description: "Ritmo nordestino marcado", group: "Ritmos Brasileiros" },
+  { id: "frevo", name: "Frevo", bpm: 150, range: "140–180", timeSignature: "2/4", subdivision: "sixteenth", description: "Energia pernambucana acelerada", group: "Ritmos Brasileiros" },
+  { id: "samba", name: "Samba", bpm: 100, range: "90–120", timeSignature: "2/4", subdivision: "sixteenth", description: "Suingue brasileiro", group: "Ritmos Brasileiros" },
+  { id: "pagode", name: "Pagode", bpm: 92, range: "85–105", timeSignature: "4/4", subdivision: "eighth", description: "Samba de roda descontraído", group: "Ritmos Brasileiros" },
+  { id: "bossa-nova", name: "Bossa Nova", bpm: 130, range: "120–145", timeSignature: "4/4", subdivision: "eighth", description: "Suingue suave e sofisticado", group: "Ritmos Brasileiros" },
+  // Momentos do Culto
+  { id: "oracao", name: "Oração", bpm: 60, range: "55–68", timeSignature: "4/4", subdivision: "eighth", description: "Fundo suave para orar", group: "Momentos do Culto" },
+  { id: "ministracao", name: "Ministração", bpm: 66, range: "60–72", timeSignature: "4/4", subdivision: "eighth", description: "Base para ministração da Palavra", group: "Momentos do Culto" },
+  { id: "espontaneo-worship", name: "Espontâneo Worship", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", description: "Espontâneos com fluidez em 6/8", group: "Momentos do Culto" },
+  { id: "fundo-de-pregacao", name: "Fundo de Pregação", bpm: 62, range: "55–70", timeSignature: "4/4", subdivision: "none", description: "Cama discreta para pregação", group: "Momentos do Culto" },
+  { id: "encerramento", name: "Encerramento", bpm: 70, range: "65–78", timeSignature: "4/4", subdivision: "eighth", description: "Momento final do louvor", group: "Momentos do Culto" },
 ];
+
+const PRESET_GROUPS = ["Worship & Gospel", "Ritmos Brasileiros", "Momentos do Culto"];
 
 const SUBDIVISION_LABELS: Record<Subdivision, string> = {
   none: "Sem subdivisão",
-  eighth: "Colcheia",
-  sixteenth: "Semicolcheia",
+  eighth: "Colcheias",
+  sixteenth: "Semicolcheias",
 };
 
-const TIME_SIGNATURES: TimeSignature[] = ["4/4", "3/4", "6/8"];
+const TIME_SIGNATURES: TimeSignature[] = ["2/4", "3/4", "4/4", "6/8"];
 const SUBDIVISIONS: Subdivision[] = ["none", "eighth", "sixteenth"];
 
 const DEFAULT_BPM = 90;
@@ -48,6 +67,7 @@ const MIN_BPM = 40;
 const MAX_BPM = 240;
 
 function getBeatsPerBar(ts: TimeSignature): number {
+  if (ts === "2/4") return 2;
   if (ts === "3/4") return 3;
   if (ts === "6/8") return 6;
   return 4;
@@ -367,14 +387,21 @@ export default function Metronome() {
 
           {/* Preset ativo */}
           {activePreset && (
-            <div className="mb-6 flex items-center justify-center gap-2 text-center">
-              <span className="text-xs uppercase tracking-widest text-primary/70 font-semibold">Preset ativo</span>
-              <span className="text-sm font-bold text-white">{activePreset.name}</span>
-              {presetAdjusted && (
-                <span className="text-[10px] uppercase tracking-wider bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/30">
-                  ajustado
-                </span>
-              )}
+            <div className="mb-6 flex flex-col items-center gap-2 text-center">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <span className="text-xs uppercase tracking-widest text-primary/70 font-semibold">Estilo ativo</span>
+                <span className="text-sm font-bold text-white">{activePreset.name}</span>
+                {presetAdjusted && (
+                  <span className="text-[10px] uppercase tracking-wider bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/30">
+                    ajustado
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-center gap-2 flex-wrap text-[11px] text-muted-foreground">
+                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 notranslate" translate="no">{activePreset.timeSignature}</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">{SUBDIVISION_LABELS[activePreset.subdivision]}</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 notranslate" translate="no">{activePreset.range} BPM</span>
+              </div>
             </div>
           )}
 
@@ -538,51 +565,75 @@ export default function Metronome() {
           </p>
         </div>
 
-        {/* ── Presets ───────────────────────────────────────────────────────── */}
+        {/* ── Estilos ───────────────────────────────────────────────────────── */}
         <div className="glass-card rounded-3xl p-6 border border-white/10">
-          <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center gap-2 mb-1">
             <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="font-display text-xl font-bold text-white">Presets Inteligentes</h2>
+            <h2 className="font-display text-xl font-bold text-white">Estilos</h2>
           </div>
-          <div className="space-y-2">
-            {PRESETS.map((preset) => {
-              const isActive = activePresetId === preset.id;
-              return (
-                <button
-                  key={preset.id}
-                  onClick={() => applyPreset(preset)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-xl border transition-all duration-200 group",
-                    isActive
-                      ? "bg-primary/15 border-primary/50 shadow-md shadow-primary/10"
-                      : "bg-secondary/30 border-white/5 hover:bg-secondary/50 hover:border-white/15",
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className={cn(
-                        "font-bold mb-0.5 transition-colors",
-                        isActive ? "text-white" : "text-white/90 group-hover:text-white",
-                      )}>
-                        {preset.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground line-clamp-1">{preset.description}</div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className={cn(
-                        "font-display font-bold text-lg notranslate",
-                        isActive ? "text-primary" : "text-white/80",
-                      )} translate="no">
-                        {preset.bpm}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider notranslate" translate="no">
-                        {preset.timeSignature}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+          <p className="text-xs text-muted-foreground mb-5">
+            Escolha um estilo e o BPM, compasso e subdivisão se ajustam automaticamente.
+          </p>
+          <div className="space-y-5 lg:max-h-[640px] lg:overflow-y-auto lg:pr-1 metro-scroll">
+            {PRESET_GROUPS.map((group) => (
+              <div key={group}>
+                <div className="text-[11px] uppercase tracking-widest text-primary/70 font-semibold mb-2 px-1">
+                  {group}
+                </div>
+                <div className="space-y-2">
+                  {PRESETS.filter((p) => p.group === group).map((preset) => {
+                    const isActive = activePresetId === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyPreset(preset)}
+                        aria-pressed={isActive}
+                        className={cn(
+                          "w-full text-left p-4 rounded-xl border transition-all duration-200 group",
+                          isActive
+                            ? "bg-primary/15 border-primary/50 shadow-md shadow-primary/10"
+                            : "bg-secondary/30 border-white/5 hover:bg-secondary/50 hover:border-white/15",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className={cn(
+                              "font-bold mb-0.5 transition-colors",
+                              isActive ? "text-white" : "text-white/90 group-hover:text-white",
+                            )}>
+                              {preset.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground line-clamp-1">{preset.description}</div>
+                            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 notranslate" translate="no">
+                                {preset.timeSignature}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
+                                {SUBDIVISION_LABELS[preset.subdivision]}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 notranslate" translate="no">
+                                {preset.range}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className={cn(
+                              "font-display font-bold text-lg notranslate",
+                              isActive ? "text-primary" : "text-white/80",
+                            )} translate="no">
+                              {preset.bpm}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                              bpm
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -607,6 +658,16 @@ export default function Metronome() {
           color: white;
           border-color: hsl(0 0% 100% / 0.15);
         }
+        .metro-scroll::-webkit-scrollbar { width: 6px; }
+        .metro-scroll::-webkit-scrollbar-track { background: transparent; }
+        .metro-scroll::-webkit-scrollbar-thumb {
+          background: hsl(0 0% 100% / 0.1);
+          border-radius: 9999px;
+        }
+        .metro-scroll::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--primary) / 0.4);
+        }
+        .metro-scroll { scrollbar-width: thin; scrollbar-color: hsl(0 0% 100% / 0.15) transparent; }
       `}</style>
     </div>
   );
