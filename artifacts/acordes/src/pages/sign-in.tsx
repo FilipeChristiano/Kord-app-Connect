@@ -87,17 +87,20 @@ export default function SignInPage() {
       const trimmed = email.trim();
       const createRes = await signIn.create({ identifier: trimmed });
       if (createRes.error) {
-        // If the account doesn't exist yet, send them to sign-up flow.
-        if (createRes.error.code === "form_identifier_not_found") {
+        // Any error here likely means the account doesn't exist yet OR
+        // sign-in flow can't be initiated for this identifier. Send the user
+        // to sign-up — that flow will redirect back if account already exists.
+        const code = createRes.error.code;
+        if (code !== "session_exists" && code !== "too_many_requests") {
           setLocation(
             `${basePath || ""}/sign-up?email=${encodeURIComponent(trimmed)}`,
           );
           return;
         }
-        setError(messageForCode(createRes.error.code, createRes.error.message || "Não foi possível iniciar o login."));
+        setError(messageForCode(code, createRes.error.message || ""));
         return;
       }
-      const sendRes = await signIn.emailCode.sendCode({ emailAddress: email.trim() });
+      const sendRes = await signIn.emailCode.sendCode({ emailAddress: trimmed });
       if (sendRes.error) {
         setError(messageForCode(sendRes.error.code, sendRes.error.message || "Não foi possível enviar o código."));
         return;
@@ -106,7 +109,9 @@ export default function SignInPage() {
       setInfo("Enviamos um código de 6 dígitos para o seu e-mail.");
     } catch (err) {
       const { code } = extractClerkError(err);
-      if (code === "form_identifier_not_found") {
+      // Default fallback: assume user doesn't have a Clerk account yet and
+      // send them to the sign-up flow.
+      if (code !== "session_exists" && code !== "too_many_requests") {
         setLocation(
           `${basePath || ""}/sign-up?email=${encodeURIComponent(email.trim())}`,
         );
