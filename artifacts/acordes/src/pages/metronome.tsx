@@ -14,6 +14,16 @@ import { cn } from "@/lib/utils";
 
 type TimeSignature = "2/4" | "3/4" | "4/4" | "6/8";
 type Subdivision = "none" | "eighth" | "sixteenth";
+type AccentLevel = "strong" | "medium" | "weak" | "muted";
+
+const ACCENT_ORDER: AccentLevel[] = ["strong", "medium", "weak", "muted"];
+
+const ACCENT_CONFIG: Record<AccentLevel, { label: string; volume: number; freq: number; peak: number; duration: number }> = {
+  strong: { label: "Forte", volume: 1.0, freq: 1500, peak: 0.7, duration: 0.06 },
+  medium: { label: "Médio", volume: 0.7, freq: 1050, peak: 0.49, duration: 0.05 },
+  weak: { label: "Fraco", volume: 0.4, freq: 850, peak: 0.28, duration: 0.045 },
+  muted: { label: "Mudo", volume: 0, freq: 0, peak: 0, duration: 0 },
+};
 
 interface Preset {
   id: string;
@@ -22,36 +32,74 @@ interface Preset {
   range: string;
   timeSignature: TimeSignature;
   subdivision: Subdivision;
+  accents: AccentLevel[];
   description: string;
   group: string;
 }
 
+// Atalhos para montar padrões de acentuação
+const S: AccentLevel = "strong";
+const M: AccentLevel = "medium";
+const W: AccentLevel = "weak";
+
 const PRESETS: Preset[] = [
   // Worship & Gospel
-  { id: "adoracao-profunda", name: "Adoração Profunda", bpm: 68, range: "60–72", timeSignature: "4/4", subdivision: "eighth", description: "Momentos íntimos e contemplativos", group: "Worship & Gospel" },
-  { id: "worship-moderno", name: "Worship Moderno", bpm: 74, range: "72–80", timeSignature: "4/4", subdivision: "eighth", description: "Pop worship contemporâneo", group: "Worship & Gospel" },
-  { id: "worship-6-8", name: "Worship 6/8", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", description: "Compasso composto, fluido", group: "Worship & Gospel" },
-  { id: "balada-gospel", name: "Balada Gospel", bpm: 82, range: "76–90", timeSignature: "4/4", subdivision: "none", description: "Baladas clássicas do gospel", group: "Worship & Gospel" },
-  { id: "pentecostal-moderado", name: "Pentecostal Moderado", bpm: 96, range: "90–105", timeSignature: "4/4", subdivision: "eighth", description: "Levada pentecostal padrão", group: "Worship & Gospel" },
-  { id: "pentecostal-rapido", name: "Pentecostal Rápido", bpm: 126, range: "120–140", timeSignature: "4/4", subdivision: "sixteenth", description: "Avivamento e celebração", group: "Worship & Gospel" },
-  { id: "valsa", name: "Valsa", bpm: 90, range: "80–110", timeSignature: "3/4", subdivision: "none", description: "Hinos antigos e valsas", group: "Worship & Gospel" },
+  { id: "adoracao-profunda", name: "Adoração Profunda", bpm: 68, range: "60–72", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Momentos íntimos e contemplativos", group: "Worship & Gospel" },
+  { id: "worship-moderno", name: "Worship Moderno", bpm: 74, range: "72–80", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Pop worship contemporâneo", group: "Worship & Gospel" },
+  { id: "worship-6-8", name: "Worship 6/8", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", accents: [S, W, W, M, W, W], description: "Compasso composto, fluido", group: "Worship & Gospel" },
+  { id: "balada-gospel", name: "Balada Gospel", bpm: 82, range: "76–90", timeSignature: "4/4", subdivision: "none", accents: [S, W, M, W], description: "Baladas clássicas do gospel", group: "Worship & Gospel" },
+  { id: "pentecostal-moderado", name: "Pentecostal Moderado", bpm: 96, range: "90–105", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Levada pentecostal padrão", group: "Worship & Gospel" },
+  { id: "pentecostal-rapido", name: "Pentecostal Rápido", bpm: 126, range: "120–140", timeSignature: "4/4", subdivision: "sixteenth", accents: [S, W, M, W], description: "Avivamento e celebração", group: "Worship & Gospel" },
+  { id: "valsa", name: "Valsa", bpm: 90, range: "80–110", timeSignature: "3/4", subdivision: "none", accents: [S, W, W], description: "Hinos antigos e valsas", group: "Worship & Gospel" },
   // Ritmos Brasileiros
-  { id: "forro-pe-de-serra", name: "Forró Pé de Serra", bpm: 120, range: "110–135", timeSignature: "4/4", subdivision: "eighth", description: "Forró tradicional nordestino", group: "Ritmos Brasileiros" },
-  { id: "xote", name: "Xote", bpm: 90, range: "80–100", timeSignature: "4/4", subdivision: "eighth", description: "Forró lento e dançante", group: "Ritmos Brasileiros" },
-  { id: "baiao", name: "Baião", bpm: 120, range: "110–140", timeSignature: "2/4", subdivision: "eighth", description: "Ritmo nordestino marcado", group: "Ritmos Brasileiros" },
-  { id: "frevo", name: "Frevo", bpm: 150, range: "140–180", timeSignature: "2/4", subdivision: "sixteenth", description: "Energia pernambucana acelerada", group: "Ritmos Brasileiros" },
-  { id: "samba", name: "Samba", bpm: 100, range: "90–120", timeSignature: "2/4", subdivision: "sixteenth", description: "Suingue brasileiro", group: "Ritmos Brasileiros" },
-  { id: "pagode", name: "Pagode", bpm: 92, range: "85–105", timeSignature: "4/4", subdivision: "eighth", description: "Samba de roda descontraído", group: "Ritmos Brasileiros" },
-  { id: "bossa-nova", name: "Bossa Nova", bpm: 130, range: "120–145", timeSignature: "4/4", subdivision: "eighth", description: "Suingue suave e sofisticado", group: "Ritmos Brasileiros" },
+  { id: "forro-pe-de-serra", name: "Forró Pé de Serra", bpm: 120, range: "110–135", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Forró tradicional nordestino", group: "Ritmos Brasileiros" },
+  { id: "xote", name: "Xote", bpm: 90, range: "80–100", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Forró lento e dançante", group: "Ritmos Brasileiros" },
+  { id: "baiao", name: "Baião", bpm: 120, range: "110–140", timeSignature: "2/4", subdivision: "eighth", accents: [S, M], description: "Ritmo nordestino marcado", group: "Ritmos Brasileiros" },
+  { id: "frevo", name: "Frevo", bpm: 150, range: "140–180", timeSignature: "2/4", subdivision: "sixteenth", accents: [S, W], description: "Energia pernambucana acelerada", group: "Ritmos Brasileiros" },
+  { id: "samba", name: "Samba", bpm: 100, range: "90–120", timeSignature: "2/4", subdivision: "sixteenth", accents: [S, W], description: "Suingue brasileiro", group: "Ritmos Brasileiros" },
+  { id: "pagode", name: "Pagode", bpm: 92, range: "85–105", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Samba de roda descontraído", group: "Ritmos Brasileiros" },
+  { id: "bossa-nova", name: "Bossa Nova", bpm: 130, range: "120–145", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Suingue suave e sofisticado", group: "Ritmos Brasileiros" },
   // Momentos do Culto
-  { id: "oracao", name: "Oração", bpm: 60, range: "55–68", timeSignature: "4/4", subdivision: "eighth", description: "Fundo suave para orar", group: "Momentos do Culto" },
-  { id: "ministracao", name: "Ministração", bpm: 66, range: "60–72", timeSignature: "4/4", subdivision: "eighth", description: "Base para ministração da Palavra", group: "Momentos do Culto" },
-  { id: "espontaneo-worship", name: "Espontâneo Worship", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", description: "Espontâneos com fluidez em 6/8", group: "Momentos do Culto" },
-  { id: "fundo-de-pregacao", name: "Fundo de Pregação", bpm: 62, range: "55–70", timeSignature: "4/4", subdivision: "none", description: "Cama discreta para pregação", group: "Momentos do Culto" },
-  { id: "encerramento", name: "Encerramento", bpm: 70, range: "65–78", timeSignature: "4/4", subdivision: "eighth", description: "Momento final do louvor", group: "Momentos do Culto" },
+  { id: "oracao", name: "Oração", bpm: 60, range: "55–68", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Fundo suave para orar", group: "Momentos do Culto" },
+  { id: "ministracao", name: "Ministração", bpm: 66, range: "60–72", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Base para ministração da Palavra", group: "Momentos do Culto" },
+  { id: "espontaneo-worship", name: "Espontâneo Worship", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", accents: [S, W, W, M, W, W], description: "Espontâneos com fluidez em 6/8", group: "Momentos do Culto" },
+  { id: "fundo-de-pregacao", name: "Fundo de Pregação", bpm: 62, range: "55–70", timeSignature: "4/4", subdivision: "none", accents: [S, W, W, W], description: "Cama discreta para pregação", group: "Momentos do Culto" },
+  { id: "encerramento", name: "Encerramento", bpm: 70, range: "65–78", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Momento final do louvor", group: "Momentos do Culto" },
 ];
 
 const PRESET_GROUPS = ["Worship & Gospel", "Ritmos Brasileiros", "Momentos do Culto"];
+
+const ACCENT_STORAGE_KEY = "harmonic_metro_accents_v1";
+
+function defaultAccents(ts: TimeSignature): AccentLevel[] {
+  if (ts === "6/8") return ["strong", "weak", "weak", "medium", "weak", "weak"];
+  if (ts === "3/4") return ["strong", "weak", "weak"];
+  if (ts === "2/4") return ["strong", "weak"];
+  return ["strong", "weak", "medium", "weak"];
+}
+
+function sanitizeAccents(value: unknown, ts: TimeSignature): AccentLevel[] {
+  const expected = getBeatsPerBar(ts);
+  if (
+    Array.isArray(value) &&
+    value.length === expected &&
+    value.every((v) => ACCENT_ORDER.includes(v as AccentLevel))
+  ) {
+    return value as AccentLevel[];
+  }
+  return defaultAccents(ts);
+}
+
+function loadSavedAccents(): Partial<Record<TimeSignature, AccentLevel[]>> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(ACCENT_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as Partial<Record<TimeSignature, AccentLevel[]>>;
+  } catch {
+    /* ignore */
+  }
+  return {};
+}
 
 const SUBDIVISION_LABELS: Record<Subdivision, string> = {
   none: "Sem subdivisão",
@@ -92,7 +140,10 @@ export default function Metronome() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
-  const [presetAdjusted, setPresetAdjusted] = useState(false);
+  const [accentPattern, setAccentPattern] = useState<AccentLevel[]>(() => {
+    const saved = loadSavedAccents();
+    return sanitizeAccents(saved["4/4"], "4/4");
+  });
 
   const beatsPerBar = getBeatsPerBar(timeSignature);
 
@@ -104,38 +155,50 @@ export default function Metronome() {
   const bpmRef = useRef(bpm);
   const timeSignatureRef = useRef(timeSignature);
   const subdivisionRef = useRef(subdivision);
+  const accentPatternRef = useRef<AccentLevel[]>([]);
   const beatQueueRef = useRef<{ tick: number; time: number }[]>([]);
   const rafIdRef = useRef<number | null>(null);
 
   useEffect(() => { bpmRef.current = bpm; }, [bpm]);
   useEffect(() => { timeSignatureRef.current = timeSignature; }, [timeSignature]);
   useEffect(() => { subdivisionRef.current = subdivision; }, [subdivision]);
+  useEffect(() => { accentPatternRef.current = accentPattern; }, [accentPattern]);
+
+  // Salva o padrão de acentuação por compasso (persistência local)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = loadSavedAccents();
+      saved[timeSignature] = accentPattern;
+      window.localStorage.setItem(ACCENT_STORAGE_KEY, JSON.stringify(saved));
+    } catch {
+      /* ignore */
+    }
+  }, [accentPattern, timeSignature]);
 
   // ── Som do clique (oscilador sintetizado) ──────────────────────────────────
-  const playClick = useCallback((time: number, kind: "accent" | "beat" | "subdivision") => {
+  const playClick = useCallback((time: number, kind: AccentLevel | "subdivision") => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
 
+    let freq = 600;
+    let peak = 0.16;
+    let duration = 0.025;
+
+    if (kind === "subdivision") {
+      freq = 600;
+      peak = 0.16;
+      duration = 0.025;
+    } else {
+      const cfg = ACCENT_CONFIG[kind];
+      if (cfg.peak <= 0) return; // "Mudo" — não emite som
+      freq = cfg.freq;
+      peak = cfg.peak;
+      duration = cfg.duration;
+    }
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-
-    let freq = 880;
-    let peak = 0.5;
-    let duration = 0.04;
-
-    if (kind === "accent") {
-      freq = 1500;
-      peak = 0.7;
-      duration = 0.06;
-    } else if (kind === "beat") {
-      freq = 900;
-      peak = 0.45;
-      duration = 0.045;
-    } else {
-      freq = 600;
-      peak = 0.18;
-      duration = 0.025;
-    }
 
     osc.type = "triangle";
     osc.frequency.setValueAtTime(freq, time);
@@ -169,17 +232,13 @@ export default function Metronome() {
       const beatIndex = Math.floor(tick / mult);
       const isOnBeat = tick % mult === 0;
 
-      let kind: "accent" | "beat" | "subdivision";
       if (isOnBeat) {
-        kind = beatIndex === 0 ? "accent" : "beat";
-      } else {
-        kind = "subdivision";
-      }
-
-      playClick(nextNoteTimeRef.current, kind);
-
-      if (isOnBeat) {
+        const pattern = accentPatternRef.current;
+        const level = pattern[beatIndex] ?? "weak";
+        playClick(nextNoteTimeRef.current, level);
         beatQueueRef.current.push({ tick: beatIndex, time: nextNoteTimeRef.current });
+      } else {
+        playClick(nextNoteTimeRef.current, "subdivision");
       }
 
       // Avança o tempo: 1 beat = 60/bpm; cada tick = (60/bpm) / mult
@@ -283,15 +342,11 @@ export default function Metronome() {
   }, [togglePlay]);
 
   // ── BPM helpers ────────────────────────────────────────────────────────────
-  const setBpmClamped = useCallback((value: number, fromUser = true) => {
+  const setBpmClamped = useCallback((value: number) => {
     const next = Math.max(MIN_BPM, Math.min(MAX_BPM, Math.round(value)));
     setBpm(next);
     setBpmInput(String(next));
-    if (fromUser && activePresetId) {
-      const preset = PRESETS.find((p) => p.id === activePresetId);
-      if (preset && preset.bpm !== next) setPresetAdjusted(true);
-    }
-  }, [activePresetId]);
+  }, []);
 
   const adjustBpm = (delta: number) => setBpmClamped(bpm + delta);
   const handleBpmInputBlur = () => {
@@ -303,7 +358,6 @@ export default function Metronome() {
   const resetBpm = () => {
     setBpmClamped(DEFAULT_BPM);
     setActivePresetId(null);
-    setPresetAdjusted(false);
   };
 
   // ── Tap Tempo ──────────────────────────────────────────────────────────────
@@ -330,32 +384,46 @@ export default function Metronome() {
   // ── Presets ────────────────────────────────────────────────────────────────
   const applyPreset = (preset: Preset) => {
     setActivePresetId(preset.id);
-    setPresetAdjusted(false);
     setBpm(preset.bpm);
     setBpmInput(String(preset.bpm));
     setTimeSignature(preset.timeSignature);
     setSubdivision(preset.subdivision);
+    setAccentPattern(sanitizeAccents(preset.accents, preset.timeSignature));
     currentTickRef.current = 0;
     setCurrentBeat(0);
   };
 
-  // Se mudar compasso/subdivisão manualmente, sinaliza ajuste
+  // Se mudar o compasso, carrega o padrão de acentuação salvo (ou o padrão comum)
   const handleTimeSignatureChange = (ts: TimeSignature) => {
+    if (ts === timeSignature) return;
     setTimeSignature(ts);
+    const saved = loadSavedAccents();
+    setAccentPattern(sanitizeAccents(saved[ts], ts));
     currentTickRef.current = 0;
-    if (activePresetId) {
-      const p = PRESETS.find((x) => x.id === activePresetId);
-      if (p && p.timeSignature !== ts) setPresetAdjusted(true);
+    setCurrentBeat(0);
+  };
+
+  // ── Editor de acentuação ─────────────────────────────────────────────────────
+  const cycleAccent = (index: number) => {
+    setAccentPattern((prev) => {
+      const next = [...prev];
+      const currentIdx = ACCENT_ORDER.indexOf(prev[index] ?? "weak");
+      next[index] = ACCENT_ORDER[(currentIdx + 1) % ACCENT_ORDER.length];
+      return next;
+    });
+  };
+
+  const resetAccents = () => {
+    if (activePreset && activePreset.timeSignature === timeSignature) {
+      setAccentPattern(sanitizeAccents(activePreset.accents, timeSignature));
+    } else {
+      setAccentPattern(defaultAccents(timeSignature));
     }
   };
 
   const handleSubdivisionChange = (sub: Subdivision) => {
     setSubdivision(sub);
     currentTickRef.current = 0;
-    if (activePresetId) {
-      const p = PRESETS.find((x) => x.id === activePresetId);
-      if (p && p.subdivision !== sub) setPresetAdjusted(true);
-    }
   };
 
   const activePreset = useMemo(
@@ -363,7 +431,15 @@ export default function Metronome() {
     [activePresetId],
   );
 
-  const beatDots = Array.from({ length: beatsPerBar }, (_, i) => i);
+  // "ajustado" é derivado: verdadeiro quando o estado atual diverge do estilo ativo
+  const presetAdjusted = useMemo(() => {
+    if (!activePreset) return false;
+    if (activePreset.bpm !== bpm) return true;
+    if (activePreset.timeSignature !== timeSignature) return true;
+    if (activePreset.subdivision !== subdivision) return true;
+    if (JSON.stringify(activePreset.accents) !== JSON.stringify(accentPattern)) return true;
+    return false;
+  }, [activePreset, bpm, timeSignature, subdivision, accentPattern]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -442,27 +518,69 @@ export default function Metronome() {
               </div>
             </div>
 
-            {/* Indicador de beats */}
-            <div className="flex items-center justify-center gap-2 mt-6">
-              {beatDots.map((i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "rounded-full transition-all duration-100",
-                    i === 0 ? "w-3.5 h-3.5" : "w-3 h-3",
-                    isPlaying && currentBeat === i
-                      ? i === 0
-                        ? "bg-primary scale-125 shadow-lg shadow-primary/50"
-                        : "bg-white scale-110"
-                      : i === 0
-                        ? "bg-primary/30"
-                        : "bg-white/15",
-                  )}
-                />
-              ))}
-              <span className="ml-3 text-sm font-mono text-muted-foreground notranslate" translate="no">
-                {isPlaying ? currentBeat + 1 : 1} / {beatsPerBar}
-              </span>
+            {/* Editor de acentuação (bolinhas clicáveis) */}
+            <div className="mt-8 w-full max-w-md">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+                  Acentuação
+                </span>
+                <span className="text-sm font-mono text-muted-foreground notranslate" translate="no">
+                  {isPlaying ? currentBeat + 1 : 1} / {beatsPerBar}
+                </span>
+              </div>
+
+              <div className="flex items-end justify-center gap-2 sm:gap-3 flex-wrap">
+                {accentPattern.map((level, i) => {
+                  const cfg = ACCENT_CONFIG[level];
+                  const isFlashing = isPlaying && currentBeat === i;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => cycleAccent(i)}
+                      className="group flex flex-col items-center gap-1.5 focus:outline-none"
+                      aria-label={`Tempo ${i + 1}: ${cfg.label}. Toque para mudar a acentuação.`}
+                    >
+                      <span
+                        className={cn(
+                          "rounded-full border-2 transition-all duration-100",
+                          level === "strong" && "w-9 h-9 sm:w-11 sm:h-11 bg-primary border-primary",
+                          level === "medium" && "w-8 h-8 sm:w-10 sm:h-10 bg-amber-400 border-amber-400",
+                          level === "weak" && "w-7 h-7 sm:w-8 sm:h-8 bg-white/25 border-white/30",
+                          level === "muted" && "w-6 h-6 sm:w-7 sm:h-7 bg-transparent border-white/15",
+                          isFlashing && level !== "muted" && "scale-125 shadow-lg",
+                          isFlashing && level === "strong" && "shadow-primary/60 ring-2 ring-primary/40",
+                          isFlashing && level === "medium" && "shadow-amber-400/60 ring-2 ring-amber-300/40",
+                          isFlashing && level === "weak" && "shadow-white/30 scale-110",
+                          isFlashing && level === "muted" && "border-white/40 scale-110",
+                          "group-hover:brightness-110 group-active:scale-95",
+                        )}
+                      />
+                      <span className="text-[10px] font-mono text-muted-foreground/70 notranslate" translate="no">
+                        {i + 1}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Legenda dos estados */}
+              <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap mt-5 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-primary" /> Forte
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-amber-400" /> Médio
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-white/25" /> Fraco
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full border border-white/20 bg-transparent" /> Mudo
+                </span>
+              </div>
+              <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
+                Toque nas bolinhas para definir a acentuação de cada tempo.
+              </p>
             </div>
           </div>
 
@@ -512,6 +630,14 @@ export default function Metronome() {
             >
               <RotateCcw className="w-5 h-5" />
               Reset
+            </button>
+            <button
+              onClick={resetAccents}
+              className="flex items-center gap-2 px-5 py-4 rounded-2xl font-semibold text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 hover:border-white/10 transition-all"
+              aria-label="Restaurar acentuação"
+            >
+              <RotateCcw className="w-5 h-5" />
+              Acentos
             </button>
           </div>
 
