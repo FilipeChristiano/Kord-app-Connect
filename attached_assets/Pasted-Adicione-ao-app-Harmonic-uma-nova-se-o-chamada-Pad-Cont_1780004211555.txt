@@ -1,0 +1,89 @@
+Adicione ao app Harmonic uma nova seção chamada “Pad Continuous”.
+
+Objetivo:
+Criar uma ferramenta onde o usuário escolhe um tom musical e o app toca um pad contínuo infinito, com sonoridade worship, para estudo, oração, ministração e prática harmônica.
+
+Funcionalidades obrigatórias:
+
+1. Seleção de tom
+   Permitir escolher todos os 12 tons:
+
+* C
+* Db / C#
+* D
+* Eb / D#
+* E
+* F
+* Gb / F#
+* G
+* Ab / G#
+* A
+* Bb / A#
+* B
+
+2. Modos de tonalidade
+   Permitir escolher:
+
+* Maior
+* Menor
+
+3. Controles principais
+
+* Play/Pause
+* Volume
+* Fade In
+* Fade Out
+* Botão Stop
+* Botão para trocar de tom sem corte brusco
+
+4. Comportamento do áudio
+
+* O som deve tocar em loop infinito
+* Ao trocar de tom, fazer transição suave com crossfade
+* Evitar cortes secos
+* Evitar cliques no áudio
+* O pad deve soar contínuo, ambiente e worship
+
+5. Presets de pad
+   Criar 3 opções de sonoridade:
+
+* Warm Worship Pad
+* Deep Ambient Pad
+* Soft Prayer Pad
+
+6. Visual
+   Interface premium seguindo a identidade Harmonic:
+
+* fundo escuro
+* detalhes em laranja
+* texto branco/prata
+* botões arredondados
+* visual moderno de app musical
+
+7. Tecnologia
+   Para o MVP, implementar de uma destas formas:
+
+Opção A:
+Usar Web Audio API para gerar um pad contínuo com osciladores, filtros, reverb simulado, delay leve e envelope suave.
+
+Opção B:
+Permitir carregar arquivos de áudio em loop para cada tom e tocar com HTML5 Audio ou Web Audio API.
+
+Priorize a opção A inicialmente, para evitar depender de arquivos externos.
+
+8. Regras musicais
+
+* Para tom maior, usar notas da tríade maior com extensões suaves:
+  fundamental, terça maior, quinta justa, nona e sétima maior quando soar agradável.
+* Para tom menor, usar:
+  fundamental, terça menor, quinta justa, sétima menor, nona e décima primeira quando soar agradável.
+* O resultado deve soar como uma cama harmônica worship, não como um acorde de piano seco.
+
+9. Integração
+
+* Adicionar a seção “Pad Continuous” no menu principal do Harmonic
+* Manter o mesmo padrão visual do app
+* Permitir uso em celular e desktop
+
+Resultado esperado:
+O usuário abre o Harmonic, entra em “Pad Continuous”, escolhe o tom, escolhe maior ou menor, seleciona um preset de pad e aperta Play. O app toca um pad worship contínuo, infinito, suave e musical.

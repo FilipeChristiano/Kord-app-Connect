@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Layers, Star, Search, Lightbulb, Wand2, Timer } from "lucide-react";
+import { ArrowRight, BookOpen, Layers, Star, Search, Lightbulb, Wand2, Timer, Waves } from "lucide-react";
 
 export default function Home() {
   const containerVariants = {
@@ -125,11 +125,19 @@ export default function Home() {
               highlight
             />
             <FeatureCard 
+              icon={<Waves />}
+              title="Pad Worship Contínuo"
+              desc="Cama harmônica em loop infinito em qualquer tom, maior ou menor — para oração, estudo e ministração."
+              href="/pad"
+              delay={0.6}
+              highlight
+            />
+            <FeatureCard 
               icon={<BookOpen />}
               title="Modo Estudo"
               desc="Pratique a memorização com flashcards interativos por categoria de acordes."
               href="/estudo"
-              delay={0.6}
+              delay={0.7}
             />
           </div>
         </div>
