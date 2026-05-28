@@ -72,10 +72,9 @@ const PRESET_GROUPS = ["Worship & Gospel", "Ritmos Brasileiros", "Momentos do Cu
 const ACCENT_STORAGE_KEY = "harmonic_metro_accents_v1";
 
 function defaultAccents(ts: TimeSignature): AccentLevel[] {
-  if (ts === "6/8") return ["strong", "weak", "weak", "medium", "weak", "weak"];
-  if (ts === "3/4") return ["strong", "weak", "weak"];
-  if (ts === "2/4") return ["strong", "weak"];
-  return ["strong", "weak", "medium", "weak"];
+  // Padrão: apenas o Tempo 1 forte, o restante fraco
+  const beats = getBeatsPerBar(ts);
+  return Array.from({ length: beats }, (_, i) => (i === 0 ? "strong" : "weak"));
 }
 
 function sanitizeAccents(value: unknown, ts: TimeSignature): AccentLevel[] {
@@ -358,6 +357,7 @@ export default function Metronome() {
   const resetBpm = () => {
     setBpmClamped(DEFAULT_BPM);
     setActivePresetId(null);
+    setAccentPattern(defaultAccents(timeSignature));
   };
 
   // ── Tap Tempo ──────────────────────────────────────────────────────────────
@@ -411,14 +411,6 @@ export default function Metronome() {
       next[index] = ACCENT_ORDER[(currentIdx + 1) % ACCENT_ORDER.length];
       return next;
     });
-  };
-
-  const resetAccents = () => {
-    if (activePreset && activePreset.timeSignature === timeSignature) {
-      setAccentPattern(sanitizeAccents(activePreset.accents, timeSignature));
-    } else {
-      setAccentPattern(defaultAccents(timeSignature));
-    }
   };
 
   const handleSubdivisionChange = (sub: Subdivision) => {
@@ -529,7 +521,7 @@ export default function Metronome() {
                 </span>
               </div>
 
-              <div className="flex items-end justify-center gap-2 sm:gap-3 flex-wrap">
+              <div className="flex items-end justify-center gap-2 flex-wrap">
                 {accentPattern.map((level, i) => {
                   const cfg = ACCENT_CONFIG[level];
                   const isFlashing = isPlaying && currentBeat === i;
@@ -542,20 +534,19 @@ export default function Metronome() {
                     >
                       <span
                         className={cn(
-                          "rounded-full border-2 transition-all duration-100",
-                          level === "strong" && "w-9 h-9 sm:w-11 sm:h-11 bg-primary border-primary",
-                          level === "medium" && "w-8 h-8 sm:w-10 sm:h-10 bg-amber-400 border-amber-400",
-                          level === "weak" && "w-7 h-7 sm:w-8 sm:h-8 bg-white/25 border-white/30",
-                          level === "muted" && "w-6 h-6 sm:w-7 sm:h-7 bg-transparent border-white/15",
-                          isFlashing && level !== "muted" && "scale-125 shadow-lg",
-                          isFlashing && level === "strong" && "shadow-primary/60 ring-2 ring-primary/40",
-                          isFlashing && level === "medium" && "shadow-amber-400/60 ring-2 ring-amber-300/40",
-                          isFlashing && level === "weak" && "shadow-white/30 scale-110",
-                          isFlashing && level === "muted" && "border-white/40 scale-110",
+                          "rounded-full border transition-all duration-100",
+                          level === "strong" && "w-5 h-5 bg-primary border-primary",
+                          level === "medium" && "w-[18px] h-[18px] bg-amber-400 border-amber-400",
+                          level === "weak" && "w-4 h-4 bg-white/25 border-white/30",
+                          level === "muted" && "w-3.5 h-3.5 bg-transparent border-white/15",
+                          isFlashing && level === "strong" && "scale-125 shadow-md shadow-primary/50 ring-1 ring-primary/40",
+                          isFlashing && level === "medium" && "scale-125 shadow-md shadow-amber-400/50 ring-1 ring-amber-300/40",
+                          isFlashing && level === "weak" && "scale-110 shadow-sm shadow-white/30",
+                          isFlashing && level === "muted" && "scale-110 border-white/40",
                           "group-hover:brightness-110 group-active:scale-95",
                         )}
                       />
-                      <span className="text-[10px] font-mono text-muted-foreground/70 notranslate" translate="no">
+                      <span className="text-[10px] font-mono text-muted-foreground/60 notranslate" translate="no">
                         {i + 1}
                       </span>
                     </button>
@@ -630,14 +621,6 @@ export default function Metronome() {
             >
               <RotateCcw className="w-5 h-5" />
               Reset
-            </button>
-            <button
-              onClick={resetAccents}
-              className="flex items-center gap-2 px-5 py-4 rounded-2xl font-semibold text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 hover:border-white/10 transition-all"
-              aria-label="Restaurar acentuação"
-            >
-              <RotateCcw className="w-5 h-5" />
-              Acentos
             </button>
           </div>
 

@@ -1,0 +1,84 @@
+Adicione ao Metrônomo Inteligente do Harmonic a função “Detectar BPM”, com 2 opções de entrada:
+
+1. Subir áudio
+2. Gravar áudio de até 20 segundos
+
+OBJETIVO:
+Permitir que o usuário envie um áudio ou grave um trecho curto para o app identificar o BPM aproximado e configurar o metrônomo automaticamente.
+
+FUNCIONALIDADES:
+
+1. Opção: Subir áudio
+- Criar botão “Subir áudio”
+- Aceitar formatos:
+  - mp3
+  - wav
+  - m4a
+- Após o upload, mostrar nome do arquivo
+- Criar botão “Analisar BPM”
+- Analisar o áudio e detectar o BPM provável
+
+2. Opção: Gravar áudio
+- Criar botão “Gravar áudio”
+- Solicitar permissão do microfone
+- Limitar gravação a no máximo 20 segundos
+- Mostrar contador regressivo ou progressivo
+- Criar botão “Parar gravação”
+- Ao finalizar, permitir ouvir o áudio gravado
+- Criar botão “Analisar BPM”
+
+3. Análise do BPM
+- Usar Web Audio API para ler o áudio
+- Detectar transientes/onsets
+- Calcular BPM aproximado
+- Mostrar resultado principal
+- Mostrar opções alternativas quando necessário:
+  - metade do BPM
+  - BPM detectado
+  - dobro do BPM
+
+Exemplo:
+BPM detectado: 76
+Alternativas:
+38 BPM
+76 BPM
+152 BPM
+
+4. Resultado
+- Mostrar:
+  - BPM detectado
+  - nível de confiança
+  - possíveis alternativas
+- Criar botão “Usar este BPM”
+- Ao clicar, atualizar automaticamente o metrônomo com o BPM escolhido
+
+5. Compasso
+- Tentar sugerir compasso provável:
+  - 4/4
+  - 3/4
+  - 6/8
+- Se a confiança for baixa, exibir:
+  “Não foi possível identificar o compasso com segurança. Escolha manualmente.”
+
+6. Limitações visíveis ao usuário
+Mostrar uma mensagem curta:
+“A detecção funciona melhor com trechos que tenham batida, palmas, violão ou bateria bem marcados. Em introduções livres, pads ou momentos espontâneos, o resultado pode ser aproximado.”
+
+7. Interface
+- Criar aba ou seção “Detectar BPM”
+- Manter identidade visual do Harmonic:
+  - fundo escuro
+  - detalhes em laranja
+  - textos branco/prata
+  - botões arredondados
+  - visual premium
+
+8. Segurança e experiência
+- Não permitir gravações acima de 20 segundos
+- Mostrar loading durante análise
+- Permitir cancelar gravação
+- Permitir apagar áudio e gravar novamente
+- Funcionar em desktop e celular
+
+RESULTADO ESPERADO:
+O usuário pode subir um áudio ou gravar até 20 segundos. O app analisa, identifica o BPM aproximado, mostra alternativas e permite aplicar o BPM diretamente no metrônomo.
