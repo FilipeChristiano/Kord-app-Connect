@@ -53,7 +53,9 @@ function messageForCode(code: string | undefined, _fallback: string): string {
     case "session_exists":
       return "Você já está logado. Recarregue a página.";
     default:
-      return "Algo deu errado. Tente novamente em alguns instantes.";
+      return code
+        ? `Erro: ${code}. Tente novamente ou recarregue a página.`
+        : "Algo deu errado. Tente novamente em alguns instantes.";
   }
 }
 
@@ -162,51 +164,19 @@ export default function SignUpPage() {
         return;
       }
 
-      // Prefer the session id returned directly by the verify response —
-      // this avoids races where the cached signUp ref hasn't refreshed yet.
-      const verifyData = (verifyRes as unknown as {
-        data?: { createdSessionId?: string | null };
-      }).data;
-      const signUpAny = signUp as unknown as {
-        createdSessionId?: string | null;
-        status?: string;
-      };
-      const sessionId =
-        verifyData?.createdSessionId || signUpAny.createdSessionId;
-
-      if (sessionId && clerk.setActive) {
-        await clerk.setActive({ session: sessionId });
-        setLocation(basePath || "/");
-        return;
-      }
-
-      // Fallback: try finalize() (older flow).
-      const finalizeRes = await signUp.finalize();
-      if (finalizeRes.error) {
-        setError(
-          messageForCode(
-            finalizeRes.error.code,
-            finalizeRes.error.message ||
-              "Não foi possível concluir o cadastro.",
-          ),
-        );
-        return;
-      }
-      setLocation(basePath || "/");
+      // After successful verification, Clerk auto-activates the session.
+      // A hard reload is the most reliable way to land on the authenticated
+      // app state without race conditions.
+      window.location.href = (basePath || "/") + "?_=" + Date.now();
     } catch (err) {
       const { code } = extractClerkError(err);
       const alreadyVerified =
         code === "verification_already_verified" ||
         /already.*verified/i.test((err as { message?: string })?.message || "");
       if (alreadyVerified) {
-        // Try finalizing directly — the verification did succeed previously.
-        try {
-          await signUp.finalize();
-          setLocation(basePath || "/");
-          return;
-        } catch {
-          // fall through to error display
-        }
+        // Verification already happened — just reload into authenticated state.
+        window.location.href = (basePath || "/") + "?_=" + Date.now();
+        return;
       }
       setError(messageForCode(code, ""));
     } finally {

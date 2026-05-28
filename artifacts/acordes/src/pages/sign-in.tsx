@@ -50,7 +50,9 @@ function messageForCode(code: string | undefined, _fallback: string): string {
     case "session_exists":
       return "Você já está logado. Recarregue a página.";
     default:
-      return "Algo deu errado. Tente novamente em alguns instantes.";
+      return code
+        ? `Erro: ${code}. Tente novamente ou recarregue a página.`
+        : "Algo deu errado. Tente novamente em alguns instantes.";
   }
 }
 
@@ -131,27 +133,9 @@ export default function SignInPage() {
         return;
       }
 
-      const verifyData = (verifyRes as unknown as {
-        data?: { createdSessionId?: string | null };
-      }).data;
-      const signInAny = signIn as unknown as {
-        createdSessionId?: string | null;
-      };
-      const sessionId =
-        verifyData?.createdSessionId || signInAny.createdSessionId;
-
-      if (sessionId && clerk.setActive) {
-        await clerk.setActive({ session: sessionId });
-        setLocation(basePath || "/");
-        return;
-      }
-
-      const finalizeRes = await signIn.finalize();
-      if (finalizeRes.error) {
-        setError(messageForCode(finalizeRes.error.code, finalizeRes.error.message || "Não foi possível concluir o login."));
-        return;
-      }
-      setLocation(basePath || "/");
+      // After verification, Clerk auto-activates the session. A hard reload
+      // is the most reliable way to land in authenticated state.
+      window.location.href = (basePath || "/") + "?_=" + Date.now();
     } catch (err) {
       const { code } = extractClerkError(err);
       setError(messageForCode(code, ""));
