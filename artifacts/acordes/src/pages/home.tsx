@@ -73,9 +73,8 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--primary)/0.18),_transparent_70%)] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
           <div className="text-center max-w-3xl mx-auto mb-10">
-            <h2 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
-              Saia do <span className="text-primary">som básico</span> e toque com a{" "}
-              <span className="text-primary">sofisticação</span> que sua música merece.
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
+              O <span className="text-primary">próximo nível</span> do seu teclado.
             </h2>
             <p className="text-sm md:text-base text-white/70 mt-3 max-w-2xl mx-auto">
               Acordes profissionais, sofisticador de cifras, metrônomo inteligente e estudo guiado — tudo em um só app pensado para tecladistas de worship, gospel e MPB.
