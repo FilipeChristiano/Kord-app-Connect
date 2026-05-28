@@ -1,0 +1,150 @@
+1. DESCRIÇÃO DO SOM
+
+O som é um pad continuous worship moderno, usado como cama harmônica contínua para momentos de ministração, oração e ambientação.
+
+Características principais:
+
+* pad atmosférico e cinematográfico
+* textura quente e profunda
+* sonoridade escura e emocional
+* extremamente suave
+* sensação aérea e expansiva
+* ambiente worship moderno estilo Bethel / Elevation
+
+O pad NÃO deve soar:
+
+* eletrônico demais
+* agressivo
+* brilhante
+* synth lead
+* EDM
+* anos 80
+* digital seco
+
+O pad DEVE soar:
+
+* orgânico
+* profundo
+* emocional
+* ambiente de igreja
+* “presença”
+* ambient worship
+
+Ambiência:
+
+* bastante reverb
+* sensação de espaço grande
+* quase como tocado em um ambiente aberto/catedral moderna
+* reverb longo mas controlado
+
+Movimento:
+
+* leve chorus/modulação
+* pequeno movimento estéreo
+* pad vivo e respirando
+* não totalmente estático
+
+Graves:
+
+* graves suaves e quentes
+* sem excesso de subgrave
+* foco em profundidade emocional
+
+Agudos:
+
+* controlados
+* suaves
+* sem brilho exagerado
+
+Envelope:
+
+* ataque lento e suave
+* release longo
+* transições macias
+* sem cortes secos
+
+Objetivo emocional:
+Transmitir:
+
+* profundidade
+* atmosfera
+* paz
+* oração
+* adoração espontânea
+* cinematic worship
+
+---
+
+2. REFERÊNCIA
+
+Referência:
+https://www.youtube.com/watch?v=qEzKLMmt4Kg
+
+Trecho:
+0:00 até 0:06
+
+Estilo:
+
+* worship ambient
+* Bethel style
+* spontaneous worship
+* prayer pad
+* atmospheric worship
+
+Esse trecho representa exatamente a direção sonora desejada para o preset principal do Harmonic.
+
+---
+
+3. FUNÇÃO DO PAD
+
+O pad será usado para:
+
+* ministração
+* oração
+* tocar por baixo no teclado
+* ambientação worship
+* estudo harmônico
+* tocar progressões
+* treino de campo harmônico
+* prática musical
+* criação de atmosfera durante espontâneos
+
+O objetivo NÃO é criar um instrumento principal.
+
+O objetivo é criar uma “cama harmônica contínua” que sustenta o ambiente enquanto o tecladista toca por cima.
+
+---
+
+4. DIREÇÃO TÉCNICA
+
+Priorizar:
+
+* som quente
+* pads largos
+* stereo wide
+* muito suaves
+* sensação profunda
+
+Evitar:
+
+* ataque agressivo
+* filtros muito abertos
+* brilho excessivo
+* timbre sintético duro
+* excesso de médios
+
+Osciladores sugeridos:
+
+* saw suavizada
+* sine leve para corpo
+* detune leve
+
+Efeitos:
+
+* reverb longo
+* chorus suave
+* stereo spread
+* filtro low-pass moderado
+
+Resultado esperado:
+Um pad worship moderno, profundo, contínuo e emocional.

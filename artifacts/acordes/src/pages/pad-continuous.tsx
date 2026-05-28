@@ -80,19 +80,19 @@ const PRESETS: Record<PresetId, {
   },
   worship: {
     name: "Deep Worship Pad",
-    desc: "Profundo, cinematográfico e emocional — estilo Bethel e Elevation. Stereo amplo, reverb longo e chorus suave.",
-    cutoff: 3200,
-    cutoffLfoDepth: 280,
-    lfoRate: 0.06,
-    saw: 0.4,
+    desc: "Profundo, escuro e emocional — cama atmosférica estilo Bethel e Elevation. Reverb de catedral, stereo amplo e chorus suave.",
+    cutoff: 1150,
+    cutoffLfoDepth: 170,
+    lfoRate: 0.055,
+    saw: 0.3,
     tri: 0,
-    sine: 0.5,
-    reverbMix: 0.72,
-    delayMix: 0.2,
-    delayTime: 0.5,
-    detune: 5,
-    stereoSpread: 0.85,
-    chorusMix: 0.4,
+    sine: 0.6,
+    reverbMix: 0.8,
+    delayMix: 0.14,
+    delayTime: 0.52,
+    detune: 6,
+    stereoSpread: 0.9,
+    chorusMix: 0.3,
   },
 };
 
@@ -141,11 +141,11 @@ type Voice = {
 export default function PadContinuous() {
   const [selectedPc, setSelectedPc] = useState<number>(0);
   const [quality, setQuality] = useState<Quality>("major");
-  const [preset, setPreset] = useState<PresetId>("warm");
+  const [preset, setPreset] = useState<PresetId>("worship");
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.7);
-  const [fadeIn, setFadeIn] = useState(2.5);
-  const [fadeOut, setFadeOut] = useState(2.5);
+  const [fadeIn, setFadeIn] = useState(3.5);
+  const [fadeOut, setFadeOut] = useState(5);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
@@ -174,7 +174,7 @@ export default function PadContinuous() {
     dry.connect(master);
 
     const reverb = ctx.createConvolver();
-    reverb.buffer = makeReverbImpulse(ctx, 3.8, 2.2);
+    reverb.buffer = makeReverbImpulse(ctx, 5.5, 2.6);
     const wetReverb = ctx.createGain();
     wetReverb.gain.value = PRESETS[preset].reverbMix;
     reverb.connect(wetReverb);
