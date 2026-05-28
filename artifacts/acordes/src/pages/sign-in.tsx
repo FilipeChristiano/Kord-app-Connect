@@ -193,7 +193,7 @@ export default function SignInPage() {
               Bem-vindo de volta
             </h1>
             <p className="mt-1 text-center text-sm text-white/70">
-              Sem senha — só o e-mail da sua compra
+              Acesse usando o e-mail cadastrado na compra
             </p>
 
             <form onSubmit={handleSubmitEmail} className="mt-6 space-y-4">
