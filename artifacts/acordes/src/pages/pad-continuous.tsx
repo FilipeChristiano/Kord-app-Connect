@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Play, Pause, Square, Volume2, Waves } from "lucide-react";
 
 type Quality = "major" | "minor";
-type PresetId = "warm" | "deep" | "soft";
+type PresetId = "warm" | "deep" | "soft" | "worship";
 
 const KEYS: { label: string; pc: number }[] = [
   { label: "C", pc: 0 },
@@ -33,6 +33,8 @@ const PRESETS: Record<PresetId, {
   delayMix: number;
   delayTime: number;
   detune: number;
+  stereoSpread?: number;
+  chorusMix?: number;
 }> = {
   warm: {
     name: "Warm Worship Pad",
@@ -76,14 +78,39 @@ const PRESETS: Record<PresetId, {
     delayTime: 0.48,
     detune: 5,
   },
+  worship: {
+    name: "Deep Worship Pad",
+    desc: "Profundo, cinematográfico e emocional — estilo Bethel e Elevation. Stereo amplo, reverb longo e chorus suave.",
+    cutoff: 3200,
+    cutoffLfoDepth: 280,
+    lfoRate: 0.06,
+    saw: 0.4,
+    tri: 0,
+    sine: 0.5,
+    reverbMix: 0.72,
+    delayMix: 0.2,
+    delayTime: 0.5,
+    detune: 5,
+    stereoSpread: 0.85,
+    chorusMix: 0.4,
+  },
 };
 
 function midiToFreq(midi: number) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-function chordMidi(pc: number, quality: Quality): number[] {
+function chordMidi(pc: number, quality: Quality, preset: PresetId): number[] {
   const root = 48 + pc;
+  if (preset === "worship") {
+    // Deep Worship voicing — open, no busy thirds in major for an airy cinematic bed.
+    if (quality === "major") {
+      // root, 5th, maj7, 9 (+ low octave root)
+      return [root - 12, root, root + 7, root + 11, root + 14];
+    }
+    // root, m3, 5th, 9, 11 (+ low octave root)
+    return [root - 12, root, root + 3, root + 7, root + 14, root + 17];
+  }
   if (quality === "major") {
     return [root - 12, root, root + 4, root + 7, root + 11, root + 14];
   }
@@ -128,6 +155,8 @@ export default function PadContinuous() {
   const reverbRef = useRef<ConvolverNode | null>(null);
   const delayRef = useRef<DelayNode | null>(null);
   const delayFbRef = useRef<GainNode | null>(null);
+  const chorusInputRef = useRef<GainNode | null>(null);
+  const chorusWetRef = useRef<GainNode | null>(null);
   const voiceRef = useRef<Voice | null>(null);
   const playingRef = useRef(false);
   const currentChordRef = useRef<{ pc: number; quality: Quality } | null>(null);
@@ -163,6 +192,34 @@ export default function PadContinuous() {
     wetDelay.connect(reverb);
     wetDelay.connect(master);
 
+    // Chorus: two modulated delay lines panned L/R for a wide, lush stereo image.
+    const chorusInput = ctx.createGain();
+    chorusInput.gain.value = 1;
+    const chorusWet = ctx.createGain();
+    chorusWet.gain.value = PRESETS[preset].chorusMix ?? 0;
+    chorusWet.connect(master);
+    chorusWet.connect(reverb);
+
+    const makeChorusVoice = (baseDelay: number, rate: number, phase: number, pan: number) => {
+      const d = ctx.createDelay(0.1);
+      d.delayTime.value = baseDelay;
+      const lfo = ctx.createOscillator();
+      lfo.type = "sine";
+      lfo.frequency.value = rate;
+      const depth = ctx.createGain();
+      depth.gain.value = 0.004;
+      lfo.connect(depth);
+      depth.connect(d.delayTime);
+      const panner = ctx.createStereoPanner();
+      panner.pan.value = pan;
+      chorusInput.connect(d);
+      d.connect(panner);
+      panner.connect(chorusWet);
+      lfo.start(ctx.currentTime + phase);
+    };
+    makeChorusVoice(0.022, 0.25, 0, -0.9);
+    makeChorusVoice(0.027, 0.33, 0.5, 0.9);
+
     ctxRef.current = ctx;
     masterRef.current = master;
     dryRef.current = dry;
@@ -171,11 +228,14 @@ export default function PadContinuous() {
     delayRef.current = delay;
     delayFbRef.current = delayFb;
     wetDelayRef.current = wetDelay;
+    chorusInputRef.current = chorusInput;
+    chorusWetRef.current = chorusWet;
     return ctx;
   }, [volume, preset]);
 
   const buildVoice = useCallback((ctx: AudioContext, pc: number, q: Quality): Voice => {
     const p = PRESETS[preset];
+    const spread = p.stereoSpread ?? 0;
     const gain = ctx.createGain();
     gain.gain.value = 0;
 
@@ -197,9 +257,10 @@ export default function PadContinuous() {
     gain.connect(dryRef.current!);
     gain.connect(reverbRef.current!);
     gain.connect(delayRef.current!);
+    if (chorusInputRef.current) gain.connect(chorusInputRef.current);
 
     const oscs: OscillatorNode[] = [];
-    const notes = chordMidi(pc, q);
+    const notes = chordMidi(pc, q, preset);
     notes.forEach((midi, idx) => {
       const freq = midiToFreq(midi);
       // 1 saw + 1 tri + 1 sine per note, slightly detuned, attenuated per voice
@@ -208,7 +269,7 @@ export default function PadContinuous() {
       voiceMix.gain.value = 1 / Math.sqrt(notes.length);
       voiceMix.connect(filter);
 
-      const mkOsc = (type: OscillatorType, level: number, detuneCents: number) => {
+      const mkOsc = (type: OscillatorType, level: number, detuneCents: number, pan: number) => {
         if (level <= 0) return;
         const osc = ctx.createOscillator();
         osc.type = type;
@@ -219,17 +280,26 @@ export default function PadContinuous() {
         const octaveBoost = idx === 0 ? 1.2 : 1.0;
         g.gain.value = level * octaveBoost;
         osc.connect(g);
-        g.connect(voiceMix);
+        if (spread > 0 && pan !== 0) {
+          const panner = ctx.createStereoPanner();
+          panner.pan.value = Math.max(-1, Math.min(1, pan * spread));
+          g.connect(panner);
+          panner.connect(voiceMix);
+        } else {
+          g.connect(voiceMix);
+        }
         osc.start();
         oscs.push(osc);
       };
 
       // Per-note slight detune offset so each note feels alive
       const noteOffset = (idx % 2 === 0 ? -1 : 1) * 2;
-      mkOsc("sawtooth", p.saw, noteOffset - p.detune);
-      mkOsc("sawtooth", p.saw, noteOffset + p.detune);
-      mkOsc("triangle", p.tri, noteOffset);
-      mkOsc("sine", p.sine, noteOffset);
+      // Detuned saws panned opposite for stereo width (when spread enabled)
+      mkOsc("sawtooth", p.saw, noteOffset - p.detune, -1);
+      mkOsc("sawtooth", p.saw, noteOffset + p.detune, 1);
+      mkOsc("triangle", p.tri, noteOffset, 0);
+      // Keep sub/body centered for a solid low end
+      mkOsc("sine", p.sine, noteOffset, 0);
     });
 
     return { gain, oscs, lfo, lfoGain, filter };
@@ -341,6 +411,7 @@ export default function PadContinuous() {
     wetReverbRef.current?.gain.setTargetAtTime(p.reverbMix, ctx.currentTime, 0.3);
     wetDelayRef.current?.gain.setTargetAtTime(p.delayMix, ctx.currentTime, 0.3);
     delayRef.current?.delayTime.setTargetAtTime(p.delayTime, ctx.currentTime, 0.3);
+    chorusWetRef.current?.gain.setTargetAtTime(p.chorusMix ?? 0, ctx.currentTime, 0.3);
     // If playing, rebuild voice with new preset via crossfade
     if (playingRef.current) {
       const oldVoice = voiceRef.current;
