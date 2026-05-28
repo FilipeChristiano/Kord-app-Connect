@@ -68,19 +68,29 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Strip */}
-      <section className="border-y border-white/5 bg-black/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10 divide-x divide-white/5">
+      {/* Slogan + Stats Strip */}
+      <section className="relative border-y border-primary/20 bg-gradient-to-r from-primary/15 via-orange-500/10 to-primary/15 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--primary)/0.18),_transparent_70%)] pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
+          <div className="text-center max-w-3xl mx-auto mb-10">
+            <h2 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
+              Saia do <span className="text-primary">som básico</span> e toque com a{" "}
+              <span className="text-primary">sofisticação</span> que sua música merece.
+            </h2>
+            <p className="text-sm md:text-base text-white/70 mt-3 max-w-2xl mx-auto">
+              Acordes profissionais, sofisticador de cifras, metrônomo inteligente e estudo guiado — tudo em um só app pensado para tecladistas de worship, gospel e MPB.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto divide-x divide-primary/20">
             {[
               { label: "Acordes", value: CHORDS.length },
               { label: "Categorias", value: CATEGORIES.length },
               { label: "Ferramentas", value: 5 },
-              { label: "100% Offline", value: "PWA" },
             ].map((stat, i) => (
-              <div key={i} className="text-center px-4">
-                <div className="font-display text-3xl font-bold text-white mb-1 notranslate" translate="no">{stat.value}</div>
-                <div className="text-sm text-muted-foreground uppercase tracking-wider">{stat.label}</div>
+              <div key={i} className="text-center px-2 sm:px-4">
+                <div className="font-display text-3xl sm:text-4xl font-bold text-primary mb-1 notranslate" translate="no">{stat.value}</div>
+                <div className="text-xs sm:text-sm text-white/80 uppercase tracking-wider font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
