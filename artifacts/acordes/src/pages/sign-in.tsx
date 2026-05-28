@@ -85,33 +85,24 @@ export default function SignInPage() {
     setLoading(true);
     try {
       const trimmed = email.trim();
-      const createRes = await signIn.create({ identifier: trimmed });
-      if (createRes.error) {
-        // Any error here likely means the account doesn't exist yet OR
-        // sign-in flow can't be initiated for this identifier. Send the user
-        // to sign-up — that flow will redirect back if account already exists.
-        const code = createRes.error.code;
-        if (code !== "session_exists" && code !== "too_many_requests") {
+      // Passwordless email_code shortcut — no need to call signIn.create first.
+      const sendRes = await signIn.emailCode.sendCode({ emailAddress: trimmed });
+      if (sendRes.error) {
+        const code = sendRes.error.code;
+        if (code === "form_identifier_not_found") {
           setLocation(
             `${basePath || ""}/sign-up?email=${encodeURIComponent(trimmed)}`,
           );
           return;
         }
-        setError(messageForCode(code, createRes.error.message || ""));
-        return;
-      }
-      const sendRes = await signIn.emailCode.sendCode({ emailAddress: trimmed });
-      if (sendRes.error) {
-        setError(messageForCode(sendRes.error.code, sendRes.error.message || "Não foi possível enviar o código."));
+        setError(messageForCode(code, sendRes.error.message || "Não foi possível enviar o código."));
         return;
       }
       setStep("code");
       setInfo("Enviamos um código de 6 dígitos para o seu e-mail.");
     } catch (err) {
       const { code } = extractClerkError(err);
-      // Default fallback: assume user doesn't have a Clerk account yet and
-      // send them to the sign-up flow.
-      if (code !== "session_exists" && code !== "too_many_requests") {
+      if (code === "form_identifier_not_found") {
         setLocation(
           `${basePath || ""}/sign-up?email=${encodeURIComponent(email.trim())}`,
         );
