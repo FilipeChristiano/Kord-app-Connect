@@ -977,32 +977,32 @@ function OptionCard({
     <div
       onClick={onSelect}
       className={cn(
-        "cursor-pointer rounded-2xl border p-4 transition-all flex flex-col",
+        "cursor-pointer rounded-2xl border p-4 transition-all flex flex-col min-w-0 overflow-hidden",
         selected
           ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
           : "border-white/10 bg-white/5 hover:border-white/25",
       )}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1.5">
         <span
           className={cn(
-            "text-[11px] font-semibold uppercase tracking-wide",
+            "text-[11px] font-semibold uppercase tracking-wide truncate min-w-0",
             selected ? "text-primary" : "text-muted-foreground",
           )}
         >
           {RELATION_LABEL[option.relation]}
         </span>
         {recommended && (
-          <span className="text-[9px] font-bold uppercase tracking-wide text-primary bg-primary/15 border border-primary/25 rounded-full px-1.5 py-0.5">
+          <span className="shrink-0 text-[8px] font-bold uppercase tracking-wide text-primary bg-primary/15 border border-primary/25 rounded-full px-1.5 py-0.5">
             Sugerido
           </span>
         )}
       </div>
 
-      <div className="font-display text-4xl font-bold text-white mt-1 notranslate" translate="no">
+      <div className="font-display text-4xl font-bold text-white mt-1 leading-none notranslate" translate="no">
         {option.bpm}
       </div>
-      <div className="text-[11px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground mt-1">
         Confiança{" "}
         <span
           className={cn(
@@ -1019,24 +1019,12 @@ function OptionCard({
         </span>
       </div>
 
-      {/* Métricas */}
-      <div className="mt-3 space-y-1 text-[11px] text-muted-foreground">
-        <div className="flex items-center justify-between">
-          <span>Regularidade</span>
-          <span className="text-white/90 notranslate" translate="no">{regPct}%</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Erro médio</span>
-          <span className="text-white/90 notranslate" translate="no">±{err} ms</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Estabilidade</span>
-          <span className="text-white/90 notranslate" translate="no">{stabPct}%</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Batidas</span>
-          <span className="text-white/90 notranslate" translate="no">{option.metrics.beatCount}</span>
-        </div>
+      {/* Métricas — grade 2x2 (rótulo acima do valor) */}
+      <div className="mt-3 grid grid-cols-2 gap-x-2 gap-y-2.5 text-[10px]">
+        <Metric label="Regularidade" value={`${regPct}%`} />
+        <Metric label="Erro médio" value={`±${err} ms`} />
+        <Metric label="Estabilidade" value={`${stabPct}%`} />
+        <Metric label="Batidas" value={String(option.metrics.beatCount)} />
       </div>
 
       {/* Ouvir com metrônomo */}
@@ -1046,7 +1034,7 @@ function OptionCard({
           onTogglePlay();
         }}
         className={cn(
-          "mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all",
+          "mt-4 w-full flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[13px] font-semibold transition-all",
           playing
             ? "bg-primary text-primary-foreground"
             : "bg-secondary hover:bg-secondary/70 text-white border border-white/10",
@@ -1054,14 +1042,26 @@ function OptionCard({
       >
         {playing ? (
           <>
-            <Pause className="w-4 h-4" /> Parar
+            <Pause className="w-4 h-4 shrink-0" /> Parar
           </>
         ) : (
           <>
-            <Play className="w-4 h-4" /> Ouvir
+            <Play className="w-4 h-4 shrink-0" /> Ouvir
           </>
         )}
       </button>
+    </div>
+  );
+}
+
+// Métrica compacta: rótulo em cima, valor embaixo (evita colisão em cartões estreitos)
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-muted-foreground leading-tight">{label}</div>
+      <div className="text-white/90 font-semibold leading-tight mt-0.5 notranslate" translate="no">
+        {value}
+      </div>
     </div>
   );
 }
