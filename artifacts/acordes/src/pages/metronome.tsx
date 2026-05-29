@@ -655,7 +655,9 @@ export default function Metronome() {
                   onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ""))}
                   onBlur={handleBpmInputBlur}
                   onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-                  className="font-display text-6xl sm:text-7xl font-bold text-white bg-transparent text-center w-40 outline-none focus:text-primary transition-colors notranslate pointer-events-auto"
+                  className={`font-display font-bold text-white bg-transparent text-center w-44 leading-none outline-none focus:text-primary transition-colors notranslate pointer-events-auto ${
+                    bpmInput.length >= 3 ? "text-5xl sm:text-6xl" : "text-6xl sm:text-7xl"
+                  }`}
                   translate="no"
                   aria-label="BPM"
                 />
