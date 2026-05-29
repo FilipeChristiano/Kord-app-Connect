@@ -765,6 +765,34 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
             ))}
           </div>
 
+          {/* Métricas da opção selecionada — faixa de largura total (sempre legível) */}
+          <div className="mt-3 rounded-xl border border-white/5 bg-white/5 p-3 @container">
+            <div className="text-[11px] text-muted-foreground mb-2.5">
+              Detalhes —{" "}
+              <span className="text-white font-semibold notranslate" translate="no">
+                {RELATION_LABEL[selectedOption.relation]} · {selectedOption.bpm} BPM
+              </span>
+            </div>
+            <div className="grid grid-cols-2 @[20rem]:grid-cols-4 gap-x-4 gap-y-3 text-[11px]">
+              <Metric
+                label="Regularidade"
+                value={`${Math.round(selectedOption.metrics.regularity * 100)}%`}
+              />
+              <Metric
+                label="Erro médio"
+                value={`±${Math.round(selectedOption.metrics.meanErrorMs)} ms`}
+              />
+              <Metric
+                label="Estabilidade"
+                value={`${Math.round(selectedOption.metrics.stability * 100)}%`}
+              />
+              <Metric
+                label="Batidas"
+                value={String(selectedOption.metrics.beatCount)}
+              />
+            </div>
+          </div>
+
           {/* Ajuste fino */}
           <div className="mt-5 rounded-xl border border-white/10 bg-white/5 p-4">
             <div className="text-xs text-muted-foreground mb-3 text-center">
@@ -1007,9 +1035,6 @@ function OptionCard({
   onTogglePlay,
 }: OptionCardProps) {
   const confPct = Math.round(option.confidence * 100);
-  const regPct = Math.round(option.metrics.regularity * 100);
-  const stabPct = Math.round(option.metrics.stability * 100);
-  const err = Math.round(option.metrics.meanErrorMs);
 
   return (
     <div
@@ -1059,14 +1084,6 @@ function OptionCard({
         >
           {confPct}%
         </span>
-      </div>
-
-      {/* Métricas — grade 2x2 (rótulo acima do valor) p/ cartão mais quadrado */}
-      <div className="mt-3 grid grid-cols-2 gap-x-2 gap-y-2 text-[10px] border-t border-white/5 pt-2.5">
-        <Metric label="Regular." value={`${regPct}%`} />
-        <Metric label="Erro" value={`±${err} ms`} />
-        <Metric label="Estável" value={`${stabPct}%`} />
-        <Metric label="Batidas" value={String(option.metrics.beatCount)} />
       </div>
 
       {/* Ouvir com metrônomo */}
