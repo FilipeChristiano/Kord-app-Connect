@@ -485,8 +485,8 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
   };
 
   const confirmBpm = () => {
+    if (!(finalBpm > 0)) return;
     const bpm = clampBpm(finalBpm);
-    if (!(bpm > 0)) return;
     const ts = result?.timeSignature ?? null;
     onApply(bpm, ts);
     setApplied(true);
@@ -828,7 +828,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
             {/* Ouvir o trecho com o BPM do ajuste fino */}
             <button
               onClick={playFinePreview}
-              disabled={!bufferRef.current || !(clampBpm(finalBpm) > 0)}
+              disabled={!bufferRef.current || !(finalBpm > 0)}
               className={cn(
                 "mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed",
                 playingIndex === FINE_PLAY_KEY
