@@ -55,12 +55,12 @@ export default function PadContinuous() {
   const [volume, setVolume] = useState(0.7);
   const [fadeIn, setFadeIn] = useState(3);
   const [fadeOut, setFadeOut] = useState(4);
-  const [lowCut, setLowCut] = useState(false);
+  const [lowCutHz, setLowCutHz] = useState(20);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
   const lowCutRef = useRef<BiquadFilterNode | null>(null);
-  const lowCutOnRef = useRef(false);
+  const lowCutHzRef = useRef(20);
 
   const bufferCache = useRef<Map<string, AudioBuffer>>(new Map());
   const samplePlayerRef = useRef<SamplePlayer | null>(null);
@@ -76,12 +76,12 @@ export default function PadContinuous() {
     const master = ctx.createGain();
     master.gain.value = volume;
     master.connect(ctx.destination);
-    // Low Cut (High-Pass Filter) — colocado ANTES do volume master.
-    // Desligado = 20 Hz (transparente, sem corte audível); Ligado = 85 Hz.
+    // Low Cut (High-Pass Filter) dinâmico — colocado ANTES do volume master.
+    // 20 Hz = transparente (sem corte); até 300 Hz = corte de graves ajustável.
     const lowCutFilter = ctx.createBiquadFilter();
     lowCutFilter.type = "highpass";
     lowCutFilter.Q.value = 0.7;
-    lowCutFilter.frequency.value = lowCutOnRef.current ? 85 : 20;
+    lowCutFilter.frequency.value = lowCutHzRef.current;
     lowCutFilter.connect(master);
     ctxRef.current = ctx;
     masterRef.current = master;
@@ -262,17 +262,16 @@ export default function PadContinuous() {
     m.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.1);
   }, [volume]);
 
-  // ---- Low Cut (High-Pass) em tempo real, com transição suave ----
+  // ---- Low Cut (High-Pass) dinâmico em tempo real, com transição suave ----
   useEffect(() => {
-    lowCutOnRef.current = lowCut;
+    lowCutHzRef.current = lowCutHz;
     const f = lowCutRef.current;
     const ctx = ctxRef.current;
     if (!f || !ctx) return;
-    const target = lowCut ? 85 : 20;
     const now = ctx.currentTime;
     holdParam(f.frequency, now);
-    f.frequency.linearRampToValueAtTime(target, now + 0.3);
-  }, [lowCut]);
+    f.frequency.linearRampToValueAtTime(lowCutHz, now + 0.08);
+  }, [lowCutHz]);
 
   // ---- Background preload of all tones ----
   useEffect(() => {
@@ -396,36 +395,42 @@ export default function PadContinuous() {
           </div>
         </div>
 
-        {/* Low Cut (High-Pass) */}
-        <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between gap-4 flex-wrap">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-sm text-white/80 font-medium">
+        {/* Low Cut dinâmico (High-Pass) */}
+        <div className="mt-6 pt-6 border-t border-white/5">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <label className="flex items-center gap-2 text-sm text-white/80 font-medium">
               <Filter className="w-4 h-4" /> Low Cut
-            </div>
-            <p className="text-xs text-muted-foreground mt-1 max-w-md">
-              Corta os graves (filtro 85&nbsp;Hz) para um som mais limpo e definido ao tocar junto
-              com teclado, voz ou banda. Desligado deixa o pad mais cheio e ambiente.
-            </p>
+            </label>
+            <span
+              className={`text-sm font-bold notranslate ${
+                lowCutHz > 20 ? "text-primary" : "text-muted-foreground"
+              }`}
+              translate="no"
+            >
+              {lowCutHz <= 20 ? "OFF" : `${lowCutHz} Hz`}
+            </span>
           </div>
-          <button
-            onClick={() => setLowCut((v) => !v)}
-            role="switch"
-            aria-checked={lowCut}
-            aria-label="Ativar ou desativar Low Cut"
-            className={`shrink-0 inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl font-bold text-sm uppercase tracking-wide border transition-all notranslate ${
-              lowCut
-                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25"
-                : "bg-secondary text-muted-foreground border-white/10 hover:border-white/20"
-            }`}
+          <input
+            type="range"
+            min={20}
+            max={300}
+            step={1}
+            value={lowCutHz}
+            onChange={(e) => setLowCutHz(parseInt(e.target.value, 10))}
+            className="w-full accent-primary"
+            aria-label="Frequência do Low Cut em Hz"
+          />
+          <div
+            className="flex justify-between text-[10px] text-muted-foreground/70 mt-1 notranslate"
             translate="no"
           >
-            <span
-              className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                lowCut ? "bg-primary-foreground" : "bg-muted-foreground/50"
-              }`}
-            />
-            {lowCut ? "LOW CUT ON" : "LOW CUT OFF"}
-          </button>
+            <span>20 Hz</span>
+            <span>300 Hz</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 max-w-md">
+            Corte de graves ajustável. Em 20&nbsp;Hz o pad toca cheio (sem corte); aumente a
+            frequência para deixar o som mais limpo e definido ao tocar com teclado, voz ou banda.
+          </p>
         </div>
       </div>
 
