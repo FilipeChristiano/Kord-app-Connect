@@ -55,12 +55,14 @@ export default function PadContinuous() {
   const [volume, setVolume] = useState(0.7);
   const [fadeIn, setFadeIn] = useState(3);
   const [fadeOut, setFadeOut] = useState(4);
-  const [lowCutHz, setLowCutHz] = useState(20);
+  const [lowCutHz, setLowCutHz] = useState(85);
+  const [lowCutOn, setLowCutOn] = useState(false);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
   const lowCutRef = useRef<BiquadFilterNode | null>(null);
-  const lowCutHzRef = useRef(20);
+  const lowCutHzRef = useRef(85);
+  const lowCutOnRef = useRef(false);
 
   const bufferCache = useRef<Map<string, AudioBuffer>>(new Map());
   const samplePlayerRef = useRef<SamplePlayer | null>(null);
@@ -81,7 +83,7 @@ export default function PadContinuous() {
     const lowCutFilter = ctx.createBiquadFilter();
     lowCutFilter.type = "highpass";
     lowCutFilter.Q.value = 0.7;
-    lowCutFilter.frequency.value = lowCutHzRef.current;
+    lowCutFilter.frequency.value = lowCutOnRef.current ? lowCutHzRef.current : 20;
     lowCutFilter.connect(master);
     ctxRef.current = ctx;
     masterRef.current = master;
@@ -265,13 +267,15 @@ export default function PadContinuous() {
   // ---- Low Cut (High-Pass) dinâmico em tempo real, com transição suave ----
   useEffect(() => {
     lowCutHzRef.current = lowCutHz;
+    lowCutOnRef.current = lowCutOn;
     const f = lowCutRef.current;
     const ctx = ctxRef.current;
     if (!f || !ctx) return;
+    const target = lowCutOn ? lowCutHz : 20;
     const now = ctx.currentTime;
     holdParam(f.frequency, now);
-    f.frequency.linearRampToValueAtTime(lowCutHz, now + 0.08);
-  }, [lowCutHz]);
+    f.frequency.linearRampToValueAtTime(target, now + 0.08);
+  }, [lowCutHz, lowCutOn]);
 
   // ---- Background preload of all tones ----
   useEffect(() => {
@@ -397,18 +401,36 @@ export default function PadContinuous() {
 
         {/* Low Cut dinâmico (High-Pass) */}
         <div className="mt-6 pt-6 border-t border-white/5">
-          <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center justify-between gap-3 mb-3">
             <label className="flex items-center gap-2 text-sm text-white/80 font-medium">
               <Filter className="w-4 h-4" /> Low Cut
             </label>
-            <span
-              className={`text-sm font-bold notranslate ${
-                lowCutHz > 20 ? "text-primary" : "text-muted-foreground"
-              }`}
-              translate="no"
-            >
-              {lowCutHz <= 20 ? "OFF" : `${lowCutHz} Hz`}
-            </span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`text-sm font-bold notranslate ${
+                  lowCutOn ? "text-primary" : "text-muted-foreground"
+                }`}
+                translate="no"
+              >
+                {lowCutOn ? `${lowCutHz} Hz` : "OFF"}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={lowCutOn}
+                aria-label="Ligar ou desligar o Low Cut"
+                onClick={() => setLowCutOn((v) => !v)}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                  lowCutOn ? "bg-primary" : "bg-white/15"
+                }`}
+              >
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
+                    lowCutOn ? "translate-x-[22px]" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
           <input
             type="range"
@@ -416,8 +438,11 @@ export default function PadContinuous() {
             max={300}
             step={1}
             value={lowCutHz}
+            disabled={!lowCutOn}
             onChange={(e) => setLowCutHz(parseInt(e.target.value, 10))}
-            className="w-full accent-primary"
+            className={`w-full accent-primary transition-opacity ${
+              lowCutOn ? "opacity-100" : "opacity-40 cursor-not-allowed"
+            }`}
             aria-label="Frequência do Low Cut em Hz"
           />
           <div
@@ -428,8 +453,9 @@ export default function PadContinuous() {
             <span>300 Hz</span>
           </div>
           <p className="text-xs text-muted-foreground mt-2 max-w-md">
-            Corte de graves ajustável. Em 20&nbsp;Hz o pad toca cheio (sem corte); aumente a
-            frequência para deixar o som mais limpo e definido ao tocar com teclado, voz ou banda.
+            Corte de graves ajustável. Ligue o botão e arraste para escolher a frequência: quanto
+            maior, mais limpo e definido o som fica ao tocar com teclado, voz ou banda. Desligado,
+            o pad toca cheio (sem corte).
           </p>
         </div>
       </div>
