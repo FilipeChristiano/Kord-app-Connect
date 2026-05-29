@@ -57,6 +57,7 @@ export default function PadContinuous() {
   const [fadeOut, setFadeOut] = useState(4);
   const [lowCutHz, setLowCutHz] = useState(85);
   const [lowCutOn, setLowCutOn] = useState(false);
+  const [autoLowCut, setAutoLowCut] = useState(false);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
@@ -438,10 +439,14 @@ export default function PadContinuous() {
             max={300}
             step={1}
             value={lowCutHz}
-            disabled={!lowCutOn}
-            onChange={(e) => setLowCutHz(parseInt(e.target.value, 10))}
+            disabled={!lowCutOn && !autoLowCut}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              setLowCutHz(v);
+              if (autoLowCut) setLowCutOn(v > 20);
+            }}
             className={`w-full accent-primary transition-opacity ${
-              lowCutOn ? "opacity-100" : "opacity-40 cursor-not-allowed"
+              lowCutOn || autoLowCut ? "opacity-100" : "opacity-40 cursor-not-allowed"
             }`}
             aria-label="Frequência do Low Cut em Hz"
           />
@@ -452,10 +457,24 @@ export default function PadContinuous() {
             <span>20 Hz</span>
             <span>300 Hz</span>
           </div>
+          <label className="flex items-center gap-2 mt-3 text-xs text-white/70 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoLowCut}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setAutoLowCut(checked);
+                if (checked) setLowCutOn(lowCutHz > 20);
+              }}
+              className="w-4 h-4 accent-primary rounded shrink-0"
+            />
+            Ativar automaticamente ao sair de 20&nbsp;Hz
+          </label>
           <p className="text-xs text-muted-foreground mt-2 max-w-md">
             Corte de graves ajustável. Ligue o botão e arraste para escolher a frequência: quanto
             maior, mais limpo e definido o som fica ao tocar com teclado, voz ou banda. Desligado,
-            o pad toca cheio (sem corte).
+            o pad toca cheio (sem corte). Com a opção automática marcada, basta arrastar o controle
+            que o corte liga sozinho ao passar de 20&nbsp;Hz e desliga ao voltar.
           </p>
         </div>
       </div>
