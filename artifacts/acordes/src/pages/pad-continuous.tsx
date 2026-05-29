@@ -443,7 +443,7 @@ export default function PadContinuous() {
               setLowCutHz(v);
               setLowCutOn(v > 20);
             }}
-            className={`w-full ${lowCutOn ? "accent-primary" : "accent-zinc-500"}`}
+            className={`w-full ${lowCutOn ? "accent-primary" : "accent-[#52525b]"}`}
             aria-label="Frequência do Low Cut em Hz"
           />
           <div
