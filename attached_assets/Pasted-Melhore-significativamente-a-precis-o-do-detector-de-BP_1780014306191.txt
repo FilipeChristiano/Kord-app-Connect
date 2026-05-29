@@ -1,0 +1,222 @@
+Melhore significativamente a precisão do detector de BPM do Harmonic.
+
+OBJETIVO:
+Obter a maior precisão possível na detecção de BPM para músicas gospel, worship, pop, sertanejo, samba, pagode, forró e músicas brasileiras em geral.
+
+========================================
+CAPTURA DE ÁUDIO
+================
+
+Aumentar o limite máximo de gravação para:
+
+* 30 segundos
+
+Permitir:
+
+* Upload de áudio
+* Gravação pelo microfone
+
+Formatos aceitos:
+
+* mp3
+* wav
+* m4a
+
+========================================
+SELEÇÃO INTELIGENTE DO TRECHO
+=============================
+
+Não analisar o áudio inteiro.
+
+Implementar um sistema que:
+
+* Detecte automaticamente as regiões mais rítmicas do áudio.
+* Ignore silêncio.
+* Ignore introduções livres.
+* Ignore pads contínuos.
+* Ignore falas.
+* Ignore reverbs longos sem pulso.
+
+Após a análise:
+
+* Selecionar automaticamente os melhores 8 a 12 segundos do áudio.
+* Utilizar apenas esse trecho para calcular o BPM.
+
+Exibir ao usuário:
+
+Trecho analisado:
+00:08 até 00:19
+
+========================================
+DETECÇÃO MULTI-ALGORITMO
+========================
+
+Executar simultaneamente:
+
+* Onset Detection
+* Autocorrelation
+* Tempogram Analysis
+* Spectral Flux
+
+Combinar os resultados utilizando sistema de consenso.
+
+Gerar:
+
+* BPM principal
+* BPMs alternativos
+* Nível de confiança
+
+========================================
+PRIORIDADE PARA ELEMENTOS RÍTMICOS
+==================================
+
+Durante a análise:
+
+Dar maior peso para:
+
+* bumbo
+* caixa
+* percussão
+* violão marcado
+
+Priorizar frequências:
+
+60 Hz até 300 Hz
+
+Peso secundário:
+
+1 kHz até 4 kHz
+
+Reduzir influência de:
+
+* pads
+* vocais
+* strings
+* reverbs
+* ambiências
+
+========================================
+DETECÇÃO DE ENTRADA DA BATERIA
+==============================
+
+Criar um modo inteligente.
+
+Antes de calcular o BPM:
+
+* Detectar entrada de bateria.
+* Detectar kick.
+* Detectar snare.
+* Detectar aumento de transientes.
+
+Quando houver bateria ou groove estabelecido:
+
+Iniciar a análise.
+
+Objetivo:
+Evitar erros em músicas worship que começam apenas com pad, piano ou voz.
+
+========================================
+CONFIANÇA
+=========
+
+Classificar:
+
+90% a 100%
+Alta
+
+70% a 89%
+Média
+
+Abaixo de 70%
+Baixa
+
+Quando confiança < 70%:
+
+* Exibir aviso.
+* Informar que o resultado pode não ser confiável.
+* Mostrar BPM alternativos.
+
+========================================
+BPMS ALTERNATIVOS
+=================
+
+Sempre mostrar:
+
+* BPM principal
+* Metade do BPM
+* Dobro do BPM
+* Até 5 BPMs candidatos
+
+Exemplo:
+
+53 BPM
+79 BPM
+106 BPM
+159 BPM
+162 BPM
+
+========================================
+HEURÍSTICA MUSICAL
+==================
+
+Após detectar o BPM:
+
+Comparar com faixas musicais comuns:
+
+40-70
+70-90
+90-120
+120-150
+150-180
+
+Se houver baixa confiança:
+
+Aplicar correções heurísticas.
+
+Objetivo:
+Evitar BPMs improváveis ou inconsistentes.
+
+========================================
+MODO MARCAR PULSO
+=================
+
+Adicionar um botão:
+
+MARCAR PULSO
+
+Funcionamento:
+
+O usuário toca na tela acompanhando a música.
+
+O sistema:
+
+* registra os toques
+* calcula o BPM médio
+* mostra o BPM resultante
+
+Opções:
+
+4 toques
+8 toques
+16 toques
+
+Objetivo:
+Permitir correção manual quando a IA não conseguir detectar corretamente.
+
+========================================
+RESULTADO FINAL
+===============
+
+Exibir:
+
+* BPM detectado
+* Nível de confiança
+* BPMs alternativos
+* Compasso provável
+* Trecho analisado
+* Botão "Usar BPM"
+* Botão "Marcar Pulso"
+
+Objetivo final:
+
+Transformar o detector de BPM do Harmonic em uma ferramenta profissional, confiável e otimizada para músicos, tecladistas, worship e estudo musical.
