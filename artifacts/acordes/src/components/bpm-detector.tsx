@@ -35,6 +35,7 @@ const TAP_TARGETS = [8, 12] as const;
 const MIN_BPM = 40;
 const MAX_BPM = 240;
 const LS_KEY = "harmonic:lastBpm";
+const FINE_PLAY_KEY = -1;
 
 const RELATION_LABEL: Record<BpmRelation, string> = {
   metade: "Metade",
@@ -373,17 +374,18 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
   };
 
   // ── Player "Ouvir com metrônomo" ───────────────────────────────────────────
-  const playPreview = useCallback(
-    async (index: number) => {
-      if (playingIndex === index) {
+  // Toca o trecho analisado com cliques do metrônomo num dado BPM/fase.
+  // `key` identifica quem está tocando (índice da opção, ou FINE_KEY p/ ajuste fino).
+  const startMetronomePlayback = useCallback(
+    async (bpm: number, phaseSec: number, key: number) => {
+      if (playingIndex === key) {
         stopPreview();
         return;
       }
       stopPreview();
       const buffer = bufferRef.current;
       const seg = result?.segment;
-      const opt = result?.options[index];
-      if (!buffer || !seg || !opt || !(opt.bpm > 0)) return;
+      if (!buffer || !seg || !(bpm > 0)) return;
 
       let ctx = previewCtxRef.current;
       if (!ctx) {
@@ -414,10 +416,10 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
       src.connect(master);
       src.start(start, seg.start, dur);
 
-      // Cliques do metrônomo sincronizados à fase detectada
+      // Cliques do metrônomo sincronizados à fase informada
       const nodes: OscillatorNode[] = [];
-      const T = 60 / opt.bpm;
-      const first = opt.phaseSec - T * Math.floor(opt.phaseSec / T);
+      const T = 60 / bpm;
+      const first = phaseSec - T * Math.floor(phaseSec / T);
       for (let t = first; t < dur; t += T) {
         const when = start + t;
         const osc = ctx.createOscillator();
@@ -440,10 +442,24 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
         }
       };
       previewRef.current = { source: src, nodes };
-      setPlayingIndex(index);
+      setPlayingIndex(key);
     },
     [playingIndex, result, stopPreview],
   );
+
+  const playPreview = useCallback(
+    (index: number) => {
+      const opt = result?.options[index];
+      if (!opt) return;
+      startMetronomePlayback(opt.bpm, opt.phaseSec, index);
+    },
+    [result, startMetronomePlayback],
+  );
+
+  // "Ouvir" com o BPM do ajuste fino (fase 0 = do início do trecho)
+  const playFinePreview = useCallback(() => {
+    startMetronomePlayback(clampBpm(finalBpm), 0, FINE_PLAY_KEY);
+  }, [finalBpm, startMetronomePlayback]);
 
   const selectOption = (index: number) => {
     const opt = result?.options[index];
@@ -780,6 +796,28 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
                 <Plus className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Ouvir o trecho com o BPM do ajuste fino */}
+            <button
+              onClick={playFinePreview}
+              disabled={!bufferRef.current || !(clampBpm(finalBpm) > 0)}
+              className={cn(
+                "mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed",
+                playingIndex === FINE_PLAY_KEY
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary hover:bg-secondary/70 text-white border border-white/10",
+              )}
+            >
+              {playingIndex === FINE_PLAY_KEY ? (
+                <>
+                  <Pause className="w-4 h-4 shrink-0" /> Parar
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 shrink-0" /> Ouvir com metrônomo
+                </>
+              )}
+            </button>
           </div>
 
           {/* Compasso sugerido */}
@@ -1023,11 +1061,11 @@ function OptionCard({
         </span>
       </div>
 
-      {/* Métricas — lista vertical (rótulo acima do valor) */}
-      <div className="mt-3 space-y-2 text-[10px] border-t border-white/5 pt-2.5">
-        <Metric label="Regularidade" value={`${regPct}%`} />
-        <Metric label="Erro médio" value={`±${err} ms`} />
-        <Metric label="Estabilidade" value={`${stabPct}%`} />
+      {/* Métricas — grade 2x2 (rótulo acima do valor) p/ cartão mais quadrado */}
+      <div className="mt-3 grid grid-cols-2 gap-x-2 gap-y-2 text-[10px] border-t border-white/5 pt-2.5">
+        <Metric label="Regular." value={`${regPct}%`} />
+        <Metric label="Erro" value={`±${err} ms`} />
+        <Metric label="Estável" value={`${stabPct}%`} />
         <Metric label="Batidas" value={String(option.metrics.beatCount)} />
       </div>
 
