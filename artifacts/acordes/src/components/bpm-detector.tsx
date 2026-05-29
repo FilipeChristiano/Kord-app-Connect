@@ -9,6 +9,9 @@ import {
   AudioWaveform,
   Gauge,
   Info,
+  AlertTriangle,
+  Hand,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -21,7 +24,15 @@ interface BpmDetectorProps {
   onApply: (bpm: number, timeSignature: DetectedTimeSignature | null) => void;
 }
 
-const MAX_RECORD_SECONDS = 20;
+const MAX_RECORD_SECONDS = 30;
+const TAP_TARGETS = [4, 8, 16] as const;
+
+function formatTime(sec: number): string {
+  const s = Math.max(0, Math.round(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
 
 async function decodeToBuffer(data: ArrayBuffer): Promise<AudioBuffer> {
   const Ctor: typeof AudioContext =
@@ -50,6 +61,14 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
   const [selectedBpm, setSelectedBpm] = useState<number | null>(null);
   const [applied, setApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Modo "Marcar Pulso" ────────────────────────────────────────────────────
+  const [tapMode, setTapMode] = useState(false);
+  const [tapTarget, setTapTarget] = useState<(typeof TAP_TARGETS)[number]>(8);
+  const [tapCount, setTapCount] = useState(0);
+  const [tapBpm, setTapBpm] = useState<number | null>(null);
+  const [tapApplied, setTapApplied] = useState(false);
+  const tapTimesRef = useRef<number[]>([]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -102,7 +121,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
     setApplied(false);
     setError(null);
     chunksRef.current = [];
-  }, [audioUrl, cleanupStream]);
+  }, [cleanupStream, setAudioUrlSafe]);
 
   // ── Upload ───────────────────────────────────────────────────────────────
   const handleFile = async (file: File) => {
@@ -216,11 +235,11 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
       // pequena pausa para o spinner aparecer antes do trabalho pesado
       await new Promise((r) => setTimeout(r, 50));
       const buffer = await decodeToBuffer(audioDataRef.current);
-      const analysis = analyzeBpm(buffer);
+      const analysis = await analyzeBpm(buffer);
       if (runId !== analysisIdRef.current) return; // áudio trocado/apagado: descarta
       if (!analysis.bpm) {
         setError(
-          "Não consegui identificar uma batida clara nesse áudio. Tente um trecho com ritmo mais marcado.",
+          "Não consegui identificar uma batida clara nesse áudio. Tente um trecho com ritmo mais marcado ou use o modo Marcar Pulso.",
         );
       } else {
         setResult(analysis);
@@ -229,7 +248,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
     } catch {
       if (runId !== analysisIdRef.current) return;
       setError(
-        "Não foi possível analisar esse áudio. O formato pode não ser suportado neste navegador.",
+        "Não foi possível analisar esse áudio. O formato pode não ser suportado neste navegador (tente mp3 ou wav).",
       );
     } finally {
       if (runId === analysisIdRef.current) setAnalyzing(false);
@@ -242,9 +261,58 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
     setApplied(true);
   };
 
+  // ── Marcar Pulso ────────────────────────────────────────────────────────────
+  const openTapMode = () => {
+    setTapMode(true);
+    setTapCount(0);
+    setTapBpm(null);
+    setTapApplied(false);
+    tapTimesRef.current = [];
+  };
+
+  const resetTaps = () => {
+    setTapCount(0);
+    setTapBpm(null);
+    setTapApplied(false);
+    tapTimesRef.current = [];
+  };
+
+  const handleTap = () => {
+    const now = performance.now();
+    const taps = tapTimesRef.current;
+    // Reinicia se demorou demais entre toques (> 2s)
+    if (taps.length && now - taps[taps.length - 1] > 2000) {
+      tapTimesRef.current = [];
+      setTapBpm(null);
+      setTapApplied(false);
+    }
+    tapTimesRef.current.push(now);
+    const arr = tapTimesRef.current;
+    setTapCount(arr.length);
+
+    if (arr.length >= 2) {
+      const intervals: number[] = [];
+      for (let i = 1; i < arr.length; i++) intervals.push(arr[i] - arr[i - 1]);
+      const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const computed = Math.round(60000 / avg);
+      setTapBpm(Math.max(40, Math.min(240, computed)));
+    }
+    if (arr.length >= tapTarget) {
+      // Atingiu o alvo: mantém o resultado e prepara para refazer
+      tapTimesRef.current = [];
+    }
+  };
+
+  const applyTapBpm = () => {
+    if (tapBpm == null) return;
+    onApply(tapBpm, null);
+    setTapApplied(true);
+  };
+
   const confidencePct = result ? Math.round(result.confidence * 100) : 0;
   const confidenceLabel =
-    confidencePct >= 66 ? "Alta" : confidencePct >= 33 ? "Média" : "Baixa";
+    confidencePct >= 90 ? "Alta" : confidencePct >= 70 ? "Média" : "Baixa";
+  const lowConfidence = !!result && confidencePct < 70;
 
   const hasAudio = !!audioDataRef.current && !isRecording;
 
@@ -267,8 +335,9 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
         <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
         <span>
           A detecção funciona melhor com trechos que tenham batida, palmas, violão ou
-          bateria bem marcados. Em introduções livres, pads ou momentos espontâneos, o
-          resultado pode ser aproximado.
+          bateria bem marcados. Em introduções livres, pads ou momentos espontâneos, use o
+          modo <span className="text-white/90 font-medium">Marcar Pulso</span> para acertar
+          manualmente.
         </span>
       </div>
 
@@ -401,44 +470,82 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
               {result.bpm}
             </div>
             <div className="text-xs text-muted-foreground">
-              Confiança: <span className="text-white/90 font-semibold">{confidenceLabel}</span> ({confidencePct}%)
+              Confiança:{" "}
+              <span
+                className={cn(
+                  "font-semibold",
+                  confidencePct >= 90
+                    ? "text-green-300"
+                    : confidencePct >= 70
+                      ? "text-yellow-300"
+                      : "text-orange-300",
+                )}
+              >
+                {confidenceLabel}
+              </span>{" "}
+              ({confidencePct}%)
             </div>
+            {result.segment && (
+              <div className="text-[11px] text-muted-foreground/80 mt-1 notranslate" translate="no">
+                Trecho analisado: {formatTime(result.segment.start)} até{" "}
+                {formatTime(result.segment.end)}
+              </div>
+            )}
           </div>
 
-          {/* Alternativas */}
-          <div className="mt-5">
-            <div className="text-xs text-muted-foreground text-center mb-2">
-              Alternativas (caso o tempo soe rápido ou lento demais)
+          {/* Aviso de baixa confiança */}
+          {lowConfidence && (
+            <div className="flex items-start gap-2 mt-4 text-[12px] text-orange-200 bg-orange-500/10 border border-orange-500/25 rounded-xl px-3 py-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-orange-300" />
+              <span>
+                O resultado pode não ser confiável. Confira os candidatos abaixo ou use o
+                modo <span className="font-medium">Marcar Pulso</span> para acertar o tempo
+                manualmente.
+              </span>
             </div>
-            <div className="flex items-center justify-center gap-2">
-              {result.alternatives.map((alt, idx) => {
-                const labels = ["metade", "detectado", "dobro"];
-                const isSel = selectedBpm === alt;
-                return (
-                  <button
-                    key={`${alt}-${idx}`}
-                    onClick={() => {
-                      setSelectedBpm(alt);
-                      setApplied(false);
-                    }}
-                    className={cn(
-                      "flex flex-col items-center gap-0.5 px-4 py-2.5 rounded-xl border transition-all min-w-[78px]",
-                      isSel
-                        ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
-                        : "bg-white/5 text-white border-white/10 hover:border-white/25",
-                    )}
-                  >
-                    <span className="font-display text-xl font-bold notranslate" translate="no">
-                      {alt}
-                    </span>
-                    <span className={cn("text-[10px]", isSel ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                      {labels[idx]}
-                    </span>
-                  </button>
-                );
-              })}
+          )}
+
+          {/* Candidatos */}
+          {result.candidates.length > 1 && (
+            <div className="mt-5">
+              <div className="text-xs text-muted-foreground text-center mb-2">
+                Candidatos (toque para escolher)
+              </div>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {result.candidates.map((cand, idx) => {
+                  const isSel = selectedBpm === cand;
+                  const isPrincipal = idx === 0;
+                  return (
+                    <button
+                      key={`${cand}-${idx}`}
+                      onClick={() => {
+                        setSelectedBpm(cand);
+                        setApplied(false);
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-0.5 px-4 py-2.5 rounded-xl border transition-all min-w-[78px]",
+                        isSel
+                          ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                          : "bg-white/5 text-white border-white/10 hover:border-white/25",
+                      )}
+                    >
+                      <span className="font-display text-xl font-bold notranslate" translate="no">
+                        {cand}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[10px]",
+                          isSel ? "text-primary-foreground/80" : "text-muted-foreground",
+                        )}
+                      >
+                        {isPrincipal ? "principal" : "alternativa"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Compasso sugerido */}
           <div className="mt-5 text-center text-sm">
@@ -478,6 +585,112 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
           </button>
         </div>
       )}
+
+      {/* ── Marcar Pulso ──────────────────────────────────────────────────────── */}
+      <div className="mt-5">
+        {!tapMode ? (
+          <button
+            onClick={openTapMode}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white bg-secondary/60 hover:bg-secondary border border-white/10 transition-all"
+          >
+            <Hand className="w-5 h-5 text-primary" />
+            Marcar Pulso (correção manual)
+          </button>
+        ) : (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Hand className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-white">Marcar Pulso</span>
+              </div>
+              <button
+                onClick={() => setTapMode(false)}
+                className="text-xs text-muted-foreground hover:text-white transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <p className="text-[12px] text-muted-foreground mb-3">
+              Toque no botão acompanhando a música. Escolha quantos toques usar para a média.
+            </p>
+
+            {/* Seletor de toques */}
+            <div className="flex items-center justify-center gap-2 mb-4">
+              {TAP_TARGETS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setTapTarget(t);
+                    resetTaps();
+                  }}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-sm font-semibold border transition-all notranslate",
+                    tapTarget === t
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-white/5 text-muted-foreground border-white/10 hover:border-white/25",
+                  )}
+                  translate="no"
+                >
+                  {t} toques
+                </button>
+              ))}
+            </div>
+
+            {/* Botão de toque */}
+            <button
+              onClick={handleTap}
+              className="w-full select-none flex flex-col items-center justify-center gap-1 py-8 rounded-2xl font-bold bg-primary/15 hover:bg-primary/25 border-2 border-primary/30 text-white transition-all active:scale-[0.98]"
+            >
+              <span className="text-sm text-primary/80 uppercase tracking-widest">
+                Toque no tempo
+              </span>
+              <span className="font-display text-2xl notranslate" translate="no">
+                {Math.min(tapCount, tapTarget)} / {tapTarget}
+              </span>
+            </button>
+
+            {/* Resultado do tap */}
+            {tapBpm != null && (
+              <div className="mt-4 text-center">
+                <div className="text-xs uppercase tracking-widest text-primary/70 font-semibold">
+                  BPM médio
+                </div>
+                <div className="font-display text-5xl font-bold text-white my-1 notranslate" translate="no">
+                  {tapBpm}
+                </div>
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  <button
+                    onClick={applyTapBpm}
+                    disabled={tapApplied}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold transition-all",
+                      tapApplied
+                        ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                        : "bg-primary text-primary-foreground hover:bg-orange-400 shadow-lg shadow-primary/20",
+                    )}
+                  >
+                    {tapApplied ? (
+                      <>
+                        <Check className="w-4 h-4" /> Aplicado
+                      </>
+                    ) : (
+                      <>Usar {tapBpm} BPM</>
+                    )}
+                  </button>
+                  <button
+                    onClick={resetTaps}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Refazer
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
