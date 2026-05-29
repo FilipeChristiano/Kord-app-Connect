@@ -729,23 +729,23 @@ export default function Metronome() {
           </div>
 
           {/* Play / Tap / Reset */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+          <div className="flex items-stretch justify-center gap-2 sm:gap-3 mt-8">
             <button
               onClick={togglePlay}
               className={cn(
-                "flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 shadow-lg",
+                "flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-3 px-3 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-sm sm:text-lg transition-all duration-300 shadow-lg",
                 isPlaying
                   ? "bg-white text-background hover:bg-white/90 shadow-white/20"
                   : "bg-primary text-primary-foreground hover:bg-orange-400 shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5",
               )}
               aria-label={isPlaying ? "Pausar" : "Tocar"}
             >
-              {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
+              {isPlaying ? <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />}
               {isPlaying ? "Pausar" : "Tocar"}
             </button>
             <button
               onClick={handleTap}
-              className="flex items-center gap-2 px-5 py-4 rounded-2xl font-semibold text-white bg-secondary hover:bg-secondary/80 border border-white/10 transition-all"
+              className="flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-3.5 sm:py-4 rounded-2xl font-semibold text-sm sm:text-base text-white bg-secondary hover:bg-secondary/80 border border-white/10 transition-all"
               aria-label="Tap Tempo"
             >
               <Hand className="w-5 h-5" />
@@ -753,7 +753,7 @@ export default function Metronome() {
             </button>
             <button
               onClick={resetBpm}
-              className="flex items-center gap-2 px-5 py-4 rounded-2xl font-semibold text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 hover:border-white/10 transition-all"
+              className="flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-3.5 sm:py-4 rounded-2xl font-semibold text-sm sm:text-base text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 hover:border-white/10 transition-all"
               aria-label="Reset"
             >
               <RotateCcw className="w-5 h-5" />
@@ -762,7 +762,7 @@ export default function Metronome() {
           </div>
 
           {/* Time Signature + Subdivisão */}
-          <div className="grid sm:grid-cols-2 gap-6 mt-10">
+          <div className="grid sm:grid-cols-2 gap-6 mt-6">
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">Compasso</div>
               <div className="flex gap-2">
@@ -816,6 +816,29 @@ export default function Metronome() {
 
         {/* ── Coluna lateral ─────────────────────────────────────────────── */}
         <div className="space-y-6">
+        {/* Detectar BPM (abre gravar/subir áudio ao clicar) */}
+        {!detectOpen ? (
+          <div className="glass-card rounded-3xl p-6 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setDetectOpen(true)}
+              className="w-full flex items-center gap-3 text-left group"
+            >
+              <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <Gauge className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-display text-xl font-bold text-white">Detectar BPM</div>
+                <div className="text-xs text-muted-foreground">
+                  Grave ou suba um áudio para descobrir o tempo
+                </div>
+              </div>
+              <ChevronDown className="w-5 h-5 text-muted-foreground -rotate-90 transition-transform group-hover:translate-x-0.5 shrink-0" />
+            </button>
+          </div>
+        ) : (
+          <BpmDetector onApply={handleDetectedBpm} />
+        )}
         {/* Estilos (minimizável) */}
         <div className="glass-card rounded-3xl p-6 border border-white/10">
           <button
@@ -902,30 +925,6 @@ export default function Metronome() {
           </>
           )}
         </div>
-
-        {/* Detectar BPM (abre gravar/subir áudio ao clicar) */}
-        {!detectOpen ? (
-          <div className="glass-card rounded-3xl p-6 border border-white/10">
-            <button
-              type="button"
-              onClick={() => setDetectOpen(true)}
-              className="w-full flex items-center gap-3 text-left group"
-            >
-              <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                <Gauge className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-display text-xl font-bold text-white">Detectar BPM</div>
-                <div className="text-xs text-muted-foreground">
-                  Grave ou suba um áudio para descobrir o tempo
-                </div>
-              </div>
-              <ChevronDown className="w-5 h-5 text-muted-foreground -rotate-90 transition-transform group-hover:translate-x-0.5 shrink-0" />
-            </button>
-          </div>
-        ) : (
-          <BpmDetector onApply={handleDetectedBpm} />
-        )}
         </div>
       </div>
 
