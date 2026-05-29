@@ -732,7 +732,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
           )}
 
           {/* 3 opções: metade / principal / dobro */}
-          <div className="mt-5 grid grid-cols-1 gap-3">
+          <div className="mt-5 grid grid-cols-3 gap-2">
             {result.options.map((opt, idx) => (
               <OptionCard
                 key={opt.relation}
@@ -977,57 +977,54 @@ function OptionCard({
     <div
       onClick={onSelect}
       className={cn(
-        "cursor-pointer rounded-2xl border p-4 transition-all flex flex-col gap-3 min-w-0 overflow-hidden",
+        "cursor-pointer rounded-2xl border p-3 transition-all flex flex-col min-w-0 overflow-hidden",
         selected
           ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
           : "border-white/10 bg-white/5 hover:border-white/25",
       )}
     >
-      {/* Cabeçalho: nome + BPM grande + confiança */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className={cn(
-                "text-[11px] font-semibold uppercase tracking-wide",
-                selected ? "text-primary" : "text-muted-foreground",
-              )}
-            >
-              {RELATION_LABEL[option.relation]}
-            </span>
-            {recommended && (
-              <span className="shrink-0 text-[8px] font-bold uppercase tracking-wide text-primary bg-primary/15 border border-primary/25 rounded-full px-1.5 py-0.5">
-                Sugerido
-              </span>
-            )}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            Confiança{" "}
-            <span
-              className={cn(
-                "font-semibold notranslate",
-                confPct >= 80
-                  ? "text-green-300"
-                  : confPct >= 55
-                    ? "text-yellow-300"
-                    : "text-orange-300",
-              )}
-              translate="no"
-            >
-              {confPct}%
-            </span>
-          </div>
-        </div>
-        <div
-          className="font-display text-4xl font-bold text-white leading-none shrink-0 notranslate"
-          translate="no"
+      {/* Cabeçalho: nome + selo */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span
+          className={cn(
+            "text-[10px] font-semibold uppercase tracking-wide",
+            selected ? "text-primary" : "text-muted-foreground",
+          )}
         >
-          {option.bpm}
-        </div>
+          {RELATION_LABEL[option.relation]}
+        </span>
+        {recommended && (
+          <span className="shrink-0 text-[8px] font-bold uppercase tracking-wide text-primary bg-primary/15 border border-primary/25 rounded-full px-1.5 py-0.5">
+            Sugerido
+          </span>
+        )}
       </div>
 
-      {/* Métricas — uma linha com 4 colunas (rótulo acima do valor) */}
-      <div className="grid grid-cols-4 gap-2 text-[10px] border-t border-white/5 pt-3">
+      <div
+        className="font-display text-3xl font-bold text-white mt-1 leading-none notranslate"
+        translate="no"
+      >
+        {option.bpm}
+      </div>
+      <div className="text-[10px] text-muted-foreground mt-1">
+        Confiança{" "}
+        <span
+          className={cn(
+            "font-semibold notranslate",
+            confPct >= 80
+              ? "text-green-300"
+              : confPct >= 55
+                ? "text-yellow-300"
+                : "text-orange-300",
+          )}
+          translate="no"
+        >
+          {confPct}%
+        </span>
+      </div>
+
+      {/* Métricas — lista vertical (rótulo acima do valor) */}
+      <div className="mt-3 space-y-2 text-[10px] border-t border-white/5 pt-2.5">
         <Metric label="Regularidade" value={`${regPct}%`} />
         <Metric label="Erro médio" value={`±${err} ms`} />
         <Metric label="Estabilidade" value={`${stabPct}%`} />
@@ -1041,7 +1038,7 @@ function OptionCard({
           onTogglePlay();
         }}
         className={cn(
-          "w-full flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[13px] font-semibold transition-all",
+          "mt-3 w-full flex items-center justify-center gap-1.5 px-1.5 py-2 rounded-xl text-[12px] font-semibold transition-all",
           playing
             ? "bg-primary text-primary-foreground"
             : "bg-secondary hover:bg-secondary/70 text-white border border-white/10",
@@ -1049,11 +1046,11 @@ function OptionCard({
       >
         {playing ? (
           <>
-            <Pause className="w-4 h-4 shrink-0" /> Parar
+            <Pause className="w-3.5 h-3.5 shrink-0" /> Parar
           </>
         ) : (
           <>
-            <Play className="w-4 h-4 shrink-0" /> Ouvir com metrônomo
+            <Play className="w-3.5 h-3.5 shrink-0" /> Ouvir
           </>
         )}
       </button>
