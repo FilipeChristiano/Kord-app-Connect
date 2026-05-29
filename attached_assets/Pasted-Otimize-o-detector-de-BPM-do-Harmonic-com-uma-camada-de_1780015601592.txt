@@ -1,0 +1,119 @@
+Otimize o detector de BPM do Harmonic com uma camada de validação e correção assistida.
+
+1. Não retornar apenas um BPM final.
+
+Retornar apenas 3 opções:
+
+* Metade do BPM detectado
+* BPM detectado
+* Dobro do BPM detectado
+
+Exemplo:
+
+Se detectar 106 BPM:
+
+* 53 BPM
+* 106 BPM
+* 212 BPM
+
+2. Para cada opção, calcular:
+
+* regularidade dos transientes
+* erro médio entre batidas
+* estabilidade do pulso
+* quantidade de batidas encontradas
+* confiança percentual
+
+3. Criar botão “Ouvir com metrônomo”
+
+Para cada uma das 3 opções:
+
+* tocar o trecho analisado
+* sincronizar o clique do metrônomo
+* permitir iniciar e parar rapidamente
+
+Objetivo:
+
+O usuário consegue ouvir rapidamente qual BPM encaixa melhor na música.
+
+4. Criar botão “Este está certo”
+
+Quando o usuário confirmar o BPM correto:
+
+* salvar o BPM escolhido
+* utilizar esse BPM no metrônomo
+* armazenar como referência local
+
+5. Criar ajuste fino
+
+Após a escolha:
+
+* botão -1 BPM
+* botão +1 BPM
+* campo manual para digitar BPM
+* botão “Aplicar ao metrônomo”
+
+6. Criar modo “Marcar Pulso”
+
+Manter o recurso de tap manual, mas melhorar:
+
+* calcular média dos últimos 8 ou 12 toques
+* ignorar toques muito fora do padrão
+* mostrar estabilidade do toque
+* sugerir BPM final
+
+7. Melhorar análise para músicas rápidas
+
+Durante a análise interna:
+
+Testar:
+
+* BPM detectado
+* metade do BPM
+* dobro do BPM
+
+Objetivo:
+
+Reduzir erros quando o algoritmo interpreta subdivisões ou pulsações incorretamente.
+
+8. Criar alerta de confiança
+
+Se a confiança for menor que 80%:
+
+Exibir:
+
+"Resultado aproximado. Utilize Ouvir com Metrônomo ou Marcar Pulso para confirmar."
+
+9. Criar benchmark interno
+
+Permitir cadastrar áudios de teste com BPM conhecido.
+
+Salvar:
+
+* nome do áudio
+* BPM esperado
+* BPM detectado
+* erro percentual
+* algoritmo vencedor
+
+Objetivo:
+
+Melhorar continuamente a precisão do detector.
+
+RESULTADO ESPERADO
+
+O Harmonic deve:
+
+1. Detectar automaticamente o BPM.
+2. Exibir apenas 3 opções:
+
+   * metade
+   * principal
+   * dobro
+3. Permitir ouvir cada opção sincronizada com o metrônomo.
+4. Permitir confirmação rápida pelo usuário.
+5. Permitir ajuste fino quando necessário.
+
+Objetivo final:
+
+Criar um detector de BPM extremamente confiável para músicos, sem sobrecarregar a interface com muitas opções.

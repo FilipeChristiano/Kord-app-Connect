@@ -5,10 +5,28 @@ export interface AnalyzedSegment {
   end: number; // segundos
 }
 
-export interface BpmAnalysis {
+export type BpmRelation = "metade" | "principal" | "dobro";
+
+export interface BpmMetrics {
+  regularity: number; // 0..1 — fração de batidas com onset alinhado
+  meanErrorMs: number; // erro médio entre a batida da grade e o onset (ms)
+  stability: number; // 0..1 — quão constante é o pulso
+  beatCount: number; // batidas casadas no trecho
+}
+
+export interface BpmOption {
   bpm: number;
-  confidence: number; // 0..1
-  candidates: number[]; // BPM principal primeiro, depois alternativos (até 5)
+  relation: BpmRelation;
+  confidence: number; // 0..1 — baseada nas métricas de alinhamento
+  phaseSec: number; // posição da 1ª batida no trecho (s), p/ sincronizar o clique
+  metrics: BpmMetrics;
+}
+
+export interface BpmAnalysis {
+  bpm: number; // BPM principal (detectado)
+  confidence: number; // 0..1 — confiança do consenso
+  options: BpmOption[]; // exatamente [metade, principal, dobro]
+  recommendedIndex: number; // índice da opção recomendada em `options`
   timeSignature: DetectedTimeSignature | null;
   segment: AnalyzedSegment | null; // trecho usado na análise
 }
@@ -24,7 +42,8 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const EMPTY: BpmAnalysis = {
   bpm: 0,
   confidence: 0,
-  candidates: [],
+  options: [],
+  recommendedIndex: 1,
   timeSignature: null,
   segment: null,
 };
@@ -81,10 +100,15 @@ export async function analyzeBpm(buffer: AudioBuffer): Promise<BpmAnalysis> {
   const det = detectTempo(segEnv, envRate);
   if (!det) return EMPTY;
 
+  // ── 6. Validação por oitava: métricas por opção (metade / principal / dobro) ─
+  const onsets = pickOnsets(det.env);
+  const options = buildOptions(det.env, envRate, det.bpm, onsets);
+
   return {
     bpm: det.bpm,
     confidence: det.confidence,
-    candidates: det.candidates,
+    options,
+    recommendedIndex: pickRecommended(options),
     timeSignature: det.timeSignature,
     segment: { start: seg.startFrame / envRate, end: seg.endFrame / envRate },
   };
@@ -225,8 +249,8 @@ function quickPeriodicity(
 interface TempoResult {
   bpm: number;
   confidence: number;
-  candidates: number[];
   timeSignature: DetectedTimeSignature | null;
+  env: Float32Array; // envelope processada do trecho (p/ onsets e métricas)
 }
 
 function detectTempo(envSlice: Float32Array, envRate: number): TempoResult | null {
@@ -376,7 +400,163 @@ function detectTempo(envSlice: Float32Array, envRate: number): TempoResult | nul
 
   const timeSignature = guessMeter(rInterp, finalLag, confidence);
 
-  return { bpm, confidence, candidates, timeSignature };
+  return { bpm, confidence, timeSignature, env };
+}
+
+// ── Onsets + validação por oitava (métricas por opção) ────────────────────────
+
+// Picos da envelope processada (candidatos a batidas).
+function pickOnsets(env: Float32Array): { idx: number; strength: number }[] {
+  const n = env.length;
+  if (n < 3) return [];
+  let mean = 0;
+  for (let i = 0; i < n; i++) mean += env[i];
+  mean /= n;
+  let varr = 0;
+  for (let i = 0; i < n; i++) {
+    const d = env[i] - mean;
+    varr += d * d;
+  }
+  const std = Math.sqrt(varr / n);
+  const thr = mean + 0.5 * std;
+  const peaks: { idx: number; strength: number }[] = [];
+  for (let i = 1; i < n - 1; i++) {
+    if (env[i] > thr && env[i] >= env[i - 1] && env[i] > env[i + 1]) {
+      peaks.push({ idx: i, strength: env[i] });
+    }
+  }
+  return peaks;
+}
+
+// Avalia o quanto uma grade de batidas em `bpm` se encaixa nos onsets do trecho.
+function evaluateCandidate(
+  onsets: { idx: number; strength: number }[],
+  envRate: number,
+  bpm: number,
+  totalFrames: number,
+): { metrics: BpmMetrics; confidence: number; phaseFrames: number } {
+  const empty = {
+    metrics: { regularity: 0, meanErrorMs: 0, stability: 0, beatCount: 0 },
+    confidence: 0,
+    phaseFrames: 0,
+  };
+  const T = (envRate * 60) / bpm; // quadros por batida
+  if (!(T >= 2) || onsets.length < 2 || totalFrames < T * 2) return empty;
+  const tol = T / 2;
+  const idxs = onsets.map((o) => o.idx);
+
+  // Índice do onset mais próximo de `pos` (busca binária)
+  const nearest = (pos: number): number => {
+    const hi = idxs.length - 1;
+    if (pos <= idxs[0]) return 0;
+    if (pos >= idxs[hi]) return hi;
+    let lo = 0;
+    let h = hi;
+    while (lo < h) {
+      const mid = (lo + h) >> 1;
+      if (idxs[mid] < pos) lo = mid + 1;
+      else h = mid;
+    }
+    if (lo > 0 && pos - idxs[lo - 1] <= idxs[lo] - pos) return lo - 1;
+    return lo;
+  };
+
+  // Busca da melhor fase (offset) que maximiza a força casada
+  const step = Math.max(1, Math.round(T / 24));
+  let bestPhase = 0;
+  let bestScore = -1;
+  for (let p = 0; p < T; p += step) {
+    let score = 0;
+    for (let g = p; g <= totalFrames - 1; g += T) {
+      const oi = nearest(g);
+      if (Math.abs(idxs[oi] - g) <= tol) score += onsets[oi].strength;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestPhase = p;
+    }
+  }
+
+  // Métricas na melhor fase
+  let matched = 0;
+  let total = 0;
+  let devSum = 0;
+  const devs: number[] = [];
+  for (let g = bestPhase; g <= totalFrames - 1; g += T) {
+    total++;
+    const oi = nearest(g);
+    const dev = Math.abs(idxs[oi] - g);
+    if (dev <= tol) {
+      matched++;
+      devSum += dev;
+      devs.push(dev);
+    }
+  }
+  if (total === 0) return empty;
+
+  const regularity = matched / total;
+  const meanDev = matched > 0 ? devSum / matched : tol;
+  const meanErrorMs = (meanDev * 1000) / envRate;
+  let sdDev = 0;
+  if (devs.length > 1) {
+    let v = 0;
+    for (const d of devs) v += (d - meanDev) ** 2;
+    sdDev = Math.sqrt(v / devs.length);
+  }
+  const stability = clamp01(1 - sdDev / (T * 0.5));
+  const errNorm = clamp01(meanErrorMs / ((60000 / bpm) * 0.25));
+  const confidence = clamp01(0.5 * regularity + 0.3 * stability + 0.2 * (1 - errNorm));
+
+  return {
+    metrics: { regularity, meanErrorMs, stability, beatCount: matched },
+    confidence,
+    phaseFrames: bestPhase,
+  };
+}
+
+// Monta exatamente 3 opções: metade, principal (detectado) e dobro.
+function buildOptions(
+  env: Float32Array,
+  envRate: number,
+  detectedBpm: number,
+  onsets: { idx: number; strength: number }[],
+): BpmOption[] {
+  const total = env.length;
+  const defs: { bpm: number; relation: BpmRelation }[] = [
+    { bpm: clampBpm(detectedBpm / 2), relation: "metade" },
+    { bpm: clampBpm(detectedBpm), relation: "principal" },
+    { bpm: clampBpm(detectedBpm * 2), relation: "dobro" },
+  ];
+  return defs.map(({ bpm, relation }) => {
+    const ev = evaluateCandidate(onsets, envRate, bpm, total);
+    return {
+      bpm,
+      relation,
+      confidence: ev.confidence,
+      phaseSec: ev.phaseFrames / envRate,
+      metrics: ev.metrics,
+    };
+  });
+}
+
+// Escolhe a opção recomendada combinando as métricas de cada opção com uma
+// preferência por andamentos centrais (evita o viés de oitava — grades lentas
+// "casam" mais onsets). Mantém leve preferência pelo BPM principal (consenso).
+function pickRecommended(options: BpmOption[]): number {
+  const pref = (b: number) => Math.exp(-0.5 * (Math.log2(b / 120) / 0.9) ** 2);
+  let best = 1;
+  let bestScore = -1;
+  for (let i = 0; i < options.length; i++) {
+    const o = options[i];
+    if (!(o.bpm > 0)) continue;
+    const base = o.confidence * pref(o.bpm);
+    const adj = i === 1 ? base * 1.08 : base; // desempate a favor do principal
+    if (adj > bestScore) {
+      bestScore = adj;
+      best = i;
+    }
+  }
+  return best;
 }
 
 // DFT (uma raia) — magnitude da envelope na frequência dada (Hz)
