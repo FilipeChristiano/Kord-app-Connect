@@ -7,6 +7,8 @@ import {
   Hand,
   Music2,
   Sparkles,
+  Gauge,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BpmDetector from "@/components/bpm-detector";
@@ -373,6 +375,10 @@ export default function Metronome() {
   // ── Seletor circular (arrastar para mudar BPM) ──────────────────────────────
   const dialRef = useRef<SVGSVGElement | null>(null);
   const [isDraggingBpm, setIsDraggingBpm] = useState(false);
+
+  // Seções colapsáveis da coluna lateral
+  const [stylesOpen, setStylesOpen] = useState(false);
+  const [detectOpen, setDetectOpen] = useState(false);
 
   const bpmFromPointer = useCallback(
     (clientX: number, clientY: number) => {
@@ -808,16 +814,31 @@ export default function Metronome() {
           </p>
         </div>
 
-        {/* ── Estilos ───────────────────────────────────────────────────────── */}
+        {/* ── Coluna lateral ─────────────────────────────────────────────── */}
+        <div className="space-y-6">
+        {/* Estilos (minimizável) */}
         <div className="glass-card rounded-3xl p-6 border border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="font-display text-xl font-bold text-white">Estilos</h2>
-          </div>
-          <p className="text-xs text-muted-foreground mb-5">
+          <button
+            type="button"
+            onClick={() => setStylesOpen((v) => !v)}
+            aria-expanded={stylesOpen}
+            className="w-full flex items-center gap-2 text-left"
+          >
+            <Sparkles className="w-5 h-5 text-primary shrink-0" />
+            <span className="font-display text-xl font-bold text-white flex-1">Estilos</span>
+            <ChevronDown
+              className={cn(
+                "w-5 h-5 text-muted-foreground transition-transform",
+                stylesOpen && "rotate-180",
+              )}
+            />
+          </button>
+          {stylesOpen && (
+          <>
+          <p className="text-xs text-muted-foreground mt-3 mb-5">
             Escolha um estilo e o BPM, compasso e subdivisão se ajustam automaticamente.
           </p>
-          <div className="space-y-5 lg:max-h-[640px] lg:overflow-y-auto lg:pr-1 metro-scroll">
+          <div className="space-y-5 lg:max-h-[420px] lg:overflow-y-auto lg:pr-1 metro-scroll">
             {PRESET_GROUPS.map((group) => (
               <div key={group}>
                 <div className="text-[11px] uppercase tracking-widest text-primary/70 font-semibold mb-2 px-1">
@@ -878,12 +899,34 @@ export default function Metronome() {
               </div>
             ))}
           </div>
+          </>
+          )}
         </div>
-      </div>
 
-      {/* ── Detectar BPM ──────────────────────────────────────────────────── */}
-      <div className="mt-6">
-        <BpmDetector onApply={handleDetectedBpm} />
+        {/* Detectar BPM (abre gravar/subir áudio ao clicar) */}
+        {!detectOpen ? (
+          <div className="glass-card rounded-3xl p-6 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setDetectOpen(true)}
+              className="w-full flex items-center gap-3 text-left group"
+            >
+              <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <Gauge className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-display text-xl font-bold text-white">Detectar BPM</div>
+                <div className="text-xs text-muted-foreground">
+                  Grave ou suba um áudio para descobrir o tempo
+                </div>
+              </div>
+              <ChevronDown className="w-5 h-5 text-muted-foreground -rotate-90 transition-transform group-hover:translate-x-0.5 shrink-0" />
+            </button>
+          </div>
+        ) : (
+          <BpmDetector onApply={handleDetectedBpm} />
+        )}
+        </div>
       </div>
 
       <style>{`
