@@ -416,10 +416,16 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
       src.connect(master);
       src.start(start, seg.start, dur);
 
-      // Cliques do metrônomo sincronizados à fase informada
+      // Cliques do metrônomo sincronizados à fase informada.
+      // Ancora o 1º clique EXATAMENTE na primeira batida detectada (phaseSec),
+      // sem reduzir por "mod T". Para as opções, phaseSec já é < T (idêntico ao
+      // comportamento anterior). No ajuste fino, quando o BPM ajustado deixa T
+      // menor que phaseSec, o "mod" jogava o 1º clique para perto do início do
+      // trecho (clique fantasma antes da batida) — por isso o metrônomo parecia
+      // "começar em lugar diferente" do áudio. Ancorar em phaseSec corrige isso.
       const nodes: OscillatorNode[] = [];
       const T = 60 / bpm;
-      const first = phaseSec - T * Math.floor(phaseSec / T);
+      const first = phaseSec;
       for (let t = first; t < dur; t += T) {
         const when = start + t;
         const osc = ctx.createOscillator();
