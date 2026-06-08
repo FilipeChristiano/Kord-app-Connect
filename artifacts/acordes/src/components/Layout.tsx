@@ -148,7 +148,7 @@ export function Layout({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <footer className="border-t border-white/5 py-8 mt-12 bg-black/20">
+      <footer className="border-t border-white/5 py-8 mt-12 bg-surface/40">
         <div className="max-w-7xl mx-auto px-4 text-center text-muted-foreground text-sm flex flex-col items-center gap-4">
           <img
             src={`${basePath}/logo.png`}

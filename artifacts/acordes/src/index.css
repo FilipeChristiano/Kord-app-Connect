@@ -43,45 +43,92 @@
   --color-ring: hsl(var(--ring));
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
+
+  /* Superfícies em camadas (profundidade estilo Spotify) */
+  --color-surface: hsl(var(--surface));
+  --color-surface-elevated: hsl(var(--surface-elevated));
+  --color-modal: hsl(var(--modal));
+
+  /* Escala laranja Harmonic derivada de #FF6B00 */
+  --color-primary-50: hsl(var(--primary-50));
+  --color-primary-100: hsl(var(--primary-100));
+  --color-primary-200: hsl(var(--primary-200));
+  --color-primary-300: hsl(var(--primary-300));
+  --color-primary-400: hsl(var(--primary-400));
+  --color-primary-500: hsl(var(--primary-500));
+  --color-primary-600: hsl(var(--primary-600));
+  --color-primary-700: hsl(var(--primary-700));
+  --color-primary-800: hsl(var(--primary-800));
+  --color-primary-900: hsl(var(--primary-900));
+  --color-primary-hover: hsl(var(--primary-hover));
+  --color-primary-pressed: hsl(var(--primary-pressed));
+
+  /* Tokens de raio */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+
+  /* Token de motion */
+  --ease-harmonic: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :root {
-  /* Dark elegant musical theme */
-  /* Background: Deep Charcoal/Navy */
-  --background: 224 40% 6%;
-  --foreground: 40 33% 96%;
-  
-  /* Primary: Harmonic Orange */
-  --primary: 20 100% 55%;
-  --primary-foreground: 224 40% 6%;
-  
-  /* Secondary: Soft metallic tone */
-  --secondary: 220 20% 16%;
-  --secondary-foreground: 40 33% 96%;
-  
-  /* Muted: Gray with blue undertones */
-  --muted: 215 20% 20%;
-  --muted-foreground: 215 16% 65%;
-  
-  /* Accent: Subtle highlight */
-  --accent: 215 30% 12%;
-  --accent-foreground: 40 33% 96%;
-  
-  /* Cards: Slightly lighter than background */
-  --card: 222 30% 9%;
-  --card-foreground: 40 33% 96%;
-  
-  --border: 215 20% 20%;
-  --ring: 20 100% 55%;
-  
-  --destructive: 0 84% 60%;
+  /* ===== Harmonic Design System ===== */
+
+  /* Superfícies escuras em camadas — nunca preto puro */
+  --background: 222 28% 7%;
+  --surface: 222 22% 10%;
+  --surface-elevated: 221 20% 13%;
+  --card: 222 22% 11%;
+  --card-foreground: 40 20% 96%;
+  --modal: 221 22% 14%;
+  --foreground: 40 20% 96%;
+
+  /* Escala laranja — base #FF6B00 = hsl(25 100% 50%) */
+  --primary-50: 30 100% 96%;
+  --primary-100: 29 100% 90%;
+  --primary-200: 28 100% 82%;
+  --primary-300: 27 100% 72%;
+  --primary-400: 26 100% 61%;
+  --primary-500: 25 100% 50%;
+  --primary-600: 23 96% 45%;
+  --primary-700: 21 92% 38%;
+  --primary-800: 19 88% 31%;
+  --primary-900: 17 84% 25%;
+
+  /* Ação primária + estados */
+  --primary: 25 100% 50%;
+  --primary-foreground: 222 30% 8%;
+  --primary-hover: 26 100% 56%;
+  --primary-pressed: 23 96% 45%;
+
+  /* Secundária */
+  --secondary: 220 16% 16%;
+  --secondary-foreground: 40 20% 96%;
+
+  /* Muted / metadados */
+  --muted: 220 14% 18%;
+  --muted-foreground: 218 13% 64%;
+
+  /* Accent (destaque elevado sutil) */
+  --accent: 221 20% 14%;
+  --accent-foreground: 40 20% 96%;
+
+  --border: 220 15% 18%;
+  --ring: 25 100% 50%;
+
+  --destructive: 0 75% 58%;
   --destructive-foreground: 210 40% 98%;
+
+  --radius: 0.75rem;
 }
 
 @layer base {
   body {
     @apply bg-background text-foreground antialiased font-sans overflow-x-hidden;
-    background-image: radial-gradient(circle at 50% 0%, hsl(220 30% 12%) 0%, transparent 70%);
+    background-image: radial-gradient(circle at 50% -10%, hsl(var(--surface-elevated) / 0.55) 0%, transparent 60%);
     background-attachment: fixed;
   }
 
@@ -126,8 +173,30 @@
 
 /* Glassmorphism utilities */
 .glass {
-  @apply bg-background/60 backdrop-blur-xl border border-white/5;
+  @apply backdrop-blur-xl border border-white/5;
+  background: hsl(var(--surface) / 0.72);
 }
 .glass-card {
-  @apply bg-card/80 backdrop-blur-md border border-white/10 shadow-xl shadow-black/40;
+  @apply backdrop-blur-md border border-white/10;
+  background: hsl(var(--card) / 0.82);
+  box-shadow: 0 8px 24px -10px hsl(var(--background) / 0.7);
+}
+
+/* Profundidade por tonalidade */
+.surface-elevated {
+  background: hsl(var(--surface-elevated));
+}
+
+/* Identidade laranja — glow + gradiente */
+.glow-primary {
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 10px 32px -10px hsl(var(--primary) / 0.45);
+}
+.text-gradient-primary {
+  background: linear-gradient(135deg, hsl(var(--primary-400)), hsl(var(--primary-600)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.bg-gradient-primary {
+  background: linear-gradient(135deg, hsl(var(--primary-500)), hsl(var(--primary-700)));
 }
