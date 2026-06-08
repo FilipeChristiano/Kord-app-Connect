@@ -343,7 +343,7 @@ export default function PadContinuous() {
               !modoCifra ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:text-white"
             }`}
           >
-            <Waves className="w-4 h-4" /> Só Pads
+            <Waves className="w-4 h-4" /> Pads
           </button>
           <button
             onClick={() => setModoCifra(true)}
@@ -351,7 +351,7 @@ export default function PadContinuous() {
               modoCifra ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:text-white"
             }`}
           >
-            <FileText className="w-4 h-4" /> Pads + Cifra
+            <FileText className="w-4 h-4" /> Pads + cifras
           </button>
         </div>
       </div>
