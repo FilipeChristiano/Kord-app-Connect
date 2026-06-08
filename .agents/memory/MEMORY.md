@@ -1,1 +1,1 @@
-- [Code review cumulative diff](code-review-cumulative-diff.md) — architect/validation review the whole uncommitted diff; they flag prior published work (BPM detector, pad-continuous) as scope violations — do NOT revert.
+- [Code review cumulative diff](code-review-cumulative-diff.md) — architect/validation review the whole uncommitted diff; don't revert prior published work they flag.
