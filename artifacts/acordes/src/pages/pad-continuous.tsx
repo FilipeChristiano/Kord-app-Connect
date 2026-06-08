@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Play, Pause, Square, Volume2, Waves, Loader2, Filter } from "lucide-react";
+import { Link } from "wouter";
+import {
+  Play, Pause, Square, Volume2, Waves, Loader2, Filter,
+  FileText, Copy, Check, Wand2, ChevronDown,
+} from "lucide-react";
+import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
+
+const NIVEL_LABELS: Record<string, { label: string; color: string }> = {
+  suave: { label: "Suave", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
+  intermediario: { label: "Intermediário", color: "text-orange-400 bg-orange-500/10 border-orange-500/30" },
+  avancado: { label: "Avançado", color: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
+};
 
 const KEYS: { label: string; pc: number; code: string }[] = [
   { label: "C", pc: 0, code: "C" },
@@ -57,6 +68,25 @@ export default function PadContinuous() {
   const [fadeOut, setFadeOut] = useState(4);
   const [lowCutHz, setLowCutHz] = useState(85);
   const [lowCutOn, setLowCutOn] = useState(false);
+
+  // ---- Modo Pads + Cifra ----
+  const { cifras } = useCifrasFavoritas();
+  const [modoCifra, setModoCifra] = useState(false);
+  const [cifraSelId, setCifraSelId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const cifraAtual = cifras.find((c) => c.id === cifraSelId) ?? cifras[0] ?? null;
+
+  const copiarCifra = (texto: string) => {
+    navigator.clipboard
+      .writeText(texto)
+      .then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        /* clipboard indisponível neste contexto: ignora silenciosamente */
+      });
+  };
 
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
@@ -304,6 +334,181 @@ export default function PadContinuous() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Seletor de modo: Só Pads  /  Pads + Cifra */}
+      <div className="flex justify-center mb-8">
+        <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-2xl p-1">
+          <button
+            onClick={() => setModoCifra(false)}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              !modoCifra ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:text-white"
+            }`}
+          >
+            <Waves className="w-4 h-4" /> Só Pads
+          </button>
+          <button
+            onClick={() => setModoCifra(true)}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              modoCifra ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:text-white"
+            }`}
+          >
+            <FileText className="w-4 h-4" /> Pads + Cifra
+          </button>
+        </div>
+      </div>
+
+      {modoCifra ? combinedView() : fullView()}
+    </div>
+  );
+
+  function combinedView() {
+    return (
+      <div className="flex flex-col gap-5">
+        {/* Barra de pads minimalista, fixa no topo */}
+        <div className="sticky top-20 z-30 glass-card rounded-2xl p-4 border border-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            {isPlaying ? (
+              <button
+                onClick={handlePause}
+                aria-label="Pausar"
+                className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:bg-orange-400 transition-all"
+              >
+                <Pause className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={handlePlay}
+                disabled={isLoading}
+                aria-label="Tocar"
+                className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:bg-orange-400 transition-all disabled:opacity-60"
+              >
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
+              </button>
+            )}
+            <button
+              onClick={handleStop}
+              aria-label="Parar"
+              className="flex items-center justify-center w-11 h-11 shrink-0 rounded-xl bg-secondary text-white border border-white/5 hover:border-white/10 hover:bg-secondary/70 transition-all"
+            >
+              <Square className="w-4 h-4" />
+            </button>
+
+            <div className="flex-1 min-w-0 text-center px-1">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground leading-none mb-1">
+                {isLoading ? "Carregando" : isPlaying ? "Tocando" : "Tom"}
+              </div>
+              <div className="font-display text-2xl font-bold text-white leading-none notranslate" translate="no">
+                {KEYS[selectedPc].label.split(" / ")[0]}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-24 sm:w-32 shrink-0">
+              <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
+              <input
+                type="range" min={0} max={1} step={0.01} value={volume}
+                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                className="w-full accent-primary"
+                aria-label="Volume"
+              />
+            </div>
+          </div>
+
+          {/* Seletor de tom compacto */}
+          <div className="mt-3 grid grid-cols-6 gap-1.5">
+            {KEYS.map((k) => (
+              <button
+                key={k.pc}
+                onClick={() => setSelectedPc(k.pc)}
+                className={`py-2 rounded-lg font-bold text-sm transition-all border notranslate ${
+                  selectedPc === k.pc
+                    ? "bg-primary text-primary-foreground border-primary shadow shadow-primary/20"
+                    : "bg-secondary/60 text-white/80 border-white/5 hover:border-primary/40 hover:bg-secondary"
+                }`}
+                translate="no"
+              >
+                {k.label.split(" / ")[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Painel de cifras */}
+        {cifras.length > 0 ? (
+          <div className="glass-card rounded-2xl p-4 sm:p-6">
+            {/* Seletor de cifra + copiar */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="relative flex-1 min-w-0">
+                <select
+                  value={cifraAtual?.id ?? ""}
+                  onChange={(e) => setCifraSelId(e.target.value)}
+                  className="w-full appearance-none bg-secondary/60 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer truncate"
+                  aria-label="Escolher cifra"
+                >
+                  {cifras.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-[#12121f] text-white">
+                      {c.titulo}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              {cifraAtual && (
+                <button
+                  onClick={() => copiarCifra(cifraAtual.textoSofisticado)}
+                  aria-label="Copiar cifra"
+                  className="flex items-center gap-1.5 shrink-0 text-xs font-medium px-3 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  <span className="hidden sm:inline">{copied ? "Copiado!" : "Copiar"}</span>
+                </button>
+              )}
+            </div>
+
+            {cifraAtual && (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      (NIVEL_LABELS[cifraAtual.nivel] ?? NIVEL_LABELS.intermediario).color
+                    }`}
+                  >
+                    {(NIVEL_LABELS[cifraAtual.nivel] ?? NIVEL_LABELS.intermediario).label}
+                  </span>
+                  <h2 className="font-display font-bold text-white text-base leading-tight truncate">
+                    {cifraAtual.titulo}
+                  </h2>
+                </div>
+                {/* Área da cifra: rola sozinha, sem mexer na tela inteira */}
+                <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 sm:px-5 py-4 font-mono text-sm text-white/90 leading-loose whitespace-pre-wrap max-h-[55vh] overflow-y-auto overscroll-contain">
+                  {cifraAtual.textoSofisticado}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="py-16 text-center glass-card rounded-2xl border-dashed">
+            <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-5 text-muted-foreground">
+              <Wand2 className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-display font-bold text-white mb-2">Nenhuma cifra salva ainda</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Use o Sofisticador para gerar cifras sofisticadas e salvá-las. Elas vão aparecer aqui
+              para você ler enquanto toca o pad.
+            </p>
+            <Link
+              href="/sofisticador"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-orange-400 transition-colors shadow-lg shadow-primary/20"
+            >
+              <Wand2 className="w-5 h-5" /> Abrir Sofisticador
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function fullView() {
+    return (
+      <>
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-4">
           <Waves className="w-4 h-4" />
@@ -487,6 +692,7 @@ export default function PadContinuous() {
           </p>
         )}
       </div>
-    </div>
-  );
+      </>
+    );
+  }
 }
