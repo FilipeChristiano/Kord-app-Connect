@@ -78,13 +78,13 @@
   /* ===== Harmonic Design System ===== */
 
   /* Superfícies escuras em camadas — nunca preto puro */
-  --background: 222 28% 7%;
-  --surface: 222 22% 10%;
-  --surface-elevated: 221 20% 13%;
-  --card: 222 22% 11%;
-  --card-foreground: 40 20% 96%;
-  --modal: 221 22% 14%;
-  --foreground: 40 20% 96%;
+  --background: 222 22% 12%;
+  --surface: 222 19% 16%;
+  --surface-elevated: 221 17% 20%;
+  --card: 222 19% 17%;
+  --card-foreground: 40 20% 97%;
+  --modal: 221 18% 21%;
+  --foreground: 40 20% 97%;
 
   /* Escala laranja — base #FF6B00 = hsl(25 100% 50%) */
   --primary-50: 30 100% 96%;
@@ -105,18 +105,18 @@
   --primary-pressed: 23 96% 45%;
 
   /* Secundária */
-  --secondary: 220 16% 16%;
-  --secondary-foreground: 40 20% 96%;
+  --secondary: 220 15% 22%;
+  --secondary-foreground: 40 20% 97%;
 
   /* Muted / metadados */
-  --muted: 220 14% 18%;
-  --muted-foreground: 218 13% 64%;
+  --muted: 220 13% 24%;
+  --muted-foreground: 218 14% 72%;
 
   /* Accent (destaque elevado sutil) */
-  --accent: 221 20% 14%;
-  --accent-foreground: 40 20% 96%;
+  --accent: 221 17% 21%;
+  --accent-foreground: 40 20% 97%;
 
-  --border: 220 15% 18%;
+  --border: 220 14% 24%;
   --ring: 25 100% 50%;
 
   --destructive: 0 75% 58%;
