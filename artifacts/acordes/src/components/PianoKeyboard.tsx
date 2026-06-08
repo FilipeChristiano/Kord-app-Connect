@@ -197,19 +197,19 @@ export function PianoKeyboard({
         {/* Rótulos */}
         {leftLabel && !hasRight && (
           <text x={SVG_W / 4} y={SVG_H - 6}
-            textAnchor="middle" fontSize={9} fontFamily="sans-serif" fontWeight="600" fill="#f87171">
+            textAnchor="middle" fontSize={9} fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="600" fill="#f87171">
             {leftLabel}
           </text>
         )}
         {hasLeft && hasRight && (
           <text x={SVG_W / 6} y={SVG_H - 6}
-            textAnchor="middle" fontSize={9} fontFamily="sans-serif" fontWeight="600" fill="#f87171">
+            textAnchor="middle" fontSize={9} fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="600" fill="#f87171">
             ← Mão Esquerda
           </text>
         )}
         {rightLabel && (
           <text x={hasLeft ? SVG_W * 2 / 3 : SVG_W / 2} y={SVG_H - 6}
-            textAnchor="middle" fontSize={9} fontFamily="sans-serif" fontWeight="600" fill="#f97316">
+            textAnchor="middle" fontSize={9} fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="600" fill="#f97316">
             {rightLabel}
           </text>
         )}

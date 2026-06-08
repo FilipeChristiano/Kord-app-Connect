@@ -1,11 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Bowlby+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
 @layer theme, base, clerk, components, utilities;
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Space Grotesk', system-ui, sans-serif;
-  --font-display: 'Unbounded', 'Space Grotesk', sans-serif;
-  --font-brand: 'Bowlby One', 'Unbounded', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-brand: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Escala tipográfica Harmonic — tamanho / altura de linha */
+  --text-display: 3rem;          /* 48px */
+  --text-display--line-height: 3.5rem;   /* 56px */
+  --text-h1: 2.25rem;            /* 36px */
+  --text-h1--line-height: 2.75rem;       /* 44px */
+  --text-h2: 1.875rem;           /* 30px */
+  --text-h2--line-height: 2.375rem;      /* 38px */
+  --text-h3: 1.5rem;             /* 24px */
+  --text-h3--line-height: 2rem;          /* 32px */
+  --text-h4: 1.25rem;            /* 20px */
+  --text-h4--line-height: 1.75rem;       /* 28px */
+  --text-body-lg: 1.125rem;      /* 18px */
+  --text-body-lg--line-height: 1.75rem;  /* 28px */
+  --text-body: 1rem;             /* 16px */
+  --text-body--line-height: 1.5rem;      /* 24px */
+  --text-small: 0.875rem;        /* 14px */
+  --text-small--line-height: 1.25rem;    /* 20px */
+  --text-caption: 0.75rem;       /* 12px */
+  --text-caption--line-height: 1rem;     /* 16px */
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));

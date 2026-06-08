@@ -1,0 +1,427 @@
+# Redesign Completo do Harmonic
+
+Quero que você faça um redesign completo do aplicativo Harmonic.
+
+## Objetivo
+
+Transformar o Harmonic em um aplicativo com a mesma sensação de qualidade, fluidez e refinamento do Spotify, porém utilizando a identidade visual do Harmonic.
+
+O objetivo NÃO é copiar o Spotify, mas utilizar seus princípios de UX e Design System para criar uma experiência premium.
+
+Mantenha absolutamente todas as funcionalidades existentes.
+
+Não altere:
+
+* lógica
+* banco de dados
+* APIs
+* rotas
+* algoritmos
+* processamento
+* estrutura de componentes
+
+A alteração deve ser exclusivamente visual.
+
+---
+
+# Identidade Visual
+
+O Harmonic possui identidade própria.
+
+A cor principal NÃO será verde.
+
+Substitua toda a linguagem verde do Spotify por nossa identidade em laranja.
+
+Cor principal:
+
+#FF6B00
+
+Crie uma paleta completa derivada dessa cor.
+
+Exemplo:
+
+Primary 50
+Primary 100
+Primary 200
+...
+Primary 900
+
+Também crie versões para:
+
+Hover
+
+Pressed
+
+Disabled
+
+Transparent
+
+Glow
+
+Gradient
+
+Nunca utilize verde como cor de ação.
+
+---
+
+# Linguagem Visual
+
+Quero que a interface transmita:
+
+premium
+
+musical
+
+profissional
+
+moderna
+
+minimalista
+
+tecnológica
+
+imersiva
+
+rápida
+
+elegante
+
+A sensação deve ser de um software feito para músicos profissionais.
+
+---
+
+# Inspiração
+
+Use como inspiração o Spotify em relação a:
+
+hierarquia visual
+
+espaçamento
+
+consistência
+
+componentes
+
+animações
+
+organização
+
+uso de imagens
+
+uso de cards
+
+contraste
+
+profundidade
+
+movimento
+
+Nunca copie elementos da marca Spotify.
+
+Adapte tudo para a identidade Harmonic.
+
+---
+
+# Background
+
+Utilize um tema escuro.
+
+Não utilize preto puro.
+
+Crie uma hierarquia semelhante ao Spotify.
+
+Exemplo de níveis:
+
+Background Principal
+
+Surface
+
+Surface Elevated
+
+Card
+
+Modal
+
+Sidebar
+
+Header
+
+Footer
+
+Cada nível deve possuir uma pequena diferença de luminosidade.
+
+---
+
+# Tipografia
+
+Crie uma hierarquia extremamente clara.
+
+Poucos pesos.
+
+Excelente leitura.
+
+Grande contraste entre:
+
+Título
+
+Subtítulo
+
+Texto
+
+Legenda
+
+Metadados
+
+Informações secundárias
+
+---
+
+# Espaçamento
+
+Adote um sistema consistente.
+
+Utilize escala de espaçamento baseada em 4px ou 8px.
+
+Nada deve parecer apertado.
+
+Cada componente deve "respirar".
+
+---
+
+# Componentes
+
+Redesenhe todos os componentes do aplicativo.
+
+Botões
+
+Cards
+
+Inputs
+
+Dropdowns
+
+Checkboxes
+
+Sliders
+
+Tabs
+
+Sidebar
+
+Header
+
+Footer
+
+Tooltips
+
+Modais
+
+Dialogs
+
+Menus
+
+Listas
+
+Tabelas
+
+Painéis
+
+Accordions
+
+Badges
+
+Chips
+
+Breadcrumbs
+
+Player
+
+Todos devem seguir o mesmo Design System.
+
+---
+
+# Botões
+
+Botão Primário
+
+Laranja Harmonic
+
+Glow extremamente suave
+
+Radius moderno
+
+Hover elegante
+
+Pressed natural
+
+Transições suaves
+
+Botão Secundário
+
+Fundo escuro
+
+Borda discreta
+
+Texto branco
+
+Hover com leve iluminação
+
+Botão Ghost
+
+Sem fundo
+
+Hover extremamente sutil
+
+---
+
+# Cards
+
+Quero cards semelhantes à filosofia do Spotify.
+
+Pouca borda.
+
+Muito contraste.
+
+Radius consistente.
+
+Sombras extremamente discretas.
+
+Separação por tonalidade, não por bordas grossas.
+
+---
+
+# Ícones
+
+Todos os ícones devem utilizar a mesma linguagem.
+
+Espessura consistente.
+
+Tamanho consistente.
+
+Boa área de clique.
+
+---
+
+# Motion
+
+Todas as interações devem possuir animações suaves.
+
+Duração:
+
+150ms
+
+200ms
+
+250ms
+
+Nunca utilizar animações exageradas.
+
+Tudo deve parecer fluido.
+
+---
+
+# Profundidade
+
+Evite sombras fortes.
+
+Utilize profundidade através de:
+
+contraste
+
+blur
+
+glass sutil
+
+camadas
+
+luminosidade
+
+---
+
+# Destaques
+
+Utilize o laranja apenas para elementos importantes.
+
+Nunca deixe a tela inteira laranja.
+
+O laranja deve chamar atenção naturalmente.
+
+---
+
+# Responsividade
+
+Desktop
+
+Tablet
+
+Mobile
+
+Todos devem manter a mesma identidade visual.
+
+---
+
+# Consistência
+
+Nenhuma tela deve parecer feita por outra pessoa.
+
+Todo o aplicativo deve seguir o mesmo Design System.
+
+---
+
+# Organização do código
+
+Se ainda não existir, crie um Design System centralizado.
+
+Crie:
+
+Design Tokens
+
+Theme
+
+Color Tokens
+
+Spacing Tokens
+
+Typography Tokens
+
+Border Radius Tokens
+
+Shadow Tokens
+
+Motion Tokens
+
+Utilize esses tokens em todo o projeto.
+
+Evite valores fixos espalhados pelo código.
+
+---
+
+# Antes de modificar
+
+Primeiro faça uma análise completa da estrutura do projeto.
+
+Identifique:
+
+onde estão as cores
+
+onde está o tema
+
+onde estão os componentes
+
+onde estão os estilos
+
+onde estão os tokens
+
+Depois apresente um plano resumido das alterações.
+
+Somente após isso comece a modificar o projeto.
+
+---
+
+# Ao finalizar
+
+Liste todos os arquivos alterados.
+
+Informe quais novos arquivos foram criados.
+
+Explique rapidamente como o novo Design System está organizado para facilitar futuras evoluções.
