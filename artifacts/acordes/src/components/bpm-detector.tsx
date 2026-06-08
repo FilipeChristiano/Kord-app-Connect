@@ -456,10 +456,14 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
     [result, startMetronomePlayback],
   );
 
-  // "Ouvir" com o BPM do ajuste fino (fase 0 = do início do trecho)
+  // "Ouvir" com o BPM do ajuste fino. Usa a fase da opção selecionada (instante
+  // real da 1ª batida no trecho) para o clique sincronizar com o áudio, igual à
+  // seção principal. A fase independe do BPM ajustado: é o ponto de partida da
+  // batida; só o intervalo entre cliques muda conforme o BPM.
   const playFinePreview = useCallback(() => {
-    startMetronomePlayback(clampBpm(finalBpm), 0, FINE_PLAY_KEY);
-  }, [finalBpm, startMetronomePlayback]);
+    const phase = result?.options[selectedIndex]?.phaseSec ?? 0;
+    startMetronomePlayback(clampBpm(finalBpm), phase, FINE_PLAY_KEY);
+  }, [finalBpm, selectedIndex, result, startMetronomePlayback]);
 
   const selectOption = (index: number) => {
     const opt = result?.options[index];
