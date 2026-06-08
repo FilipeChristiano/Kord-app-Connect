@@ -24,7 +24,7 @@ export function Layout({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 16);
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -41,127 +41,112 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Top Header */}
-      <header
-        className={cn(
-          "sticky top-0 z-50 transition-all duration-300",
-          isScrolled
-            ? "glass border-b border-white/5"
-            : "bg-background/70 backdrop-blur-md border-b border-transparent"
-        )}
-      >
+      <header className={cn(
+        "fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b border-transparent",
+        isScrolled ? "glass shadow-lg" : "bg-transparent py-2"
+      )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center outline-none rounded-xl">
+          <div className="flex items-center justify-between h-24">
+            <Link href="/" className="flex items-center group outline-none">
               <img
                 src={`${basePath}/harmonic-logo-horizontal.png`}
                 alt="Harmonic"
-                className="h-9 w-auto select-none transition-opacity hover:opacity-90"
+                className="h-16 sm:h-20 w-auto select-none group-hover:opacity-90 transition-opacity"
                 draggable={false}
               />
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-1">
-              {navItems.map((item) => {
-                const active = location === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "group relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
-                    )}
-                  >
-                    <item.icon className={cn("w-4 h-4 shrink-0 transition-transform duration-200", !active && "group-hover:scale-110")} />
-                    <span>{item.label}</span>
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => (
+                <Link 
+                  key={item.href} 
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 outline-none",
+                    location === item.href 
+                      ? "bg-white/10 text-white" 
+                      : "text-muted-foreground hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-primary"
+                  )}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="ml-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              ))}
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="ml-1 flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-all outline-none"
+                className="ml-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-white transition-all"
+                title="Sair"
               >
                 <LogOut className="w-4 h-4" />
                 Sair
               </button>
             </nav>
 
-            {/* Mobile menu button */}
-            <button
-              className="lg:hidden p-2 rounded-lg text-muted-foreground hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            {/* Mobile Menu Toggle */}
+            <button 
+              className="md:hidden p-2 rounded-lg text-muted-foreground hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-nav-drawer"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
-
-        {/* Mobile Nav Drawer */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              id="mobile-nav-drawer"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden glass border-t border-white/10 overflow-hidden"
-            >
-              <div className="px-4 py-5 space-y-1.5 flex flex-col max-w-7xl mx-auto">
-                {navItems.map((item) => {
-                  const active = location === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={cn(
-                        "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 outline-none",
-                        active
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
-                      )}
-                    >
-                      {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-primary" />}
-                      <item.icon className="w-5 h-5 shrink-0" />
-                      <span className="flex-1">{item.label}</span>
-                      {item.badge !== undefined && item.badge > 0 && (
-                        <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="flex items-center gap-3 px-3 py-2.5 mt-1 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all w-full text-left"
-                >
-                  <LogOut className="w-5 h-5" />
-                  Sair
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
-      {/* Content */}
-      <main className="flex-1">{children}</main>
+      {/* Mobile Nav Drawer */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden fixed top-[72px] inset-x-0 z-40 glass border-b border-white/10"
+          >
+            <div className="px-4 py-6 space-y-2 flex flex-col">
+              {navItems.map((item) => (
+                <Link 
+                  key={item.href} 
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium transition-all",
+                    location === item.href 
+                      ? "bg-primary/20 text-primary border border-primary/30" 
+                      : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                  )}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="ml-auto bg-primary text-primary-foreground text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              ))}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:bg-white/5 hover:text-white transition-all w-full text-left"
+              >
+                <LogOut className="w-5 h-5" />
+                Sair
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <main className="flex-1 pt-20">
+        {children}
+      </main>
 
       <footer className="border-t border-white/5 py-8 mt-12 bg-surface/40">
         <div className="max-w-7xl mx-auto px-4 text-center text-muted-foreground text-sm flex flex-col items-center gap-4">
