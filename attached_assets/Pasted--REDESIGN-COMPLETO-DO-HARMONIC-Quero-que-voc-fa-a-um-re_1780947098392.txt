@@ -1,0 +1,583 @@
+# REDESIGN COMPLETO DO HARMONIC
+
+Quero que você faça um redesign completo do aplicativo Harmonic.
+
+## Objetivo
+
+Transformar o Harmonic em um aplicativo com a mesma sensação de qualidade, fluidez e refinamento do Spotify, porém utilizando a identidade visual do Harmonic.
+
+O objetivo NÃO é copiar o Spotify, mas utilizar seus princípios de UX, UI e Design System para criar uma experiência premium.
+
+Mantenha absolutamente todas as funcionalidades existentes.
+
+NÃO altere:
+
+- lógica
+- banco de dados
+- APIs
+- rotas
+- algoritmos
+- processamento
+- estrutura dos componentes
+- regras de negócio
+
+Toda alteração deve ser exclusivamente visual.
+
+--------------------------------------------------------
+
+# IDENTIDADE VISUAL
+
+O Harmonic possui identidade própria.
+
+A cor principal NÃO será verde.
+
+Toda a linguagem visual inspirada no Spotify deve utilizar a identidade do Harmonic.
+
+Cor principal:
+
+#FF6B00
+
+Crie uma paleta completa derivada dessa cor.
+
+Exemplo:
+
+Primary 50
+Primary 100
+Primary 200
+Primary 300
+Primary 400
+Primary 500
+Primary 600
+Primary 700
+Primary 800
+Primary 900
+
+Também crie versões para:
+
+Hover
+
+Pressed
+
+Disabled
+
+Focus
+
+Transparent
+
+Glow
+
+Gradient
+
+Nunca utilize verde como cor de ação.
+
+--------------------------------------------------------
+
+# LINGUAGEM VISUAL
+
+Quero que a interface transmita:
+
+Premium
+
+Musical
+
+Profissional
+
+Tecnológica
+
+Elegante
+
+Moderna
+
+Minimalista
+
+Imersiva
+
+Rápida
+
+Refinada
+
+A sensação deve ser de um software profissional feito para músicos.
+
+--------------------------------------------------------
+
+# INSPIRAÇÃO
+
+Use como inspiração o Spotify apenas em relação a:
+
+- Hierarquia visual
+- Espaçamentos
+- Consistência
+- Design System
+- Componentes
+- Organização
+- Uso de cards
+- Uso de imagens
+- Contraste
+- Profundidade
+- Movimento
+- UX
+
+Nunca copie elementos da identidade do Spotify.
+
+Não utilize o verde.
+
+Adapte toda essa filosofia ao Harmonic.
+
+--------------------------------------------------------
+
+# BACKGROUND
+
+Utilize tema escuro.
+
+Nunca utilize preto absoluto (#000000).
+
+Crie níveis de superfície semelhantes ao Spotify.
+
+Exemplo:
+
+Background Principal
+
+Surface
+
+Surface Elevated
+
+Card
+
+Modal
+
+Sidebar
+
+Header
+
+Footer
+
+Cada nível deve possuir pequenas diferenças de luminosidade para criar profundidade.
+
+--------------------------------------------------------
+
+# TIPOGRAFIA
+
+Utilize exclusivamente a fonte **Plus Jakarta Sans** em todo o aplicativo.
+
+Importe a fonte corretamente (Google Fonts ou equivalente) e aplique-a globalmente através do Theme do projeto.
+
+Não utilize outras famílias tipográficas, exceto ícones quando necessário.
+
+A tipografia deve transmitir:
+
+- Sofisticação
+- Tecnologia
+- Clareza
+- Modernidade
+- Elegância
+- Produto premium
+
+Utilize apenas estes pesos:
+
+500 (Medium)
+
+600 (SemiBold)
+
+700 (Bold)
+
+Evite excesso de pesos diferentes.
+
+Nunca utilize fontes arredondadas, infantis ou decorativas.
+
+### Escala Tipográfica
+
+Display
+
+48px
+
+700
+
+56px line-height
+
+Heading 1
+
+36px
+
+700
+
+44px
+
+Heading 2
+
+30px
+
+700
+
+38px
+
+Heading 3
+
+24px
+
+600
+
+32px
+
+Heading 4
+
+20px
+
+600
+
+28px
+
+Body Large
+
+18px
+
+500
+
+28px
+
+Body
+
+16px
+
+500
+
+24px
+
+Small
+
+14px
+
+500
+
+20px
+
+Caption
+
+12px
+
+500
+
+16px
+
+### Hierarquia
+
+A leitura deve ser extremamente clara.
+
+O usuário deve identificar instantaneamente:
+
+- título
+- subtítulo
+- descrição
+- informações secundárias
+- ações
+
+Utilize diferenças de tamanho, peso e contraste.
+
+Não dependa apenas da cor.
+
+### Hierarquia de texto
+
+Texto Primário
+
+Branco quase puro
+
+Texto Secundário
+
+Cinza claro
+
+Texto Terciário
+
+Cinza médio
+
+Texto Desabilitado
+
+Cinza escuro
+
+Texto de Destaque
+
+Laranja Harmonic
+
+--------------------------------------------------------
+
+# ESPAÇAMENTO
+
+Utilize uma escala consistente baseada em 4px.
+
+Exemplo:
+
+4
+
+8
+
+12
+
+16
+
+24
+
+32
+
+40
+
+48
+
+64
+
+80
+
+Nenhum componente deve parecer apertado.
+
+Toda a interface deve "respirar".
+
+--------------------------------------------------------
+
+# COMPONENTES
+
+Redesenhe todos os componentes seguindo um único Design System.
+
+Botões
+
+Cards
+
+Inputs
+
+Dropdowns
+
+Checkboxes
+
+Sliders
+
+Tabs
+
+Sidebar
+
+Header
+
+Footer
+
+Tooltips
+
+Modais
+
+Dialogs
+
+Menus
+
+Listas
+
+Tabelas
+
+Painéis
+
+Accordions
+
+Badges
+
+Chips
+
+Breadcrumbs
+
+Player
+
+Progress Bars
+
+Search
+
+Switches
+
+Toast
+
+Estados vazios
+
+Todos devem seguir exatamente a mesma linguagem visual.
+
+--------------------------------------------------------
+
+# BOTÕES
+
+Botão Primário
+
+Laranja Harmonic
+
+Glow extremamente discreto
+
+Radius moderno
+
+Hover elegante
+
+Pressed natural
+
+Transições suaves
+
+Botão Secundário
+
+Fundo escuro
+
+Borda discreta
+
+Texto branco
+
+Hover com leve iluminação
+
+Botão Ghost
+
+Sem fundo
+
+Hover extremamente sutil
+
+--------------------------------------------------------
+
+# CARDS
+
+Inspirados na filosofia do Spotify.
+
+Pouca borda.
+
+Muito contraste.
+
+Radius consistente.
+
+Sombras extremamente discretas.
+
+Separação através de tonalidade e profundidade.
+
+Nunca através de bordas pesadas.
+
+--------------------------------------------------------
+
+# ÍCONES
+
+Todos os ícones devem possuir:
+
+Mesmo estilo
+
+Mesmo peso
+
+Mesmo tamanho
+
+Excelente área de clique
+
+Visual consistente
+
+--------------------------------------------------------
+
+# MOTION
+
+Todas as interações devem possuir animações suaves.
+
+150ms
+
+200ms
+
+250ms
+
+Nunca utilize animações exageradas.
+
+Tudo deve parecer extremamente fluido.
+
+--------------------------------------------------------
+
+# PROFUNDIDADE
+
+Evite sombras fortes.
+
+Utilize profundidade através de:
+
+Contraste
+
+Blur
+
+Glass extremamente sutil
+
+Camadas
+
+Luminosidade
+
+--------------------------------------------------------
+
+# DESTAQUES
+
+O laranja deve ser utilizado apenas em elementos importantes.
+
+Jamais deixe a interface inteira laranja.
+
+A cor deve conduzir naturalmente a atenção do usuário.
+
+--------------------------------------------------------
+
+# RESPONSIVIDADE
+
+Desktop
+
+Tablet
+
+Mobile
+
+Todos devem manter exatamente a mesma identidade visual.
+
+--------------------------------------------------------
+
+# CONSISTÊNCIA
+
+Nenhuma tela deve parecer feita por outra pessoa.
+
+Todo o aplicativo deve seguir rigorosamente o mesmo Design System.
+
+--------------------------------------------------------
+
+# ORGANIZAÇÃO DO CÓDIGO
+
+Caso ainda não exista, crie um Design System centralizado.
+
+Crie:
+
+Color Tokens
+
+Typography Tokens
+
+Spacing Tokens
+
+Border Radius Tokens
+
+Shadow Tokens
+
+Motion Tokens
+
+Opacity Tokens
+
+Z-index Tokens
+
+Breakpoint Tokens
+
+Utilize esses tokens em todo o projeto.
+
+Evite valores fixos espalhados pelo código.
+
+--------------------------------------------------------
+
+# ANTES DE MODIFICAR
+
+Primeiro faça uma análise completa da estrutura do projeto.
+
+Identifique:
+
+- onde estão as cores
+- onde está o tema
+- onde estão os componentes
+- onde estão os estilos
+- onde estão os tokens
+
+Depois apresente um plano resumido das alterações.
+
+Somente após minha aprovação comece a modificar o projeto.
+
+--------------------------------------------------------
+
+# AO FINALIZAR
+
+Liste todos os arquivos alterados.
+
+Informe quais novos arquivos foram criados.
+
+Explique como o novo Design System foi estruturado.
+
+Garanta que todas as telas estejam utilizando o novo sistema visual de forma consistente.
