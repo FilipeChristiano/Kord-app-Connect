@@ -445,8 +445,8 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
           height={h}
           rx={2.5}
           className={hlWhite.has(i) ? "fill-[hsl(var(--primary))]" : ""}
-          fill={hlWhite.has(i) ? undefined : "rgba(255,255,255,0.06)"}
-          stroke="rgba(255,255,255,0.08)"
+          fill={hlWhite.has(i) ? undefined : "#f4f4f5"}
+          stroke="rgba(0,0,0,0.35)"
           strokeWidth={0.8}
         />
       ))}
