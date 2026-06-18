@@ -55,11 +55,11 @@ export default function Home() {
             </motion.div>
 
             <motion.h2 variants={itemVariants} className="font-display text-2xl sm:text-3xl font-bold text-foreground -mt-4 sm:-mt-6 mb-4 max-w-2xl text-balance">
-              As ferramentas que faltavam para transformar o seu som.
+              O próximo nível do seu teclado
             </motion.h2>
 
             <motion.p variants={itemVariants} className="text-body-lg text-foreground/75 mb-9 sm:mb-10 max-w-xl">
-              Acordes sofisticados, cifras transformadas, pad continuous e metrônomo inteligente em um só lugar.
+              As ferramentas que faltavam para transformar seu som em um só lugar.
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
