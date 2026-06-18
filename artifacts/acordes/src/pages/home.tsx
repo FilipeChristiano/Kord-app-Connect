@@ -26,10 +26,11 @@ export default function Home() {
             src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover opacity-[0.14] brightness-75 blur-[2px] object-center"
+            className="w-full h-full object-cover opacity-[0.5] brightness-90 object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
-          <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/45 to-background" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_70%_at_50%_40%,transparent_30%,hsl(var(--background)/0.85)_100%)] pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.18),transparent_70%)] pointer-events-none" />
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
