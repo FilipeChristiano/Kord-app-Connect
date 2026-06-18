@@ -431,8 +431,9 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
       if (idx < whiteCount - 1) blacks.push(idx);
     }
   }
-  const hlWhite = new Set([5, 6, 7, 8, 9]);
-  const hlBlack = new Set([4, 5, 7, 8]);
+  // Cmaj9 = C E G B D — teclas brancas espaçadas (voicing real, sem pretas)
+  const hlWhite = new Set([2, 4, 6, 8, 10]);
+  const hlBlack = new Set<number>();
   return (
     <svg viewBox={`0 0 ${whiteCount * w} ${h}`} className={className} aria-hidden="true" preserveAspectRatio="xMidYMid meet">
       {whites.map((i) => (
