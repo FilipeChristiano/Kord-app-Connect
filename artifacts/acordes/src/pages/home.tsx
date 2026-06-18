@@ -1,249 +1,285 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
-  Search, ArrowRight, ArrowDown, ChevronRight, Wand2, Waves, Timer,
-  Layers, Heart, Sparkles, History,
+  ArrowRight, ArrowDown, ChevronDown, Star, Layers, Wand2, Waves, Timer,
 } from "lucide-react";
-import { CHORDS } from "@/data/chords";
-import { useFavorites } from "@/hooks/use-favorites";
-import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 
 const EASE = [0.4, 0, 0.2, 1] as const;
 
-function saudacao() {
-  const h = new Date().getHours();
-  if (h < 12) return "Bom dia";
-  if (h < 18) return "Boa tarde";
-  return "Boa noite";
-}
-
 export default function Home() {
-  const [, navigate] = useLocation();
-  const [busca, setBusca] = useState("");
-  const { favorites } = useFavorites();
-  const { cifras } = useCifrasFavoritas();
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  };
 
-  const favoriteChords = CHORDS.filter((c) => favorites.includes(c.id));
-  const temFavoritos = favorites.length > 0 || cifras.length > 0;
-
-  function buscar(e: React.FormEvent) {
-    e.preventDefault();
-    const q = busca.trim();
-    navigate(q ? `/dicionario?q=${encodeURIComponent(q)}` : "/dicionario");
-  }
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
+  };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-      {/* ── Saudação ───────────────────────────────────────────── */}
-      <motion.header
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: EASE }}
-        className="mb-8 lg:mb-10"
-      >
-        <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
-          {saudacao()}, músico.
-        </h1>
-        <p className="mt-2.5 text-muted-foreground text-body-lg">
-          Escolha uma ferramenta para começar.
-        </p>
-      </motion.header>
-
-      {/* ── Busca principal ────────────────────────────────────── */}
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.06, ease: EASE }}
-        className="mb-14"
-      >
-        <form onSubmit={buscar} className="relative group max-w-3xl">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
-          <input
-            type="text"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Busque um acorde, uma categoria ou cole uma cifra…"
-            className="w-full bg-surface-elevated border border-white/[0.06] rounded-2xl pl-14 pr-28 py-4 text-foreground text-base placeholder:text-muted-foreground/80 shadow-lg shadow-black/10 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
+    <div className="w-full">
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <section className="relative pt-10 pb-14 lg:pt-14 lg:pb-20 overflow-hidden">
+        <div className="absolute inset-x-0 bottom-0 -top-24 z-0">
+          <img
+            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover opacity-[0.14] brightness-75 blur-[2px] object-center"
           />
-          <button
-            type="submit"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:brightness-105 active:scale-[0.97] transition-all"
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
+          <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none" />
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            className="max-w-3xl mx-auto flex flex-col items-center"
           >
-            Buscar <ArrowRight className="w-4 h-4" />
-          </button>
-        </form>
+            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-8">
+              <Star className="w-4 h-4" />
+              Para tecladistas e pianistas
+            </motion.div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <QuickChip icon={<Search />} label="Buscar acorde" href="/dicionario" />
-          <QuickChip icon={<Wand2 />} label="Sofisticar cifra" href="/sofisticador" />
-          <QuickChip icon={<Timer />} label="Abrir metrônomo" href="/metronomo" />
+            <motion.div variants={itemVariants} className="flex flex-col items-center mb-2">
+              <h1 className="sr-only">Harmonic — As ferramentas que faltavam para transformar o seu som</h1>
+              <img
+                src={`${import.meta.env.BASE_URL}harmonic-logo-hero.png`}
+                alt="Harmonic"
+                className="w-full max-w-[360px] sm:max-w-[440px] md:max-w-[510px] h-auto select-none drop-shadow-2xl"
+                draggable={false}
+              />
+            </motion.div>
+
+            <motion.h2 variants={itemVariants} className="font-display text-2xl sm:text-3xl font-bold text-foreground -mt-4 sm:-mt-6 mb-4 max-w-2xl text-balance">
+              As ferramentas que faltavam para transformar o seu som.
+            </motion.h2>
+
+            <motion.p variants={itemVariants} className="text-body-lg text-foreground/75 mb-9 sm:mb-10 max-w-xl">
+              Acordes sofisticados, cifras transformadas, pad continuous e metrônomo inteligente em um só lugar.
+            </motion.p>
+
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <Link href="/dicionario" className="px-8 py-4 rounded-2xl font-bold bg-primary text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
+                Explorar ferramentas <ArrowRight className="w-5 h-5" />
+              </Link>
+              <a href="#recursos" className="px-8 py-4 rounded-2xl font-bold bg-surface-elevated/80 text-foreground border border-white/10 shadow-[0_4px_16px_-8px_rgba(0,0,0,0.6)] hover:border-primary/30 hover:bg-surface-elevated hover:-translate-y-0.5 hover:shadow-[0_6px_22px_-8px_hsl(var(--primary)/0.3)] transition-all duration-200 flex items-center justify-center gap-2">
+                Conhecer recursos
+              </a>
+            </motion.div>
+          </motion.div>
         </div>
-      </motion.section>
+      </section>
 
-      {/* ── Comece por aqui ────────────────────────────────────── */}
-      <Section title="Comece por aqui" delay={0.12}>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          <AcordesCard />
-          <SofisticadorCard />
+      {/* ── Slogan strip ──────────────────────────────────────── */}
+      <section className="relative border-y border-white/5">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_center,_hsl(var(--primary)/0.07),_transparent_70%)] pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-7 relative">
+          <h2 className="font-display font-semibold leading-tight text-center whitespace-nowrap text-[clamp(1rem,3.8vw,2.5rem)] text-foreground/90">
+            O <span className="text-gradient-primary">próximo nível</span> do seu teclado.
+          </h2>
         </div>
-      </Section>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute left-1/2 -ml-5 bottom-[-20px] z-20 flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-background text-primary shadow-lg"
+          aria-hidden="true"
+        >
+          <ChevronDown className="w-5 h-5" />
+        </motion.div>
+      </section>
 
-      {/* ── Ferramentas rápidas ────────────────────────────────── */}
-      <Section title="Ferramentas rápidas" delay={0.16}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <PadCard />
-          <MetronomoCard />
-        </div>
-      </Section>
-
-      {/* ── Continue estudando ─────────────────────────────────── */}
-      <Section title="Continue estudando" delay={0.2}>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-white/[0.06] bg-card/60 px-5 py-4">
-          <span className="w-10 h-10 shrink-0 rounded-xl bg-surface-elevated text-muted-foreground flex items-center justify-center">
-            <History className="w-5 h-5" />
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-foreground/90 font-semibold text-sm">Nada por aqui ainda</p>
-            <p className="text-muted-foreground text-sm mt-0.5">
-              Seus últimos acordes, cifras e estudos aparecerão aqui.
+      {/* ── Recursos principais ───────────────────────────────── */}
+      <section id="recursos" className="scroll-mt-24 py-20 lg:py-24 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 lg:mb-16 text-center max-w-2xl mx-auto">
+            <p className="text-small font-semibold uppercase tracking-[0.2em] text-primary mb-3">Recursos principais</p>
+            <h2 className="text-h2 font-bold text-foreground mb-4">Ferramentas do Harmonic</h2>
+            <p className="text-muted-foreground text-body-lg">
+              Quatro ferramentas para transformar o seu som — em um só lugar.
             </p>
           </div>
-          <Link
-            href="/dicionario"
-            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all text-sm"
-          >
-            Explorar acordes <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </Section>
 
-      {/* ── Sugestões para estudar ─────────────────────────────── */}
-      <Section title="Sugestões para estudar" delay={0.24}>
-        <div className="flex flex-wrap gap-2.5">
-          <Suggestion label="Acordes com 9ª" href={`/dicionario?q=${encodeURIComponent("Com 9ª")}`} />
-          <Suggestion label="Acordes sus4" href={`/dicionario?q=${encodeURIComponent("Sus4")}`} />
-          <Suggestion label="Acordes com 6ª" href={`/dicionario?q=${encodeURIComponent("Com 6ª")}`} />
-          <Suggestion label="Voicings de mão esquerda" href={`/dicionario?q=${encodeURIComponent("Mão Esquerda")}`} />
-          <Suggestion label="Progressões worship" href="/aplicacoes" />
-          <Suggestion label="Campo harmônico maior" href="/aplicacoes" />
-        </div>
-      </Section>
-
-      {/* ── Favoritos ──────────────────────────────────────────── */}
-      <Section
-        title="Favoritos"
-        delay={0.28}
-        action={temFavoritos ? { label: "Ver todos", href: "/favoritos" } : undefined}
-      >
-        {temFavoritos ? (
-          <div className="rounded-2xl border border-white/[0.06] bg-card px-5 py-5">
-            {favoriteChords.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {favoriteChords.slice(0, 14).map((chord) => (
-                  <Link
-                    key={chord.id}
-                    href={`/acorde/${chord.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-surface-elevated border border-white/[0.06] font-mono text-sm text-foreground/90 hover:border-primary/40 hover:text-primary transition-all"
-                  >
-                    {chord.name}
-                  </Link>
-                ))}
-                {favoriteChords.length > 14 && (
-                  <Link href="/favoritos" className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    +{favoriteChords.length - 14}
-                  </Link>
-                )}
-              </div>
-            )}
-            {cifras.length > 0 && (
-              <Link href="/favoritos" className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <Sparkles className="w-4 h-4 text-primary" />
-                {cifras.length} {cifras.length === 1 ? "cifra sofisticada salva" : "cifras sofisticadas salvas"}
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-white/[0.06] bg-card/60 px-5 py-4">
-            <span className="w-10 h-10 shrink-0 rounded-xl bg-surface-elevated text-muted-foreground flex items-center justify-center">
-              <Heart className="w-5 h-5" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-foreground/90 font-semibold text-sm">Nenhum favorito ainda</p>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                Salve acordes e cifras para acessar rapidamente depois.
-              </p>
-            </div>
-            <Link
+          <div className="grid md:grid-cols-2 gap-6 auto-rows-fr">
+            <ToolCard
+              icon={<Layers />}
+              title="Acordes Sofisticados"
+              desc="Explore acordes mais ricos para deixar seu som mais profissional."
+              cta="Explorar acordes"
               href="/dicionario"
-              className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all text-sm"
             >
-              Explorar acordes <ArrowRight className="w-4 h-4" />
-            </Link>
+              <AcordesVisual />
+            </ToolCard>
+
+            <ToolCard
+              icon={<Wand2 />}
+              title="Sofisticador de Cifras"
+              desc="Transforme cifras simples em versões mais bonitas e musicais."
+              cta="Sofisticar cifra"
+              href="/sofisticador"
+            >
+              <SofisticadorVisual />
+            </ToolCard>
+
+            <ToolCard
+              icon={<Waves />}
+              title="Pad Continuous"
+              desc="Crie uma atmosfera contínua para tocar, ministrar ou acompanhar."
+              cta="Abrir pad"
+              href="/pad"
+            >
+              <PadVisual />
+            </ToolCard>
+
+            <ToolCard
+              icon={<Timer />}
+              title="Metrônomo Inteligente"
+              desc="Pratique com pulso, subdivisões e precisão musical."
+              cta="Abrir metrônomo"
+              href="/metronomo"
+            >
+              <MetronomoVisual />
+            </ToolCard>
           </div>
-        )}
-      </Section>
+        </div>
+      </section>
     </div>
   );
 }
 
-/* ─── Layout helpers ──────────────────────────────────────────── */
+/* ─── Card base ───────────────────────────────────────────────── */
 
-function Section({
-  title, delay, action, children,
+function ToolCard({
+  icon, title, desc, cta, href, children,
 }: {
+  icon: React.ReactNode;
   title: string;
-  delay: number;
-  action?: { label: string; href: string };
+  desc: string;
+  cta: string;
+  href: string;
   children: React.ReactNode;
 }) {
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5, delay, ease: EASE }}
-      className="mb-12"
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5, ease: EASE }}
+      whileHover={{ y: -4, scale: 1.01, transition: { duration: 0.2, ease: EASE } }}
+      className="rounded-2xl bg-card border border-white/[0.05] shadow-lg shadow-black/10 hover:border-primary/25 hover:bg-surface-elevated hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.25)] transition-colors duration-200"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-small font-semibold uppercase tracking-[0.18em] text-foreground/55">{title}</h2>
-        {action && (
-          <Link href={action.href} className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            {action.label} <ChevronRight className="w-4 h-4" />
-          </Link>
-        )}
+      <Link href={href} className="group flex flex-col h-full p-6 sm:p-7">
+        <span className="w-12 h-12 rounded-xl bg-surface-elevated text-primary flex items-center justify-center mb-5 [&_svg]:w-6 [&_svg]:h-6 group-hover:scale-110 transition-transform duration-200">
+          {icon}
+        </span>
+
+        {/* visual interno */}
+        <div className="rounded-xl border border-white/[0.05] bg-background/40 px-4 py-3.5 min-h-[104px] flex flex-col justify-center mb-5">
+          {children}
+        </div>
+
+        <h3 className="text-h4 font-semibold text-foreground mb-2">{title}</h3>
+        <p className="text-muted-foreground leading-relaxed text-small">{desc}</p>
+
+        <span className="mt-auto pt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+          {cta}
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
+        </span>
+      </Link>
+    </motion.div>
+  );
+}
+
+/* ─── Visuais internos ────────────────────────────────────────── */
+
+function AcordesVisual() {
+  const chords = ["Cmaj9", "F7M(9)", "G13", "Am11"];
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
+        {chords.map((c) => (
+          <span key={c} className="px-2.5 py-1 rounded-lg bg-surface-elevated border border-white/[0.07] font-mono text-xs text-foreground/85">
+            {c}
+          </span>
+        ))}
       </div>
-      {children}
-    </motion.section>
+      <MiniKeyboard className="w-full max-w-[220px] h-9" />
+    </div>
   );
 }
 
-function QuickChip({ icon, label, href }: { icon: React.ReactNode; label: string; href: string }) {
+function SofisticadorVisual() {
+  const antes = ["C", "G", "Am", "F"];
+  const depois = ["C9", "G/B", "Am11", "F7M"];
   return (
-    <Link
-      href={href}
-      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-card border border-white/[0.05] text-sm font-medium text-foreground/75 hover:text-foreground hover:border-primary/30 hover:bg-surface-elevated transition-all [&_svg]:w-3.5 [&_svg]:h-3.5 [&_svg]:text-primary"
-    >
-      {icon}
-      {label}
-    </Link>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
+        {antes.map((a) => (
+          <span key={a} className="px-2 py-0.5 rounded-md bg-white/[0.04] font-mono text-xs text-muted-foreground">{a}</span>
+        ))}
+      </div>
+      <div className="flex justify-center text-primary/70"><ArrowDown className="w-3.5 h-3.5" /></div>
+      <div className="flex flex-wrap gap-1.5">
+        {depois.map((d) => (
+          <span key={d} className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 font-mono text-xs text-primary font-semibold">{d}</span>
+        ))}
+      </div>
+    </div>
   );
 }
 
-function Suggestion({ label, href }: { label: string; href: string }) {
+function PadVisual() {
+  const bars = [0.5, 0.85, 1, 0.65, 0.9, 0.55, 0.78];
   return (
-    <Link
-      href={href}
-      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-card border border-white/[0.05] text-sm font-medium text-foreground/75 hover:text-foreground hover:border-primary/30 hover:bg-surface-elevated transition-all group"
-    >
-      {label}
-      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-    </Link>
+    <div className="flex items-center justify-between gap-4">
+      <div className="space-y-1.5 text-xs">
+        <p className="text-muted-foreground">Tom <span className="ml-1 font-mono text-foreground/85">G</span></p>
+        <p className="text-muted-foreground">Modo <span className="ml-1 font-mono text-foreground/85">Worship</span></p>
+        <span className="inline-flex items-center gap-1.5 mt-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          <span className="font-semibold text-primary text-[11px] uppercase tracking-wide">Pad ON</span>
+        </span>
+      </div>
+      <div className="flex items-end gap-1 h-9">
+        {bars.map((h, i) => (
+          <motion.span
+            key={i}
+            className="w-1.5 rounded-full bg-primary/55"
+            style={{ height: 34, transformOrigin: "bottom" }}
+            initial={{ scaleY: h * 0.5 }}
+            animate={{ scaleY: [h * 0.45, h, h * 0.55] }}
+            transition={{ duration: 1.3 + i * 0.12, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
-/* ─── Visual decorations ──────────────────────────────────────── */
+function MetronomoVisual() {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="leading-none">
+        <span className="font-display text-3xl font-bold text-foreground">72</span>
+        <span className="ml-1.5 text-xs font-semibold text-muted-foreground">BPM</span>
+        <p className="text-[11px] font-mono text-muted-foreground mt-1.5">4/4</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <motion.span
+            key={i}
+            className={`w-2.5 h-2.5 rounded-full ${i === 0 ? "bg-primary" : "bg-white/15"}`}
+            animate={i === 0 ? { scale: [1, 1.5, 1], opacity: [1, 0.6, 1] } : undefined}
+            transition={i === 0 ? { duration: 1, repeat: Infinity, ease: "easeInOut" } : undefined}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function MiniKeyboard({ className }: { className?: string }) {
   const whites = [0, 1, 2, 3, 4, 5, 6];
@@ -259,186 +295,5 @@ function MiniKeyboard({ className }: { className?: string }) {
           fill="rgba(8,8,12,0.7)" stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
       ))}
     </svg>
-  );
-}
-
-/* ─── Cards principais ────────────────────────────────────────── */
-
-function AcordesCard() {
-  const bubbles = [
-    { name: "Cmaj9", c: "top-1 left-2" },
-    { name: "Am11", c: "top-0 right-6" },
-    { name: "F7M(9)", c: "top-12 left-12" },
-    { name: "G13", c: "top-14 right-0" },
-    { name: "Dm9", c: "top-24 left-0" },
-  ];
-  return (
-    <motion.div
-      whileHover={{ y: -3, transition: { duration: 0.2, ease: EASE } }}
-      className="lg:col-span-3 relative overflow-hidden rounded-2xl border border-primary/15 bg-primary/[0.06] shadow-lg shadow-black/10 hover:border-primary/30 transition-colors duration-200"
-    >
-      <div className="absolute -top-16 -right-10 w-72 h-72 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-      <Link href="/dicionario" className="group relative flex flex-col sm:flex-row h-full">
-        <div className="flex-1 p-6 sm:p-8 flex flex-col">
-          <span className="w-12 h-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-5 [&_svg]:w-6 [&_svg]:h-6 group-hover:scale-110 transition-transform">
-            <Layers />
-          </span>
-          <h3 className="font-display text-2xl font-bold text-foreground mb-2">Acordes Sofisticados</h3>
-          <p className="text-muted-foreground leading-relaxed text-small max-w-sm">
-            Explore voicings ricos, categorias e aplicações para tocar com mais musicalidade.
-          </p>
-          <span className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-            Explorar acordes
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </span>
-        </div>
-
-        {/* Visual: bolhas de acordes + mini teclado */}
-        <div className="relative shrink-0 sm:w-[46%] min-h-[180px] sm:min-h-0 px-6 pb-6 sm:p-6 flex flex-col justify-end">
-          <div className="relative h-32 hidden sm:block">
-            {bubbles.map((b) => (
-              <span
-                key={b.name}
-                className={`absolute ${b.c} px-2.5 py-1 rounded-lg bg-surface-elevated/90 border border-white/[0.08] font-mono text-xs text-foreground/85 shadow-md backdrop-blur-sm`}
-              >
-                {b.name}
-              </span>
-            ))}
-          </div>
-          <MiniKeyboard className="w-full max-w-[260px] mx-auto sm:mx-0 sm:ml-auto opacity-90" />
-        </div>
-      </Link>
-    </motion.div>
-  );
-}
-
-function SofisticadorCard() {
-  const antes = ["C", "G", "Am", "F"];
-  const depois = ["C9", "G/B", "Am11", "F7M(9)"];
-  return (
-    <motion.div
-      whileHover={{ y: -3, transition: { duration: 0.2, ease: EASE } }}
-      className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-white/[0.07] bg-card shadow-lg shadow-black/10 hover:border-primary/25 hover:bg-surface-elevated transition-colors duration-200"
-    >
-      <Link href="/sofisticador" className="group flex h-full flex-col p-6 sm:p-7">
-        <span className="w-12 h-12 rounded-xl bg-surface-elevated text-primary flex items-center justify-center mb-5 [&_svg]:w-6 [&_svg]:h-6 group-hover:scale-110 transition-transform">
-          <Wand2 />
-        </span>
-        <h3 className="font-display text-xl font-bold text-foreground mb-2">Sofisticador de Cifras</h3>
-        <p className="text-muted-foreground leading-relaxed text-small">
-          Cole uma cifra simples e receba versões mais profissionais em segundos.
-        </p>
-
-        {/* Antes / depois */}
-        <div className="mt-5 rounded-xl border border-white/[0.06] bg-background/40 p-3.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Antes</p>
-          <div className="flex flex-wrap gap-1.5">
-            {antes.map((a) => (
-              <span key={a} className="px-2 py-0.5 rounded-md bg-white/[0.04] font-mono text-xs text-muted-foreground">{a}</span>
-            ))}
-          </div>
-          <div className="flex justify-center my-2 text-primary/70"><ArrowDown className="w-4 h-4" /></div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-primary/80 mb-1.5">Depois</p>
-          <div className="flex flex-wrap gap-1.5">
-            {depois.map((d) => (
-              <span key={d} className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 font-mono text-xs text-primary font-semibold">{d}</span>
-            ))}
-          </div>
-        </div>
-
-        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-          Sofisticar cifra
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-        </span>
-      </Link>
-    </motion.div>
-  );
-}
-
-function PadCard() {
-  const bars = [0.5, 0.8, 1, 0.65, 0.9, 0.55, 0.78, 0.6];
-  const tons = ["C", "D", "E", "F", "G"];
-  return (
-    <motion.div
-      whileHover={{ y: -3, transition: { duration: 0.2, ease: EASE } }}
-      className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-card shadow-lg shadow-black/10 hover:border-primary/25 hover:bg-surface-elevated transition-colors duration-200"
-    >
-      <Link href="/pad" className="group flex h-full flex-col p-6 sm:p-7">
-        <div className="flex items-center justify-between mb-5">
-          <span className="w-12 h-12 rounded-xl bg-surface-elevated text-primary flex items-center justify-center [&_svg]:w-6 [&_svg]:h-6 group-hover:scale-110 transition-transform">
-            <Waves />
-          </span>
-          {/* Ondas */}
-          <div className="flex items-end gap-1 h-9">
-            {bars.map((h, i) => (
-              <motion.span
-                key={i}
-                className="w-1.5 rounded-full bg-primary/55"
-                style={{ height: 36, transformOrigin: "bottom" }}
-                initial={{ scaleY: h * 0.5 }}
-                animate={{ scaleY: [h * 0.45, h, h * 0.55] }}
-                transition={{ duration: 1.3 + i * 0.12, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
-              />
-            ))}
-          </div>
-        </div>
-        <h3 className="font-display text-lg font-bold text-foreground mb-1.5">Pad Continuous Worship</h3>
-        <p className="text-muted-foreground leading-relaxed text-small">
-          Cama harmônica contínua para oração, estudo ou ministração.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {tons.map((t) => (
-            <span key={t} className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] font-mono text-xs text-foreground/70">{t}</span>
-          ))}
-        </div>
-        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-          Abrir pad
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-        </span>
-      </Link>
-    </motion.div>
-  );
-}
-
-function MetronomoCard() {
-  return (
-    <motion.div
-      whileHover={{ y: -3, transition: { duration: 0.2, ease: EASE } }}
-      className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-card shadow-lg shadow-black/10 hover:border-primary/25 hover:bg-surface-elevated transition-colors duration-200"
-    >
-      <Link href="/metronomo" className="group flex h-full flex-col p-6 sm:p-7">
-        <div className="flex items-center justify-between mb-5">
-          <span className="w-12 h-12 rounded-xl bg-surface-elevated text-primary flex items-center justify-center [&_svg]:w-6 [&_svg]:h-6 group-hover:scale-110 transition-transform">
-            <Timer />
-          </span>
-          {/* BPM + pulso */}
-          <div className="flex items-center gap-3">
-            <div className="text-right leading-none">
-              <span className="font-display text-2xl font-bold text-foreground">120</span>
-              <span className="ml-1 text-xs font-semibold text-muted-foreground">BPM</span>
-              <p className="text-[10px] font-mono text-muted-foreground mt-1">4/4</p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {[0, 1, 2, 3].map((i) => (
-                <motion.span
-                  key={i}
-                  className={`w-2 h-2 rounded-full ${i === 0 ? "bg-primary" : "bg-white/15"}`}
-                  animate={i === 0 ? { scale: [1, 1.5, 1], opacity: [1, 0.6, 1] } : undefined}
-                  transition={i === 0 ? { duration: 1, repeat: Infinity, ease: "easeInOut" } : undefined}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <h3 className="font-display text-lg font-bold text-foreground mb-1.5">Metrônomo Inteligente</h3>
-        <p className="text-muted-foreground leading-relaxed text-small">
-          Pratique com presets, subdivisões e variações de clique para tocar com precisão.
-        </p>
-        <span className="mt-auto pt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-          Abrir metrônomo
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-        </span>
-      </Link>
-    </motion.div>
   );
 }

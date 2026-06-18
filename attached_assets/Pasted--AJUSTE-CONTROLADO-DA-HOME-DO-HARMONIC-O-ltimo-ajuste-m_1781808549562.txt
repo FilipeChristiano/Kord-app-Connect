@@ -1,0 +1,388 @@
+# AJUSTE CONTROLADO DA HOME DO HARMONIC
+
+O último ajuste mudou demais a estrutura da Home. Quero voltar para o layout anterior da Home, mantendo a hero inicial com a logo Harmonic em destaque, e alterar apenas a seção de recursos.
+
+Não quero uma nova reconstrução da Home.
+Não quero transformar em dashboard.
+Não quero remover a hero.
+Não quero mudar a identidade visual geral.
+
+Quero apenas restaurar a Home anterior e aplicar melhorias pontuais na área de recursos.
+
+---
+
+# OBJETIVO
+
+Voltar para o layout anterior, com:
+
+* Hero inicial cinematográfica
+* Logo Harmonic grande no centro
+* Imagem de fundo do teclado
+* Headline abaixo da logo
+* Botões principais abaixo da headline
+* Visual premium escuro com laranja Harmonic
+* Sensação de produto musical moderno
+
+A estrutura inicial da Home deve ficar como estava antes das últimas mudanças.
+
+---
+
+# O QUE DEVE SER RESTAURADO
+
+Restaurar a primeira versão da Home que tinha:
+
+1. Hero com imagem do teclado no fundo
+2. Logo Harmonic grande em destaque
+3. Texto principal abaixo da logo
+4. Botões de ação abaixo do texto
+5. Navbar no topo
+6. Seção de recursos abaixo da hero
+
+Se possível, use o histórico de alterações/git/versionamento para recuperar esse layout anterior.
+
+Se não houver histórico, recrie esse layout visualmente com base na estrutura anterior.
+
+---
+
+# O QUE NÃO DEVE VOLTAR
+
+Não quero voltar para cards puramente simples ou genéricos.
+
+A parte dos recursos deve manter a pegada mais visual que foi criada na última versão.
+
+A mudança deve ser apenas nessa área.
+
+---
+
+# HERO
+
+A Hero deve voltar a ser protagonista.
+
+Manter:
+
+* fundo com imagem do teclado
+* overlay escuro
+* gradiente suave
+* logo Harmonic centralizada
+* headline curta
+* botões principais
+* alinhamento central
+* sensação premium
+
+Não transformar a Hero em dashboard.
+
+Não colocar busca na Hero.
+
+Não colocar saudação tipo “Boa tarde, músico”.
+
+Não colocar “continue estudando” no topo.
+
+Não usar cards operacionais na Hero.
+
+---
+
+# TEXTO DA HERO
+
+Use um texto mais alinhado ao posicionamento correto do Harmonic.
+
+O Harmonic não é uma plataforma de estudo.
+
+O Harmonic é um conjunto de ferramentas prontas para transformar o som do músico.
+
+Sugestão de headline:
+
+“As ferramentas que faltavam para transformar o seu som.”
+
+Subheadline:
+
+“Acordes sofisticados, cifras transformadas, pad continuous e metrônomo inteligente em um só lugar.”
+
+Botões:
+
+Botão principal:
+“Explorar ferramentas”
+
+Botão secundário:
+“Conhecer recursos”
+
+---
+
+# SEÇÃO DE RECURSOS
+
+Aqui sim quero manter a melhoria visual feita na última versão.
+
+Mas com organização mais harmônica, limpa e equilibrada.
+
+Criar uma seção chamada:
+
+“Recursos principais”
+
+Ou:
+
+“Ferramentas do Harmonic”
+
+Essa seção deve apresentar exatamente estes 4 recursos:
+
+1. Acordes Sofisticados
+2. Sofisticador de Cifras
+3. Pad Continuous
+4. Metrônomo Inteligente
+
+Todos os 4 cards devem ter o mesmo tamanho.
+
+Não quero um card maior que o outro.
+
+Não quero layout assimétrico.
+
+Não quero dashboard.
+
+Quero uma grade visual bonita, equilibrada e harmônica.
+
+---
+
+# LAYOUT DOS RECURSOS
+
+Desktop:
+
+* Grid 2x2
+* Todos os cards com mesma largura
+* Todos os cards com mesma altura
+* Espaçamento generoso entre os cards
+* Alinhamento perfeito
+* Visual limpo
+
+Mobile:
+
+* Cards em coluna única
+* Mesma ordem dos recursos
+* Boa área de toque
+* Textos curtos
+
+---
+
+# ESTILO DOS CARDS
+
+Os cards devem ser mais visuais, não apenas texto + ícone.
+
+Cada card deve ter:
+
+* visual interno próprio
+* título claro
+* descrição curta
+* CTA curto
+* ícone ou mini preview
+* hover suave
+* transição refinada
+* fundo escuro premium
+* borda quase invisível
+* radius consistente
+* destaque laranja discreto
+
+Evitar cards embolados.
+
+Evitar muito texto.
+
+Evitar excesso de laranja.
+
+Evitar fundos marrons pesados.
+
+---
+
+# CONTEÚDO DOS CARDS
+
+## Card 1: Acordes Sofisticados
+
+Título:
+“Acordes Sofisticados”
+
+Descrição:
+“Explore acordes mais ricos para deixar seu som mais profissional.”
+
+CTA:
+“Explorar acordes”
+
+Elemento visual interno:
+Mostrar chips ou mini preview com acordes como:
+
+Cmaj9
+F7M(9)
+G13
+Am11
+
+Pode usar pequenos chips, tags ou blocos visuais.
+
+---
+
+## Card 2: Sofisticador de Cifras
+
+Título:
+“Sofisticador de Cifras”
+
+Descrição:
+“Transforme cifras simples em versões mais bonitas e musicais.”
+
+CTA:
+“Sofisticar cifra”
+
+Elemento visual interno:
+Mostrar antes/depois:
+
+Antes:
+C  G  Am  F
+
+Depois:
+C9  G/B  Am11  F7M
+
+Usar seta ou transição visual entre antes e depois.
+
+---
+
+## Card 3: Pad Continuous
+
+Título:
+“Pad Continuous”
+
+Descrição:
+“Crie uma atmosfera contínua para tocar, ministrar ou acompanhar.”
+
+CTA:
+“Abrir pad”
+
+Elemento visual interno:
+Mostrar algo como:
+
+Tom: G
+Modo: Worship
+Pad: ON
+
+Ou ondas sonoras sutis em laranja.
+
+---
+
+## Card 4: Metrônomo Inteligente
+
+Título:
+“Metrônomo Inteligente”
+
+Descrição:
+“Pratique com pulso, subdivisões e precisão musical.”
+
+CTA:
+“Abrir metrônomo”
+
+Elemento visual interno:
+Mostrar algo como:
+
+72 BPM
+4/4
+♪ ♪ ♪ ♪
+
+Ou círculo de pulso com marcação visual.
+
+---
+
+# MICROINTERAÇÕES
+
+Aplicar nos cards:
+
+* hover com scale 1.01 ou 1.02
+* leve elevação
+* brilho laranja muito sutil
+* CTA com seta movendo levemente
+* transição entre 150ms e 250ms
+
+Nada exagerado.
+
+---
+
+# HIERARQUIA
+
+A tela deve seguir esta ordem:
+
+1. Navbar
+2. Hero com logo Harmonic
+3. Headline e subheadline
+4. Botões principais
+5. Seção Recursos principais
+6. Grid 2x2 com os 4 cards visuais
+
+Não adicionar novas seções.
+
+Não adicionar dashboard.
+
+Não adicionar “continue estudando”.
+
+Não adicionar busca no topo.
+
+Não adicionar favoritos.
+
+Não adicionar sugestões.
+
+O objetivo é voltar ao primeiro layout e apenas deixar os cards de recursos mais visuais.
+
+---
+
+# DESIGN GERAL
+
+Manter:
+
+* tema escuro
+* laranja Harmonic
+* fonte Plus Jakarta Sans
+* visual premium
+* inspiração Spotify
+* espaçamentos generosos
+* contraste elegante
+* imagem de fundo do teclado
+* identidade atual do Harmonic
+
+---
+
+# CUIDADOS IMPORTANTES
+
+Não alterar rotas.
+
+Não alterar funcionalidades.
+
+Não alterar banco de dados.
+
+Não alterar APIs.
+
+Não alterar autenticação.
+
+Não mexer em páginas internas.
+
+Alterar somente a Home e componentes visuais diretamente usados nela.
+
+Se algum componente for compartilhado globalmente, cuidado para não quebrar outras telas.
+
+---
+
+# ANTES DE ALTERAR
+
+Antes de modificar arquivos:
+
+1. Identifique o estado atual da Home.
+2. Identifique se existe histórico ou versão anterior da Hero.
+3. Explique quais partes serão restauradas.
+4. Explique quais partes serão mantidas da versão visual mais recente.
+5. Liste os arquivos que pretende alterar.
+
+Depois implemente.
+
+---
+
+# AO FINAL
+
+Liste:
+
+* arquivos alterados
+* seções restauradas
+* seções removidas
+* componentes ajustados
+* confirmação de que a Hero voltou ao estilo anterior
+* confirmação de que os 4 recursos estão no mesmo tamanho
+* confirmação de que nenhuma funcionalidade foi alterada
+
+Resumo final:
+Quero a Home como era antes, com a Hero inicial da logo Harmonic, imagem do teclado e botões. A única melhoria deve ser na seção de recursos, que precisa ter uma pegada mais visual, com os 4 cards do mesmo tamanho: Acordes Sofisticados, Sofisticador de Cifras, Pad Continuous e Metrônomo Inteligente.
