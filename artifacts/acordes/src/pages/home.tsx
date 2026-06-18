@@ -45,7 +45,7 @@ export default function Home() {
               Para tecladistas e pianistas
             </motion.div>
 
-            <motion.div variants={itemVariants} className="flex flex-col items-center mb-8 sm:mb-10">
+            <motion.div variants={itemVariants} className="flex flex-col items-center mb-3 sm:mb-4">
               <h1 className="sr-only">Harmonic — As ferramentas que faltavam para transformar o seu som</h1>
               <img
                 src={`${import.meta.env.BASE_URL}harmonic-logo-hero.png`}
