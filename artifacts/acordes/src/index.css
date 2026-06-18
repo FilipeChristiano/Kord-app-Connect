@@ -77,13 +77,13 @@
 :root {
   /* ===== Harmonic Design System ===== */
 
-  /* Superfícies grafite em camadas — nunca preto puro */
-  --background: 220 14% 17%;
-  --surface: 220 13% 21%;
-  --surface-elevated: 220 12% 25%;
-  --card: 220 13% 22%;
+  /* Superfícies profundas em camadas — nunca preto puro */
+  --background: 222 24% 9%;
+  --surface: 222 20% 12%;
+  --surface-elevated: 221 18% 15%;
+  --card: 222 19% 13%;
   --card-foreground: 40 20% 98%;
-  --modal: 220 12% 26%;
+  --modal: 221 18% 16%;
   --foreground: 40 20% 98%;
 
   /* Escala laranja — base #FF6B00 = hsl(25 100% 50%) */
@@ -105,18 +105,18 @@
   --primary-pressed: 23 96% 45%;
 
   /* Secundária */
-  --secondary: 220 12% 27%;
+  --secondary: 220 16% 18%;
   --secondary-foreground: 40 20% 98%;
 
   /* Muted / metadados */
-  --muted: 220 11% 29%;
-  --muted-foreground: 218 14% 76%;
+  --muted: 220 14% 20%;
+  --muted-foreground: 218 14% 72%;
 
   /* Accent (destaque elevado sutil) */
-  --accent: 220 12% 26%;
+  --accent: 221 16% 17%;
   --accent-foreground: 40 20% 98%;
 
-  --border: 220 12% 29%;
+  --border: 220 15% 20%;
   --ring: 25 100% 50%;
 
   --destructive: 0 75% 58%;
