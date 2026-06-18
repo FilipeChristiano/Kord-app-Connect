@@ -54,8 +54,7 @@ export default function Home() {
               variants={itemVariants}
               className="text-body-lg text-foreground/70 text-center text-balance mb-9 sm:mb-10"
             >
-              Ferramentas inteligentes para transformar o seu{" "}
-              <span className="text-primary">som</span>
+              O app do tecladista <span className="text-primary">inteligente</span>
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
