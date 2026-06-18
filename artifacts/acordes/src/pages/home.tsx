@@ -52,7 +52,7 @@ export default function Home() {
 
             <motion.p
               variants={itemVariants}
-              className="text-body-lg text-muted-foreground text-center text-balance -mt-4 sm:-mt-6 mb-9 sm:mb-10"
+              className="text-body-lg text-muted-foreground text-center text-balance -mt-10 sm:-mt-14 mb-[3.75rem] sm:mb-[4.5rem]"
             >
               O app do tecladista inteligente
             </motion.p>
