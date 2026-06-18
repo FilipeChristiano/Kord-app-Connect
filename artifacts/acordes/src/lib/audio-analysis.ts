@@ -122,7 +122,10 @@ function fft(re: Float32Array, im: Float32Array): void {
 }
 
 // ── Cromagrama: vetor de 12 classes de altura por quadro ──────────────────────
-function computeChromaFrames(mono: Float32Array, sampleRate: number): Float32Array[] {
+function computeChromaFrames(
+  mono: Float32Array,
+  sampleRate: number,
+): { chroma: Float32Array[]; energy: Float32Array } {
   const half = FRAME >> 1;
   const hann = new Float32Array(FRAME);
   for (let i = 0; i < FRAME; i++) {
@@ -140,8 +143,9 @@ function computeChromaFrames(mono: Float32Array, sampleRate: number): Float32Arr
     binPc[b] = (((Math.round(midi) % 12) + 12) % 12) as number;
   }
 
-  const numFrames = Math.floor((mono.length - FRAME) / HOP);
+  const numFrames = Math.max(0, Math.floor((mono.length - FRAME) / HOP));
   const frames: Float32Array[] = [];
+  const energy = new Float32Array(numFrames);
   const re = new Float32Array(FRAME);
   const im = new Float32Array(FRAME);
 
@@ -158,12 +162,16 @@ function computeChromaFrames(mono: Float32Array, sampleRate: number): Float32Arr
       if (pc < 0) continue;
       chroma[pc] += Math.sqrt(re[b] * re[b] + im[b] * im[b]);
     }
-    let max = 0;
-    for (let i = 0; i < 12; i++) if (chroma[i] > max) max = chroma[i];
-    if (max > 0) for (let i = 0; i < 12; i++) chroma[i] /= max;
+    // Guarda a energia absoluta (antes de qualquer normalização) para distinguir
+    // trechos com som de silêncio/ruído. Mantém o cromagrama "cru": a
+    // normalização é feita por trecho na detecção de acordes e o tom usa
+    // correlação de Pearson (invariante a escala).
+    let e = 0;
+    for (let i = 0; i < 12; i++) e += chroma[i];
+    energy[fi] = e;
     frames.push(chroma);
   }
-  return frames;
+  return { chroma: frames, energy };
 }
 
 function averageChroma(frames: Float32Array[]): Float32Array {
@@ -248,12 +256,13 @@ function buildChordTemplates(): { pcs: number[]; isMinor: boolean; root: number 
 }
 
 function detectChords(
-  frames: Float32Array[],
+  chroma: Float32Array[],
+  energy: Float32Array,
   sampleRate: number,
   bpm: number,
   key: DetectedKey,
 ): string[] {
-  if (frames.length === 0) return [];
+  if (chroma.length === 0) return [];
 
   const names = FLAT_KEYS.has(key.symbol) ? FLAT : SHARP;
   const templates = buildChordTemplates();
@@ -261,41 +270,56 @@ function detectChords(
   const secPerBeat = bpm > 0 ? 60 / bpm : 0.5;
   const secPerSeg = Math.max(0.5, secPerBeat * 2); // ~2 tempos por trecho
   const segFrames = Math.max(2, Math.round(secPerSeg * frameRate));
-
   const invSqrt3 = 1 / Math.sqrt(3);
-  const raw: { label: string; score: number }[] = [];
 
-  for (let s = 0; s + 1 < frames.length; s += segFrames) {
-    const end = Math.min(frames.length, s + segFrames);
-    const seg = new Float32Array(12);
-    for (let f = s; f < end; f++) for (let i = 0; i < 12; i++) seg[i] += frames[f][i];
+  // 1) Agrega os quadros em trechos (~2 tempos) somando cromagrama e energia.
+  const segs: { chroma: Float32Array; energy: number }[] = [];
+  for (let s = 0; s < chroma.length; s += segFrames) {
+    const end = Math.min(chroma.length, s + segFrames);
+    const acc = new Float32Array(12);
+    let e = 0;
+    for (let f = s; f < end; f++) {
+      const frame = chroma[f];
+      for (let i = 0; i < 12; i++) acc[i] += frame[i];
+      e += energy[f];
+    }
+    segs.push({ chroma: acc, energy: e });
+  }
+  if (segs.length === 0) return [];
 
-    // energia / norma do trecho
+  // 2) Limiar de silêncio relativo à mediana das energias (descarta trechos
+  //    de silêncio/ruído sem depender de um corte absoluto).
+  const sortedE = segs.map((x) => x.energy).sort((a, b) => a - b);
+  const medianE = sortedE[Math.floor(sortedE.length / 2)] || 0;
+  const minE = medianE * 0.12;
+
+  // 3) Para cada trecho com som, escolhe SEMPRE a melhor tríade (maior/menor).
+  const labels: string[] = [];
+  for (const seg of segs) {
+    if (seg.energy < minE) continue; // silêncio / quase silêncio
     let norm = 0;
-    for (let i = 0; i < 12; i++) norm += seg[i] * seg[i];
+    for (let i = 0; i < 12; i++) norm += seg.chroma[i] * seg.chroma[i];
     norm = Math.sqrt(norm);
-    if (norm < 1e-4) continue; // silêncio
-    for (let i = 0; i < 12; i++) seg[i] /= norm;
+    if (norm < 1e-6) continue;
 
     let bestScore = -Infinity;
     let bestLabel = "";
     for (const tpl of templates) {
       let dot = 0;
-      for (const pc of tpl.pcs) dot += seg[pc];
-      dot *= invSqrt3; // produto escalar com modelo unitário
+      for (const pc of tpl.pcs) dot += seg.chroma[pc];
+      dot = (dot / norm) * invSqrt3; // produto escalar normalizado
       if (dot > bestScore) {
         bestScore = dot;
         bestLabel = names[tpl.root] + (tpl.isMinor ? "m" : "");
       }
     }
-    raw.push({ label: bestLabel, score: bestScore });
+    labels.push(bestLabel);
   }
 
-  // Junta trechos consecutivos iguais e descarta estimativas muito fracas
+  // 4) Junta trechos consecutivos iguais.
   const out: string[] = [];
-  for (const c of raw) {
-    if (c.score < 0.45) continue;
-    if (out.length === 0 || out[out.length - 1] !== c.label) out.push(c.label);
+  for (const l of labels) {
+    if (out.length === 0 || out[out.length - 1] !== l) out.push(l);
     if (out.length >= 64) break;
   }
   return out;
@@ -309,8 +333,8 @@ export async function analyzeAudioBuffer(
   onProgress?.("tom");
   await tick();
   const mono = await renderMono(buffer, ANALYSIS_RATE);
-  const frames = computeChromaFrames(mono, ANALYSIS_RATE);
-  const key = detectKey(averageChroma(frames));
+  const { chroma, energy } = computeChromaFrames(mono, ANALYSIS_RATE);
+  const key = detectKey(averageChroma(chroma));
 
   onProgress?.("bpm");
   await tick();
@@ -318,7 +342,7 @@ export async function analyzeAudioBuffer(
 
   onProgress?.("acordes");
   await tick();
-  const chords = detectChords(frames, ANALYSIS_RATE, bpm.bpm, key);
+  const chords = detectChords(chroma, energy, ANALYSIS_RATE, bpm.bpm, key);
 
   onProgress?.("finalizando");
   await tick();
