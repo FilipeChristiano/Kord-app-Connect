@@ -1,6 +1,11 @@
 import express, { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth } from "@clerk/express";
 import { toFile } from "openai";
+import { spawn } from "node:child_process";
+import { writeFile, unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { getOpenAI, isOpenAIConfigured } from "../lib/openai-client";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -9,12 +14,13 @@ import { getOpenAI, isOpenAIConfigured } from "../lib/openai-client";
 // Dois caminhos, nesta ordem de prioridade:
 //
 // 1) Worker externo (TRANSCRIPTION_WORKER_URL): separação de voz (Demucs) +
-//    transcrição (Faster-Whisper). Mais preciso para mixagens densas, mas exige
-//    hospedagem própria. Mantido plugável para o futuro.
+//    transcrição com timestamps por palavra (Faster-Whisper). Mais preciso, mas
+//    exige hospedagem própria. Mantido plugável para o futuro.
 //
-// 2) OpenAI Whisper (integração gerenciada pelo Replit): transcrição hospedada,
-//    sem precisar de chave nem servidor. Transcreve a mixagem completa (sem
-//    separar voz), o que funciona bem para a maioria das músicas com vocal claro.
+// 2) OpenAI (integração gerenciada pelo Replit, gpt-4o-transcribe): transcrição
+//    hospedada, sem chave nem servidor. Devolve só o TEXTO da letra (sem tempo
+//    por palavra). Para posicionar os acordes, estimamos o tempo de cada linha
+//    pela duração real do áudio (alinhamento aproximado).
 //
 // Se nenhum estiver disponível, respondemos um status honesto (503) — nunca
 // simulamos nem inventamos letra.
@@ -31,14 +37,11 @@ import { getOpenAI, isOpenAIConfigured } from "../lib/openai-client";
 //       }
 //     ]
 //   }
-//
-// Contrato esperado do worker externo (caminho 1):
-//   POST {TRANSCRIPTION_WORKER_URL}/transcribe  (bytes do áudio → JSON acima)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const router: IRouter = Router();
 
-// Whisper (OpenAI) aceita arquivos de até 25MB.
+// OpenAI (gpt-4o-transcribe) aceita arquivos de até 25MB.
 const OPENAI_MAX_BYTES = 25 * 1024 * 1024;
 
 function workerUrl(): string | undefined {
@@ -47,7 +50,7 @@ function workerUrl(): string | undefined {
   return trimmed ? trimmed.replace(/\/+$/, "") : undefined;
 }
 
-// Extensão de arquivo a partir do content-type (Whisper usa para inferir o formato).
+// Extensão de arquivo a partir do content-type (ajuda o modelo e o ffprobe).
 function extFromContentType(ct: string): string {
   const t = ct.toLowerCase();
   if (t.includes("mpeg") || t.includes("mp3")) return "mp3";
@@ -72,53 +75,106 @@ interface OutLine {
   words: OutWord[];
 }
 
-function clamp01(n: number): number {
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.min(1, n));
+// Mede a duração do áudio (em segundos) com ffprobe. Necessária para distribuir
+// as linhas no tempo, já que o gpt-4o-transcribe não devolve timestamps.
+async function probeDuration(buffer: Buffer, ext: string): Promise<number | undefined> {
+  const tmp = join(tmpdir(), `tr-${randomUUID()}.${ext}`);
+  await writeFile(tmp, buffer);
+  try {
+    const dur = await new Promise<number>((resolve) => {
+      const p = spawn("ffprobe", [
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        tmp,
+      ]);
+      let out = "";
+      p.stdout.on("data", (d) => (out += d.toString()));
+      p.on("close", () => resolve(parseFloat(out.trim())));
+      p.on("error", () => resolve(NaN));
+    });
+    return Number.isFinite(dur) && dur > 0 ? dur : undefined;
+  } finally {
+    await unlink(tmp).catch(() => {});
+  }
 }
 
-// Converte a resposta verbose_json do Whisper no nosso contrato (linhas + palavras
-// com tempo e confiança). A confiança é derivada do avg_logprob/no_speech_prob do
-// segmento (o Whisper não fornece confiança por palavra).
-function mapWhisperVerbose(v: {
-  language?: string;
-  text?: string;
-  segments?: Array<{
-    start: number;
-    end: number;
-    text: string;
-    avg_logprob?: number;
-    no_speech_prob?: number;
-  }>;
-  words?: Array<{ word: string; start: number; end: number }>;
-}): { language?: string; text: string; lines: OutLine[] } {
-  const segments = Array.isArray(v.segments) ? v.segments : [];
-  const allWords = Array.isArray(v.words) ? v.words : [];
+// Quebra o texto transcrito em linhas no estilo de letra (sem inventar nada,
+// apenas reorganizando o que veio). Respeita quebras/pontuação e parte linhas
+// muito longas em trechos menores.
+function segmentText(text: string): string[] {
+  const byNewline = text
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-  const lines: OutLine[] = segments.map((seg) => {
-    const segConf = clamp01(
-      Math.exp(seg.avg_logprob ?? -0.7) * (1 - (seg.no_speech_prob ?? 0)),
-    );
-    const words: OutWord[] = allWords
-      .filter((w) => w.start >= seg.start - 0.01 && w.start < seg.end)
-      .map((w) => ({
-        text: w.word.trim(),
-        start: w.start,
-        end: w.end,
-        confidence: segConf,
-      }));
-    return {
-      text: seg.text.trim(),
-      start: seg.start,
-      end: seg.end,
-      words:
-        words.length > 0
-          ? words
-          : [{ text: seg.text.trim(), start: seg.start, end: seg.end, confidence: segConf }],
-    };
+  let base: string[];
+  if (byNewline.length > 1) {
+    base = byNewline;
+  } else {
+    const oneLine = text.replace(/\s+/g, " ").trim();
+    const sentences = oneLine
+      .split(/(?<=[.!?…])\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    base = sentences.length ? sentences : oneLine ? [oneLine] : [];
+  }
+
+  const out: string[] = [];
+  for (const line of base) {
+    const words = line.split(/\s+/).filter(Boolean);
+    if (words.length <= 10) {
+      out.push(line);
+      continue;
+    }
+    for (let i = 0; i < words.length; i += 8) {
+      out.push(words.slice(i, i + 8).join(" "));
+    }
+  }
+  return out;
+}
+
+// Monta o contrato a partir do texto transcrito, distribuindo as linhas e
+// palavras ao longo da duração do áudio (proporcional ao número de caracteres).
+// O tempo é ESTIMADO — usado só para posicionar os acordes de forma aproximada.
+function buildResultFromText(
+  text: string,
+  duration: number | undefined,
+): { language?: string; text: string; lines: OutLine[] } {
+  const lineTexts = segmentText(text);
+  if (lineTexts.length === 0) {
+    return { text: text.trim(), lines: [] };
+  }
+
+  const totalChars = lineTexts.reduce((a, l) => a + Math.max(l.length, 1), 0);
+  const dur = duration && duration > 0 ? duration : Math.max(lineTexts.length * 2.5, 4);
+
+  let cursor = 0;
+  const lines: OutLine[] = lineTexts.map((lt) => {
+    const share = Math.max(lt.length, 1) / totalChars;
+    const start = cursor;
+    const end = Math.min(dur, start + share * dur);
+    cursor = end;
+
+    const words = lt.split(/\s+/).filter(Boolean);
+    const wTotalChars = words.reduce((a, w) => a + Math.max(w.length, 1), 0) || 1;
+    const span = Math.max(end - start, 0);
+    let wCursor = start;
+    const wordObjs: OutWord[] = words.map((w) => {
+      const wShare = Math.max(w.length, 1) / wTotalChars;
+      const ws = wCursor;
+      const we = Math.min(end, ws + wShare * span);
+      wCursor = we;
+      return { text: w, start: ws, end: we };
+    });
+
+    return { text: lt, start, end, words: wordObjs };
   });
 
-  return { language: v.language, text: (v.text ?? "").trim(), lines };
+  return { text: text.trim(), lines };
 }
 
 // Disponibilidade do serviço — usado pela UI para mostrar o estado correto
@@ -196,7 +252,7 @@ router.post(
       }
     }
 
-    // ── Caminho 2: OpenAI Whisper (integração gerenciada) ───────────────────
+    // ── Caminho 2: OpenAI (gpt-4o-transcribe, integração gerenciada) ────────
     const openai = getOpenAI();
     if (openai) {
       if (body.length > OPENAI_MAX_BYTES) {
@@ -206,27 +262,29 @@ router.post(
             "O áudio é grande demais para a transcrição automática (limite de 25MB). Tente um arquivo mais curto ou mais comprimido (ex.: MP3 128kbps).",
         });
       }
+      const ext = extFromContentType(contentType);
       try {
-        const file = await toFile(body, `audio.${extFromContentType(contentType)}`, {
-          type: contentType,
-        });
-        const v = await openai.audio.transcriptions.create(
-          {
-            file,
-            model: "whisper-1",
-            response_format: "verbose_json",
-            timestamp_granularities: ["word", "segment"],
-          },
-          { timeout: 5 * 60 * 1000 },
-        );
-        const mapped = mapWhisperVerbose(v as Parameters<typeof mapWhisperVerbose>[0]);
-        if (mapped.lines.length === 0) {
+        const [transcription, duration] = await Promise.all([
+          openai.audio.transcriptions.create(
+            {
+              file: await toFile(body, `audio.${ext}`, { type: contentType }),
+              model: "gpt-4o-transcribe",
+              response_format: "json",
+            },
+            { timeout: 5 * 60 * 1000 },
+          ),
+          probeDuration(body, ext),
+        ]);
+
+        const rawText = (transcription.text ?? "").trim();
+        const result = buildResultFromText(rawText, duration);
+        if (result.lines.length === 0) {
           return res.status(422).json({
             status: "no_speech",
             message: "Não foi possível identificar letra cantada neste áudio.",
           });
         }
-        return res.status(200).json(mapped);
+        return res.status(200).json(result);
       } catch (err) {
         console.error("[/api/transcribe] openai error:", err);
         return res.status(502).json({

@@ -24,3 +24,23 @@ arquivo.
 
 **Why:** evita prometer um recurso que o ambiente não suporta e mantém a
 arquitetura pronta para plugar o worker no futuro sem reescrever o front.
+
+## Caminho OpenAI gerenciado (sem worker) — limite de timestamps
+
+O proxy gerenciado do Replit (AI Integrations, `AI_INTEGRATIONS_OPENAI_*`) **NÃO
+suporta `whisper-1`** (retorna 400 "Model 'whisper-1' is not supported") nem o
+endpoint `/audio/speech` (TTS). Só `gpt-4o-transcribe` / `gpt-4o-mini-transcribe`
+funcionam para STT, e **apenas com `response_format: "json"`** — ou seja, **sem
+timestamps por palavra/segmento**. `verbose_json` + `timestamp_granularities` só
+existe no `whisper-1`, que está bloqueado.
+
+**Consequência:** o caminho OpenAI devolve só o TEXTO da letra. Para alinhar
+acordes, estimamos o tempo das linhas/palavras distribuindo pela duração real do
+áudio (medida com `ffprobe`), proporcional à contagem de caracteres →
+alinhamento **aproximado**, não palavra-a-palavra.
+
+**Para alinhamento preciso:** usar worker externo (Faster-Whisper) OU a
+integração **ElevenLabs** (connector OAuth; Scribe STT devolve timestamps por
+palavra). ElevenLabs exige conta própria do usuário (cobra no plano ElevenLabs,
+não nos créditos Replit); OpenAI gerenciado não exige conta e cobra nos créditos
+Replit.
