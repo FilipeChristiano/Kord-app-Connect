@@ -42,10 +42,10 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       <header className={cn(
-        "fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b border-transparent",
+        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
         isScrolled
-          ? "glass shadow-lg"
-          : "bg-gradient-to-b from-background via-background/85 to-transparent py-2"
+          ? "glass shadow-lg border-b border-white/5"
+          : "bg-transparent border-b border-transparent py-2"
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-24">
