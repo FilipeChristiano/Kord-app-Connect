@@ -763,8 +763,8 @@ export default function AudioLab() {
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
                 <span>
                   O Harmonic transcreve a letra a partir do áudio e posiciona os acordes
-                  detectados sobre as palavras. A transcrição é uma estimativa — trechos
-                  incertos ficam marcados com “?”.
+                  detectados sobre as palavras. A transcrição é uma estimativa (funciona
+                  melhor com vocal claro) — trechos incertos ficam marcados com “?”.
                 </span>
               </div>
 
