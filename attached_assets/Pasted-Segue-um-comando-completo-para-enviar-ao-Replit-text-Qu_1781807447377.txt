@@ -1,0 +1,378 @@
+Segue um comando completo para enviar ao Replit:
+
+```text
+Quero transformar a Home do Harmonic em uma tela operacional de software, não em uma landing page.
+
+Hoje a Home ainda parece uma página de apresentação, com logo grande, headline, descrição e blocos explicativos. Quero que ela pareça a tela inicial de um aplicativo que o usuário abre para estudar e usar ferramentas musicais imediatamente.
+
+Não altere funcionalidades, lógica, rotas, banco de dados, autenticação ou APIs. Faça apenas mudanças visuais, estruturais e de UX na Home.
+
+Objetivo principal:
+A Home deve funcionar como um hub de uso diário para tecladistas e pianistas.
+
+O usuário deve abrir o Harmonic e entender rapidamente:
+
+1. O que pode fazer agora.
+2. Onde continuar estudando.
+3. Quais ferramentas principais estão disponíveis.
+4. Quais acordes, cifras ou recursos pode acessar rapidamente.
+
+Remova a sensação de landing page.
+
+Não quero mais:
+- logo gigante no centro;
+- headline institucional grande;
+- texto de venda;
+- seção "O próximo nível do seu teclado";
+- blocos explicando funcionalidades como se fosse uma página de vendas;
+- excesso de branding repetido.
+
+Mantenha o branding apenas na navbar/topbar e em pequenos detalhes visuais.
+
+A nova Home deve ser mais próxima de um dashboard/app como Spotify, Notion, Linear, Raycast ou Cursor, mas com a identidade visual do Harmonic.
+
+Use a identidade atual:
+- tema escuro;
+- laranja Harmonic como cor principal;
+- visual premium;
+- fonte Plus Jakarta Sans;
+- componentes modernos;
+- cards com profundidade sutil;
+- microinterações suaves.
+
+Estrutura desejada da nova Home:
+
+1. Topbar fixa e limpa
+
+Manter a navbar no topo, mas torná-la mais parecida com software.
+
+Ela deve conter:
+- logo Harmonic pequena à esquerda;
+- navegação principal;
+- estado ativo claro;
+- botão sair/perfil à direita.
+
+A navbar deve ter:
+- altura confortável;
+- padding maior;
+- bom espaçamento;
+- fundo escuro levemente translúcido ou surface elevated;
+- blur sutil se fizer sentido;
+- estado hover nos itens;
+- estado ativo com laranja discreto.
+
+2. Saudação operacional
+
+Substituir o Hero atual por uma área compacta de boas-vindas.
+
+Exemplo:
+
+"Olá, músico. O que vamos estudar hoje?"
+
+ou
+
+"Bem-vindo ao Harmonic. Escolha uma ferramenta para começar."
+
+Essa área deve ocupar pouco espaço vertical.
+
+Não usar logo gigante.
+
+Não usar imagem de fundo grande.
+
+Não usar texto de venda.
+
+Deve parecer uma entrada de dashboard.
+
+Pode conter uma frase curta e útil:
+
+"Explore acordes sofisticados, transforme cifras, pratique com pad contínuo e mantenha o tempo com o metrônomo inteligente."
+
+3. Barra de ação rápida
+
+Logo abaixo da saudação, criar uma área de busca/ação rápida.
+
+Objetivo:
+permitir que o usuário comece imediatamente.
+
+Criar um campo grande de busca:
+
+Placeholder:
+"Busque um acorde, uma categoria ou uma cifra..."
+
+Esse campo deve ter:
+- visual premium;
+- ícone de busca;
+- foco com laranja Harmonic;
+- fundo surface elevated;
+- borda muito sutil;
+- radius moderno;
+- estado hover e focus.
+
+Ao lado ou abaixo, incluir atalhos rápidos:
+
+- Buscar acorde
+- Sofisticar cifra
+- Abrir Pad
+- Abrir Metrônomo
+
+Esses atalhos devem parecer ações de app, não cards de landing page.
+
+4. Cards principais dos diferenciais
+
+Criar uma seção chamada:
+
+"Ferramentas principais"
+
+Essas são as quatro ferramentas mais importantes do Harmonic:
+
+1. Acordes Sofisticados
+2. Sofisticador de Cifras
+3. Pad Continuous Worship
+4. Metrônomo Inteligente
+
+Esses quatro cards devem ser protagonistas da Home.
+
+Eles devem ter mais presença visual que os outros recursos.
+
+Não devem ser cards genéricos.
+
+Cada card deve ter:
+- título direto;
+- descrição curta;
+- botão/ação clara;
+- ícone grande;
+- hover refinado;
+- profundidade sutil;
+- destaque laranja controlado.
+
+Exemplo de conteúdo:
+
+Card 1:
+Título: Acordes Sofisticados
+Descrição: Explore acordes ricos, voicings e categorias para aplicar no teclado.
+CTA: Explorar acordes
+
+Card 2:
+Título: Sofisticador de Cifras
+Descrição: Cole uma cifra simples e receba versões mais profissionais em segundos.
+CTA: Sofisticar cifra
+
+Card 3:
+Título: Pad Continuous Worship
+Descrição: Crie uma cama harmônica contínua para oração, estudo ou ministração.
+CTA: Abrir pad
+
+Card 4:
+Título: Metrônomo Inteligente
+Descrição: Pratique com presets, subdivisões e variações de clique para tocar com precisão.
+CTA: Abrir metrônomo
+
+Layout:
+- Em desktop, usar grid 2x2 ou layout assimétrico premium.
+- O card de Acordes Sofisticados pode ser maior, pois é um diferencial central.
+- O card do Sofisticador também pode ter destaque forte.
+- Evitar grid muito rígido e previsível.
+- Criar ritmo visual, como um dashboard moderno.
+
+5. Seção "Continue estudando"
+
+Adicionar uma seção operacional chamada:
+
+"Continue estudando"
+
+Ela deve parecer conteúdo de aplicativo.
+
+Mesmo que ainda não exista histórico real, criar estrutura visual preparada para isso.
+
+Se já houver dados reais, usar dados reais.
+
+Se não houver, criar estado vazio elegante.
+
+Exemplo de estado com dados:
+- Últimos acordes acessados
+- Última cifra sofisticada
+- Último modo estudo
+- Último BPM usado
+- Último tom usado no Pad
+
+Exemplo visual:
+- Cmaj9
+- Am11
+- F7M(9)
+- Gsus4
+- D7(b9)
+
+Cada item deve ser clicável e compacto.
+
+Se não houver dados, mostrar:
+
+"Quando você começar a estudar, seus últimos acessos aparecerão aqui."
+
+E um botão:
+"Explorar acordes"
+
+6. Seção "Atalhos de estudo"
+
+Criar uma seção chamada:
+
+"Atalhos de estudo"
+
+Com itens mais objetivos:
+
+- Categorias de acordes
+- Aplicações práticas
+- Favoritos
+- Modo Estudo
+- Progressões
+- Voicings
+
+Esses itens devem ser menores do que os cards principais.
+
+Devem funcionar como atalhos rápidos.
+
+Não usar descrições longas.
+
+O objetivo é navegação rápida.
+
+7. Seção "Favoritos"
+
+Criar uma seção operacional para favoritos.
+
+Se houver favoritos reais, listar.
+
+Se não houver, criar estado vazio:
+
+"Nenhum favorito ainda."
+
+Texto auxiliar:
+"Salve acordes, cifras e ferramentas para acessar rapidamente depois."
+
+CTA:
+"Explorar acordes"
+
+8. Remover ou redesenhar seções institucionais
+
+Remover completamente ou substituir:
+
+- Hero com logo gigante;
+- seção "O próximo nível do seu teclado";
+- textos institucionais;
+- cards com explicações longas;
+- qualquer elemento que pareça marketing.
+
+A Home deve responder à pergunta:
+
+"O que posso fazer agora?"
+
+Não:
+
+"Por que o Harmonic é bom?"
+
+9. Linguagem dos textos
+
+Trocar linguagem de venda por linguagem de ação.
+
+Evitar frases como:
+- "Aprenda de forma visual e intuitiva"
+- "Tudo foi desenhado para..."
+- "O próximo nível do seu teclado"
+
+Preferir frases como:
+- "Escolha uma ferramenta para começar"
+- "Continue de onde parou"
+- "Busque um acorde"
+- "Sofistique uma cifra"
+- "Abra o pad"
+- "Pratique com metrônomo"
+- "Acesse seus favoritos"
+
+10. Visual geral
+
+Manter:
+- dark mode;
+- laranja Harmonic;
+- design premium;
+- inspiração Spotify;
+- tipografia Plus Jakarta Sans;
+- cards refinados;
+- espaçamentos generosos;
+- contraste elegante.
+
+Mas agora com cara de app.
+
+Visual esperado:
+- menos landing page;
+- mais dashboard;
+- mais operacional;
+- mais útil;
+- mais conteúdo real;
+- mais ações;
+- menos texto institucional;
+- menos logo;
+- menos hero;
+- menos apresentação.
+
+11. Cards e componentes
+
+Os cards devem:
+- ter fundo escuro elevado;
+- borda quase invisível;
+- radius consistente;
+- hover com scale 1.01 ou 1.02;
+- transição 150ms a 250ms;
+- ícones maiores;
+- CTA visível;
+- separação por contraste, não por bordas pesadas.
+
+12. Hierarquia visual
+
+A ordem de atenção deve ser:
+
+1. Saudação curta
+2. Busca rápida
+3. Ferramentas principais
+4. Continue estudando
+5. Atalhos
+6. Favoritos
+
+A logo não deve ser protagonista.
+
+13. Responsividade
+
+No mobile:
+- topbar deve se adaptar bem;
+- cards principais devem virar lista vertical;
+- busca deve ocupar largura total;
+- atalhos devem ser fáceis de tocar;
+- evitar textos longos;
+- manter boa área de clique.
+
+14. Antes de alterar
+
+Antes de modificar os arquivos:
+- analise a estrutura atual da Home;
+- identifique o componente da Home;
+- identifique os componentes reutilizáveis;
+- explique brevemente quais arquivos serão alterados.
+
+Depois aplique as mudanças.
+
+15. Ao finalizar
+
+Liste:
+- arquivos alterados;
+- componentes criados;
+- componentes removidos;
+- se alguma seção foi substituída;
+- confirmação de que nenhuma funcionalidade foi alterada.
+
+Resumo do objetivo:
+Transformar a Home do Harmonic de uma landing page bonita em um dashboard operacional premium, onde os diferenciais do app fiquem claros através do uso direto:
+
+- Acordes Sofisticados
+- Sofisticador de Cifras
+- Pad Continuous Worship
+- Metrônomo Inteligente
+
+O usuário deve entrar e imediatamente começar a usar.
+```

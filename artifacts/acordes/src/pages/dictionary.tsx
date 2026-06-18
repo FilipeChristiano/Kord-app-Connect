@@ -5,7 +5,13 @@ import { ChordCard } from "@/components/ChordCard";
 import { cn } from "@/lib/utils";
 
 export default function Dictionary() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("q") ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [activeCategory, setActiveCategory] = useState("Todos");
 
   const filteredChords = useMemo(() => {
