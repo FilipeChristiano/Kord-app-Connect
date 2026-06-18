@@ -7,20 +7,29 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { getOpenAI, isOpenAIConfigured } from "../lib/openai-client";
+import {
+  isElevenLabsConfigured,
+  transcribeWithElevenLabs,
+  type ScribeWord,
+} from "../lib/elevenlabs-stt";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Transcrição automática de letra.
 //
-// Dois caminhos, nesta ordem de prioridade:
+// Três caminhos, nesta ordem de prioridade:
 //
 // 1) Worker externo (TRANSCRIPTION_WORKER_URL): separação de voz (Demucs) +
 //    transcrição com timestamps por palavra (Faster-Whisper). Mais preciso, mas
 //    exige hospedagem própria. Mantido plugável para o futuro.
 //
-// 2) OpenAI (integração gerenciada pelo Replit, gpt-4o-transcribe): transcrição
+// 2) ElevenLabs Scribe (integração gerenciada pelo Replit): devolve timestamps
+//    por PALAVRA, permitindo posicionar os acordes sobre a sílaba certa da
+//    letra — alinhamento PRECISO.
+//
+// 3) OpenAI (integração gerenciada pelo Replit, gpt-4o-transcribe): transcrição
 //    hospedada, sem chave nem servidor. Devolve só o TEXTO da letra (sem tempo
 //    por palavra). Para posicionar os acordes, estimamos o tempo de cada linha
-//    pela duração real do áudio (alinhamento aproximado).
+//    pela duração real do áudio (alinhamento aproximado). Usado como reserva.
 //
 // Se nenhum estiver disponível, respondemos um status honesto (503) — nunca
 // simulamos nem inventamos letra.
@@ -217,10 +226,55 @@ function buildResultFromText(
   return { text: text.trim(), lines };
 }
 
+// Monta o contrato a partir de palavras COM tempo exato (ElevenLabs Scribe).
+// Agrupa as palavras em linhas usando silêncios (gaps) e pontuação final, sem
+// inventar nada. Aqui o tempo é PRECISO, não estimado.
+function buildResultFromWords(
+  fullText: string,
+  words: ScribeWord[],
+): { language?: string; text: string; lines: OutLine[] } {
+  if (words.length === 0) {
+    return { text: fullText.trim(), lines: [] };
+  }
+
+  const GAP = 0.6; // silêncio (s) que indica nova linha
+  const MAX_WORDS = 9; // teto de palavras por linha
+  const lines: OutLine[] = [];
+  let current: OutWord[] = [];
+
+  const flush = () => {
+    if (current.length === 0) return;
+    lines.push({
+      text: current.map((w) => w.text).join(" "),
+      start: current[0].start,
+      end: current[current.length - 1].end,
+      words: current,
+    });
+    current = [];
+  };
+
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const prev = words[i - 1];
+    const gap = prev ? w.start - prev.end : 0;
+    const endsSentence = prev ? /[.!?…]$/.test(prev.text) : false;
+    if (current.length > 0 && (gap >= GAP || endsSentence || current.length >= MAX_WORDS)) {
+      flush();
+    }
+    current.push({ text: w.text, start: w.start, end: w.end });
+  }
+  flush();
+
+  const text = fullText.trim() || lines.map((l) => l.text).join("\n");
+  return { text, lines };
+}
+
 // Disponibilidade do serviço — usado pela UI para mostrar o estado correto
 // antes de o usuário enviar o áudio.
-router.get("/transcribe/status", (_req: Request, res: Response) => {
-  res.json({ available: Boolean(workerUrl()) || isOpenAIConfigured() });
+router.get("/transcribe/status", async (_req: Request, res: Response) => {
+  const available =
+    Boolean(workerUrl()) || (await isElevenLabsConfigured()) || isOpenAIConfigured();
+  res.json({ available });
 });
 
 router.post(
@@ -292,12 +346,67 @@ router.post(
       }
     }
 
-    // ── Caminho 2: OpenAI (gpt-4o-transcribe, integração gerenciada) ────────
+    // ── Caminhos gerenciados (ElevenLabs / OpenAI) ──────────────────────────
+    const elevenAvailable = await isElevenLabsConfigured();
     const openai = getOpenAI();
-    if (openai) {
-      const ext = extFromContentType(contentType);
+
+    if (!elevenAvailable && !openai) {
+      return res.status(503).json({
+        status: "external_processing_required",
+        message:
+          "Transcrição automática exige processamento externo (worker com Demucs + Faster-Whisper) ou a integração de IA configurada.",
+      });
+    }
+
+    // Transcoda uma vez (MP3 mono 16kHz) e reaproveita em qualquer caminho.
+    const ext = extFromContentType(contentType);
+    const prepared = await prepareForStt(body, ext);
+
+    // ── Caminho 2: ElevenLabs Scribe (timestamps por palavra — PRECISO) ─────
+    if (elevenAvailable) {
       try {
-        const prepared = await prepareForStt(body, ext);
+        const scribe = await transcribeWithElevenLabs(
+          prepared.audio,
+          prepared.filename,
+          prepared.contentType,
+        );
+        if (scribe.words.length > 0) {
+          const result = buildResultFromWords(scribe.text, scribe.words);
+          if (scribe.language) result.language = scribe.language;
+          return res.status(200).json(result);
+        }
+        // Sem palavras detectadas: cai para o OpenAI, se houver; senão, erro honesto.
+        if (!openai) {
+          return res.status(422).json({
+            status: "no_speech",
+            message: "Não foi possível identificar letra cantada neste áudio.",
+          });
+        }
+        console.warn("[/api/transcribe] elevenlabs returned no words; falling back to openai");
+      } catch (err) {
+        const status = (err as { status?: number })?.status;
+        const aborted = err instanceof Error && err.name === "TimeoutError";
+        console.error(
+          "[/api/transcribe] elevenlabs error:",
+          status,
+          (err as { message?: string })?.message,
+        );
+        // Sem reserva: devolve erro. Com OpenAI disponível: tenta a reserva.
+        if (!openai) {
+          return res.status(aborted ? 504 : 502).json({
+            status: "worker_error",
+            message: aborted
+              ? "A transcrição demorou demais para responder. Tente novamente."
+              : "Não foi possível concluir a transcrição automática. Tente novamente.",
+          });
+        }
+        console.warn("[/api/transcribe] falling back to openai after elevenlabs failure");
+      }
+    }
+
+    // ── Caminho 3: OpenAI (gpt-4o-transcribe — texto, alinhamento estimado) ──
+    if (openai) {
+      try {
         if (prepared.audio.length > OPENAI_MAX_BYTES) {
           return res.status(422).json({
             status: "audio_too_large",

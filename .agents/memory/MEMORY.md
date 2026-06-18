@@ -1,3 +1,3 @@
 - [Code review cumulative diff](code-review-cumulative-diff.md) — architect/validation review the whole uncommitted diff; don't revert prior published work they flag.
 - [Framer Motion transform conflict](framer-motion-transform-conflict.md) — motion elements that animate x/y/scale override Tailwind hover:translate/scale; use whileHover or a plain child.
-- [Transcription pipeline (acordes)](transcription-pipeline.md) — never invent lyrics; worker OR managed-OpenAI fallback (gpt-4o-transcribe, json only = no timestamps → approximate timing via ffprobe); whisper-1/TTS blocked on proxy; ElevenLabs for precise timing.
+- [Transcription pipeline (acordes)](transcription-pipeline.md) — never invent lyrics; ElevenLabs Scribe (precise word times) → OpenAI fallback (estimated); always transcode to 16k mono first; whisper-1/TTS blocked on proxy.

@@ -39,11 +39,24 @@ acordes, estimamos o tempo das linhas/palavras distribuindo pela duração real 
 áudio (medida com `ffprobe`), proporcional à contagem de caracteres →
 alinhamento **aproximado**, não palavra-a-palavra.
 
-**Para alinhamento preciso:** usar worker externo (Faster-Whisper) OU a
-integração **ElevenLabs** (connector OAuth; Scribe STT devolve timestamps por
-palavra). ElevenLabs exige conta própria do usuário (cobra no plano ElevenLabs,
-não nos créditos Replit); OpenAI gerenciado não exige conta e cobra nos créditos
-Replit.
+**Alinhamento preciso (CONECTADO):** a integração **ElevenLabs** (connector
+gerenciado) é o caminho prioritário. O Scribe STT (`POST /v1/speech-to-text`,
+`model_id: scribe_v1`, `timestamps_granularity: word`) devolve timestamps por
+palavra → acordes caem na sílaba certa. ElevenLabs cobra no plano do usuário (não
+nos créditos Replit); OpenAI gerenciado é a reserva (sem timestamps, alinhamento
+estimado).
+
+**Ordem de prioridade no backend:** (1) worker externo, (2) ElevenLabs Scribe
+(preciso), (3) OpenAI gpt-4o-transcribe (reserva, estimado). Se o ElevenLabs
+falhar ou não detectar palavras, cai para o OpenAI quando disponível; nunca
+inventa letra. O áudio é sempre transcodado para MP3 mono 16kHz antes (ver
+abaixo) e reusado em qualquer caminho.
+
+**Como o connector é usado:** SDK `@replit/connectors-sdk` com
+`createProxyFetch("elevenlabs")` (auth injetada pelo proxy, sem chave no código).
+Disponibilidade via `listConnections({connector_names:"elevenlabs"})` cacheada.
+**Why:** conexão de connector pode ter `status` nulo mesmo conectada — tratar
+nulo/vazio como disponível, excluir só `"error"`.
 
 ## Limite de tamanho do proxy gerenciado → transcodar antes de enviar
 
