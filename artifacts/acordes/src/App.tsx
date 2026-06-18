@@ -27,6 +27,7 @@ import StudyMode from "@/pages/study";
 import Favorites from "@/pages/favorites";
 import Applications from "@/pages/applications";
 import ChordSubstitutor from "@/pages/chord-substitutor";
+import AudioLab from "@/pages/audio-lab";
 import Metronome from "@/pages/metronome";
 import PadContinuous from "@/pages/pad-continuous";
 import NotFound from "@/pages/not-found";
@@ -97,6 +98,7 @@ function ProtectedAppRoutes() {
         <Route path="/acorde/:id" component={ChordDetail} />
         <Route path="/aplicacoes" component={Applications} />
         <Route path="/sofisticador" component={ChordSubstitutor} />
+        <Route path="/audio-lab" component={AudioLab} />
         <Route path="/metronomo" component={Metronome} />
         <Route path="/pad" component={PadContinuous} />
         <Route path="/estudo" component={StudyMode} />

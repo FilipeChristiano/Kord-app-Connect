@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2, LogOut, Timer, Waves } from "lucide-react";
+import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2, LogOut, Timer, Waves, AudioWaveform } from "lucide-react";
 import { useClerk } from "@clerk/react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/use-favorites";
@@ -33,6 +33,7 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: "/dicionario", label: "Dicionário", icon: Music },
     { href: "/aplicacoes", label: "Aplicações", icon: Lightbulb },
     { href: "/sofisticador", label: "Sofisticador", icon: Wand2 },
+    { href: "/audio-lab", label: "Audio Lab", icon: AudioWaveform },
     { href: "/metronomo", label: "Metrônomo", icon: Timer },
     { href: "/pad", label: "Pad", icon: Waves },
     { href: "/estudo", label: "Modo Estudo", icon: BookOpen },

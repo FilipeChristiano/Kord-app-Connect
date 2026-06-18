@@ -1,0 +1,467 @@
+# CRIAR MÓDULO AUDIO LAB / SPLITTER NO HARMONIC
+
+Quero criar um novo módulo no Harmonic chamado **Audio Lab**.
+
+Esse módulo será responsável por analisar áudio enviado pelo usuário e entregar ferramentas práticas para músicos.
+
+Não quero apenas um “separador de voz”. Quero um laboratório de áudio musical.
+
+---
+
+# OBJETIVO DO MÓDULO
+
+O usuário poderá enviar um áudio e o Harmonic deve:
+
+1. Separar voz e instrumentos.
+2. Identificar o tom da música.
+3. Identificar o BPM.
+4. Identificar os acordes principais.
+5. Exibir a progressão encontrada.
+6. Enviar essa progressão para o Sofisticador de Cifras.
+7. Gerar uma versão mais sofisticada dos acordes.
+
+---
+
+# NOME DO MÓDULO
+
+Use o nome:
+
+**Audio Lab**
+
+Na interface, pode aparecer como:
+
+**Audio Lab**
+“Envie uma música e descubra tom, BPM, acordes e instrumentos.”
+
+---
+
+# FUNCIONALIDADES PRINCIPAIS
+
+## 1. Upload de Áudio
+
+Criar uma área para upload de áudio com suporte para:
+
+* MP3
+* WAV
+* M4A
+
+Interface:
+
+Título:
+“Envie uma música”
+
+Texto:
+“O Harmonic analisa o áudio, separa os instrumentos e identifica tom, BPM e acordes.”
+
+Botão:
+“Enviar áudio”
+
+Também permitir drag and drop.
+
+---
+
+## 2. Splitter
+
+Criar a etapa de separação de áudio.
+
+Usar como base a biblioteca/modelo:
+
+**Demucs**
+
+Objetivo:
+Separar o áudio em stems.
+
+Prioridade inicial:
+
+* Vocais
+* Instrumental
+* Baixo
+* Bateria
+* Outros
+
+Se for viável, permitir modelo com mais stems:
+
+* Vocais
+* Bateria
+* Baixo
+* Piano
+* Guitarra
+* Outros
+
+Observação:
+Se o ambiente do Replit não suportar processamento pesado local, estruturar o código de forma modular para que essa etapa possa futuramente ser enviada para um worker externo, API própria ou servidor dedicado.
+
+---
+
+## 3. Detecção de Tom
+
+Após o upload, detectar o tom da música.
+
+Usar preferencialmente:
+
+**Essentia**
+
+Alternativas aceitáveis:
+
+* librosa
+* aubio
+* outro modelo confiável de análise musical
+
+Resultado esperado:
+
+Exemplo:
+
+Tom detectado:
+G Maior
+
+ou
+
+Tom detectado:
+E menor
+
+Mostrar também nível de confiança, se a biblioteca permitir.
+
+---
+
+## 4. Detecção de BPM
+
+Detectar o BPM do áudio.
+
+Usar preferencialmente:
+
+**Essentia**
+
+Alternativas:
+
+* librosa
+* aubio
+
+Resultado esperado:
+
+BPM:
+74
+
+Se possível, mostrar:
+
+* BPM principal
+* metade do BPM
+* dobro do BPM
+
+Exemplo:
+
+BPM detectado:
+74
+
+Alternativas:
+37
+148
+
+---
+
+## 5. Detecção de Acordes
+
+Detectar os acordes principais da música.
+
+Usar preferencialmente:
+
+**Chordino / Vamp Plugin**
+
+Alternativas:
+
+* Essentia Chord Detection
+* madmom
+* outro modelo confiável de chord recognition
+
+Resultado esperado:
+
+Progressão detectada:
+
+| G | D/F# | Em | C |
+
+Mostrar os acordes em blocos limpos e editáveis.
+
+Importante:
+A detecção de acordes pode errar dependendo da qualidade do áudio. Por isso, permitir que o usuário edite manualmente os acordes detectados antes de enviar para o sofisticador.
+
+---
+
+# FLUXO DO USUÁRIO
+
+O fluxo ideal deve ser:
+
+1. Usuário entra no Audio Lab.
+2. Envia um áudio.
+3. O sistema mostra status:
+
+   * Enviando áudio
+   * Separando instrumentos
+   * Detectando tom
+   * Detectando BPM
+   * Detectando acordes
+   * Gerando resultado
+4. Sistema exibe resultado final.
+
+---
+
+# TELA DE RESULTADO
+
+A tela de resultado deve mostrar:
+
+## Resumo
+
+* Nome do arquivo
+* Duração
+* Tom detectado
+* BPM detectado
+* Acordes encontrados
+
+## Stems
+
+Mostrar players separados para:
+
+* Voz
+* Instrumental
+* Baixo
+* Bateria
+* Outros
+
+Cada stem deve ter:
+
+* botão play/pause
+* botão baixar
+* nome do stem
+
+## Análise Musical
+
+Mostrar:
+
+Tom:
+G Maior
+
+BPM:
+74
+
+Compasso:
+4/4, se for possível detectar
+
+Progressão detectada:
+| G | D/F# | Em | C |
+
+---
+
+# INTEGRAÇÃO COM SOFISTICADOR DE CIFRAS
+
+Após detectar os acordes, criar botão:
+
+**Sofisticar progressão**
+
+Ao clicar, enviar a progressão detectada para o Sofisticador de Cifras.
+
+Exemplo:
+
+Entrada detectada:
+
+| G | D/F# | Em | C |
+
+Resultado sofisticado:
+
+| Gmaj9 | D13/F# | Em11 | C7M(9) |
+
+O usuário deve conseguir editar os acordes antes de sofisticar.
+
+---
+
+# IMPORTANTE SOBRE ARQUITETURA
+
+Não implementar tudo de forma acoplada.
+
+Criar arquitetura modular:
+
+* upload de áudio
+* processamento/splitter
+* detecção de tom
+* detecção de BPM
+* detecção de acordes
+* integração com sofisticador
+* tela de resultado
+
+Cada parte deve ser separada em funções, serviços ou módulos reutilizáveis.
+
+Se o processamento pesado não funcionar bem no Replit, deixar preparado para migrar para um worker externo futuramente.
+
+---
+
+# CUIDADO COM PERFORMANCE
+
+Áudio é pesado.
+
+Implementar:
+
+* limite de tamanho de arquivo
+* validação de formato
+* loading claro
+* tratamento de erro
+* mensagens amigáveis
+* limpeza de arquivos temporários
+* prevenção de múltiplos uploads simultâneos
+
+Sugestão inicial:
+
+Limite de arquivo:
+50MB
+
+Formatos:
+mp3, wav, m4a
+
+---
+
+# MENSAGENS DE ERRO
+
+Criar mensagens amigáveis:
+
+Arquivo inválido:
+“Envie um arquivo MP3, WAV ou M4A.”
+
+Arquivo muito grande:
+“Esse arquivo é muito grande. Tente enviar um áudio menor.”
+
+Falha na análise:
+“Não conseguimos analisar esse áudio com precisão. Tente um trecho mais limpo ou com menos instrumentos.”
+
+Acordes incertos:
+“Os acordes abaixo são uma estimativa. Você pode ajustar antes de sofisticar.”
+
+---
+
+# UX
+
+A interface deve ser clara e premium.
+
+Não parecer ferramenta técnica para programador.
+
+Deve parecer uma ferramenta musical simples.
+
+Linguagem da tela:
+
+“Envie uma música. O Harmonic faz o resto.”
+
+Evitar termos técnicos demais na interface.
+
+Não usar palavras como “stems” se isso confundir o usuário. Preferir:
+
+* Voz
+* Instrumental
+* Baixo
+* Bateria
+* Outros
+
+---
+
+# DESIGN
+
+Manter identidade do Harmonic:
+
+* tema escuro
+* laranja Harmonic
+* fonte Plus Jakarta Sans
+* cards premium
+* visual moderno
+* inspiração Spotify
+* animações suaves
+* boa hierarquia visual
+
+Criar cards para:
+
+1. Upload
+2. Separação
+3. Tom e BPM
+4. Acordes detectados
+5. Versão sofisticada
+
+---
+
+# MENU / NAVEGAÇÃO
+
+Adicionar o módulo Audio Lab na navegação principal.
+
+Nome no menu:
+
+**Audio Lab**
+
+Ícone sugerido:
+ícone de waveform, áudio, equalizador ou laboratório musical.
+
+---
+
+# BIBLIOTECAS SUGERIDAS
+
+Pesquisar e usar as melhores opções disponíveis para o ambiente do projeto.
+
+Prioridade:
+
+Splitter:
+
+* Demucs
+
+Tom e BPM:
+
+* Essentia
+* librosa
+* aubio
+
+Acordes:
+
+* Chordino / Vamp Plugin
+* Essentia Chord Detection
+* madmom
+
+Transcrição opcional futura:
+
+* Basic Pitch
+
+Não inventar algoritmo próprio se já houver biblioteca confiável.
+
+---
+
+# PRIMEIRA ENTREGA
+
+Se não for possível implementar tudo de uma vez, priorizar nesta ordem:
+
+1. Criar tela Audio Lab com upload.
+2. Validar arquivo de áudio.
+3. Detectar BPM.
+4. Detectar tom.
+5. Detectar acordes.
+6. Integrar com Sofisticador de Cifras.
+7. Implementar Splitter com Demucs.
+8. Criar players para os arquivos separados.
+
+---
+
+# ANTES DE IMPLEMENTAR
+
+Antes de modificar arquivos:
+
+1. Analise a stack atual do projeto.
+2. Verifique se o ambiente suporta processamento de áudio.
+3. Verifique quais bibliotecas funcionam no Replit.
+4. Explique a arquitetura escolhida.
+5. Liste arquivos que pretende criar ou alterar.
+6. Só depois implemente.
+
+---
+
+# AO FINAL
+
+Liste:
+
+* arquivos criados
+* arquivos alterados
+* bibliotecas instaladas
+* limitações encontradas
+* o que já funciona
+* o que ficou preparado para implementação futura
+* como testar o Audio Lab
+
+Resumo:
+Quero um novo módulo chamado Audio Lab, onde o usuário envia um áudio e o Harmonic separa voz/instrumentos, identifica tom, BPM e acordes, e permite enviar a progressão detectada para o Sofisticador de Cifras.
