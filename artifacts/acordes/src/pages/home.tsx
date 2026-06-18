@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Layers, Star, Search, Lightbulb, Wand2, Timer, Waves } from "lucide-react";
+import { ArrowRight, BookOpen, Layers, Star, Search, Lightbulb, Wand2, Timer, Waves, ChevronDown } from "lucide-react";
 
 const EASE = [0.4, 0, 0.2, 1] as const;
 
@@ -71,12 +71,21 @@ export default function Home() {
       </section>
 
       {/* Slogan Strip */}
-      <section className="relative border-y border-white/5 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--primary)/0.12),_transparent_70%)] pointer-events-none" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 relative">
+      <section className="relative border-y border-primary/15 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_120%_at_center,_hsl(var(--primary)/0.28),_transparent_70%)] pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20 relative flex flex-col items-center gap-8">
           <h2 className="font-display font-bold leading-tight text-center whitespace-nowrap text-[clamp(1.1rem,4.6vw,3.5rem)]">
             O <span className="text-gradient-primary">próximo nível</span> do seu teclado.
           </h2>
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            className="flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-primary/10 text-primary"
+            aria-hidden="true"
+          >
+            <ChevronDown className="w-5 h-5" />
+          </motion.div>
         </div>
       </section>
 
