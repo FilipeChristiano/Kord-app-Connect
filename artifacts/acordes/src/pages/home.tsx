@@ -40,10 +40,17 @@ export default function Home() {
             variants={containerVariants}
             className="max-w-3xl mx-auto flex flex-col items-center"
           >
-            <motion.div variants={itemVariants} className="flex flex-col items-center mb-1">
+            <motion.div variants={itemVariants} className="flex flex-col items-center gap-3 sm:gap-5 mb-1">
               <h1 className="sr-only">Harmonic — As ferramentas que faltavam para transformar o seu som</h1>
               <img
-                src={`${import.meta.env.BASE_URL}harmonic-logo-hero.png`}
+                src={`${import.meta.env.BASE_URL}images/hero-icon.png`}
+                alt=""
+                aria-hidden="true"
+                className="w-full max-w-[360px] sm:max-w-[440px] md:max-w-[510px] h-auto select-none drop-shadow-2xl"
+                draggable={false}
+              />
+              <img
+                src={`${import.meta.env.BASE_URL}images/hero-word.png`}
                 alt="Harmonic"
                 className="w-full max-w-[360px] sm:max-w-[440px] md:max-w-[510px] h-auto select-none drop-shadow-2xl"
                 draggable={false}
