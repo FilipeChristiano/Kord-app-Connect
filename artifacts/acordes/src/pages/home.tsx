@@ -368,51 +368,37 @@ function MetronomoVisual() {
 }
 
 function MetronomeGauge() {
-  const size = 148;
+  const size = 150;
   const cx = size / 2;
   const cy = size / 2;
-  const rOut = 66;
-  const rIn = 57;
-  const rArc = 63;
-  const start = 135;
-  const sweep = 270;
-  const frac = 0.42;
-  const N = 36;
-  const polar = (r: number, a: number) => {
-    const rad = (a * Math.PI) / 180;
+  const r = 60;
+  const startA = 125;       // ponto inferior esquerdo
+  const sweep = 290;        // deixa uma folga de 70° embaixo
+  const frac = 0.26;        // quanto do arco fica em laranja
+  const endA = startA + sweep;
+  const progA = startA + sweep * frac;
+  const polar = (deg: number) => {
+    const rad = (deg * Math.PI) / 180;
     return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
   };
-  const ticks = Array.from({ length: N + 1 }, (_, i) => {
-    const a = start + (sweep * i) / N;
-    const p1 = polar(rIn, a);
-    const p2 = polar(rOut, a);
-    return { p1, p2, on: i / N <= frac, key: i };
-  });
-  const aStart = polar(rArc, start);
-  const aEnd = polar(rArc, start + sweep * frac);
-  const large = sweep * frac > 180 ? 1 : 0;
-  const arc = `M ${aStart.x} ${aStart.y} A ${rArc} ${rArc} 0 ${large} 1 ${aEnd.x} ${aEnd.y}`;
+  const arc = (a0: number, a1: number) => {
+    const p0 = polar(a0);
+    const p1 = polar(a1);
+    const large = a1 - a0 > 180 ? 1 : 0;
+    return `M ${p0.x} ${p0.y} A ${r} ${r} 0 ${large} 1 ${p1.x} ${p1.y}`;
+  };
+  const knob = polar(progA);
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full" aria-hidden="true">
-        {ticks.map((t) => (
-          <line
-            key={t.key}
-            x1={t.p1.x}
-            y1={t.p1.y}
-            x2={t.p2.x}
-            y2={t.p2.y}
-            className={t.on ? "stroke-[hsl(var(--primary))]" : ""}
-            stroke={t.on ? undefined : "rgba(255,255,255,0.12)"}
-            strokeWidth={2}
-            strokeLinecap="round"
-          />
-        ))}
-        <path d={arc} fill="none" className="stroke-[hsl(var(--primary))]" strokeWidth={3} strokeLinecap="round" />
+        <path d={arc(startA, endA)} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={4} strokeLinecap="round" />
+        <path d={arc(startA, progA)} fill="none" className="stroke-[hsl(var(--primary))]" strokeWidth={4} strokeLinecap="round" />
+        <circle cx={knob.x} cy={knob.y} r={9} fill="#1c1410" stroke="hsl(var(--primary))" strokeWidth={2} strokeOpacity={0.5} />
+        <circle cx={knob.x} cy={knob.y} r={5} className="fill-[hsl(var(--primary))]" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground mb-0.5">BPM</span>
         <span className="font-display text-4xl font-bold text-foreground leading-none tabular-nums">72</span>
-        <span className="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground mt-1.5">BPM</span>
       </div>
     </div>
   );
