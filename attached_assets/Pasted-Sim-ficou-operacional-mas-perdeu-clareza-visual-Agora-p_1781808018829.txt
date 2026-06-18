@@ -1,0 +1,541 @@
+Sim, ficou operacional, mas perdeu clareza visual. Agora precisa de **hierarquia, imagens e respiro**. Use este comando no Replit:
+
+# AJUSTE DA HOME DO HARMONIC: MAIS CLAREZA, IMAGENS E MENOS CONFUSÃO
+
+A Home ficou mais operacional, porém agora está visualmente confusa, com muitos cards parecidos, pouca diferenciação entre áreas e ausência de imagens/elementos visuais que ajudem o usuário a entender rapidamente cada ferramenta.
+
+Quero que você refine a Home mantendo a ideia de dashboard operacional, mas com mais organização visual, mais respiro, mais imagens e uma hierarquia muito mais clara.
+
+Não altere funcionalidades, lógica, rotas, banco de dados, autenticação ou APIs. Faça apenas ajustes de UI/UX na Home.
+
+---
+
+# OBJETIVO PRINCIPAL
+
+A Home precisa parecer um aplicativo premium de música/estudo, não uma tela cheia de blocos escuros.
+
+Ela deve ficar:
+
+* Mais clara
+* Mais visual
+* Mais organizada
+* Menos embolada
+* Mais parecida com um hub de produto
+* Mais fácil de escanear em 3 segundos
+* Mais próxima de Spotify/Apple Music/Linear, mas com identidade Harmonic
+
+Hoje o problema é:
+
+* Muitos cards parecidos
+* Pouca imagem
+* Pouca diferença entre blocos
+* Grid confuso
+* Cards grandes demais competindo entre si
+* Hierarquia fraca entre ferramenta principal e secundária
+* A tela parece pesada e comprimida
+
+---
+
+# 1. REESTRUTURAR A HIERARQUIA DA HOME
+
+A ordem da tela deve ser:
+
+1. Topbar
+2. Saudação compacta
+3. Busca principal
+4. Área visual principal com destaque para “Acordes Sofisticados” e “Sofisticador de Cifras”
+5. Ferramentas rápidas: Pad Continuous e Metrônomo Inteligente
+6. Continue estudando
+7. Favoritos / Atalhos menores
+
+Não misturar tudo no mesmo peso visual.
+
+---
+
+# 2. SAUDAÇÃO MAIS LIMPA
+
+A saudação atual está boa, mas pode ficar mais elegante.
+
+Manter algo como:
+
+“Boa tarde, músico.”
+
+Embaixo:
+
+“Escolha uma ferramenta para estudar, sofisticar cifras ou praticar com precisão.”
+
+Evitar a frase longa atual.
+
+Não usar duas ideias no mesmo título.
+
+Errado:
+“Boa tarde, músico. O que vamos estudar hoje?”
+
+Melhor:
+Título: “Boa tarde, músico.”
+Subtítulo: “Escolha uma ferramenta para começar.”
+
+A frase explicativa deve ser curta.
+
+---
+
+# 3. BUSCA PRINCIPAL MAIS DESTACADA E MENOS EMBOLADA
+
+A busca deve ser o principal ponto de ação rápida.
+
+Ela deve ficar visualmente separada dos botões rápidos.
+
+Hoje a busca e os chips estão muito próximos, criando ruído.
+
+Ajustes:
+
+* Aumentar margem inferior da busca
+* Deixar a busca com largura máxima confortável
+* Reduzir quantidade de chips abaixo
+* Não deixar parecer que tudo é do mesmo grupo
+
+Placeholder:
+
+“Busque um acorde, uma categoria ou cole uma cifra…”
+
+Botão:
+
+“Buscar”
+
+Visual:
+
+* Fundo surface elevated
+* Borda sutil
+* Radius grande
+* Ícone à esquerda
+* Botão laranja à direita
+* Focus com glow laranja discreto
+
+---
+
+# 4. REDUZIR OS CHIPS DE AÇÃO RÁPIDA
+
+Hoje há muitos botões pequenos competindo.
+
+Deixe apenas 3 chips abaixo da busca:
+
+* Buscar acorde
+* Sofisticar cifra
+* Abrir metrônomo
+
+O Pad deve aparecer como card visual, não como chip.
+
+Os chips devem ser menores, elegantes e discretos.
+
+---
+
+# 5. CRIAR UMA ÁREA PRINCIPAL VISUAL, NÃO APENAS CARDS ESCUROS
+
+A Home precisa de imagens ou elementos visuais fortes.
+
+Crie uma seção chamada:
+
+“Comece por aqui”
+
+Essa seção deve ter 2 cards grandes principais:
+
+1. Acordes Sofisticados
+2. Sofisticador de Cifras
+
+Esses dois são os diferenciais mais fortes do Harmonic.
+
+Eles devem ocupar a primeira área visual depois da busca.
+
+## Card: Acordes Sofisticados
+
+Esse card deve ser maior e mais visual.
+
+Adicionar imagem/ilustração de apoio no lado direito ou como background sutil.
+
+Ideias visuais:
+
+* teclado em fundo escuro com blur
+* diagrama de acorde
+* representação visual de notas
+* bolhas com acordes: Cmaj9, F7M, G13, Am11
+* mini preview de categorias de acordes
+
+Texto:
+
+Título:
+“Acordes Sofisticados”
+
+Descrição:
+“Explore voicings ricos, categorias e aplicações para tocar com mais musicalidade.”
+
+CTA:
+“Explorar acordes”
+
+Visual:
+
+* Card grande horizontal
+* Texto à esquerda
+* arte/imagem à direita
+* laranja como detalhe
+* fundo dark premium
+* glow sutil
+* menos borda
+
+## Card: Sofisticador de Cifras
+
+Também deve ser visual.
+
+Adicionar uma representação clara do antes/depois.
+
+Exemplo visual dentro do card:
+
+Antes:
+C  G  Am  F
+
+Depois:
+C9  G/B  Am11  F7M(9)
+
+Isso ajuda o usuário a entender o valor imediatamente.
+
+Texto:
+
+Título:
+“Sofisticador de Cifras”
+
+Descrição:
+“Cole uma cifra simples e receba versões mais profissionais em segundos.”
+
+CTA:
+“Sofisticar cifra”
+
+Visual:
+
+* Card grande
+* Exemplo antes/depois
+* ícone de varinha ou transformação
+* fundo levemente diferente do primeiro card
+
+---
+
+# 6. DIFERENCIAR VISUALMENTE OS 4 DIFERENCIAIS
+
+Não deixe os quatro cards com o mesmo peso.
+
+Hierarquia desejada:
+
+Acordes Sofisticados: destaque máximo
+Sofisticador de Cifras: destaque alto
+Pad Continuous Worship: card médio visual
+Metrônomo Inteligente: card médio visual
+
+Layout sugerido no desktop:
+
+Linha 1:
+[Acordes Sofisticados grande 60%] [Sofisticador de Cifras 40%]
+
+Linha 2:
+[Pad Continuous 50%] [Metrônomo Inteligente 50%]
+
+Ou:
+
+[Acordes Sofisticados ocupando largura total]
+[Sofisticador] [Pad] [Metrônomo]
+
+Escolha a opção que ficar mais limpa no código atual.
+
+---
+
+# 7. ADICIONAR ELEMENTOS VISUAIS NOS CARDS
+
+Cada card precisa ter um elemento visual identificável.
+
+Não usar só ícone pequeno.
+
+Sugestões:
+
+Acordes Sofisticados:
+
+* mini teclado
+* chips de acordes
+* visual de notas
+* mockup de categorias
+
+Sofisticador de Cifras:
+
+* antes/depois de cifra
+* setas de transformação
+* linhas de acordes
+
+Pad Continuous:
+
+* ondas sonoras
+* camadas de pad
+* tom selecionado: C, D, E, F, G
+* visual de ambiente/worship
+
+Metrônomo Inteligente:
+
+* círculo de pulso
+* BPM em destaque
+* marcação 4/4
+* visual de batidas
+
+Esses visuais podem ser feitos com CSS, SVG simples, cards internos ou elementos HTML. Não precisa depender de imagens externas.
+
+---
+
+# 8. CARDS MENORES E MAIS RESPIRADOS
+
+Os cards atuais estão grandes, escuros e parecidos demais.
+
+Ajustes:
+
+* Reduzir altura dos cards secundários
+* Aumentar espaçamento entre seções
+* Dar mais padding interno nos cards principais
+* Evitar descrições longas
+* Usar no máximo 2 linhas de descrição
+* CTAs curtos
+* Mais contraste entre cards principais e secundários
+
+---
+
+# 9. EVITAR FUNDO MARROM EM MUITOS CARDS
+
+Atualmente vários cards têm fundo marrom/laranja escuro. Isso deixa a tela pesada.
+
+Use esse fundo apenas nos cards principais ou em hover.
+
+Para cards secundários, usar:
+
+* surface elevated escuro
+* borda discreta
+* laranja apenas no ícone/CTA
+
+O laranja deve guiar atenção, não colorir blocos inteiros.
+
+---
+
+# 10. “CONTINUE ESTUDANDO” PRECISA FICAR MAIS LEVE
+
+Hoje o estado vazio ocupa muito espaço e fica pesado.
+
+Deixe essa seção menor e mais elegante.
+
+Se não houver histórico, mostrar um estado vazio compacto:
+
+Título:
+“Nada por aqui ainda”
+
+Texto:
+“Seus últimos acordes, cifras e estudos aparecerão aqui.”
+
+CTA:
+“Explorar acordes”
+
+Visual:
+
+* card menor
+* ícone discreto
+* menos altura
+* fundo mais sutil
+* não ocupar largura enorme se não tiver conteúdo
+
+Se possível, criar exemplos/placeholder úteis sem fingir dados reais:
+
+* “Cmaj9”
+* “F7M(9)”
+* “Am11”
+* “G13”
+
+Mas deixar claro visualmente que são sugestões, não histórico real.
+
+---
+
+# 11. CRIAR SEÇÃO DE SUGESTÕES RÁPIDAS
+
+Adicionar uma seção leve chamada:
+
+“Sugestões para estudar”
+
+Com chips ou mini-cards:
+
+* Acordes com 9ª
+* Acordes sus4
+* Dominantes
+* Voicings de mão esquerda
+* Progressões worship
+* Campo harmônico maior
+
+Essa seção ajuda a Home parecer viva e útil.
+
+Ela deve ser compacta.
+
+---
+
+# 12. MELHORAR O RITMO VISUAL
+
+Hoje a tela parece um bloco grande de informações.
+
+Criar alternância visual:
+
+* Saudação simples
+* Busca
+* Cards grandes visuais
+* Cards médios
+* Seção compacta
+* Chips de sugestões
+
+Não deixar tudo com o mesmo tamanho e peso.
+
+---
+
+# 13. AJUSTAR LARGURA DO CONTEÚDO
+
+A Home atual parece um pouco comprimida em uma coluna central.
+
+Ajuste o container para um equilíbrio melhor.
+
+Em desktop:
+
+* largura máxima entre 1120px e 1240px
+* alinhamento consistente
+* não deixar a primeira seção estreita demais
+* cards principais podem usar bem a largura
+
+---
+
+# 14. MOBILE
+
+No mobile:
+
+* Saudação curta
+* Busca largura total
+* Chips com rolagem horizontal
+* Cards principais em coluna
+* Elementos visuais simplificados
+* CTAs fáceis de tocar
+* Evitar textos longos
+
+---
+
+# 15. MICROINTERAÇÕES
+
+Adicionar interações sutis:
+
+Cards:
+
+* hover scale 1.01
+* leve elevação
+* brilho sutil
+* CTA ganha seta movimentando 2px
+
+Busca:
+
+* foco com glow laranja discreto
+
+Chips:
+
+* hover com background mais claro
+* ícone laranja
+
+Botões:
+
+* transição 200ms
+* pressed state
+
+Nada exagerado.
+
+---
+
+# 16. RESULTADO ESPERADO
+
+A Home final deve parecer assim conceitualmente:
+
+Topo:
+Logo + navegação
+
+Abertura:
+“Boa tarde, músico.”
+“Escolha uma ferramenta para começar.”
+
+Busca:
+Campo grande e limpo
+
+Ações:
+3 chips discretos
+
+Seção principal:
+Card grande Acordes Sofisticados com visual de teclado/acordes
+Card Sofisticador com antes/depois de cifra
+
+Seção secundária:
+Pad Continuous com visual de ondas/tom
+Metrônomo Inteligente com visual de BPM/pulso
+
+Seção de continuidade:
+Continue estudando compacto
+
+Seção final:
+Sugestões rápidas / favoritos / atalhos
+
+---
+
+# 17. O QUE NÃO FAZER
+
+Não voltar para hero institucional.
+
+Não colocar logo gigante.
+
+Não criar headline de venda.
+
+Não usar imagem de fundo enorme.
+
+Não deixar tudo em cards iguais.
+
+Não usar excesso de marrom/laranja escuro.
+
+Não criar muitos botões competindo.
+
+Não adicionar textos longos.
+
+Não usar efeitos exagerados.
+
+Não quebrar funcionalidades existentes.
+
+---
+
+# 18. ANTES DE ALTERAR
+
+Antes de modificar:
+
+1. Analise o componente atual da Home.
+2. Identifique quais seções serão removidas.
+3. Identifique quais seções serão substituídas.
+4. Identifique quais componentes visuais serão criados.
+5. Explique rapidamente o plano.
+
+Depois implemente.
+
+---
+
+# 19. AO FINAL
+
+Liste:
+
+* arquivos alterados
+* componentes criados
+* seções removidas
+* seções adicionadas
+* componentes reaproveitados
+* confirmação de que nenhuma funcionalidade foi alterada
+
+Resumo:
+Quero que a Home do Harmonic deixe de parecer uma grade escura de cards e passe a parecer um dashboard musical premium, visual, claro e operacional, com destaque real para:
+
+* Acordes Sofisticados
+* Sofisticador de Cifras
+* Pad Continuous Worship
+* Metrônomo Inteligente
+
+A mudança central é: **cards com demonstração visual**, não cards explicativos. Isso resolve a sensação de embolado.
