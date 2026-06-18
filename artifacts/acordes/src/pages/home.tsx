@@ -54,7 +54,7 @@ export default function Home() {
               />
             </motion.div>
 
-            <motion.p variants={itemVariants} className="text-body-lg text-muted-foreground mb-10 max-w-2xl">
+            <motion.p variants={itemVariants} className="text-body-lg text-muted-foreground -mt-8 sm:-mt-12 mb-10 max-w-2xl">
               Saia do som básico. Descubra harmonias ricas, entenda suas construções e aplique acordes profissionais nas suas músicas com clareza visual.
             </motion.p>
 
