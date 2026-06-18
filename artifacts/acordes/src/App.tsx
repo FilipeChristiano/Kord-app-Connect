@@ -45,6 +45,12 @@ const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+// Preview de desenvolvimento: permite ver o app dentro do quadro de prévia
+// embutido, onde os cookies de login (Clerk) são bloqueados por serem de
+// "terceiros". NUNCA fica ativo em produção, pois import.meta.env.DEV é false
+// no app publicado (build de produção).
+const PREVIEW_MODE = import.meta.env.DEV;
+
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
     ? path.slice(basePath.length) || "/"
@@ -69,16 +75,18 @@ function LoadingScreen({ message }: { message?: string }) {
 function ProtectedAppRoutes() {
   const { data, isLoading, isError } = useAccess();
 
-  if (isLoading) {
-    return <LoadingScreen message="Verificando seu acesso..." />;
-  }
+  if (!PREVIEW_MODE) {
+    if (isLoading) {
+      return <LoadingScreen message="Verificando seu acesso..." />;
+    }
 
-  if (isError) {
-    return <LoadingScreen message="Não foi possível verificar o acesso. Tente recarregar." />;
-  }
+    if (isError) {
+      return <LoadingScreen message="Não foi possível verificar o acesso. Tente recarregar." />;
+    }
 
-  if (!data?.allowed) {
-    return <NoAccessPage />;
+    if (!data?.allowed) {
+      return <NoAccessPage />;
+    }
   }
 
   return (
@@ -105,12 +113,18 @@ function AppRoutes() {
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
       <Route>
-        <Show when="signed-in">
+        {PREVIEW_MODE ? (
           <ProtectedAppRoutes />
-        </Show>
-        <Show when="signed-out">
-          <Redirect to="/sign-up" />
-        </Show>
+        ) : (
+          <>
+            <Show when="signed-in">
+              <ProtectedAppRoutes />
+            </Show>
+            <Show when="signed-out">
+              <Redirect to="/sign-up" />
+            </Show>
+          </>
+        )}
       </Route>
     </Switch>
   );
@@ -160,10 +174,19 @@ function ClerkProviderWithRoutes() {
   );
 }
 
+function PreviewBadge() {
+  return (
+    <div className="fixed bottom-3 left-3 z-[60] pointer-events-none select-none rounded-full bg-primary/15 border border-primary/30 text-primary text-[10px] font-semibold px-2.5 py-1 backdrop-blur-sm">
+      Prévia (dev) — sem login
+    </div>
+  );
+}
+
 function App() {
   return (
     <WouterRouter base={basePath}>
       <ClerkProviderWithRoutes />
+      {PREVIEW_MODE && <PreviewBadge />}
     </WouterRouter>
   );
 }
