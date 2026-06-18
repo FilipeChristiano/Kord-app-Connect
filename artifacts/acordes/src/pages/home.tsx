@@ -318,8 +318,8 @@ function PadWaves() {
 function PadVisual() {
   const stats = [
     { label: "Tom", value: "G" },
-    { label: "Modo", value: "Worship" },
-    { label: "Camadas", value: "3" },
+    { label: "Tipo", value: "Warm" },
+    { label: "Low Cut", value: "80Hz" },
   ];
   return (
     <div className="w-full flex flex-col gap-3">
@@ -327,15 +327,13 @@ function PadVisual() {
       <div className="grid grid-cols-4 gap-2">
         {stats.map((s) => (
           <div key={s.label} className="rounded-lg border border-white/[0.06] bg-background/50 px-2 py-1.5 text-center">
-            <p className="text-[9px] uppercase tracking-wide text-muted-foreground/70">{s.label}</p>
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground/70 truncate">{s.label}</p>
             <p className="text-xs font-semibold text-foreground truncate">{s.value}</p>
           </div>
         ))}
         <div className="rounded-lg border border-[#14b8a6]/25 bg-[#14b8a6]/[0.08] px-2 py-1.5 text-center">
-          <p className="text-[9px] uppercase tracking-wide text-[#2dd4bf]/80">Pad Ativo</p>
-          <p className="text-xs font-semibold text-[#2dd4bf] inline-flex items-center gap-1 justify-center">
-            ON <span className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf] animate-pulse" />
-          </p>
+          <p className="text-[9px] uppercase tracking-wide text-[#2dd4bf]/80 truncate">Fade</p>
+          <p className="text-xs font-semibold text-[#2dd4bf] truncate">2.5s</p>
         </div>
       </div>
     </div>
