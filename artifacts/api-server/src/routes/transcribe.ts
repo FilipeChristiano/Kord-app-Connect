@@ -2,7 +2,7 @@ import express, { Router, type IRouter, type Request, type Response } from "expr
 import { getAuth } from "@clerk/express";
 import { toFile } from "openai";
 import { spawn } from "node:child_process";
-import { writeFile, unlink } from "node:fs/promises";
+import { writeFile, readFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -77,28 +77,68 @@ interface OutLine {
 
 // Mede a duração do áudio (em segundos) com ffprobe. Necessária para distribuir
 // as linhas no tempo, já que o gpt-4o-transcribe não devolve timestamps.
-async function probeDuration(buffer: Buffer, ext: string): Promise<number | undefined> {
-  const tmp = join(tmpdir(), `tr-${randomUUID()}.${ext}`);
-  await writeFile(tmp, buffer);
+async function probeDurationFile(path: string): Promise<number | undefined> {
+  const dur = await new Promise<number>((resolve) => {
+    const p = spawn("ffprobe", [
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      path,
+    ]);
+    let out = "";
+    p.stdout.on("data", (d) => (out += d.toString()));
+    p.on("close", () => resolve(parseFloat(out.trim())));
+    p.on("error", () => resolve(NaN));
+  });
+  return Number.isFinite(dur) && dur > 0 ? dur : undefined;
+}
+
+// Converte o áudio para MP3 mono 16kHz (formato ideal para reconhecimento de
+// fala) antes de enviar ao modelo. Isso reduz MUITO o tamanho — o proxy de IA
+// gerenciado rejeita arquivos grandes com 413 — e melhora a transcrição. A
+// duração é medida no mesmo passo. Se o ffmpeg não estiver disponível, usa o
+// arquivo original como fallback.
+async function prepareForStt(
+  buffer: Buffer,
+  ext: string,
+): Promise<{ audio: Buffer; contentType: string; filename: string; duration?: number }> {
+  const inPath = join(tmpdir(), `tr-in-${randomUUID()}.${ext}`);
+  const outPath = join(tmpdir(), `tr-out-${randomUUID()}.mp3`);
+  await writeFile(inPath, buffer);
   try {
-    const dur = await new Promise<number>((resolve) => {
-      const p = spawn("ffprobe", [
-        "-v",
-        "error",
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
-        tmp,
+    const ok = await new Promise<boolean>((resolve) => {
+      const p = spawn("ffmpeg", [
+        "-y",
+        "-i",
+        inPath,
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-b:a",
+        "64k",
+        "-f",
+        "mp3",
+        outPath,
       ]);
-      let out = "";
-      p.stdout.on("data", (d) => (out += d.toString()));
-      p.on("close", () => resolve(parseFloat(out.trim())));
-      p.on("error", () => resolve(NaN));
+      p.on("close", (code) => resolve(code === 0));
+      p.on("error", () => resolve(false));
     });
-    return Number.isFinite(dur) && dur > 0 ? dur : undefined;
+    if (ok) {
+      const [audio, duration] = await Promise.all([
+        readFile(outPath),
+        probeDurationFile(outPath),
+      ]);
+      return { audio, contentType: "audio/mpeg", filename: "audio.mp3", duration };
+    }
+    const duration = await probeDurationFile(inPath);
+    return { audio: buffer, contentType: `audio/${ext}`, filename: `audio.${ext}`, duration };
   } finally {
-    await unlink(tmp).catch(() => {});
+    await unlink(inPath).catch(() => {});
+    await unlink(outPath).catch(() => {});
   }
 }
 
@@ -255,29 +295,30 @@ router.post(
     // ── Caminho 2: OpenAI (gpt-4o-transcribe, integração gerenciada) ────────
     const openai = getOpenAI();
     if (openai) {
-      if (body.length > OPENAI_MAX_BYTES) {
-        return res.status(422).json({
-          status: "audio_too_large",
-          message:
-            "O áudio é grande demais para a transcrição automática (limite de 25MB). Tente um arquivo mais curto ou mais comprimido (ex.: MP3 128kbps).",
-        });
-      }
       const ext = extFromContentType(contentType);
       try {
-        const [transcription, duration] = await Promise.all([
-          openai.audio.transcriptions.create(
-            {
-              file: await toFile(body, `audio.${ext}`, { type: contentType }),
-              model: "gpt-4o-transcribe",
-              response_format: "json",
-            },
-            { timeout: 5 * 60 * 1000 },
-          ),
-          probeDuration(body, ext),
-        ]);
+        const prepared = await prepareForStt(body, ext);
+        if (prepared.audio.length > OPENAI_MAX_BYTES) {
+          return res.status(422).json({
+            status: "audio_too_large",
+            message:
+              "O áudio é grande demais para a transcrição automática. Tente um arquivo mais curto.",
+          });
+        }
+
+        const transcription = await openai.audio.transcriptions.create(
+          {
+            file: await toFile(prepared.audio, prepared.filename, {
+              type: prepared.contentType,
+            }),
+            model: "gpt-4o-transcribe",
+            response_format: "json",
+          },
+          { timeout: 5 * 60 * 1000 },
+        );
 
         const rawText = (transcription.text ?? "").trim();
-        const result = buildResultFromText(rawText, duration);
+        const result = buildResultFromText(rawText, prepared.duration);
         if (result.lines.length === 0) {
           return res.status(422).json({
             status: "no_speech",
@@ -286,7 +327,20 @@ router.post(
         }
         return res.status(200).json(result);
       } catch (err) {
-        console.error("[/api/transcribe] openai error:", err);
+        const status = (err as { status?: number })?.status;
+        console.error(
+          "[/api/transcribe] openai error:",
+          status,
+          (err as { message?: string })?.message,
+          (err as { error?: unknown })?.error,
+        );
+        if (status === 413) {
+          return res.status(422).json({
+            status: "audio_too_large",
+            message:
+              "O áudio é grande demais para a transcrição automática. Tente um arquivo mais curto.",
+          });
+        }
         return res.status(502).json({
           status: "worker_error",
           message: "Não foi possível concluir a transcrição automática. Tente novamente.",

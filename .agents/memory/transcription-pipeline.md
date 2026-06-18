@@ -44,3 +44,20 @@ integração **ElevenLabs** (connector OAuth; Scribe STT devolve timestamps por
 palavra). ElevenLabs exige conta própria do usuário (cobra no plano ElevenLabs,
 não nos créditos Replit); OpenAI gerenciado não exige conta e cobra nos créditos
 Replit.
+
+## Limite de tamanho do proxy gerenciado → transcodar antes de enviar
+
+O proxy gerenciado **rejeita corpos de áudio grandes com HTTP 413** (sem body).
+Validado: WAV de ~42MB → 413; MP3 de ~14MB → OK. Isso é separado do limite de
+25MB do próprio OpenAI. Antes era a causa do erro genérico "Não foi possível
+concluir a transcrição automática" para músicas grandes (passavam do limite do
+proxy mas não do guard de 25MB).
+
+**Correção (padrão a manter):** **sempre transcodar o áudio para MP3 mono 16kHz**
+(`ffmpeg -ac 1 -ar 16000 -b:a 64k -f mp3`) antes de enviar ao `gpt-4o-transcribe`.
+16kHz mono é o ideal para STT e reduz drasticamente o tamanho (42MB → ~1.9MB), o
+que elimina o 413 para qualquer música dentro do limite de 12min do app. Mapear
+413 → 422 (mensagem "áudio grande demais") como rede de segurança.
+
+**Why:** o gargalo real não é o limite do modelo, é o do proxy; transcodar resolve
+de forma robusta e ainda melhora a qualidade da transcrição.

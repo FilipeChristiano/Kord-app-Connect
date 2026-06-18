@@ -10,17 +10,13 @@ import {
   FileAudio,
   RotateCcw,
   Wand2,
-  Plus,
-  X,
   Info,
   AlertTriangle,
-  ArrowRight,
   FileText,
   Copy,
   Check,
   Pencil,
   Mic,
-  Sparkles,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -51,12 +47,6 @@ const STEPS: { key: AnalysisStep; label: string }[] = [
   { key: "bpm", label: "Detectando o BPM" },
   { key: "acordes", label: "Detectando os acordes" },
   { key: "finalizando", label: "Gerando o resultado" },
-];
-
-const LEVELS: { key: SophisticationLevel; label: string }[] = [
-  { key: "suave", label: "Suave" },
-  { key: "intermediario", label: "Intermediário" },
-  { key: "avancado", label: "Avançado" },
 ];
 
 type Phase = "idle" | "analyzing" | "result" | "error";
@@ -161,8 +151,7 @@ export default function AudioLab() {
 
   const [result, setResult] = useState<AudioAnalysisResult | null>(null);
   const [chords, setChords] = useState<string[]>([]);
-  const [level, setLevel] = useState<SophisticationLevel>("intermediario");
-  const [showSophisticated, setShowSophisticated] = useState(false);
+  const level: SophisticationLevel = "intermediario";
 
   // ── Montar cifra com letra ─────────────────────────────────────────────────
   const [lyrics, setLyrics] = useState("");
@@ -182,6 +171,7 @@ export default function AudioLab() {
   const audioFileRef = useRef<File | null>(null);
   const runIdRef = useRef(0);
   const autoRunIdRef = useRef(0);
+  const autoTriggeredRef = useRef(false);
   const busyRef = useRef(false);
 
   useEffect(() => {
@@ -198,7 +188,6 @@ export default function AudioLab() {
     setError("");
     setResult(null);
     setChords([]);
-    setShowSophisticated(false);
     setLyrics("");
     setChartSource("detectados");
     setChart("");
@@ -210,6 +199,7 @@ export default function AudioLab() {
     setAutoState("idle");
     setAutoMessage("");
     autoRunIdRef.current++; // invalida transcrição pendente
+    autoTriggeredRef.current = false;
     audioFileRef.current = null;
     setStep("lendo");
   }, []);
@@ -229,11 +219,11 @@ export default function AudioLab() {
 
     const runId = ++runIdRef.current;
     busyRef.current = true;
+    autoTriggeredRef.current = false;
     audioFileRef.current = file;
     setFileName(file.name);
     setError("");
     setResult(null);
-    setShowSophisticated(false);
     setStep("lendo");
     setPhase("analyzing");
 
@@ -288,20 +278,6 @@ export default function AudioLab() {
     [handleFile],
   );
 
-  // ── Edição de acordes ───────────────────────────────────────────────────────
-  const updateChord = (i: number, value: string) => {
-    setChords((prev) => prev.map((c, idx) => (idx === i ? value : c)));
-    setShowSophisticated(false);
-  };
-  const removeChord = (i: number) => {
-    setChords((prev) => prev.filter((_, idx) => idx !== i));
-    setShowSophisticated(false);
-  };
-  const addChord = () => {
-    setChords((prev) => [...prev, ""]);
-    setShowSophisticated(false);
-  };
-
   // ── Sofisticação ────────────────────────────────────────────────────────────
   const sophisticated = useMemo(() => {
     const clean = chords.map((c) => c.trim()).filter(Boolean);
@@ -332,17 +308,24 @@ export default function AudioLab() {
   );
   const bpmValue = bpmOpt?.bpm ?? result?.bpm.bpm ?? 0;
 
-  // Verifica se a transcrição automática está disponível ao entrar no resultado.
+  // Ao entrar no resultado, verifica se a transcrição automática está disponível
+  // e já dispara a geração de letra + cifra (uma vez por análise).
   useEffect(() => {
     if (phase !== "result") return;
     let active = true;
     setAutoAvailable(null);
     getTranscriptionStatus().then((s) => {
-      if (active) setAutoAvailable(s.available);
+      if (!active) return;
+      setAutoAvailable(s.available);
+      if (s.available && !autoTriggeredRef.current) {
+        autoTriggeredRef.current = true;
+        void generateAutoChart();
+      }
     });
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, result]);
 
   const buildChart = useCallback(() => {
@@ -597,175 +580,21 @@ export default function AudioLab() {
               </div>
             </div>
 
-            {/* Acordes detectados (editáveis) */}
-            <div className="glass-card rounded-3xl border border-white/10 p-6">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-display font-bold text-white">Acordes detectados</h3>
-              </div>
-              <div className="flex items-start gap-2 mb-4 text-[12px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2.5">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  Os acordes abaixo são uma estimativa. Você pode ajustar antes de
-                  sofisticar.
-                </span>
-              </div>
-
-              {chords.length === 0 && (
-                <p className="text-sm text-muted-foreground mb-3">
-                  Não identificamos acordes claros. Adicione manualmente abaixo.
-                </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {chords.map((c, i) => (
-                    <div
-                      key={i}
-                      className="group relative flex items-center bg-white/[0.04] border border-white/10 rounded-xl focus-within:border-primary/50 transition-colors"
-                    >
-                      <input
-                        value={c}
-                        onChange={(e) => updateChord(i, e.target.value)}
-                        className="w-16 bg-transparent text-center text-white font-mono text-sm py-2.5 px-2 focus:outline-none notranslate"
-                        translate="no"
-                        aria-label={`Acorde ${i + 1}`}
-                      />
-                      <button
-                        onClick={() => removeChord(i)}
-                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-secondary border border-white/15 text-white/50 opacity-0 group-hover:opacity-100 hover:text-rose-400 hover:border-rose-400/40 transition-all flex items-center justify-center"
-                        aria-label="Remover acorde"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                <button
-                  onClick={addChord}
-                  className="flex items-center gap-1 px-3 py-2.5 rounded-xl border border-dashed border-white/15 text-white/50 hover:text-white hover:border-primary/50 text-sm transition-all"
-                >
-                  <Plus className="w-4 h-4" /> Acorde
-                </button>
-              </div>
-
-              {/* Nível + ação */}
-              <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex items-center gap-2">
-                  {LEVELS.map((l) => (
-                    <button
-                      key={l.key}
-                      onClick={() => {
-                        setLevel(l.key);
-                        setShowSophisticated(false);
-                      }}
-                      className={cn(
-                        "text-xs font-medium px-3 py-1.5 rounded-lg border transition-all",
-                        level === l.key
-                          ? "bg-primary/20 border-primary/30 text-primary"
-                          : "border-white/10 text-white/50 hover:bg-white/5 hover:text-white",
-                      )}
-                    >
-                      {l.label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setShowSophisticated(true)}
-                  disabled={sophisticated.length === 0}
-                  className={cn(
-                    "sm:ml-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all",
-                    sophisticated.length === 0
-                      ? "bg-white/5 text-white/30 cursor-not-allowed"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90",
-                  )}
-                >
-                  <Wand2 className="w-4 h-4" /> Sofisticar progressão
-                </button>
-              </div>
-            </div>
-
-            {/* Resultado sofisticado */}
-            <AnimatePresence>
-              {showSophisticated && sophisticated.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="glass-card rounded-3xl border border-primary/20 bg-primary/5 p-6"
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <Wand2 className="w-4 h-4 text-primary" />
-                    <h3 className="font-display font-bold text-white">
-                      Progressão sofisticada
-                    </h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {sophisticated.map((s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => s.chordId && navigate(`/acorde/${s.chordId}`)}
-                        className={cn(
-                          "flex items-center gap-2 rounded-xl px-3 py-2 border transition-all",
-                          s.chordId
-                            ? "cursor-pointer hover:bg-primary/15"
-                            : "cursor-default",
-                          s.original !== s.substituted
-                            ? "bg-primary/10 border-primary/30"
-                            : "bg-white/[0.03] border-white/10",
-                        )}
-                        title={
-                          s.original !== s.substituted
-                            ? `${s.original} → ${s.substituted}`
-                            : s.original
-                        }
-                      >
-                        {s.original !== s.substituted && (
-                          <>
-                            <span className="text-white/40 font-mono text-xs">
-                              {s.original}
-                            </span>
-                            <ArrowRight className="w-3 h-3 text-muted-foreground" />
-                          </>
-                        )}
-                        <span
-                          className={cn(
-                            "font-mono text-sm font-bold notranslate",
-                            s.original !== s.substituted ? "text-primary" : "text-white/70",
-                          )}
-                          translate="no"
-                        >
-                          {s.substituted}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground/60 mt-4">
-                    Clique em um acorde para ver os detalhes no dicionário. Quer mais
-                    opções? Leve esta progressão para o{" "}
-                    <button
-                      onClick={() => navigate("/sofisticador")}
-                      className="text-primary hover:underline"
-                    >
-                      Sofisticador de Cifras
-                    </button>
-                    .
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* ── Letra + cifra automática (primário) ──────────────────────── */}
             <div className="glass-card rounded-3xl border border-primary/20 bg-primary/5 p-6">
               <div className="flex items-center gap-2 mb-1">
                 <Mic className="w-4 h-4 text-primary" />
                 <h3 className="font-display font-bold text-white">
-                  Gerar letra + cifra automaticamente
+                  Letra + cifra automática
                 </h3>
               </div>
               <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
                 <span>
-                  O Harmonic transcreve a letra a partir do áudio e posiciona os acordes
-                  detectados sobre ela. A transcrição é uma estimativa (funciona melhor com
-                  vocal claro) e o posicionamento dos acordes é aproximado — trechos
-                  incertos ficam marcados com “?”.
+                  Assim que você envia a música, o Harmonic transcreve a letra a partir do
+                  áudio e posiciona os acordes sobre ela. A transcrição é uma estimativa
+                  (funciona melhor com vocal claro) e o posicionamento dos acordes é
+                  aproximado — trechos incertos ficam marcados com “?”.
                 </span>
               </div>
 
@@ -774,47 +603,39 @@ export default function AudioLab() {
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-amber-100">
-                      Transcrição automática exige processamento externo
+                      Transcrição automática indisponível
                     </p>
                     <p className="mt-1 text-amber-200/80">
                       {autoMessage ||
-                        "A transcrição de letra (separação de voz + reconhecimento) roda em um serviço externo que ainda não está ativo neste ambiente. Assim que ele for conectado, a letra será gerada automaticamente — sem precisar colar nada."}
+                        "A transcrição automática não está ativa neste ambiente no momento."}
                     </p>
                     <p className="mt-2 text-amber-200/70">
                       Enquanto isso, você pode colar a letra manualmente logo abaixo.
                     </p>
                   </div>
                 </div>
-              ) : (
-                <>
+              ) : autoState === "running" || autoAvailable === null ? (
+                <div className="flex items-center gap-2 text-sm text-white/70">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  {autoAvailable === null ? "Preparando…" : "Transcrevendo a letra…"}
+                </div>
+              ) : autoMessage ? (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 text-sm text-rose-200/90 bg-rose-500/10 border border-rose-500/25 rounded-xl px-4 py-3">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{autoMessage}</span>
+                  </div>
                   <button
                     onClick={generateAutoChart}
-                    disabled={autoState === "running" || autoAvailable === null}
-                    className={cn(
-                      "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all",
-                      autoState === "running" || autoAvailable === null
-                        ? "bg-white/5 text-white/30 cursor-not-allowed"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90",
-                    )}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                   >
-                    {autoState === "running" ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Transcrevendo a letra…
-                      </>
-                    ) : autoAvailable === null ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Verificando…
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" /> Gerar letra + cifra
-                      </>
-                    )}
+                    <RotateCcw className="w-4 h-4" /> Tentar novamente
                   </button>
-                  {autoMessage && (
-                    <p className="mt-3 text-[12px] text-rose-300">{autoMessage}</p>
-                  )}
-                </>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-emerald-300">
+                  <Check className="w-4 h-4" /> Letra gerada — veja abaixo.
+                </div>
               )}
             </div>
 
