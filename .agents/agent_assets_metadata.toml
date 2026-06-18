@@ -6,3 +6,9 @@ id = "VOY15nb87_9tzADqhRAAp"
 uri = "file://artifacts/acordes/public/images/hero-bg.png"
 type = "image"
 title = "piano keyboard warm light"
+
+[[generated]]
+id = "Hh1cN3pmIjtP8tIKmVwV3"
+uri = "file://artifacts/acordes/public/images/hero-keyboard-v3.png"
+type = "image"
+title = "piano keys angled right"
