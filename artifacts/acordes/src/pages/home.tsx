@@ -50,8 +50,12 @@ export default function Home() {
               />
             </motion.div>
 
-            <motion.p variants={itemVariants} className="text-body-lg text-foreground/75 mb-9 sm:mb-10">
-              Feito para tecladistas e pianistas
+            <motion.p
+              variants={itemVariants}
+              className="font-display font-semibold leading-tight text-balance text-center text-[clamp(1.6rem,5vw,3rem)] text-foreground mb-9 sm:mb-10 max-w-2xl"
+            >
+              Ferramentas inteligentes para transformar o seu{" "}
+              <span className="text-primary">som</span>
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
