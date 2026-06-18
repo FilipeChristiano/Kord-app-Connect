@@ -22,7 +22,7 @@ export default function Home() {
     <div className="w-full">
       {/* Hero Section */}
       <section className="relative pt-16 pb-28 lg:pt-24 lg:pb-40 overflow-hidden">
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-x-0 bottom-0 -top-24 z-0">
           <img
             src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
             alt="Piano keys"
