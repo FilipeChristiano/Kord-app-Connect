@@ -20,7 +20,7 @@ export default function Home() {
   return (
     <div className="w-full">
       {/* ── Hero ──────────────────────────────────────────────── */}
-      <section className="relative pt-10 pb-14 lg:pt-14 lg:pb-20 overflow-hidden">
+      <section className="relative pt-20 pb-14 lg:pt-28 lg:pb-20 overflow-hidden">
         <div className="absolute inset-x-0 bottom-0 -top-24 z-0">
           <img
             src={`${import.meta.env.BASE_URL}images/hero-keyboard-v5.png`}
