@@ -19,19 +19,20 @@ export default function Home() {
   };
 
   return (
-    <div className="w-full">
-      {/* Hero Section */}
-      <section className="relative pt-16 pb-28 lg:pt-24 lg:pb-40 overflow-hidden">
-        <div className="absolute inset-x-0 bottom-0 -top-24 z-0">
-          <img
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-            alt="Piano keys"
-            className="w-full h-full object-cover opacity-[0.15] object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/85 to-background"></div>
-          <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.18),transparent_70%)] pointer-events-none" />
-        </div>
+    <div className="w-full relative">
+      {/* Imagem de fundo — toda a home */}
+      <div className="absolute inset-x-0 -top-24 bottom-0 z-0 overflow-hidden pointer-events-none">
+        <img
+          src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+          alt="Piano keys"
+          className="w-full h-full object-cover opacity-[0.12] brightness-125 object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/75 to-background/90"></div>
+        <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.18),transparent_70%)] pointer-events-none" />
+      </div>
 
+      {/* Hero Section */}
+      <section className="relative z-10 pt-16 pb-28 lg:pt-24 lg:pb-40 overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <motion.div
             initial="hidden"
@@ -71,7 +72,7 @@ export default function Home() {
       </section>
 
       {/* Slogan Strip */}
-      <section className="relative border-y border-white/5 overflow-hidden">
+      <section className="relative z-10 border-y border-white/5 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--primary)/0.12),_transparent_70%)] pointer-events-none" />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 relative">
           <h2 className="font-display font-bold leading-tight text-center whitespace-nowrap text-[clamp(1.1rem,4.6vw,3.5rem)]">
@@ -81,7 +82,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 lg:py-24 relative">
+      <section className="py-20 lg:py-24 relative z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12 lg:mb-16">
             <p className="text-small font-semibold uppercase tracking-[0.2em] text-primary mb-3">Recursos</p>
