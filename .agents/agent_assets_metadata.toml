@@ -12,3 +12,9 @@ id = "Hh1cN3pmIjtP8tIKmVwV3"
 uri = "file://artifacts/acordes/public/images/hero-keyboard-v3.png"
 type = "image"
 title = "piano keys angled right"
+
+[[generated]]
+id = "uy7UDaTJAJykjtqWGmPS3"
+uri = "file://artifacts/acordes/public/images/hero-keyboard-v4.png"
+type = "image"
+title = "piano keys even full width"

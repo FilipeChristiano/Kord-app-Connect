@@ -23,7 +23,7 @@ export default function Home() {
       <section className="relative pt-10 pb-14 lg:pt-14 lg:pb-20 overflow-hidden">
         <div className="absolute inset-x-0 bottom-0 -top-24 z-0">
           <img
-            src={`${import.meta.env.BASE_URL}images/hero-keyboard-v3.png`}
+            src={`${import.meta.env.BASE_URL}images/hero-keyboard-v4.png`}
             alt=""
             aria-hidden="true"
             className="w-full h-full object-cover opacity-[0.5] brightness-90 object-center"
