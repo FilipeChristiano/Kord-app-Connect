@@ -26,9 +26,9 @@ export default function Home() {
           <img
             src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
             alt="Piano keys"
-            className="w-full h-full object-cover opacity-[0.12] brightness-125 object-center"
+            className="w-full h-full object-cover opacity-[0.28] brightness-125 object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/85 to-background"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/60 to-background"></div>
           <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.18),transparent_70%)] pointer-events-none" />
         </div>
 
