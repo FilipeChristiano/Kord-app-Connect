@@ -71,22 +71,23 @@ export default function Home() {
       </section>
 
       {/* Slogan Strip */}
-      <section className="relative border-y border-primary/15 overflow-hidden">
+      <section className="relative border-y border-primary/15">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_120%_at_center,_hsl(var(--primary)/0.28),_transparent_70%)] pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-7 md:py-9 relative flex flex-col items-center gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-7 md:py-9 relative">
           <h2 className="font-display font-bold leading-tight text-center whitespace-nowrap text-[clamp(1.1rem,4.6vw,3.5rem)]">
             O <span className="text-gradient-primary">próximo nível</span> do seu teclado.
           </h2>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-            className="flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-primary/10 text-primary"
-            aria-hidden="true"
-          >
-            <ChevronDown className="w-5 h-5" />
-          </motion.div>
         </div>
+        {/* Seta entre a faixa e a seção de baixo */}
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute left-1/2 -ml-5 bottom-[-20px] z-20 flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-background text-primary shadow-lg"
+          aria-hidden="true"
+        >
+          <ChevronDown className="w-5 h-5" />
+        </motion.div>
       </section>
 
       {/* Features Section */}
