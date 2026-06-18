@@ -55,6 +55,10 @@ export default function Home() {
               />
             </motion.div>
 
+            <motion.p variants={itemVariants} className="text-body-lg text-foreground/75 mb-9 sm:mb-10">
+              Feito para tecladistas e pianistas
+            </motion.p>
+
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Link href="/dicionario" className="px-8 py-4 rounded-2xl font-bold bg-primary text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
                 Explorar ferramentas <ArrowRight className="w-5 h-5" />
