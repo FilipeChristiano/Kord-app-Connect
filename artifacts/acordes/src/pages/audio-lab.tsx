@@ -19,6 +19,8 @@ import {
   Copy,
   Check,
   Pencil,
+  Mic,
+  Sparkles,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -28,6 +30,11 @@ import {
   type AnalysisStep,
   type AudioAnalysisResult,
 } from "@/lib/audio-analysis";
+import {
+  getTranscriptionStatus,
+  transcribeAudio,
+} from "@/lib/transcription";
+import { buildAlignedChart } from "@/lib/lyric-align";
 import {
   processChordChartFull,
   type SophisticationLevel,
@@ -164,9 +171,17 @@ export default function AudioLab() {
   const [chartReady, setChartReady] = useState(false);
   const [editingChart, setEditingChart] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [chartHasUncertain, setChartHasUncertain] = useState(false);
+
+  // ── Pipeline automático (transcrição) ──────────────────────────────────────
+  const [autoAvailable, setAutoAvailable] = useState<boolean | null>(null);
+  const [autoState, setAutoState] = useState<"idle" | "running">("idle");
+  const [autoMessage, setAutoMessage] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const audioFileRef = useRef<File | null>(null);
   const runIdRef = useRef(0);
+  const autoRunIdRef = useRef(0);
   const busyRef = useRef(false);
 
   useEffect(() => {
@@ -190,6 +205,12 @@ export default function AudioLab() {
     setChartReady(false);
     setEditingChart(false);
     setCopied(false);
+    setChartHasUncertain(false);
+    setAutoAvailable(null);
+    setAutoState("idle");
+    setAutoMessage("");
+    autoRunIdRef.current++; // invalida transcrição pendente
+    audioFileRef.current = null;
     setStep("lendo");
   }, []);
 
@@ -208,6 +229,7 @@ export default function AudioLab() {
 
     const runId = ++runIdRef.current;
     busyRef.current = true;
+    audioFileRef.current = file;
     setFileName(file.name);
     setError("");
     setResult(null);
@@ -310,6 +332,19 @@ export default function AudioLab() {
   );
   const bpmValue = bpmOpt?.bpm ?? result?.bpm.bpm ?? 0;
 
+  // Verifica se a transcrição automática está disponível ao entrar no resultado.
+  useEffect(() => {
+    if (phase !== "result") return;
+    let active = true;
+    setAutoAvailable(null);
+    getTranscriptionStatus().then((s) => {
+      if (active) setAutoAvailable(s.available);
+    });
+    return () => {
+      active = false;
+    };
+  }, [phase, result]);
+
   const buildChart = useCallback(() => {
     if (!result) return;
     const prog =
@@ -319,9 +354,43 @@ export default function AudioLab() {
     const text = buildLyricChart(lyrics, prog, result.key.symbol, bpmValue);
     setChart(text);
     setChartReady(true);
+    setChartHasUncertain(false);
     setEditingChart(false);
     setCopied(false);
   }, [result, chartSource, sophisticatedChords, chords, lyrics, bpmValue]);
+
+  // Pipeline automático: transcreve a letra (worker externo) e alinha os acordes
+  // detectados (com timestamps) sobre as palavras. Nunca inventa letra.
+  const generateAutoChart = useCallback(async () => {
+    if (!result || !audioFileRef.current || autoState === "running") return;
+    const runId = ++autoRunIdRef.current;
+    setAutoState("running");
+    setAutoMessage("");
+
+    const outcome = await transcribeAudio(audioFileRef.current);
+    if (runId !== autoRunIdRef.current) return; // descarta resposta obsoleta (reset/troca)
+
+    if (!outcome.ok) {
+      setAutoState("idle");
+      setAutoMessage(outcome.message);
+      if (outcome.reason === "external_processing_required") setAutoAvailable(false);
+      return;
+    }
+
+    const { chart: aligned, hasUncertain } = buildAlignedChart(
+      outcome.result,
+      result.chordTimeline,
+      result.key.symbol,
+      bpmValue,
+    );
+    setChart(aligned);
+    setChartReady(true);
+    setChartHasUncertain(hasUncertain);
+    setEditingChart(false);
+    setCopied(false);
+    setAutoState("idle");
+    setAutoMessage("");
+  }, [result, autoState, bpmValue]);
 
   const copyChart = useCallback(async () => {
     try {
@@ -682,19 +751,85 @@ export default function AudioLab() {
               )}
             </AnimatePresence>
 
-            {/* ── Montar cifra com letra ───────────────────────────────────── */}
-            <div className="glass-card rounded-3xl border border-white/10 p-6">
+            {/* ── Letra + cifra automática (primário) ──────────────────────── */}
+            <div className="glass-card rounded-3xl border border-primary/20 bg-primary/5 p-6">
               <div className="flex items-center gap-2 mb-1">
-                <FileText className="w-4 h-4 text-primary" />
+                <Mic className="w-4 h-4 text-primary" />
                 <h3 className="font-display font-bold text-white">
-                  Montar cifra com letra
+                  Gerar letra + cifra automaticamente
                 </h3>
               </div>
               <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
                 <span>
-                  Cole a letra da música para o Harmonic organizar a cifra com base nos
-                  acordes detectados. Você pode ajustar tudo antes de usar.
+                  O Harmonic transcreve a letra a partir do áudio e posiciona os acordes
+                  detectados sobre as palavras. A transcrição é uma estimativa — trechos
+                  incertos ficam marcados com “?”.
+                </span>
+              </div>
+
+              {autoAvailable === false ? (
+                <div className="flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-100">
+                      Transcrição automática exige processamento externo
+                    </p>
+                    <p className="mt-1 text-amber-200/80">
+                      {autoMessage ||
+                        "A transcrição de letra (separação de voz + reconhecimento) roda em um serviço externo que ainda não está ativo neste ambiente. Assim que ele for conectado, a letra será gerada automaticamente — sem precisar colar nada."}
+                    </p>
+                    <p className="mt-2 text-amber-200/70">
+                      Enquanto isso, você pode colar a letra manualmente logo abaixo.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={generateAutoChart}
+                    disabled={autoState === "running" || autoAvailable === null}
+                    className={cn(
+                      "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all",
+                      autoState === "running" || autoAvailable === null
+                        ? "bg-white/5 text-white/30 cursor-not-allowed"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90",
+                    )}
+                  >
+                    {autoState === "running" ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Transcrevendo a letra…
+                      </>
+                    ) : autoAvailable === null ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Verificando…
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" /> Gerar letra + cifra
+                      </>
+                    )}
+                  </button>
+                  {autoMessage && (
+                    <p className="mt-3 text-[12px] text-rose-300">{autoMessage}</p>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* ── Ou cole a letra manualmente (alternativa) ────────────────── */}
+            <div className="glass-card rounded-3xl border border-white/10 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <FileText className="w-4 h-4 text-primary" />
+                <h3 className="font-display font-bold text-white">
+                  Ou cole a letra manualmente
+                </h3>
+              </div>
+              <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+                <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                <span>
+                  Se preferir, cole a letra da música e o Harmonic organiza a cifra com base
+                  nos acordes detectados. Você pode ajustar tudo antes de usar.
                 </span>
               </div>
 
@@ -748,74 +883,79 @@ export default function AudioLab() {
                 </button>
               </div>
 
-              {/* Resultado da cifra */}
-              <AnimatePresence>
-                {chartReady && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="mt-6"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-display font-bold text-white">
-                        Letra + cifra organizada
-                      </h4>
-                    </div>
-                    <p className="text-[12px] text-muted-foreground/70 mb-3">
-                      Esta cifra foi organizada automaticamente. Revise a posição dos
-                      acordes antes de usar.
-                    </p>
-
-                    {editingChart ? (
-                      <textarea
-                        value={chart}
-                        onChange={(e) => setChart(e.target.value)}
-                        spellCheck={false}
-                        className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
-                      />
-                    ) : (
-                      <pre className="w-full overflow-x-auto bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm leading-loose whitespace-pre notranslate" translate="no">
-                        {chart}
-                      </pre>
-                    )}
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        onClick={() => setEditingChart((v) => !v)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        {editingChart ? "Concluir edição" : "Editar"}
-                      </button>
-                      <button
-                        onClick={copyChart}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
-                      >
-                        {copied ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                        {copied ? "Copiado!" : "Copiar cifra"}
-                      </button>
-                      <button
-                        onClick={buildChart}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" /> Refinar cifra
-                      </button>
-                      <button
-                        onClick={sendChartToSofisticador}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                      >
-                        <Wand2 className="w-3.5 h-3.5" /> Sofisticar cifra
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
+
+            {/* ── Cifra montada (compartilhada: automática ou manual) ──────── */}
+            <AnimatePresence>
+              {chartReady && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="glass-card rounded-3xl border border-white/10 p-6"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <h4 className="font-display font-bold text-white">
+                      Letra + cifra organizada
+                    </h4>
+                  </div>
+                  <p className="text-[12px] text-muted-foreground/70 mb-3">
+                    Esta cifra foi organizada automaticamente. Revise a posição dos acordes
+                    antes de usar.
+                  </p>
+                  {chartHasUncertain && (
+                    <div className="flex items-start gap-2 mb-3 text-[12px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2.5">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>
+                        Alguns trechos ficaram incertos (marcados com “?”). Confira a letra e
+                        os acordes nesses pontos.
+                      </span>
+                    </div>
+                  )}
+
+                  {editingChart ? (
+                    <textarea
+                      value={chart}
+                      onChange={(e) => setChart(e.target.value)}
+                      spellCheck={false}
+                      className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
+                    />
+                  ) : (
+                    <pre className="w-full overflow-x-auto bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm leading-loose whitespace-pre notranslate" translate="no">
+                      {chart}
+                    </pre>
+                  )}
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setEditingChart((v) => !v)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      {editingChart ? "Concluir edição" : "Editar"}
+                    </button>
+                    <button
+                      onClick={copyChart}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                    >
+                      {copied ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      {copied ? "Copiado!" : "Copiar cifra"}
+                    </button>
+                    <button
+                      onClick={sendChartToSofisticador}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                    >
+                      <Wand2 className="w-3.5 h-3.5" /> Sofisticar cifra
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

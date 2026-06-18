@@ -25,10 +25,20 @@ export interface DetectedKey {
   ptLabel: string; // "Sol Maior", "Mi menor"
 }
 
+// Acorde com janela de tempo (segundos) e confiança — base para alinhar a cifra
+// sobre a letra transcrita.
+export interface TimedChord {
+  symbol: string;
+  start: number;
+  end: number;
+  confidence: number; // 0..1 (produto escalar normalizado com o modelo de tríade)
+}
+
 export interface AudioAnalysisResult {
   key: DetectedKey;
   bpm: BpmAnalysis;
   chords: string[];
+  chordTimeline: TimedChord[];
   duration: number; // segundos
 }
 
@@ -261,19 +271,20 @@ function detectChords(
   sampleRate: number,
   bpm: number,
   key: DetectedKey,
-): string[] {
-  if (chroma.length === 0) return [];
+): { chords: string[]; timeline: TimedChord[] } {
+  if (chroma.length === 0) return { chords: [], timeline: [] };
 
   const names = FLAT_KEYS.has(key.symbol) ? FLAT : SHARP;
   const templates = buildChordTemplates();
   const frameRate = sampleRate / HOP; // quadros por segundo
+  const secPerFrame = HOP / sampleRate;
   const secPerBeat = bpm > 0 ? 60 / bpm : 0.5;
   const secPerSeg = Math.max(0.5, secPerBeat * 2); // ~2 tempos por trecho
   const segFrames = Math.max(2, Math.round(secPerSeg * frameRate));
   const invSqrt3 = 1 / Math.sqrt(3);
 
-  // 1) Agrega os quadros em trechos (~2 tempos) somando cromagrama e energia.
-  const segs: { chroma: Float32Array; energy: number }[] = [];
+  // 1) Agrega os quadros em trechos (~2 tempos), guardando a janela de quadros.
+  const segs: { chroma: Float32Array; energy: number; startFrame: number; endFrame: number }[] = [];
   for (let s = 0; s < chroma.length; s += segFrames) {
     const end = Math.min(chroma.length, s + segFrames);
     const acc = new Float32Array(12);
@@ -283,9 +294,9 @@ function detectChords(
       for (let i = 0; i < 12; i++) acc[i] += frame[i];
       e += energy[f];
     }
-    segs.push({ chroma: acc, energy: e });
+    segs.push({ chroma: acc, energy: e, startFrame: s, endFrame: end });
   }
-  if (segs.length === 0) return [];
+  if (segs.length === 0) return { chords: [], timeline: [] };
 
   // 2) Limiar de silêncio relativo à mediana das energias (descarta trechos
   //    de silêncio/ruído sem depender de um corte absoluto).
@@ -293,8 +304,9 @@ function detectChords(
   const medianE = sortedE[Math.floor(sortedE.length / 2)] || 0;
   const minE = medianE * 0.12;
 
-  // 3) Para cada trecho com som, escolhe SEMPRE a melhor tríade (maior/menor).
-  const labels: string[] = [];
+  // 3) Para cada trecho com som, escolhe SEMPRE a melhor tríade (maior/menor),
+  //    guardando a janela de tempo e a confiança (score normalizado).
+  const raw: TimedChord[] = [];
   for (const seg of segs) {
     if (seg.energy < minE) continue; // silêncio / quase silêncio
     let norm = 0;
@@ -313,16 +325,28 @@ function detectChords(
         bestLabel = names[tpl.root] + (tpl.isMinor ? "m" : "");
       }
     }
-    labels.push(bestLabel);
+    raw.push({
+      symbol: bestLabel,
+      start: seg.startFrame * secPerFrame,
+      end: seg.endFrame * secPerFrame,
+      confidence: Math.max(0, Math.min(1, bestScore)),
+    });
   }
 
-  // 4) Junta trechos consecutivos iguais.
-  const out: string[] = [];
-  for (const l of labels) {
-    if (out.length === 0 || out[out.length - 1] !== l) out.push(l);
-    if (out.length >= 64) break;
+  // 4) Junta trechos consecutivos iguais, estendendo a janela de tempo.
+  const timeline: TimedChord[] = [];
+  for (const c of raw) {
+    const last = timeline[timeline.length - 1];
+    if (last && last.symbol === c.symbol) {
+      last.end = c.end;
+      last.confidence = Math.max(last.confidence, c.confidence);
+    } else {
+      if (timeline.length >= 64) break;
+      timeline.push({ ...c });
+    }
   }
-  return out;
+
+  return { chords: timeline.map((t) => t.symbol), timeline };
 }
 
 // ── Pipeline completo ─────────────────────────────────────────────────────────
@@ -342,12 +366,12 @@ export async function analyzeAudioBuffer(
 
   onProgress?.("acordes");
   await tick();
-  const chords = detectChords(chroma, energy, ANALYSIS_RATE, bpm.bpm, key);
+  const { chords, timeline } = detectChords(chroma, energy, ANALYSIS_RATE, bpm.bpm, key);
 
   onProgress?.("finalizando");
   await tick();
 
-  return { key, bpm, chords, duration: buffer.duration };
+  return { key, bpm, chords, chordTimeline: timeline, duration: buffer.duration };
 }
 
 export function formatDuration(sec: number): string {
