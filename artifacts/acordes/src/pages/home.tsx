@@ -97,17 +97,18 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12 lg:mb-16 text-center max-w-2xl mx-auto">
             <p className="text-small font-semibold uppercase tracking-[0.2em] text-primary mb-3">Recursos principais</p>
-            <h2 className="text-h2 font-bold text-foreground mb-4">Ferramentas do Harmonic</h2>
+            <h2 className="text-h2 font-bold text-foreground mb-4 text-balance">Tudo que você precisa para transformar seu som.</h2>
             <p className="text-muted-foreground text-body-lg">
-              Quatro ferramentas para transformar o seu som — em um só lugar.
+              Ferramentas inteligentes, resultados profissionais.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 auto-rows-fr">
             <ToolCard
+              accent="orange"
               icon={<Layers />}
               title="Acordes Sofisticados"
-              desc="Explore acordes mais ricos para deixar seu som mais profissional."
+              desc="Explore acordes ricos, voicings e categorias para elevar seu som a outro nível."
               cta="Explorar acordes"
               href="/dicionario"
             >
@@ -115,9 +116,10 @@ export default function Home() {
             </ToolCard>
 
             <ToolCard
+              accent="purple"
               icon={<Wand2 />}
               title="Sofisticador de Cifras"
-              desc="Transforme cifras simples em versões mais bonitas e musicais."
+              desc="Transforme cifras simples em versões mais bonitas e musicais em segundos."
               cta="Sofisticar cifra"
               href="/sofisticador"
             >
@@ -125,20 +127,21 @@ export default function Home() {
             </ToolCard>
 
             <ToolCard
+              accent="teal"
               icon={<Waves />}
               title="Pad Continuous"
-              desc="Crie uma atmosfera contínua para tocar, ministrar ou acompanhar."
+              desc="Crie uma atmosfera contínua para tocar, ministrar e acompanhar."
               cta="Abrir pad"
               href="/pad"
-              headerRight={<PadToggle />}
             >
               <PadVisual />
             </ToolCard>
 
             <ToolCard
+              accent="orange"
               icon={<Timer />}
               title="Metrônomo Inteligente"
-              desc="Pratique com pulso, subdivisões e precisão musical."
+              desc="Pratique com pulso, subdivisões e variações para tocar com precisão."
               cta="Abrir metrônomo"
               href="/metronomo"
             >
@@ -153,46 +156,75 @@ export default function Home() {
 
 /* ─── Card base ───────────────────────────────────────────────── */
 
+type Accent = "orange" | "purple" | "teal";
+
+const ACCENTS: Record<Accent, {
+  glow: string;
+  iconBox: string;
+  cta: string;
+  hoverBorder: string;
+  hoverShadow: string;
+}> = {
+  orange: {
+    glow: "bg-[hsl(var(--primary))]",
+    iconBox: "bg-primary/15 text-primary ring-1 ring-primary/20",
+    cta: "text-primary",
+    hoverBorder: "hover:border-primary/30",
+    hoverShadow: "hover:shadow-[0_18px_44px_-18px_hsl(var(--primary)/0.4)]",
+  },
+  purple: {
+    glow: "bg-[#8b5cf6]",
+    iconBox: "bg-[#8b5cf6]/15 text-[#a78bfa] ring-1 ring-[#8b5cf6]/25",
+    cta: "text-[#a78bfa]",
+    hoverBorder: "hover:border-[#8b5cf6]/40",
+    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(139,92,246,0.45)]",
+  },
+  teal: {
+    glow: "bg-[#14b8a6]",
+    iconBox: "bg-[#14b8a6]/15 text-[#2dd4bf] ring-1 ring-[#14b8a6]/25",
+    cta: "text-[#2dd4bf]",
+    hoverBorder: "hover:border-[#14b8a6]/40",
+    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(20,184,166,0.45)]",
+  },
+};
+
 function ToolCard({
-  icon, title, desc, cta, href, headerRight, children,
+  icon, title, desc, cta, href, accent, children,
 }: {
   icon: React.ReactNode;
   title: string;
   desc: string;
   cta: string;
   href: string;
-  headerRight?: React.ReactNode;
+  accent: Accent;
   children: React.ReactNode;
 }) {
+  const a = ACCENTS[accent];
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5, ease: EASE }}
-      whileHover={{ y: -4, scale: 1.01, transition: { duration: 0.2, ease: EASE } }}
-      className="rounded-2xl bg-card border border-white/[0.05] shadow-lg shadow-black/10 hover:border-primary/25 hover:bg-surface-elevated hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.25)] transition-colors duration-200"
+      whileHover={{ y: -4, transition: { duration: 0.2, ease: EASE } }}
+      className={`group relative overflow-hidden rounded-3xl bg-card border border-white/[0.06] shadow-lg shadow-black/20 transition-colors duration-200 ${a.hoverBorder} ${a.hoverShadow}`}
     >
-      <Link href={href} className="group flex flex-col h-full p-6 sm:p-7">
-        <div className="flex items-center justify-between mb-5">
-          <span className="w-12 h-12 rounded-xl bg-surface-elevated text-primary flex items-center justify-center [&_svg]:w-6 [&_svg]:h-6 group-hover:scale-110 transition-transform duration-200">
+      <div className={`pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full blur-[90px] opacity-[0.18] ${a.glow}`} />
+      <Link href={href} className="relative flex flex-col sm:flex-row gap-5 sm:gap-6 p-6 sm:p-7 h-full">
+        <div className="flex flex-col sm:w-[42%] sm:shrink-0">
+          <span className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 [&_svg]:w-6 [&_svg]:h-6 transition-transform duration-200 group-hover:scale-110 ${a.iconBox}`}>
             {icon}
           </span>
-          {headerRight}
+          <h3 className="text-h4 font-semibold text-foreground mb-2 text-balance">{title}</h3>
+          <p className="text-muted-foreground leading-relaxed text-small">{desc}</p>
+          <span className={`mt-auto pt-5 inline-flex items-center gap-1.5 text-sm font-semibold ${a.cta}`}>
+            {cta}
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
+          </span>
         </div>
-
-        {/* visual interno — prévia da ferramenta */}
-        <div className="rounded-xl border border-white/[0.05] bg-background/50 p-4 min-h-[132px] flex flex-col justify-center mb-5">
+        <div className="flex-1 flex items-center min-w-0">
           {children}
         </div>
-
-        <h3 className="text-h4 font-semibold text-foreground mb-2">{title}</h3>
-        <p className="text-muted-foreground leading-relaxed text-small">{desc}</p>
-
-        <span className="mt-auto pt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-          {cta}
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
-        </span>
       </Link>
     </motion.div>
   );
@@ -203,25 +235,30 @@ function ToolCard({
 function AcordesVisual() {
   const chords = ["Cmaj9", "F7M(9)", "G13", "Am11"];
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
+    <div className="w-full flex flex-col gap-2.5">
+      <div className="flex flex-wrap gap-1.5">
         {chords.map((c, i) => (
           <span
             key={c}
-            className={`px-2.5 py-1 rounded-lg font-mono text-xs transition-colors ${
+            className={`px-2 py-1 rounded-lg font-mono text-[11px] transition-colors ${
               i === 0
                 ? "bg-primary/15 border border-primary/30 text-primary font-semibold"
-                : "bg-surface-elevated border border-white/[0.07] text-foreground/80"
+                : "bg-white/[0.04] border border-white/[0.07] text-foreground/75"
             }`}
           >
             {c}
           </span>
         ))}
       </div>
-      <ChordKeyboard />
-      <p className="text-[10px] text-muted-foreground/80">
-        <span className="font-mono text-primary">Cmaj9</span> · notas em destaque no teclado
-      </p>
+      <ChordKeyboard className="w-full h-14" />
+      <div className="rounded-xl border border-white/[0.06] bg-background/50 px-3 py-2.5 flex items-center justify-between gap-3">
+        <div className="text-[11px] space-y-1 leading-tight">
+          <p className="font-mono text-primary font-semibold text-xs">Cmaj9</p>
+          <p className="text-muted-foreground">Notas: <span className="font-mono text-foreground/80">C E G B D</span></p>
+          <p className="text-muted-foreground">Tensão: <span className="font-mono text-primary">9ª · 13ª</span></p>
+        </div>
+        <ChordKeyboard className="w-24 h-9 shrink-0" />
+      </div>
     </div>
   );
 }
@@ -230,25 +267,25 @@ function SofisticadorVisual() {
   const antes = ["C", "G", "Am", "F"];
   const depois = ["C9", "G/B", "Am11", "F7M(9)"];
   return (
-    <div className="flex flex-col gap-2">
-      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-1.5">Antes</p>
+    <div className="w-full flex flex-col gap-2">
+      <div className="rounded-xl border border-[#8b5cf6]/15 bg-[#8b5cf6]/[0.05] px-3 py-2.5">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">Antes</p>
         <div className="flex flex-wrap gap-1.5">
           {antes.map((a) => (
-            <span key={a} className="min-w-[34px] text-center px-2 py-1 rounded-md bg-white/[0.05] font-mono text-xs text-muted-foreground">{a}</span>
+            <span key={a} className="min-w-[36px] text-center px-2 py-1 rounded-md bg-white/[0.05] font-mono text-xs text-muted-foreground">{a}</span>
           ))}
         </div>
       </div>
-      <div className="flex justify-center text-primary">
+      <div className="flex justify-center text-[#a78bfa]">
         <motion.span animate={{ y: [0, 3, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
           <ArrowDown className="w-4 h-4" />
         </motion.span>
       </div>
-      <div className="rounded-lg border border-primary/20 bg-primary/[0.07] px-3 py-2">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-primary/80 mb-1.5">Depois</p>
+      <div className="rounded-xl border border-[#8b5cf6]/25 bg-[#8b5cf6]/[0.08] px-3 py-2.5">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#a78bfa] mb-1.5">Depois</p>
         <div className="flex flex-wrap gap-1.5">
           {depois.map((d) => (
-            <span key={d} className="px-2 py-1 rounded-md bg-primary/15 border border-primary/25 font-mono text-xs text-primary font-semibold">{d}</span>
+            <span key={d} className="px-2 py-1 rounded-md bg-[#8b5cf6]/15 border border-[#8b5cf6]/30 font-mono text-xs text-[#c4b5fd] font-semibold">{d}</span>
           ))}
         </div>
       </div>
@@ -256,44 +293,50 @@ function SofisticadorVisual() {
   );
 }
 
-function PadToggle() {
+function PadWaves() {
   return (
-    <span className="inline-flex items-center gap-2">
-      <span className="text-[10px] font-bold uppercase tracking-wide text-primary">On</span>
-      <span className="relative w-9 h-5 rounded-full bg-primary/30 border border-primary/40">
-        <motion.span
-          className="absolute top-1/2 -translate-y-1/2 right-[2px] w-3.5 h-3.5 rounded-full bg-primary shadow"
-          animate={{ opacity: [1, 0.65, 1] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </span>
-    </span>
+    <div className="relative w-full h-20 overflow-hidden rounded-xl border border-[#14b8a6]/15 bg-[#0c1f1d]/40">
+      <svg viewBox="0 0 400 100" className="w-full h-full" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="padTeal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#0d9488" stopOpacity="0.04" />
+          </linearGradient>
+        </defs>
+        <motion.g animate={{ x: [0, -60, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}>
+          <path d="M-80 62 Q 30 32 130 56 T 330 52 T 540 60 V100 H-80 Z" fill="url(#padTeal)" />
+          <path d="M-80 70 Q 50 46 150 66 T 350 60 T 560 68" fill="none" stroke="#2dd4bf" strokeWidth="2" strokeOpacity="0.55" />
+        </motion.g>
+        <motion.g animate={{ x: [0, 55, 0] }} transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}>
+          <path d="M-80 54 Q 40 76 140 58 T 340 64 T 560 56" fill="none" stroke="#5eead4" strokeWidth="1.5" strokeOpacity="0.35" />
+        </motion.g>
+      </svg>
+    </div>
   );
 }
 
 function PadVisual() {
-  const bars = [0.45, 0.8, 1, 0.6, 0.9, 0.5, 0.75, 0.55, 0.85, 0.65];
+  const stats = [
+    { label: "Tom", value: "G" },
+    { label: "Modo", value: "Worship" },
+    { label: "Camadas", value: "3" },
+  ];
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="space-y-2 text-xs">
-        <p className="text-muted-foreground">Tom <span className="ml-1 font-mono text-base text-foreground font-semibold">G</span></p>
-        <p className="text-muted-foreground">Modo <span className="ml-1 font-mono text-foreground/85">Worship</span></p>
-        <span className="inline-flex items-center gap-1.5 pt-0.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="font-semibold text-primary text-[10px] uppercase tracking-wide">Pad ativo</span>
-        </span>
-      </div>
-      <div className="flex items-center gap-[3px] h-12">
-        {bars.map((h, i) => (
-          <motion.span
-            key={i}
-            className="w-1.5 rounded-full bg-primary/60"
-            style={{ height: 44, transformOrigin: "center" }}
-            initial={{ scaleY: h * 0.5 }}
-            animate={{ scaleY: [h * 0.4, h, h * 0.5] }}
-            transition={{ duration: 1.2 + i * 0.1, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
-          />
+    <div className="w-full flex flex-col gap-3">
+      <PadWaves />
+      <div className="grid grid-cols-4 gap-2">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-lg border border-white/[0.06] bg-background/50 px-2 py-1.5 text-center">
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground/70">{s.label}</p>
+            <p className="text-xs font-semibold text-foreground truncate">{s.value}</p>
+          </div>
         ))}
+        <div className="rounded-lg border border-[#14b8a6]/25 bg-[#14b8a6]/[0.08] px-2 py-1.5 text-center">
+          <p className="text-[9px] uppercase tracking-wide text-[#2dd4bf]/80">Pad Ativo</p>
+          <p className="text-xs font-semibold text-[#2dd4bf] inline-flex items-center gap-1 justify-center">
+            ON <span className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf] animate-pulse" />
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -301,15 +344,12 @@ function PadVisual() {
 
 function MetronomoVisual() {
   return (
-    <div className="flex flex-col gap-3.5">
-      <div className="flex items-baseline justify-between">
-        <div className="leading-none">
-          <span className="font-display text-4xl font-bold text-foreground tabular-nums">72</span>
-          <span className="ml-1.5 text-xs font-semibold text-muted-foreground">BPM</span>
-        </div>
-        <span className="font-mono text-sm text-muted-foreground">4/4</span>
+    <div className="w-full flex flex-col gap-4">
+      <div className="flex items-center justify-center gap-4">
+        <MetronomeGauge />
+        <span className="font-mono text-base text-muted-foreground">4/4</span>
       </div>
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-center gap-2.5">
         {[1, 2, 3, 4].map((n) => (
           <motion.span
             key={n}
@@ -327,7 +367,58 @@ function MetronomoVisual() {
   );
 }
 
-function ChordKeyboard() {
+function MetronomeGauge() {
+  const size = 148;
+  const cx = size / 2;
+  const cy = size / 2;
+  const rOut = 66;
+  const rIn = 57;
+  const rArc = 63;
+  const start = 135;
+  const sweep = 270;
+  const frac = 0.42;
+  const N = 36;
+  const polar = (r: number, a: number) => {
+    const rad = (a * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+  const ticks = Array.from({ length: N + 1 }, (_, i) => {
+    const a = start + (sweep * i) / N;
+    const p1 = polar(rIn, a);
+    const p2 = polar(rOut, a);
+    return { p1, p2, on: i / N <= frac, key: i };
+  });
+  const aStart = polar(rArc, start);
+  const aEnd = polar(rArc, start + sweep * frac);
+  const large = sweep * frac > 180 ? 1 : 0;
+  const arc = `M ${aStart.x} ${aStart.y} A ${rArc} ${rArc} 0 ${large} 1 ${aEnd.x} ${aEnd.y}`;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full" aria-hidden="true">
+        {ticks.map((t) => (
+          <line
+            key={t.key}
+            x1={t.p1.x}
+            y1={t.p1.y}
+            x2={t.p2.x}
+            y2={t.p2.y}
+            className={t.on ? "stroke-[hsl(var(--primary))]" : ""}
+            stroke={t.on ? undefined : "rgba(255,255,255,0.12)"}
+            strokeWidth={2}
+            strokeLinecap="round"
+          />
+        ))}
+        <path d={arc} fill="none" className="stroke-[hsl(var(--primary))]" strokeWidth={3} strokeLinecap="round" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-display text-4xl font-bold text-foreground leading-none tabular-nums">72</span>
+        <span className="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground mt-1.5">BPM</span>
+      </div>
+    </div>
+  );
+}
+
+function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
   const whiteCount = 14;
   const w = 17;
   const h = 60;
@@ -340,10 +431,10 @@ function ChordKeyboard() {
       if (idx < whiteCount - 1) blacks.push(idx);
     }
   }
-  // Cmaj9 voicing highlighted: C E G B D (white) + nothing on black
-  const hlWhite = new Set([0, 2, 4, 6, 8]);
+  const hlWhite = new Set([5, 6, 7, 8, 9]);
+  const hlBlack = new Set([4, 5, 7, 8]);
   return (
-    <svg viewBox={`0 0 ${whiteCount * w} ${h}`} className="w-full h-12" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+    <svg viewBox={`0 0 ${whiteCount * w} ${h}`} className={className} aria-hidden="true" preserveAspectRatio="xMidYMid meet">
       {whites.map((i) => (
         <rect
           key={`w${i}`}
@@ -366,7 +457,8 @@ function ChordKeyboard() {
           width={w * 0.7}
           height={h * 0.62}
           rx={2}
-          fill="rgba(8,8,12,0.88)"
+          className={hlBlack.has(i) ? "fill-[hsl(var(--primary))]" : ""}
+          fill={hlBlack.has(i) ? undefined : "rgba(8,8,12,0.88)"}
           stroke="rgba(255,255,255,0.06)"
           strokeWidth={0.6}
         />
