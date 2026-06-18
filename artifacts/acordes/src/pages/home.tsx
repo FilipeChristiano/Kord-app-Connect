@@ -130,6 +130,7 @@ export default function Home() {
               desc="Crie uma atmosfera contínua para tocar, ministrar ou acompanhar."
               cta="Abrir pad"
               href="/pad"
+              headerRight={<PadToggle />}
             >
               <PadVisual />
             </ToolCard>
@@ -153,13 +154,14 @@ export default function Home() {
 /* ─── Card base ───────────────────────────────────────────────── */
 
 function ToolCard({
-  icon, title, desc, cta, href, children,
+  icon, title, desc, cta, href, headerRight, children,
 }: {
   icon: React.ReactNode;
   title: string;
   desc: string;
   cta: string;
   href: string;
+  headerRight?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -172,12 +174,15 @@ function ToolCard({
       className="rounded-2xl bg-card border border-white/[0.05] shadow-lg shadow-black/10 hover:border-primary/25 hover:bg-surface-elevated hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.25)] transition-colors duration-200"
     >
       <Link href={href} className="group flex flex-col h-full p-6 sm:p-7">
-        <span className="w-12 h-12 rounded-xl bg-surface-elevated text-primary flex items-center justify-center mb-5 [&_svg]:w-6 [&_svg]:h-6 group-hover:scale-110 transition-transform duration-200">
-          {icon}
-        </span>
+        <div className="flex items-center justify-between mb-5">
+          <span className="w-12 h-12 rounded-xl bg-surface-elevated text-primary flex items-center justify-center [&_svg]:w-6 [&_svg]:h-6 group-hover:scale-110 transition-transform duration-200">
+            {icon}
+          </span>
+          {headerRight}
+        </div>
 
-        {/* visual interno */}
-        <div className="rounded-xl border border-white/[0.05] bg-background/40 px-4 py-3.5 min-h-[104px] flex flex-col justify-center mb-5">
+        {/* visual interno — prévia da ferramenta */}
+        <div className="rounded-xl border border-white/[0.05] bg-background/50 p-4 min-h-[132px] flex flex-col justify-center mb-5">
           {children}
         </div>
 
@@ -200,58 +205,93 @@ function AcordesVisual() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
-        {chords.map((c) => (
-          <span key={c} className="px-2.5 py-1 rounded-lg bg-surface-elevated border border-white/[0.07] font-mono text-xs text-foreground/85">
+        {chords.map((c, i) => (
+          <span
+            key={c}
+            className={`px-2.5 py-1 rounded-lg font-mono text-xs transition-colors ${
+              i === 0
+                ? "bg-primary/15 border border-primary/30 text-primary font-semibold"
+                : "bg-surface-elevated border border-white/[0.07] text-foreground/80"
+            }`}
+          >
             {c}
           </span>
         ))}
       </div>
-      <MiniKeyboard className="w-full max-w-[220px] h-9" />
+      <ChordKeyboard />
+      <p className="text-[10px] text-muted-foreground/80">
+        <span className="font-mono text-primary">Cmaj9</span> · notas em destaque no teclado
+      </p>
     </div>
   );
 }
 
 function SofisticadorVisual() {
   const antes = ["C", "G", "Am", "F"];
-  const depois = ["C9", "G/B", "Am11", "F7M"];
+  const depois = ["C9", "G/B", "Am11", "F7M(9)"];
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex flex-wrap gap-1.5">
-        {antes.map((a) => (
-          <span key={a} className="px-2 py-0.5 rounded-md bg-white/[0.04] font-mono text-xs text-muted-foreground">{a}</span>
-        ))}
+    <div className="flex flex-col gap-2">
+      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-1.5">Antes</p>
+        <div className="flex flex-wrap gap-1.5">
+          {antes.map((a) => (
+            <span key={a} className="min-w-[34px] text-center px-2 py-1 rounded-md bg-white/[0.05] font-mono text-xs text-muted-foreground">{a}</span>
+          ))}
+        </div>
       </div>
-      <div className="flex justify-center text-primary/70"><ArrowDown className="w-3.5 h-3.5" /></div>
-      <div className="flex flex-wrap gap-1.5">
-        {depois.map((d) => (
-          <span key={d} className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 font-mono text-xs text-primary font-semibold">{d}</span>
-        ))}
+      <div className="flex justify-center text-primary">
+        <motion.span animate={{ y: [0, 3, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
+          <ArrowDown className="w-4 h-4" />
+        </motion.span>
+      </div>
+      <div className="rounded-lg border border-primary/20 bg-primary/[0.07] px-3 py-2">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-primary/80 mb-1.5">Depois</p>
+        <div className="flex flex-wrap gap-1.5">
+          {depois.map((d) => (
+            <span key={d} className="px-2 py-1 rounded-md bg-primary/15 border border-primary/25 font-mono text-xs text-primary font-semibold">{d}</span>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
+function PadToggle() {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="text-[10px] font-bold uppercase tracking-wide text-primary">On</span>
+      <span className="relative w-9 h-5 rounded-full bg-primary/30 border border-primary/40">
+        <motion.span
+          className="absolute top-1/2 -translate-y-1/2 right-[2px] w-3.5 h-3.5 rounded-full bg-primary shadow"
+          animate={{ opacity: [1, 0.65, 1] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </span>
+    </span>
+  );
+}
+
 function PadVisual() {
-  const bars = [0.5, 0.85, 1, 0.65, 0.9, 0.55, 0.78];
+  const bars = [0.45, 0.8, 1, 0.6, 0.9, 0.5, 0.75, 0.55, 0.85, 0.65];
   return (
     <div className="flex items-center justify-between gap-4">
-      <div className="space-y-1.5 text-xs">
-        <p className="text-muted-foreground">Tom <span className="ml-1 font-mono text-foreground/85">G</span></p>
+      <div className="space-y-2 text-xs">
+        <p className="text-muted-foreground">Tom <span className="ml-1 font-mono text-base text-foreground font-semibold">G</span></p>
         <p className="text-muted-foreground">Modo <span className="ml-1 font-mono text-foreground/85">Worship</span></p>
-        <span className="inline-flex items-center gap-1.5 mt-1">
+        <span className="inline-flex items-center gap-1.5 pt-0.5">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="font-semibold text-primary text-[11px] uppercase tracking-wide">Pad ON</span>
+          <span className="font-semibold text-primary text-[10px] uppercase tracking-wide">Pad ativo</span>
         </span>
       </div>
-      <div className="flex items-end gap-1 h-9">
+      <div className="flex items-center gap-[3px] h-12">
         {bars.map((h, i) => (
           <motion.span
             key={i}
-            className="w-1.5 rounded-full bg-primary/55"
-            style={{ height: 34, transformOrigin: "bottom" }}
+            className="w-1.5 rounded-full bg-primary/60"
+            style={{ height: 44, transformOrigin: "center" }}
             initial={{ scaleY: h * 0.5 }}
-            animate={{ scaleY: [h * 0.45, h, h * 0.55] }}
-            transition={{ duration: 1.3 + i * 0.12, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+            animate={{ scaleY: [h * 0.4, h, h * 0.5] }}
+            transition={{ duration: 1.2 + i * 0.1, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
           />
         ))}
       </div>
@@ -261,38 +301,75 @@ function PadVisual() {
 
 function MetronomoVisual() {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="leading-none">
-        <span className="font-display text-3xl font-bold text-foreground">72</span>
-        <span className="ml-1.5 text-xs font-semibold text-muted-foreground">BPM</span>
-        <p className="text-[11px] font-mono text-muted-foreground mt-1.5">4/4</p>
+    <div className="flex flex-col gap-3.5">
+      <div className="flex items-baseline justify-between">
+        <div className="leading-none">
+          <span className="font-display text-4xl font-bold text-foreground tabular-nums">72</span>
+          <span className="ml-1.5 text-xs font-semibold text-muted-foreground">BPM</span>
+        </div>
+        <span className="font-mono text-sm text-muted-foreground">4/4</span>
       </div>
-      <div className="flex items-center gap-2">
-        {[0, 1, 2, 3].map((i) => (
+      <div className="flex items-center gap-2.5">
+        {[1, 2, 3, 4].map((n) => (
           <motion.span
-            key={i}
-            className={`w-2.5 h-2.5 rounded-full ${i === 0 ? "bg-primary" : "bg-white/15"}`}
-            animate={i === 0 ? { scale: [1, 1.5, 1], opacity: [1, 0.6, 1] } : undefined}
-            transition={i === 0 ? { duration: 1, repeat: Infinity, ease: "easeInOut" } : undefined}
-          />
+            key={n}
+            className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold ${
+              n === 1 ? "bg-primary text-primary-foreground" : "bg-white/[0.06] text-muted-foreground border border-white/[0.06]"
+            }`}
+            animate={n === 1 ? { scale: [1, 1.12, 1] } : undefined}
+            transition={n === 1 ? { duration: 0.83, repeat: Infinity, ease: "easeInOut" } : undefined}
+          >
+            {n}
+          </motion.span>
         ))}
       </div>
     </div>
   );
 }
 
-function MiniKeyboard({ className }: { className?: string }) {
-  const whites = [0, 1, 2, 3, 4, 5, 6];
-  const blacks = [0, 1, 3, 4, 5];
+function ChordKeyboard() {
+  const whiteCount = 14;
+  const w = 17;
+  const h = 60;
+  const whites = Array.from({ length: whiteCount }, (_, i) => i);
+  const blackPattern = [0, 1, 3, 4, 5];
+  const blacks: number[] = [];
+  for (let o = 0; o < 2; o++) {
+    for (const b of blackPattern) {
+      const idx = o * 7 + b;
+      if (idx < whiteCount - 1) blacks.push(idx);
+    }
+  }
+  // Cmaj9 voicing highlighted: C E G B D (white) + nothing on black
+  const hlWhite = new Set([0, 2, 4, 6, 8]);
   return (
-    <svg viewBox="0 0 240 84" className={className} fill="none" aria-hidden="true" preserveAspectRatio="xMidYMax meet">
+    <svg viewBox={`0 0 ${whiteCount * w} ${h}`} className="w-full h-12" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
       {whites.map((i) => (
-        <rect key={`w${i}`} x={i * 34} y={2} width={32} height={80} rx={4}
-          fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.09)" strokeWidth={1} />
+        <rect
+          key={`w${i}`}
+          x={i * w}
+          y={0}
+          width={w - 1}
+          height={h}
+          rx={2.5}
+          className={hlWhite.has(i) ? "fill-[hsl(var(--primary))]" : ""}
+          fill={hlWhite.has(i) ? undefined : "rgba(255,255,255,0.06)"}
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={0.8}
+        />
       ))}
       {blacks.map((i) => (
-        <rect key={`b${i}`} x={i * 34 + 22} y={2} width={20} height={50} rx={3}
-          fill="rgba(8,8,12,0.7)" stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
+        <rect
+          key={`b${i}`}
+          x={i * w + w * 0.62}
+          y={0}
+          width={w * 0.7}
+          height={h * 0.62}
+          rx={2}
+          fill="rgba(8,8,12,0.88)"
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth={0.6}
+        />
       ))}
     </svg>
   );
