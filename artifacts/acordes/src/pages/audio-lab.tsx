@@ -15,6 +15,10 @@ import {
   Info,
   AlertTriangle,
   ArrowRight,
+  FileText,
+  Copy,
+  Check,
+  Pencil,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -49,10 +53,94 @@ const LEVELS: { key: SophisticationLevel; label: string }[] = [
 ];
 
 type Phase = "idle" | "analyzing" | "result" | "error";
+type ChartSource = "detectados" | "sofisticados";
+
+// Chave usada para enviar a cifra montada ao Sofisticador de Cifras.
+// O mesmo literal é lido em chord-substitutor.tsx.
+const SOFISTICADOR_PREFILL_KEY = "harmonic:sofisticador:prefill";
 
 function isAllowedFile(file: File): boolean {
   const name = file.name.toLowerCase();
   return /\.(mp3|wav|m4a)$/.test(name) || file.type.startsWith("audio/");
+}
+
+// ── Montagem da cifra com letra ───────────────────────────────────────────────
+// Divide a letra em linhas, preservando as quebras coladas pelo usuário.
+// Se vier em bloco único, tenta dividir por frases.
+function splitLyrics(raw: string): string[] {
+  const byLine = raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (byLine.length > 1) return byLine;
+
+  const single = (byLine[0] ?? raw).trim();
+  if (!single) return [];
+
+  let phrases = single
+    .split(/(?<=[.!?…])\s+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (phrases.length <= 1) {
+    phrases = single
+      .split(/[,;]\s*/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }
+  return phrases.length > 1 ? phrases : [single];
+}
+
+// Posiciona os acordes acima de uma linha, espaçados de forma legível.
+function buildChordLine(chordsForLine: string[], lyric: string): string {
+  if (chordsForLine.length === 0) return "";
+  const len = Math.max(lyric.length, 1);
+  let line = "";
+  chordsForLine.forEach((ch, idx) => {
+    let col = Math.round((idx * len) / chordsForLine.length);
+    if (line.length > 0 && col <= line.length) col = line.length + 1; // não grudar
+    while (line.length < col) line += " ";
+    line += ch;
+  });
+  return line.replace(/\s+$/, "");
+}
+
+// Monta a cifra completa: cabeçalho + acordes distribuídos sobre cada linha.
+function buildLyricChart(
+  lyricsRaw: string,
+  progression: string[],
+  keySymbol: string,
+  bpm: number,
+): string {
+  const lines = splitLyrics(lyricsRaw);
+  if (lines.length === 0) return "";
+  const prog = progression.map((c) => c.trim()).filter(Boolean);
+
+  const headerParts = [`Tom: ${keySymbol}`];
+  if (bpm > 0) headerParts.push(`BPM: ${bpm}`);
+  const header = headerParts.join("   ");
+
+  // Distribuição proporcional: garante que TODA a progressão apareça.
+  // - menos linhas que acordes  → mais de um acorde por linha
+  // - mais linhas que acordes    → a progressão se repete ao longo das linhas
+  const perLine = prog.length > 0 ? Math.max(1, Math.ceil(prog.length / lines.length)) : 0;
+
+  const blocks: string[] = [];
+  let ci = 0;
+  for (const lyric of lines) {
+    if (prog.length === 0) {
+      blocks.push(lyric);
+      continue;
+    }
+    const chordsForLine: string[] = [];
+    for (let k = 0; k < perLine; k++) {
+      chordsForLine.push(prog[ci % prog.length]);
+      ci++;
+    }
+    const chordLine = buildChordLine(chordsForLine, lyric);
+    blocks.push(chordLine ? `${chordLine}\n${lyric}` : lyric);
+  }
+
+  return `${header}\n\n${blocks.join("\n\n")}`;
 }
 
 export default function AudioLab() {
@@ -68,6 +156,14 @@ export default function AudioLab() {
   const [chords, setChords] = useState<string[]>([]);
   const [level, setLevel] = useState<SophisticationLevel>("intermediario");
   const [showSophisticated, setShowSophisticated] = useState(false);
+
+  // ── Montar cifra com letra ─────────────────────────────────────────────────
+  const [lyrics, setLyrics] = useState("");
+  const [chartSource, setChartSource] = useState<ChartSource>("detectados");
+  const [chart, setChart] = useState("");
+  const [chartReady, setChartReady] = useState(false);
+  const [editingChart, setEditingChart] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const runIdRef = useRef(0);
@@ -88,6 +184,12 @@ export default function AudioLab() {
     setResult(null);
     setChords([]);
     setShowSophisticated(false);
+    setLyrics("");
+    setChartSource("detectados");
+    setChart("");
+    setChartReady(false);
+    setEditingChart(false);
+    setCopied(false);
     setStep("lendo");
   }, []);
 
@@ -200,6 +302,45 @@ export default function AudioLab() {
         .map((o) => o.bpm)
         .filter((b) => b > 0)
     : [];
+
+  // Progressão sofisticada (na ordem) para usar na cifra com letra
+  const sophisticatedChords = useMemo(
+    () => sophisticated.map((s) => s.substituted),
+    [sophisticated],
+  );
+  const bpmValue = bpmOpt?.bpm ?? result?.bpm.bpm ?? 0;
+
+  const buildChart = useCallback(() => {
+    if (!result) return;
+    const prog =
+      chartSource === "sofisticados" && sophisticatedChords.length > 0
+        ? sophisticatedChords
+        : chords;
+    const text = buildLyricChart(lyrics, prog, result.key.symbol, bpmValue);
+    setChart(text);
+    setChartReady(true);
+    setEditingChart(false);
+    setCopied(false);
+  }, [result, chartSource, sophisticatedChords, chords, lyrics, bpmValue]);
+
+  const copyChart = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(chart);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // clipboard indisponível — ignora silenciosamente
+    }
+  }, [chart]);
+
+  const sendChartToSofisticador = useCallback(() => {
+    try {
+      sessionStorage.setItem(SOFISTICADOR_PREFILL_KEY, chart);
+    } catch {
+      // sessionStorage indisponível — segue para a página mesmo assim
+    }
+    navigate("/sofisticador");
+  }, [chart, navigate]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
@@ -540,6 +681,141 @@ export default function AudioLab() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* ── Montar cifra com letra ───────────────────────────────────── */}
+            <div className="glass-card rounded-3xl border border-white/10 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <FileText className="w-4 h-4 text-primary" />
+                <h3 className="font-display font-bold text-white">
+                  Montar cifra com letra
+                </h3>
+              </div>
+              <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+                <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                <span>
+                  Cole a letra da música para o Harmonic organizar a cifra com base nos
+                  acordes detectados. Você pode ajustar tudo antes de usar.
+                </span>
+              </div>
+
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                Cole a letra da música
+              </label>
+              <textarea
+                value={lyrics}
+                onChange={(e) => setLyrics(e.target.value)}
+                placeholder={"Cole aqui a letra da música…"}
+                className="w-full min-h-[140px] bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-relaxed"
+              />
+
+              {/* Seletor de acordes + ação */}
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground mr-1">Usar acordes:</span>
+                  {(["detectados", "sofisticados"] as ChartSource[]).map((src) => {
+                    const disabled =
+                      src === "sofisticados" && sophisticatedChords.length === 0;
+                    return (
+                      <button
+                        key={src}
+                        onClick={() => !disabled && setChartSource(src)}
+                        disabled={disabled}
+                        className={cn(
+                          "text-xs font-medium px-3 py-1.5 rounded-lg border transition-all capitalize",
+                          chartSource === src
+                            ? "bg-primary/20 border-primary/30 text-primary"
+                            : disabled
+                              ? "border-white/5 text-white/20 cursor-not-allowed"
+                              : "border-white/10 text-white/50 hover:bg-white/5 hover:text-white",
+                        )}
+                      >
+                        {src}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={buildChart}
+                  disabled={lyrics.trim().length === 0}
+                  className={cn(
+                    "sm:ml-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all",
+                    lyrics.trim().length === 0
+                      ? "bg-white/5 text-white/30 cursor-not-allowed"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90",
+                  )}
+                >
+                  <FileText className="w-4 h-4" /> Montar cifra com letra
+                </button>
+              </div>
+
+              {/* Resultado da cifra */}
+              <AnimatePresence>
+                {chartReady && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="mt-6"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-display font-bold text-white">
+                        Letra + cifra organizada
+                      </h4>
+                    </div>
+                    <p className="text-[12px] text-muted-foreground/70 mb-3">
+                      Esta cifra foi organizada automaticamente. Revise a posição dos
+                      acordes antes de usar.
+                    </p>
+
+                    {editingChart ? (
+                      <textarea
+                        value={chart}
+                        onChange={(e) => setChart(e.target.value)}
+                        spellCheck={false}
+                        className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
+                      />
+                    ) : (
+                      <pre className="w-full overflow-x-auto bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm leading-loose whitespace-pre notranslate" translate="no">
+                        {chart}
+                      </pre>
+                    )}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setEditingChart((v) => !v)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        {editingChart ? "Concluir edição" : "Editar"}
+                      </button>
+                      <button
+                        onClick={copyChart}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                      >
+                        {copied ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                        {copied ? "Copiado!" : "Copiar cifra"}
+                      </button>
+                      <button
+                        onClick={buildChart}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" /> Refinar cifra
+                      </button>
+                      <button
+                        onClick={sendChartToSofisticador}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                      >
+                        <Wand2 className="w-3.5 h-3.5" /> Sofisticar cifra
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

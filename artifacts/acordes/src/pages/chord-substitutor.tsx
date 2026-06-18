@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight, Heart, BookmarkCheck, Music2 } from "lucide-react";
 import { useLocation } from "wouter";
@@ -92,6 +92,19 @@ export default function ChordSubstitutor() {
   const [salvoId, setSalvoId] = useState<string | null>(null);
   const [tituloInput, setTituloInput] = useState("");
   const [showTituloModal, setShowTituloModal] = useState(false);
+
+  // Pré-preenche a cifra vinda do Audio Lab ("Sofisticar cifra"), se houver.
+  useEffect(() => {
+    try {
+      const prefill = sessionStorage.getItem("harmonic:sofisticador:prefill");
+      if (prefill) {
+        sessionStorage.removeItem("harmonic:sofisticador:prefill");
+        setInputText(prefill);
+      }
+    } catch {
+      // sessionStorage indisponível — ignora
+    }
+  }, []);
 
   const result = useMemo(() => {
     if (!inputText.trim()) return null;

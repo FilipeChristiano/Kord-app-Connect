@@ -1,0 +1,297 @@
+# AUDIO LAB: MONTAR CIFRA COM LETRA COLADA PELO USUÁRIO
+
+Entendi a limitação da transcrição automática da letra a partir de áudio cantado com instrumentos.
+
+Neste momento, não quero que você tente reconhecer a letra automaticamente a partir do áudio.
+
+Quero implementar o caminho mais confiável:
+
+1. O Audio Lab detecta os acordes do áudio.
+2. O usuário cola ou digita a letra.
+3. O Harmonic monta uma cifra completa com a letra, colocando os acordes detectados por cima das linhas.
+4. O usuário pode editar o resultado final.
+5. A cifra final pode ser refinada ou enviada para o Sofisticador de Cifras.
+
+Não recrie o módulo do zero.
+Não altere rotas, autenticação, banco de dados ou funcionalidades já prontas.
+Apenas adicione essa funcionalidade de organizar letra + cifra.
+
+---
+
+# OBJETIVO
+
+Criar uma área no resultado do Audio Lab chamada:
+
+**Montar cifra com letra**
+
+Essa área deve permitir que o usuário cole a letra da música e gere uma cifra organizada com base nos acordes detectados no áudio.
+
+---
+
+# FLUXO DO USUÁRIO
+
+1. Usuário envia um áudio.
+2. O Harmonic detecta:
+
+   * tom
+   * BPM
+   * progressão principal
+   * acordes
+3. O sistema mostra a progressão detectada.
+4. Abaixo, aparece uma área:
+
+Título:
+**Cole a letra da música**
+
+Texto auxiliar:
+“Cole a letra para o Harmonic organizar a cifra com os acordes detectados.”
+
+5. Usuário cola a letra.
+6. Clica em:
+
+**Montar cifra com letra**
+
+7. O sistema gera uma cifra no formato clássico:
+
+Tom: G
+BPM: 74
+
+G              D/F#
+Senhor, eu me rendo
+
+Em             C
+Ao teu amor sem fim
+
+8. O usuário pode editar o resultado final.
+
+---
+
+# REGRAS PARA ORGANIZAR A CIFRA
+
+Como a letra será colada manualmente, organize os acordes de forma inteligente:
+
+## 1. Dividir a letra em linhas
+
+Preservar as quebras de linha coladas pelo usuário.
+
+Se a letra vier em bloco único, dividir automaticamente por frases quando possível.
+
+## 2. Distribuir acordes sobre as linhas
+
+Usar a progressão detectada como base.
+
+Distribuir os acordes sobre as linhas da letra de forma musical e legível.
+
+Exemplo:
+
+Se a progressão detectada for:
+
+| G | D/F# | Em | C |
+
+E a letra tiver 4 linhas, usar uma distribuição natural:
+
+G
+Linha 1
+
+D/F#
+Linha 2
+
+Em
+Linha 3
+
+C
+Linha 4
+
+Se houver menos linhas que acordes, distribuir mais de um acorde por linha.
+
+Se houver mais linhas que acordes, repetir a progressão.
+
+## 3. Posicionamento visual
+
+Colocar os acordes acima da letra.
+
+Manter espaçamento legível.
+
+Não colocar acordes grudados.
+
+Não gerar uma linha confusa.
+
+## 4. Repetição da progressão
+
+Se a letra tiver muitas linhas, repetir a progressão detectada de forma organizada.
+
+Exemplo:
+
+Progressão:
+| G | D/F# | Em | C |
+
+Linhas:
+
+1. Senhor, eu me rendo
+2. Ao teu amor sem fim
+3. Tudo entrego a ti
+4. Meu coração é teu
+5. Guia os meus passos
+6. Em tua direção
+
+Resultado:
+G              D/F#
+Senhor, eu me rendo
+
+Em             C
+Ao teu amor sem fim
+
+G              D/F#
+Tudo entrego a ti
+
+Em             C
+Meu coração é teu
+
+G              D/F#
+Guia os meus passos
+
+Em             C
+Em tua direção
+
+## 5. Usar acordes sofisticados se disponíveis
+
+Se o usuário já tiver clicado em “Sofisticar progressão”, permitir montar a cifra usando:
+
+* acordes originais detectados
+* acordes sofisticados
+
+Criar seletor:
+
+**Usar acordes:**
+
+* Detectados
+* Sofisticados
+
+## 6. Edição manual
+
+A cifra final deve ser editável.
+
+O usuário deve conseguir editar:
+
+* letra
+* acordes
+* tom
+* BPM
+* divisão de linhas
+* cifra final completa
+
+A edição pode ser feita em um textarea grande, desde que preserve o formato de cifra.
+
+---
+
+# INTERFACE
+
+Na tela de resultado do Audio Lab, adicionar uma seção premium:
+
+## Montar cifra com letra
+
+Componentes:
+
+1. Textarea para colar letra
+
+Placeholder:
+“Cole aqui a letra da música…”
+
+2. Seletor de acordes
+
+Opções:
+
+* Usar acordes detectados
+* Usar acordes sofisticados
+
+3. Botão principal:
+   **Montar cifra com letra**
+
+4. Área de resultado:
+
+Título:
+**Letra + cifra organizada**
+
+Exibir:
+
+* Tom
+* BPM
+* Cifra formatada
+
+5. Botões:
+
+* Editar
+* Copiar cifra
+* Refinar cifra
+* Sofisticar cifra
+
+---
+
+# MENSAGEM HONESTA
+
+Mostrar mensagem discreta:
+
+“Cole a letra da música para o Harmonic organizar a cifra com base nos acordes detectados. Você pode ajustar tudo antes de usar.”
+
+Depois que gerar:
+
+“Esta cifra foi organizada automaticamente. Revise a posição dos acordes antes de usar.”
+
+---
+
+# NÃO FAZER
+
+Não tentar transcrever a letra automaticamente agora.
+
+Não usar API paga.
+
+Não tentar separar voz dos instrumentos.
+
+Não prometer letra automática.
+
+Não recriar o Audio Lab.
+
+Não alterar o detector de acordes que já foi corrigido.
+
+Não quebrar a progressão principal que agora está aparecendo.
+
+---
+
+# CRITÉRIO DE QUALIDADE
+
+A entrega deve gerar uma cifra:
+
+* limpa
+* legível
+* editável
+* copiável
+* com acordes acima da letra
+* usando a progressão detectada
+* com opção de usar a progressão sofisticada
+* fácil para o músico ajustar manualmente
+
+---
+
+# ANTES DE IMPLEMENTAR
+
+Antes de alterar arquivos:
+
+1. Identifique onde o resultado do Audio Lab é renderizado.
+2. Identifique onde a progressão detectada fica armazenada.
+3. Identifique se já existe progressão sofisticada disponível.
+4. Identifique onde adicionar a seção “Montar cifra com letra”.
+5. Explique brevemente o plano.
+6. Depois implemente.
+
+---
+
+# AO FINAL
+
+Liste:
+
+* arquivos alterados
+* componentes criados ou ajustados
+* como a letra é organizada com os acordes
+* como testar
+* confirmação de que não foi adicionada transcrição automática
+* confirmação de que o detector de acordes existente não foi quebrado
