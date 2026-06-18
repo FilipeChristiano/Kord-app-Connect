@@ -23,7 +23,7 @@ export function ChordCard({ chord, index = 0 }: ChordCardProps) {
       className="group relative h-full"
     >
       <Link href={`/acorde/${chord.id}`} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl">
-        <div className="glass-card h-full rounded-2xl p-6 transition-all duration-300 hover:shadow-primary/10 hover:-translate-y-1 hover:border-primary/30 flex flex-col">
+        <div className="glass-card h-full rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/25 flex flex-col">
           <div className="flex justify-between items-start mb-4">
             <CategoryBadge category={chord.category} />
             <button

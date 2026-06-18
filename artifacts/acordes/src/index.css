@@ -110,7 +110,7 @@
 
   /* Muted / metadados */
   --muted: 220 14% 20%;
-  --muted-foreground: 218 14% 72%;
+  --muted-foreground: 218 16% 78%;
 
   /* Accent (destaque elevado sutil) */
   --accent: 221 16% 17%;
@@ -157,6 +157,18 @@
   background: hsl(var(--primary) / 0.5);
 }
 
+/* Seleção de texto com identidade laranja */
+::selection {
+  background: hsl(var(--primary) / 0.28);
+  color: hsl(var(--foreground));
+}
+
+/* Foco acessível e elegante */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary) / 0.6);
+  outline-offset: 2px;
+}
+
 /* Flashcard 3D effects */
 .perspective-1000 {
   perspective: 1000px;
@@ -177,9 +189,9 @@
   background: hsl(var(--surface) / 0.72);
 }
 .glass-card {
-  @apply backdrop-blur-md border border-white/10;
-  background: hsl(var(--card) / 0.82);
-  box-shadow: 0 8px 24px -10px hsl(var(--background) / 0.7);
+  @apply backdrop-blur-md border border-white/[0.06];
+  background: hsl(var(--card) / 0.85);
+  box-shadow: 0 8px 24px -12px hsl(var(--background) / 0.8);
 }
 
 /* Profundidade por tonalidade */

@@ -1,1 +1,2 @@
 - [Code review cumulative diff](code-review-cumulative-diff.md) — architect/validation review the whole uncommitted diff; don't revert prior published work they flag.
+- [Framer Motion transform conflict](framer-motion-transform-conflict.md) — motion elements that animate x/y/scale override Tailwind hover:translate/scale; use whileHover or a plain child.

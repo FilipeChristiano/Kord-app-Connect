@@ -59,16 +59,16 @@ export function Layout({ children }: { children: ReactNode }) {
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-1.5">
               {navItems.map((item) => (
                 <Link 
                   key={item.href} 
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 outline-none",
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 outline-none",
                     location === item.href 
-                      ? "bg-white/10 text-white" 
-                      : "text-muted-foreground hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-primary"
+                      ? "bg-primary/15 text-primary shadow-[0_0_0_1px_hsl(var(--primary)/0.2),0_4px_14px_-6px_hsl(var(--primary)/0.4)]" 
+                      : "text-muted-foreground hover:bg-white/5 hover:text-white"
                   )}
                 >
                   <item.icon className="w-4 h-4" />

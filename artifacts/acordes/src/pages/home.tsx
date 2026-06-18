@@ -21,15 +21,16 @@ export default function Home() {
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <section className="relative pt-16 pb-28 lg:pt-24 lg:pb-40 overflow-hidden">
+      <section className="relative pt-10 pb-14 lg:pt-14 lg:pb-20 overflow-hidden">
         <div className="absolute inset-x-0 bottom-0 -top-24 z-0">
           <img
             src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-            alt="Piano keys"
-            className="w-full h-full object-cover opacity-[0.28] brightness-125 object-center"
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover opacity-[0.14] brightness-75 blur-[2px] object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/60 to-background"></div>
-          <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.18),transparent_70%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background"></div>
+          <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.14),transparent_70%)] pointer-events-none" />
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
@@ -49,12 +50,12 @@ export default function Home() {
               <img
                 src={`${import.meta.env.BASE_URL}harmonic-logo-hero.png`}
                 alt="Harmonic"
-                className="w-full max-w-[420px] sm:max-w-[520px] md:max-w-[600px] h-auto select-none drop-shadow-2xl"
+                className="w-full max-w-[360px] sm:max-w-[440px] md:max-w-[510px] h-auto select-none drop-shadow-2xl"
                 draggable={false}
               />
             </motion.div>
 
-            <motion.p variants={itemVariants} className="text-body-lg text-muted-foreground -mt-8 sm:-mt-12 mb-16 sm:mb-20 max-w-2xl">
+            <motion.p variants={itemVariants} className="text-body-lg text-foreground/80 -mt-6 sm:-mt-8 mb-9 sm:mb-10 max-w-xl">
               Saia do som básico. Descubra harmonias ricas, entenda suas construções e aplique acordes profissionais nas suas músicas com clareza visual.
             </motion.p>
 
@@ -62,7 +63,7 @@ export default function Home() {
               <Link href="/dicionario" className="px-8 py-4 rounded-2xl font-bold bg-primary text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
                 Explorar Acordes <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link href="/sofisticador" className="px-8 py-4 rounded-2xl font-bold bg-surface-elevated text-foreground border border-white/5 hover:border-white/15 hover:bg-white/[0.06] transition-all duration-200 flex items-center justify-center gap-2">
+              <Link href="/sofisticador" className="px-8 py-4 rounded-2xl font-bold bg-surface-elevated/80 text-foreground border border-white/10 shadow-[0_4px_16px_-8px_rgba(0,0,0,0.6)] hover:border-primary/30 hover:bg-surface-elevated hover:-translate-y-0.5 hover:shadow-[0_6px_22px_-8px_hsl(var(--primary)/0.3)] transition-all duration-200 flex items-center justify-center gap-2">
                 <Wand2 className="w-5 h-5 text-primary" /> Sofisticador de Cifras
               </Link>
             </motion.div>
@@ -71,11 +72,11 @@ export default function Home() {
       </section>
 
       {/* Slogan Strip */}
-      <section className="relative border-y border-primary/15">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_120%_at_center,_hsl(var(--primary)/0.28),_transparent_70%)] pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-7 md:py-9 relative">
-          <h2 className="font-display font-bold leading-tight text-center whitespace-nowrap text-[clamp(1.1rem,4.6vw,3.5rem)]">
+      <section className="relative border-y border-white/5">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_center,_hsl(var(--primary)/0.07),_transparent_70%)] pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-7 relative">
+          <h2 className="font-display font-semibold leading-tight text-center whitespace-nowrap text-[clamp(1rem,3.8vw,2.5rem)] text-foreground/90">
             O <span className="text-gradient-primary">próximo nível</span> do seu teclado.
           </h2>
         </div>
@@ -99,25 +100,25 @@ export default function Home() {
             <p className="text-muted-foreground max-w-2xl text-body-lg">Tudo foi desenhado para facilitar a memorização e aplicação prática no instrumento.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
             <FeatureCard
               icon={<Search />}
               title="Busca Rápida"
-              desc="Encontre acordes pelo nome ou pelas notas que o compõem instantaneamente."
+              desc="Encontre acordes pelo nome ou pelas notas que o compõem."
               href="/dicionario"
               delay={0.05}
             />
             <FeatureCard
               icon={<Layers />}
               title="180 Acordes — 15 Categorias"
-              desc="Tríades, 7ªM, 9ª, 6/9, sus4, sus2, diminutos, meio-diminutos, voicings de mão esquerda e mais."
+              desc="Tríades, 7ªM, 9ª, 6/9, sus, diminutos, voicings de mão esquerda e mais."
               href="/dicionario"
               delay={0.1}
             />
             <FeatureCard
               icon={<Lightbulb />}
               title="Guia de Aplicações"
-              desc="Para cada categoria, veja onde usar, dicas práticas e progressões de exemplo reais."
+              desc="Onde usar cada categoria, com dicas práticas e progressões reais."
               href="/aplicacoes"
               delay={0.15}
               highlight
@@ -129,11 +130,12 @@ export default function Home() {
               href="/sofisticador"
               delay={0.2}
               highlight
+              wide
             />
             <FeatureCard
               icon={<Timer />}
               title="Metrônomo Inteligente"
-              desc="Presets de worship, gospel e pentecostal. Tap tempo, subdivisões e som por Web Audio."
+              desc="Presets de worship e gospel, tap tempo e subdivisões."
               href="/metronomo"
               delay={0.25}
               highlight
@@ -141,15 +143,16 @@ export default function Home() {
             <FeatureCard
               icon={<Waves />}
               title="Pad Worship Contínuo"
-              desc="Cama harmônica em loop infinito em qualquer tom, maior ou menor — para oração, estudo e ministração."
+              desc="Cama harmônica em loop infinito, em qualquer tom — para oração e ministração."
               href="/pad"
               delay={0.3}
               highlight
+              wide
             />
             <FeatureCard
               icon={<BookOpen />}
               title="Modo Estudo"
-              desc="Pratique a memorização com flashcards interativos por categoria de acordes."
+              desc="Memorize com flashcards interativos por categoria."
               href="/estudo"
               delay={0.35}
             />
@@ -160,14 +163,15 @@ export default function Home() {
   );
 }
 
-function FeatureCard({ icon, title, desc, delay, href, highlight }: { icon: React.ReactNode, title: string, desc: string, delay: number, href?: string, highlight?: boolean }) {
+function FeatureCard({ icon, title, desc, delay, href, highlight, wide }: { icon: React.ReactNode, title: string, desc: string, delay: number, href?: string, highlight?: boolean, wide?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5, delay, ease: EASE }}
-      className={cardClass(highlight)}
+      whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.2, ease: EASE } }}
+      className={cardClass(highlight, wide)}
     >
       {href ? (
         <Link href={href} className="block h-full">
@@ -180,17 +184,18 @@ function FeatureCard({ icon, title, desc, delay, href, highlight }: { icon: Reac
   );
 }
 
-function cardClass(highlight?: boolean) {
-  const base = "rounded-2xl p-7 transition-all duration-200 group cursor-pointer";
+function cardClass(highlight?: boolean, wide?: boolean) {
+  const base = "rounded-2xl p-7 transition-all duration-200 group cursor-pointer shadow-lg shadow-black/10";
+  const span = wide ? " lg:col-span-2" : "";
   return highlight
-    ? `${base} bg-primary/[0.07] border border-primary/20 hover:border-primary/40 hover:bg-primary/[0.1] hover:-translate-y-1`
-    : `${base} bg-card border border-white/5 hover:border-white/10 hover:bg-surface-elevated hover:-translate-y-1`;
+    ? `${base}${span} bg-primary/[0.07] border border-primary/15 hover:border-primary/30 hover:bg-primary/[0.1]`
+    : `${base}${span} bg-card border border-white/[0.04] hover:border-white/[0.08] hover:bg-surface-elevated`;
 }
 
 function FeatureCardInner({ icon, title, desc, highlight }: { icon: React.ReactNode, title: string, desc: string, highlight?: boolean }) {
   return (
     <>
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-transform duration-200 group-hover:scale-110 ${highlight ? "bg-primary/15 text-primary" : "bg-surface-elevated text-primary"}`}>
+      <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-6 transition-transform duration-200 group-hover:scale-110 [&_svg]:w-7 [&_svg]:h-7 ${highlight ? "bg-primary/15 text-primary" : "bg-surface-elevated text-primary"}`}>
         {icon}
       </div>
       <h3 className="text-h4 font-semibold text-foreground mb-2.5">{title}</h3>

@@ -1,0 +1,503 @@
+# REFINAMENTO VISUAL E UX DO HARMONIC (FASE 2)
+
+Quero que você faça uma segunda etapa de refinamento visual do Harmonic.
+
+A primeira versão já está boa, porém ainda transmite mais a sensação de uma Landing Page moderna do que de um software premium.
+
+O objetivo agora é elevar o nível de acabamento visual, UX e percepção de qualidade.
+
+Não altere nenhuma funcionalidade existente.
+
+Não altere lógica, banco de dados, APIs, rotas ou regras de negócio.
+
+Todas as alterações devem ser exclusivamente visuais e estruturais na interface.
+
+---
+
+# OBJETIVO
+
+Quero que o Harmonic transmita a sensação de um software premium comparável a produtos como:
+
+* Spotify
+* Linear
+* Raycast
+* Arc Browser
+* Notion
+* Cursor
+
+A inspiração NÃO deve ser copiar essas interfaces.
+
+A inspiração deve ser o nível de refinamento, organização, hierarquia visual e fluidez.
+
+O usuário deve abrir o Harmonic e sentir que está utilizando um software extremamente moderno, profissional e agradável.
+
+---
+
+# 1. HERO
+
+O Hero atual ocupa espaço demais.
+
+Hoje ele se comporta como uma Landing Page.
+
+Quero que ele se comporte como a entrada de um software.
+
+Reduza aproximadamente 40% da altura total do Hero.
+
+A primeira dobra da tela deve mostrar mais conteúdo útil.
+
+O usuário deve chegar ao conteúdo principal muito mais rapidamente.
+
+---
+
+# 2. IMAGEM DE FUNDO
+
+A imagem do teclado está bonita, porém chama mais atenção do que a própria interface.
+
+Ela deve deixar de ser protagonista.
+
+Transforme-a em textura.
+
+Utilize:
+
+* mais blur
+* overlay escuro
+* gradiente
+* redução de contraste
+* redução de brilho
+
+A interface deve ser o elemento principal.
+
+A imagem deve apenas criar atmosfera.
+
+---
+
+# 3. NAVBAR
+
+A Navbar atualmente parece um menu de website.
+
+Quero que pareça a navegação de um software.
+
+Melhore:
+
+altura
+
+padding
+
+espaçamento
+
+peso tipográfico
+
+área clicável
+
+alinhamento
+
+hierarquia
+
+A navegação deve respirar.
+
+---
+
+# 4. MENU ATIVO
+
+Atualmente não existe um estado ativo suficientemente claro.
+
+Crie um sistema de navegação com feedback visual.
+
+A página atual deve possuir destaque através de:
+
+* pill
+* underline
+* background
+* glow discreto
+* cor
+
+O usuário deve identificar instantaneamente onde está.
+
+---
+
+# 5. IDENTIDADE LARANJA
+
+O laranja está muito bem utilizado.
+
+Não aumente exageradamente seu uso.
+
+Apenas distribua pequenos pontos de identidade visual em elementos como:
+
+hover
+
+links
+
+ícones ativos
+
+progress bars
+
+switches
+
+checkboxes
+
+toggles
+
+slider
+
+scrollbar
+
+loading
+
+badges
+
+focus
+
+selected
+
+O aplicativo deve respirar Harmonic sem ficar laranja demais.
+
+---
+
+# 6. HIERARQUIA DO HERO
+
+Atualmente a Logo recebe mais atenção do que a mensagem.
+
+Reorganize a hierarquia visual.
+
+O usuário deve enxergar primeiro:
+
+Título
+
+Descrição
+
+Botões
+
+Depois a identidade visual.
+
+Reduza aproximadamente 15% da logo principal.
+
+Fortaleça o título.
+
+Melhore a leitura da descrição.
+
+---
+
+# 7. CARDS
+
+Os cards atuais ainda lembram componentes Bootstrap.
+
+Quero um visual muito mais premium.
+
+Evite depender de bordas.
+
+Utilize diferenciação através de:
+
+superfície
+
+contraste
+
+profundidade
+
+luminosidade
+
+hover
+
+camadas
+
+blur extremamente discreto
+
+As bordas devem praticamente desaparecer.
+
+---
+
+# 8. HOVER DOS CARDS
+
+Hoje os cards parecem estáticos.
+
+Todos os cards devem responder ao mouse.
+
+Hover sugerido:
+
+Scale 1.02
+
+Elevação suave
+
+Leve aumento de brilho
+
+Transição extremamente fluida
+
+Duração:
+
+200ms
+
+Não exagerar.
+
+O usuário deve sentir qualidade.
+
+Não animação.
+
+---
+
+# 9. TEXTO DOS CARDS
+
+Os cards possuem texto demais.
+
+Reduza a quantidade de texto.
+
+Priorize leitura rápida.
+
+Utilize descrições menores.
+
+O usuário deve escanear a tela em poucos segundos.
+
+---
+
+# 10. ÍCONES
+
+Aumente aproximadamente 20% o tamanho dos ícones.
+
+Melhore a consistência.
+
+Padronize peso.
+
+Padronize alinhamento.
+
+Padronize espaçamentos.
+
+---
+
+# 11. ESPAÇAMENTO
+
+O aplicativo ainda parece um pouco comprimido.
+
+Aumente significativamente os espaços entre:
+
+Hero
+
+Headline
+
+Recursos
+
+Cards
+
+Seções
+
+A sensação de luxo vem do espaço vazio.
+
+Nada deve parecer apertado.
+
+---
+
+# 12. PROFUNDIDADE
+
+Hoje praticamente tudo está no mesmo plano.
+
+Crie uma sensação de profundidade utilizando:
+
+camadas
+
+contraste
+
+luminosidade
+
+glass extremamente sutil
+
+blur
+
+Nunca utilize sombras pesadas.
+
+---
+
+# 13. SEÇÃO "O PRÓXIMO NÍVEL DO SEU TECLADO"
+
+Essa faixa quebra o ritmo visual.
+
+Ela lembra uma Landing Page.
+
+Refaça completamente essa transição.
+
+Ela deve funcionar apenas como uma passagem elegante entre seções.
+
+Evite grandes faixas coloridas.
+
+Prefira divisores sutis.
+
+---
+
+# 14. GRID DOS RECURSOS
+
+O grid atual parece muito previsível.
+
+Todos os cards possuem praticamente o mesmo peso visual.
+
+Reorganize utilizando um layout mais moderno.
+
+Utilize diferentes larguras e alturas quando fizer sentido.
+
+Crie ritmo visual.
+
+Evite sensação de tabela.
+
+---
+
+# 15. MICROINTERAÇÕES
+
+Quero microinterações em todo o aplicativo.
+
+Botões
+
+Cards
+
+Links
+
+Ícones
+
+Inputs
+
+Menus
+
+Sidebar
+
+Dropdowns
+
+Modais
+
+Tooltips
+
+Utilize animações entre:
+
+150ms
+
+200ms
+
+250ms
+
+Tudo deve parecer extremamente fluido.
+
+Nada deve aparecer de forma brusca.
+
+---
+
+# 16. CONTRASTE DOS TEXTOS
+
+Os textos secundários ainda estão escuros demais.
+
+Melhore a leitura.
+
+Principalmente:
+
+descrições
+
+textos dos cards
+
+informações secundárias
+
+Sem perder o aspecto elegante.
+
+---
+
+# 17. BOTÕES
+
+O botão primário está bom.
+
+O secundário ainda parece apagado.
+
+Refine:
+
+hover
+
+outline
+
+contraste
+
+elevação
+
+glow extremamente discreto
+
+Os dois botões devem parecer parte da mesma família.
+
+---
+
+# 18. CONSISTÊNCIA VISUAL
+
+Revise toda a interface.
+
+Nenhuma tela deve parecer construída em momentos diferentes.
+
+Tudo deve seguir exatamente o mesmo Design System.
+
+Componentes.
+
+Espaçamentos.
+
+Radius.
+
+Animações.
+
+Tipografia.
+
+Cores.
+
+Ícones.
+
+Estados.
+
+---
+
+# 19. PERCEPÇÃO PREMIUM
+
+Durante todo o redesign faça uma pergunta constantemente:
+
+"Isso parece um software premium utilizado diariamente por milhares de músicos?"
+
+Se a resposta for "não", refine.
+
+Prefira simplicidade.
+
+Prefira sofisticação.
+
+Prefira clareza.
+
+Prefira consistência.
+
+---
+
+# 20. O QUE NÃO FAZER
+
+Não adicionar efeitos exagerados.
+
+Não utilizar glassmorphism pesado.
+
+Não utilizar gradientes excessivos.
+
+Não utilizar sombras fortes.
+
+Não exagerar no laranja.
+
+Não criar uma Landing Page.
+
+Não criar uma interface futurista.
+
+Não criar uma interface gamer.
+
+Não aumentar a quantidade de informação.
+
+Menos é mais.
+
+---
+
+# 21. ENTREGA
+
+Antes de modificar qualquer arquivo:
+
+1. Analise toda a interface existente.
+
+2. Liste exatamente quais melhorias serão realizadas.
+
+3. Identifique os componentes que serão alterados.
+
+4. Explique rapidamente por que cada alteração melhora a UX.
+
+Somente depois disso inicie as alterações.
+
+Ao finalizar:
+
+* Liste todos os arquivos modificados.
+* Informe quais componentes foram refinados.
+* Confirme que nenhuma funcionalidade foi alterada.
+* Faça uma revisão final procurando inconsistências visuais antes de considerar o trabalho concluído.
