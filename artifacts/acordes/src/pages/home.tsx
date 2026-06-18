@@ -45,7 +45,7 @@ export default function Home() {
               Para tecladistas e pianistas
             </motion.div>
 
-            <motion.div variants={itemVariants} className="flex flex-col items-center mb-2">
+            <motion.div variants={itemVariants} className="flex flex-col items-center mb-8 sm:mb-10">
               <h1 className="sr-only">Harmonic — As ferramentas que faltavam para transformar o seu som</h1>
               <img
                 src={`${import.meta.env.BASE_URL}harmonic-logo-hero.png`}
@@ -54,14 +54,6 @@ export default function Home() {
                 draggable={false}
               />
             </motion.div>
-
-            <motion.h2 variants={itemVariants} className="font-display text-2xl sm:text-3xl font-bold text-foreground -mt-4 sm:-mt-6 mb-4 max-w-2xl text-balance">
-              O próximo nível do seu teclado
-            </motion.h2>
-
-            <motion.p variants={itemVariants} className="text-body-lg text-foreground/75 mb-9 sm:mb-10 max-w-xl">
-              As ferramentas que faltavam para transformar seu som em um só lugar.
-            </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Link href="/dicionario" className="px-8 py-4 rounded-2xl font-bold bg-primary text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
