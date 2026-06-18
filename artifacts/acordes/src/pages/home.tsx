@@ -40,7 +40,7 @@ export default function Home() {
             variants={containerVariants}
             className="max-w-3xl mx-auto flex flex-col items-center"
           >
-            <motion.div variants={itemVariants} className="flex flex-col items-center mb-3 sm:mb-4">
+            <motion.div variants={itemVariants} className="flex flex-col items-center mb-1">
               <h1 className="sr-only">Harmonic — As ferramentas que faltavam para transformar o seu som</h1>
               <img
                 src={`${import.meta.env.BASE_URL}harmonic-logo-hero.png`}
@@ -52,7 +52,7 @@ export default function Home() {
 
             <motion.p
               variants={itemVariants}
-              className="font-display font-semibold leading-tight text-balance text-center text-[clamp(1.6rem,5vw,3rem)] text-foreground mb-9 sm:mb-10 max-w-2xl"
+              className="text-body-lg text-foreground/70 text-center text-balance mb-9 sm:mb-10"
             >
               Ferramentas inteligentes para transformar o seu{" "}
               <span className="text-primary">som</span>
