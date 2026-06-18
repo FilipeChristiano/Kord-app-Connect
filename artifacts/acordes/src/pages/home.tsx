@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
-  ArrowRight, ArrowDown, ChevronDown, Star, Layers, Wand2, Waves, Timer,
+  ArrowRight, ArrowDown, ChevronDown, Layers, Wand2, Waves, Timer,
 } from "lucide-react";
 
 const EASE = [0.4, 0, 0.2, 1] as const;
@@ -40,11 +40,6 @@ export default function Home() {
             variants={containerVariants}
             className="max-w-3xl mx-auto flex flex-col items-center"
           >
-            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-8">
-              <Star className="w-4 h-4" />
-              Para tecladistas e pianistas
-            </motion.div>
-
             <motion.div variants={itemVariants} className="flex flex-col items-center mb-3 sm:mb-4">
               <h1 className="sr-only">Harmonic — As ferramentas que faltavam para transformar o seu som</h1>
               <img
