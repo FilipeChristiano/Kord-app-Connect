@@ -135,26 +135,35 @@ function fft(re: Float32Array, im: Float32Array): void {
 function computeChromaFrames(
   mono: Float32Array,
   sampleRate: number,
-): { chroma: Float32Array[]; energy: Float32Array } {
+): { chroma: Float32Array[]; bass: Float32Array[]; energy: Float32Array } {
   const half = FRAME >> 1;
   const hann = new Float32Array(FRAME);
   for (let i = 0; i < FRAME; i++) {
     hann[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (FRAME - 1));
   }
 
-  // Mapa bin → classe de altura (apenas faixa musical útil)
+  // Mapa bin → classe de altura. Dois registros:
+  //  - harmônico (binPc): faixa musical ampla, usado para tom e acordes.
+  //  - grave (bassPc): faixa baixa, usado para descobrir a nota do baixo e
+  //    identificar acordes com baixo invertido (ex.: D/F#).
   const binPc = new Int8Array(half).fill(-1);
+  const bassPc = new Int8Array(half).fill(-1);
   const fMin = 65; // ~C2
   const fMax = 2000;
+  const fBassMin = 40; // ~E1
+  const fBassMax = 200; // ~G3
   for (let b = 1; b < half; b++) {
     const f = (b * sampleRate) / FRAME;
-    if (f < fMin || f > fMax) continue;
+    if (f < fBassMin || f > fMax) continue;
     const midi = 69 + 12 * Math.log2(f / 440);
-    binPc[b] = (((Math.round(midi) % 12) + 12) % 12) as number;
+    const pc = (((Math.round(midi) % 12) + 12) % 12) as number;
+    if (f >= fMin && f <= fMax) binPc[b] = pc;
+    if (f >= fBassMin && f <= fBassMax) bassPc[b] = pc;
   }
 
   const numFrames = Math.max(0, Math.floor((mono.length - FRAME) / HOP));
   const frames: Float32Array[] = [];
+  const bassFrames: Float32Array[] = [];
   const energy = new Float32Array(numFrames);
   const re = new Float32Array(FRAME);
   const im = new Float32Array(FRAME);
@@ -167,10 +176,14 @@ function computeChromaFrames(
     fft(re, im);
 
     const chroma = new Float32Array(12);
+    const bass = new Float32Array(12);
     for (let b = 1; b < half; b++) {
-      const pc = binPc[b];
-      if (pc < 0) continue;
-      chroma[pc] += Math.sqrt(re[b] * re[b] + im[b] * im[b]);
+      const pcH = binPc[b];
+      const pcB = bassPc[b];
+      if (pcH < 0 && pcB < 0) continue;
+      const mag = Math.sqrt(re[b] * re[b] + im[b] * im[b]);
+      if (pcH >= 0) chroma[pcH] += mag;
+      if (pcB >= 0) bass[pcB] += mag;
     }
     // Guarda a energia absoluta (antes de qualquer normalização) para distinguir
     // trechos com som de silêncio/ruído. Mantém o cromagrama "cru": a
@@ -180,8 +193,9 @@ function computeChromaFrames(
     for (let i = 0; i < 12; i++) e += chroma[i];
     energy[fi] = e;
     frames.push(chroma);
+    bassFrames.push(bass);
   }
-  return { chroma: frames, energy };
+  return { chroma: frames, bass: bassFrames, energy };
 }
 
 function averageChroma(frames: Float32Array[]): Float32Array {
@@ -265,8 +279,36 @@ function buildChordTemplates(): { pcs: number[]; isMinor: boolean; root: number 
   return list;
 }
 
+// Campo harmônico do tom: acordes que "pertencem" à música. Usado para dar um
+// leve bônus na detecção, reduzindo chutes fora do tom (ex.: numa música em Sol,
+// preferir G, Am, Bm, C, D, Em). Para tom menor, inclui o V maior (harmônico).
+function diatonicChordSet(key: DetectedKey): Set<string> {
+  const set = new Set<string>();
+  const t = key.tonic;
+  const add = (root: number, isMinor: boolean) =>
+    set.add(`${((root % 12) + 12) % 12}:${isMinor ? 1 : 0}`);
+  if (!key.isMinor) {
+    add(t, false); // I
+    add(t + 2, true); // ii
+    add(t + 4, true); // iii
+    add(t + 5, false); // IV
+    add(t + 7, false); // V
+    add(t + 9, true); // vi
+  } else {
+    add(t, true); // i
+    add(t + 3, false); // III
+    add(t + 5, true); // iv
+    add(t + 7, true); // v (menor natural)
+    add(t + 7, false); // V (menor harmônico — muito comum)
+    add(t + 8, false); // VI
+    add(t + 10, false); // VII
+  }
+  return set;
+}
+
 function detectChords(
   chroma: Float32Array[],
+  bass: Float32Array[],
   energy: Float32Array,
   sampleRate: number,
   bpm: number,
@@ -276,6 +318,11 @@ function detectChords(
 
   const names = FLAT_KEYS.has(key.symbol) ? FLAT : SHARP;
   const templates = buildChordTemplates();
+  const diatonic = diatonicChordSet(key);
+  const KEY_BONUS = 1.12; // peso extra para acordes do campo harmônico
+  const SEVENTH_REL = 0.9; // energia mínima da 7ª vs. média da tríade
+  const SEVENTH_BG = 1.6; // a 7ª precisa se destacar do "fundo" (notas fora da tríade)
+  const BASS_DOMINANCE = 1.3; // o quanto o baixo precisa se destacar
   const frameRate = sampleRate / HOP; // quadros por segundo
   const secPerFrame = HOP / sampleRate;
   const secPerBeat = bpm > 0 ? 60 / bpm : 0.5;
@@ -284,17 +331,28 @@ function detectChords(
   const invSqrt3 = 1 / Math.sqrt(3);
 
   // 1) Agrega os quadros em trechos (~2 tempos), guardando a janela de quadros.
-  const segs: { chroma: Float32Array; energy: number; startFrame: number; endFrame: number }[] = [];
+  const segs: {
+    chroma: Float32Array;
+    bass: Float32Array;
+    energy: number;
+    startFrame: number;
+    endFrame: number;
+  }[] = [];
   for (let s = 0; s < chroma.length; s += segFrames) {
     const end = Math.min(chroma.length, s + segFrames);
     const acc = new Float32Array(12);
+    const bacc = new Float32Array(12);
     let e = 0;
     for (let f = s; f < end; f++) {
       const frame = chroma[f];
-      for (let i = 0; i < 12; i++) acc[i] += frame[i];
+      const bframe = bass[f];
+      for (let i = 0; i < 12; i++) {
+        acc[i] += frame[i];
+        bacc[i] += bframe[i];
+      }
       e += energy[f];
     }
-    segs.push({ chroma: acc, energy: e, startFrame: s, endFrame: end });
+    segs.push({ chroma: acc, bass: bacc, energy: e, startFrame: s, endFrame: end });
   }
   if (segs.length === 0) return { chords: [], timeline: [] };
 
@@ -304,8 +362,9 @@ function detectChords(
   const medianE = sortedE[Math.floor(sortedE.length / 2)] || 0;
   const minE = medianE * 0.12;
 
-  // 3) Para cada trecho com som, escolhe SEMPRE a melhor tríade (maior/menor),
-  //    guardando a janela de tempo e a confiança (score normalizado).
+  // 3) Para cada trecho com som, escolhe a melhor tríade (maior/menor) com bônus
+  //    de campo harmônico, depois enriquece com 7ª e baixo invertido quando há
+  //    evidência clara no áudio.
   const raw: TimedChord[] = [];
   for (const seg of segs) {
     if (seg.energy < minE) continue; // silêncio / quase silêncio
@@ -314,22 +373,87 @@ function detectChords(
     norm = Math.sqrt(norm);
     if (norm < 1e-6) continue;
 
-    let bestScore = -Infinity;
-    let bestLabel = "";
+    // 3a) Melhor tríade. `biased` decide a escolha (com bônus do tom); `dot`
+    //     guarda o score cru para a confiança exibida ("?").
+    let bestBiased = -Infinity;
+    let bestRoot = 0;
+    let bestMinor = false;
+    let bestDot = 0;
     for (const tpl of templates) {
       let dot = 0;
       for (const pc of tpl.pcs) dot += seg.chroma[pc];
       dot = (dot / norm) * invSqrt3; // produto escalar normalizado
-      if (dot > bestScore) {
-        bestScore = dot;
-        bestLabel = names[tpl.root] + (tpl.isMinor ? "m" : "");
+      const isDia = diatonic.has(`${tpl.root}:${tpl.isMinor ? 1 : 0}`);
+      const biased = isDia ? dot * KEY_BONUS : dot;
+      if (biased > bestBiased) {
+        bestBiased = biased;
+        bestRoot = tpl.root;
+        bestMinor = tpl.isMinor;
+        bestDot = dot;
       }
     }
+
+    const third = (bestRoot + (bestMinor ? 3 : 4)) % 12;
+    const fifth = (bestRoot + 7) % 12;
+
+    // 3b) Sétima: conservador. A nota da 7ª precisa (1) ter energia comparável à
+    //     média da tríade E (2) se destacar do "fundo" (média das notas que não
+    //     são da tríade), para não confundir com vazamento de voz/melodia.
+    const triadMean = (seg.chroma[bestRoot] + seg.chroma[third] + seg.chroma[fifth]) / 3;
+    let bgSum = 0;
+    let bgCount = 0;
+    for (let i = 0; i < 12; i++) {
+      if (i === bestRoot || i === third || i === fifth) continue;
+      bgSum += seg.chroma[i];
+      bgCount++;
+    }
+    const bgMean = bgCount > 0 ? bgSum / bgCount : 0;
+    let suffix = bestMinor ? "m" : "";
+    if (triadMean > 0) {
+      const b7 = seg.chroma[(bestRoot + 10) % 12]; // 7ª menor (dominante / m7)
+      const M7 = seg.chroma[(bestRoot + 11) % 12]; // 7ª maior (7M)
+      const standsOut = (v: number, rel: number) =>
+        v >= triadMean * rel && v >= bgMean * SEVENTH_BG;
+      if (bestMinor) {
+        if (standsOut(b7, SEVENTH_REL)) suffix = "m7";
+      } else if (b7 >= M7 && standsOut(b7, SEVENTH_REL)) {
+        suffix = "7";
+      } else if (standsOut(M7, SEVENTH_REL + 0.05)) {
+        suffix = "7M";
+      }
+    }
+
+    let label = names[bestRoot] + suffix;
+
+    // 3c) Baixo invertido: se a nota grave dominante é a 3ª ou a 5ª (inversão
+    //     real, ex.: D/F#), acrescenta "/baixo".
+    let bMax = -1;
+    let bIdx = -1;
+    let bSecond = -1;
+    for (let i = 0; i < 12; i++) {
+      const v = seg.bass[i];
+      if (v > bMax) {
+        bSecond = bMax;
+        bMax = v;
+        bIdx = i;
+      } else if (v > bSecond) {
+        bSecond = v;
+      }
+    }
+    if (
+      bIdx >= 0 &&
+      bIdx !== bestRoot &&
+      (bIdx === third || bIdx === fifth) &&
+      bMax >= Math.max(bSecond, 1e-9) * BASS_DOMINANCE
+    ) {
+      label += "/" + names[bIdx];
+    }
+
     raw.push({
-      symbol: bestLabel,
+      symbol: label,
       start: seg.startFrame * secPerFrame,
       end: seg.endFrame * secPerFrame,
-      confidence: Math.max(0, Math.min(1, bestScore)),
+      confidence: Math.max(0, Math.min(1, bestDot)),
     });
   }
 
@@ -357,7 +481,7 @@ export async function analyzeAudioBuffer(
   onProgress?.("tom");
   await tick();
   const mono = await renderMono(buffer, ANALYSIS_RATE);
-  const { chroma, energy } = computeChromaFrames(mono, ANALYSIS_RATE);
+  const { chroma, bass, energy } = computeChromaFrames(mono, ANALYSIS_RATE);
   const key = detectKey(averageChroma(chroma));
 
   onProgress?.("bpm");
@@ -366,7 +490,7 @@ export async function analyzeAudioBuffer(
 
   onProgress?.("acordes");
   await tick();
-  const { chords, timeline } = detectChords(chroma, energy, ANALYSIS_RATE, bpm.bpm, key);
+  const { chords, timeline } = detectChords(chroma, bass, energy, ANALYSIS_RATE, bpm.bpm, key);
 
   onProgress?.("finalizando");
   await tick();
