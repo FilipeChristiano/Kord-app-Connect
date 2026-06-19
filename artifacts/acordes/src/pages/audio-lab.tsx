@@ -30,6 +30,7 @@ import {
   getTranscriptionStatus,
   transcribeAudio,
 } from "@/lib/transcription";
+import { analyzeChordsRemote } from "@/lib/chord-remote";
 import { buildAlignedChart } from "@/lib/lyric-align";
 import {
   processChordChartFull,
@@ -254,8 +255,28 @@ export default function AudioLab() {
         return;
       }
 
-      setResult(analysis);
-      setChords(analysis.chords);
+      // Análise harmônica profissional no servidor (muito mais precisa). Mantém
+      // o BPM e a duração locais; substitui apenas tom/acordes quando o servidor
+      // responde. Em qualquer falha, fica com o detector local (fallback).
+      let finalAnalysis = analysis;
+      try {
+        setStep("acordes");
+        const remote = await analyzeChordsRemote(file, analysis.bpm.bpm);
+        if (runId !== runIdRef.current) return;
+        if (remote.ok && remote.result.chords.length > 0) {
+          finalAnalysis = {
+            ...analysis,
+            key: remote.result.key ?? analysis.key,
+            chords: remote.result.chords,
+            chordTimeline: remote.result.chordTimeline,
+          };
+        }
+      } catch {
+        // Mantém o resultado local.
+      }
+
+      setResult(finalAnalysis);
+      setChords(finalAnalysis.chords);
       setPhase("result");
     } catch {
       if (runId !== runIdRef.current) return;
