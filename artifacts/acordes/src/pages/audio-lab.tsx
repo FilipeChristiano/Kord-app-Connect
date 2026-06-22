@@ -17,6 +17,9 @@ import {
   Check,
   Pencil,
   Mic,
+  Search,
+  ExternalLink,
+  ListMusic,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -31,6 +34,7 @@ import {
   transcribeAudio,
 } from "@/lib/transcription";
 import { analyzeChordsRemote } from "@/lib/chord-remote";
+import { fetchCifra, type FetchedCifra } from "@/lib/cifra-remote";
 import { buildAlignedChart } from "@/lib/lyric-align";
 import {
   processChordChartFull,
@@ -60,6 +64,18 @@ const SOFISTICADOR_PREFILL_KEY = "harmonic:sofisticador:prefill";
 function isAllowedFile(file: File): boolean {
   const name = file.name.toLowerCase();
   return /\.(mp3|wav|m4a)$/.test(name) || file.type.startsWith("audio/");
+}
+
+// Transforma o nome do arquivo num palpite de busca ("Artista - Música").
+// Tira a extensão, troca separadores por espaço e remove ruídos comuns.
+function guessQueryFromFile(name: string): string {
+  return name
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/[_]+/g, " ")
+    .replace(/\s*\(.*?\)\s*/g, " ") // remove "(Ao Vivo)", "(Clipe)" etc.
+    .replace(/\b(official|oficial|lyric|lyrics|video|clipe|audio|hd|hq)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // ── Montagem da cifra com letra ───────────────────────────────────────────────
@@ -168,6 +184,20 @@ export default function AudioLab() {
   const [autoState, setAutoState] = useState<"idle" | "running">("idle");
   const [autoMessage, setAutoMessage] = useState("");
 
+  // Busca de cifra pronta (CifraClub)
+  const [cifraQuery, setCifraQuery] = useState("");
+  const [cifraState, setCifraState] = useState<"idle" | "running">("idle");
+  const [cifraNotice, setCifraNotice] = useState("");
+  const [cifraMeta, setCifraMeta] = useState<FetchedCifra | null>(null);
+  // Origem da cifra montada (muda o cabeçalho e as dicas exibidas).
+  const [chartOrigin, setChartOrigin] = useState<"cifra" | "auto" | "manual" | null>(null);
+  const cifraRunIdRef = useRef(0);
+  const cifraTriggeredRef = useRef(false);
+  // Token de escrita compartilhado: garante que apenas a operação mais recente
+  // (cifra, transcrição ou montagem manual) escreva no estado `chart`, evitando
+  // que uma resposta tardia sobrescreva conteúdo já gerado/editado pelo usuário.
+  const chartClaimRef = useRef(0);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioFileRef = useRef<File | null>(null);
   const runIdRef = useRef(0);
@@ -199,6 +229,14 @@ export default function AudioLab() {
     setAutoAvailable(null);
     setAutoState("idle");
     setAutoMessage("");
+    setCifraQuery("");
+    setCifraState("idle");
+    setCifraNotice("");
+    setCifraMeta(null);
+    setChartOrigin(null);
+    cifraRunIdRef.current++; // invalida busca de cifra pendente
+    cifraTriggeredRef.current = false;
+    chartClaimRef.current++; // invalida qualquer escrita pendente em `chart`
     autoRunIdRef.current++; // invalida transcrição pendente
     autoTriggeredRef.current = false;
     audioFileRef.current = null;
@@ -221,8 +259,10 @@ export default function AudioLab() {
     const runId = ++runIdRef.current;
     busyRef.current = true;
     autoTriggeredRef.current = false;
+    cifraTriggeredRef.current = false;
     audioFileRef.current = file;
     setFileName(file.name);
+    setCifraQuery(guessQueryFromFile(file.name));
     setError("");
     setResult(null);
     setStep("lendo");
@@ -329,19 +369,21 @@ export default function AudioLab() {
   );
   const bpmValue = bpmOpt?.bpm ?? result?.bpm.bpm ?? 0;
 
-  // Ao entrar no resultado, verifica se a transcrição automática está disponível
-  // e já dispara a geração de letra + cifra (uma vez por análise).
+  // Ao entrar no resultado: dispara a busca da cifra pronta (uma vez) e verifica,
+  // em segundo plano, se a transcrição automática está disponível como alternativa.
   useEffect(() => {
     if (phase !== "result") return;
     let active = true;
+
+    if (!cifraTriggeredRef.current && cifraQuery.trim()) {
+      cifraTriggeredRef.current = true;
+      void handleFetchCifra();
+    }
+
     setAutoAvailable(null);
     getTranscriptionStatus().then((s) => {
       if (!active) return;
       setAutoAvailable(s.available);
-      if (s.available && !autoTriggeredRef.current) {
-        autoTriggeredRef.current = true;
-        void generateAutoChart();
-      }
     });
     return () => {
       active = false;
@@ -355,12 +397,14 @@ export default function AudioLab() {
       chartSource === "sofisticados" && sophisticatedChords.length > 0
         ? sophisticatedChords
         : chords;
+    chartClaimRef.current++; // assume a escrita: invalida cifra/transcrição pendentes
     const text = buildLyricChart(lyrics, prog, result.key.symbol, bpmValue);
     setChart(text);
     setChartReady(true);
     setChartHasUncertain(false);
     setEditingChart(false);
     setCopied(false);
+    setChartOrigin("manual");
   }, [result, chartSource, sophisticatedChords, chords, lyrics, bpmValue]);
 
   // Pipeline automático: transcreve a letra (worker externo) e alinha os acordes
@@ -368,6 +412,7 @@ export default function AudioLab() {
   const generateAutoChart = useCallback(async () => {
     if (!result || !audioFileRef.current || autoState === "running") return;
     const runId = ++autoRunIdRef.current;
+    const claim = ++chartClaimRef.current; // reivindica a escrita em `chart`
     setAutoState("running");
     setAutoMessage("");
 
@@ -378,6 +423,12 @@ export default function AudioLab() {
       setAutoState("idle");
       setAutoMessage(outcome.message);
       if (outcome.reason === "external_processing_required") setAutoAvailable(false);
+      return;
+    }
+
+    // Se o usuário gerou/editou outra cifra enquanto transcrevíamos, não sobrescreve.
+    if (claim !== chartClaimRef.current) {
+      setAutoState("idle");
       return;
     }
 
@@ -392,9 +443,64 @@ export default function AudioLab() {
     setChartHasUncertain(hasUncertain);
     setEditingChart(false);
     setCopied(false);
+    setChartOrigin("auto");
     setAutoState("idle");
     setAutoMessage("");
   }, [result, autoState, bpmValue]);
+
+  // Busca uma cifra pronta no CifraClub a partir do texto digitado/derivado do
+  // nome do arquivo. Em caso de sucesso, a cifra (acordes sobre a letra) vira a
+  // cifra montada editável — substituindo a detecção do áudio.
+  const handleFetchCifra = useCallback(async () => {
+    const q = cifraQuery.trim();
+    if (!q || cifraState === "running") return;
+    const runId = ++cifraRunIdRef.current;
+    const claim = ++chartClaimRef.current; // reivindica a escrita em `chart`
+    setCifraState("running");
+    setCifraNotice("");
+
+    const out = await fetchCifra(q);
+    if (runId !== cifraRunIdRef.current) return; // descarta resposta obsoleta
+
+    setCifraState("idle");
+
+    if (!out.ok) {
+      if (out.reason === "unauthorized") {
+        setCifraNotice(
+          "Sua sessão expirou. Atualize a página e entre novamente para buscar a cifra.",
+        );
+      } else if (out.reason === "empty") {
+        setCifraNotice("Digite o nome da música (de preferência: Artista - Música).");
+      } else {
+        setCifraNotice(
+          "Não consegui acessar a cifra agora. Verifique sua conexão e tente de novo.",
+        );
+      }
+      return;
+    }
+
+    if (!out.found) {
+      setCifraNotice(
+        "Não encontrei essa cifra no CifraClub. Confira o nome (ex.: “Artista - Música”) ou cole/edite a cifra manualmente abaixo.",
+      );
+      setCifraMeta(null);
+      return;
+    }
+
+    // Se o usuário já montou/editou outra cifra enquanto buscávamos, não sobrescreve.
+    if (claim !== chartClaimRef.current) {
+      setCifraMeta(out.cifra);
+      return;
+    }
+
+    setCifraMeta(out.cifra);
+    setChart(out.cifra.body);
+    setChartReady(true);
+    setChartHasUncertain(false);
+    setEditingChart(false);
+    setCopied(false);
+    setChartOrigin("cifra");
+  }, [cifraQuery, cifraState]);
 
   const copyChart = useCallback(async () => {
     try {
@@ -601,21 +707,108 @@ export default function AudioLab() {
               </div>
             </div>
 
-            {/* ── Letra + cifra automática (primário) ──────────────────────── */}
+            {/* ── Buscar cifra pronta (CifraClub) — primário ──────────────── */}
             <div className="glass-card rounded-3xl border border-primary/20 bg-primary/5 p-6">
               <div className="flex items-center gap-2 mb-1">
-                <Mic className="w-4 h-4 text-primary" />
+                <ListMusic className="w-4 h-4 text-primary" />
                 <h3 className="font-display font-bold text-white">
-                  Letra + cifra automática
+                  Buscar cifra pronta
                 </h3>
               </div>
               <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
                 <span>
-                  Assim que você envia a música, o Harmonic transcreve a letra a partir do
-                  áudio e posiciona os acordes sobre ela. A transcrição é uma estimativa
-                  (funciona melhor com vocal claro) e o posicionamento dos acordes é
-                  aproximado — trechos incertos ficam marcados com “?”.
+                  O Harmonic procura a cifra da música no CifraClub (feita por pessoas) e
+                  traz a letra com os acordes já posicionados. Para encontrar certinho, use
+                  o formato <span className="text-white/80">Artista - Música</span>.
+                </span>
+              </div>
+
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                Nome da música
+              </label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={cifraQuery}
+                  onChange={(e) => setCifraQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleFetchCifra();
+                    }
+                  }}
+                  placeholder="Ex.: Gabriela Rocha - Atos 2"
+                  className="flex-1 bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                />
+                <button
+                  onClick={handleFetchCifra}
+                  disabled={cifraState === "running" || cifraQuery.trim().length === 0}
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
+                    cifraState === "running" || cifraQuery.trim().length === 0
+                      ? "bg-white/5 text-white/30 cursor-not-allowed"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90",
+                  )}
+                >
+                  {cifraState === "running" ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Buscando…
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" /> Buscar cifra
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {cifraNotice && (
+                <div className="flex items-start gap-2 mt-4 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{cifraNotice}</span>
+                </div>
+              )}
+
+              {cifraMeta && chartOrigin === "cifra" && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-4 text-sm">
+                  <span className="inline-flex items-center gap-1.5 text-emerald-300 shrink-0">
+                    <Check className="w-4 h-4" /> Cifra encontrada
+                  </span>
+                  <span className="text-white/70 min-w-0 truncate">
+                    {cifraMeta.title}
+                    {cifraMeta.artist ? ` — ${cifraMeta.artist}` : ""}
+                    {cifraMeta.key ? ` · Tom ${cifraMeta.key}` : ""}
+                  </span>
+                  {cifraMeta.url && (
+                    <a
+                      href={cifraMeta.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> ver original
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Transcrição automática do áudio (alternativa) ────────────── */}
+            <div className="glass-card rounded-3xl border border-white/10 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Mic className="w-4 h-4 text-primary" />
+                <h3 className="font-display font-bold text-white">
+                  Transcrição automática do áudio
+                </h3>
+              </div>
+              <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+                <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                <span>
+                  Não achou a cifra pronta? O Harmonic pode transcrever a letra a partir do
+                  áudio e posicionar os acordes detectados. É uma estimativa (funciona melhor
+                  com vocal claro) e o posicionamento é aproximado — trechos incertos ficam
+                  marcados com “?”.
                 </span>
               </div>
 
@@ -653,10 +846,17 @@ export default function AudioLab() {
                     <RotateCcw className="w-4 h-4" /> Tentar novamente
                   </button>
                 </div>
-              ) : (
+              ) : chartOrigin === "auto" ? (
                 <div className="flex items-center gap-2 text-sm text-emerald-300">
                   <Check className="w-4 h-4" /> Letra gerada — veja abaixo.
                 </div>
+              ) : (
+                <button
+                  onClick={generateAutoChart}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-white/10 text-white hover:bg-white/15 border border-white/10 transition-all"
+                >
+                  <Mic className="w-4 h-4" /> Transcrever a letra do áudio
+                </button>
               )}
             </div>
 
@@ -740,13 +940,31 @@ export default function AudioLab() {
                   <div className="flex items-center gap-2 mb-2">
                     <FileText className="w-4 h-4 text-primary" />
                     <h4 className="font-display font-bold text-white">
-                      Letra + cifra organizada
+                      {chartOrigin === "cifra" ? "Cifra encontrada" : "Letra + cifra organizada"}
                     </h4>
                   </div>
-                  <p className="text-[12px] text-muted-foreground/70 mb-3">
-                    Esta cifra foi organizada automaticamente. Revise a posição dos acordes
-                    antes de usar.
-                  </p>
+                  {chartOrigin === "cifra" ? (
+                    <p className="text-[12px] text-muted-foreground/70 mb-3">
+                      Cifra do CifraClub
+                      {cifraMeta?.key ? ` (Tom ${cifraMeta.key})` : ""}. Você pode ajustar o
+                      que quiser antes de usar.{" "}
+                      {cifraMeta?.url && (
+                        <a
+                          href={cifraMeta.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline align-baseline"
+                        >
+                          <ExternalLink className="w-3 h-3" /> ver original
+                        </a>
+                      )}
+                    </p>
+                  ) : (
+                    <p className="text-[12px] text-muted-foreground/70 mb-3">
+                      Esta cifra foi organizada automaticamente. Revise a posição dos acordes
+                      antes de usar.
+                    </p>
+                  )}
                   {chartHasUncertain && (
                     <div className="flex items-start gap-2 mb-3 text-[12px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2.5">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -760,7 +978,10 @@ export default function AudioLab() {
                   {editingChart ? (
                     <textarea
                       value={chart}
-                      onChange={(e) => setChart(e.target.value)}
+                      onChange={(e) => {
+                        chartClaimRef.current++; // edição do usuário tem prioridade
+                        setChart(e.target.value);
+                      }}
                       spellCheck={false}
                       className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
                     />

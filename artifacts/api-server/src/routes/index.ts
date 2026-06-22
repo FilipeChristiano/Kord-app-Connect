@@ -4,6 +4,7 @@ import meRouter from "./me";
 import hotmartWebhookRouter from "./webhooks-hotmart";
 import transcribeRouter from "./transcribe";
 import chordsRouter from "./chords";
+import cifraRouter from "./cifra";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(meRouter);
 router.use(hotmartWebhookRouter);
 router.use(transcribeRouter);
 router.use(chordsRouter);
+router.use(cifraRouter);
 
 export default router;
