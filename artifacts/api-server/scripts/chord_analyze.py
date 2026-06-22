@@ -56,11 +56,13 @@ KK_MIN = np.array(
 SR = 22050
 HOP = 2048
 
-KEY_BONUS = 1.10       # bônus para acordes do campo harmônico
-VITERBI_PEN = 0.15     # penalidade por troca de acorde (sequência coerente)
-SEVENTH_REL = 0.62     # energia mín. da 7ª vs. média da tríade
-SEVENTH_BG = 1.5       # a 7ª precisa se destacar do "fundo"
-BASS_DOMINANCE = 1.25  # o quanto o baixo precisa se destacar
+KEY_BONUS = 1.12       # bônus para acordes do campo harmônico
+VITERBI_PEN = 0.38     # penalidade por troca (sequência estável, sem "tremido")
+SEVENTH_REL = 0.85     # energia mín. da 7ª vs. tríade (conservador)
+SEVENTH_BG = 2.2       # a 7ª precisa se destacar bem do "fundo" (conservador)
+BASS_DOMINANCE = 1.6   # o baixo invertido precisa dominar claramente
+BASS_VS_ROOT = 1.15    # ...e superar o baixo da própria fundamental
+MIN_DUR = 0.6          # duração mínima de um acorde (s) — funde flickers
 
 
 def detect_key(chroma_mean):
@@ -138,6 +140,47 @@ def viterbi(scores, pen):
     return path
 
 
+def label_chord(root, m, c, bvec, names):
+    """Rotula um acorde a partir do cromagrama (c) e do baixo (bvec) do trecho
+    INTEIRO — decisões de sétima e inversão de forma conservadora, sobre uma
+    estatística estável (não num único beat ruidoso)."""
+    third = (root + (3 if m else 4)) % 12
+    fifth = (root + 7) % 12
+    triad_mean = (c[root] + c[third] + c[fifth]) / 3.0
+    others = [c[i] for i in range(12) if i not in (root, third, fifth)]
+    bg_mean = float(np.mean(others)) if others else 0.0
+    suffix = "m" if m else ""
+    if triad_mean > 0:
+        b7 = c[(root + 10) % 12]
+        M7 = c[(root + 11) % 12]
+
+        def stands_out(v, rel):
+            return v >= triad_mean * rel and v >= bg_mean * SEVENTH_BG
+
+        if m:
+            if stands_out(b7, SEVENTH_REL):
+                suffix = "m7"
+        elif b7 >= M7 and stands_out(b7, SEVENTH_REL):
+            suffix = "7"
+        elif stands_out(M7, SEVENTH_REL + 0.05):
+            suffix = "7M"
+    label = names[root] + suffix
+
+    # Baixo invertido: só quando uma nota do acorde (3ª ou 5ª) domina claramente
+    # o registro grave E supera o baixo da própria fundamental.
+    order = np.argsort(bvec)[::-1]
+    b_idx = int(order[0])
+    b_second = float(bvec[order[1]]) if len(order) > 1 else 0.0
+    if (
+        b_idx != root
+        and b_idx in (third, fifth)
+        and bvec[b_idx] >= max(b_second, 1e-9) * BASS_DOMINANCE
+        and bvec[b_idx] >= bvec[root] * BASS_VS_ROOT
+    ):
+        label += "/" + names[b_idx]
+    return label
+
+
 def analyze(path, bpm_hint=None):
     y, sr = librosa.load(path, sr=SR, mono=True)
     if y.size < sr:  # < 1s
@@ -205,14 +248,12 @@ def analyze(path, bpm_hint=None):
 
     # Matriz de pontuação (cosseno) + bônus do campo harmônico.
     S = len(seg_chroma)
-    raw = np.zeros((S, 24))
     biased = np.zeros((S, 24))
     for si in range(S):
         c = seg_chroma[si]
         nc = np.linalg.norm(c) + 1e-9
         for ti, (root, m, vec) in enumerate(templates):
             dot = float(np.dot(c, vec) / nc)
-            raw[si, ti] = dot
             biased[si, ti] = dot * (KEY_BONUS if (root, m) in dia else 1.0)
 
     path = viterbi(biased, VITERBI_PEN)
@@ -223,62 +264,74 @@ def analyze(path, bpm_hint=None):
 
     times = librosa.frames_to_time(np.array(bounds), sr=sr, hop_length=HOP)
 
-    def seg_label(si, ti):
-        root, m, _ = templates[ti]
-        c = seg_chroma[si]
-        third = (root + (3 if m else 4)) % 12
-        fifth = (root + 7) % 12
-        triad_mean = (c[root] + c[third] + c[fifth]) / 3.0
-        others = [c[i] for i in range(12) if i not in (root, third, fifth)]
-        bg_mean = float(np.mean(others)) if others else 0.0
-        suffix = "m" if m else ""
-        if triad_mean > 0:
-            b7 = c[(root + 10) % 12]
-            M7 = c[(root + 11) % 12]
+    def t_of(frame_idx):
+        if frame_idx in bounds:
+            return float(times[bounds.index(frame_idx)])
+        return float(librosa.frames_to_time(frame_idx, sr=sr, hop_length=HOP))
 
-            def stands_out(v, rel):
-                return v >= triad_mean * rel and v >= bg_mean * SEVENTH_BG
-
-            if m:
-                if stands_out(b7, SEVENTH_REL):
-                    suffix = "m7"
-            elif b7 >= M7 and stands_out(b7, SEVENTH_REL):
-                suffix = "7"
-            elif stands_out(M7, SEVENTH_REL + 0.05):
-                suffix = "7M"
-        label = names[root] + suffix
-
-        # Baixo invertido: baixo dominante = 3ª ou 5ª do acorde.
-        bvec = seg_bass[si]
-        order = np.argsort(bvec)[::-1]
-        b_idx = int(order[0])
-        b_second = float(bvec[order[1]]) if len(order) > 1 else 0.0
-        if (
-            b_idx != root
-            and b_idx in (third, fifth)
-            and bvec[b_idx] >= max(b_second, 1e-9) * BASS_DOMINANCE
-        ):
-            label += "/" + names[b_idx]
-        return label
-
-    # Constrói a linha do tempo, descartando trechos quase em silêncio e
-    # mesclando segmentos consecutivos iguais.
-    timeline = []
+    # Agrupa beats consecutivos com o mesmo acorde (root + qualidade).
+    groups = []  # [state, beat_i0, beat_i1)
     for si in range(S):
-        if seg_e[si] < min_e:
+        st = int(path[si])
+        if groups and groups[-1][0] == st:
+            groups[-1][2] = si + 1
+        else:
+            groups.append([st, si, si + 1])
+
+    def grp_frames(g):
+        return seg_span[g[1]][0], seg_span[g[2] - 1][1]
+
+    def grp_dur(g):
+        a, b = grp_frames(g)
+        return t_of(b) - t_of(a)
+
+    # Funde grupos curtos demais (flicker de ~1 beat) no vizinho mais longo:
+    # acordes não trocam a cada batida; isso devolve a harmonia ao tamanho
+    # musical real e elimina o "tremido".
+    changed = True
+    while changed and len(groups) > 1:
+        changed = False
+        for gi in range(len(groups)):
+            if grp_dur(groups[gi]) >= MIN_DUR:
+                continue
+            left = groups[gi - 1] if gi > 0 else None
+            right = groups[gi + 1] if gi < len(groups) - 1 else None
+            if left and right:
+                tgt = gi - 1 if grp_dur(left) >= grp_dur(right) else gi + 1
+            elif left:
+                tgt = gi - 1
+            elif right:
+                tgt = gi + 1
+            else:
+                break
+            groups[tgt][1] = min(groups[tgt][1], groups[gi][1])
+            groups[tgt][2] = max(groups[tgt][2], groups[gi][2])
+            groups.pop(gi)
+            changed = True
+            break
+
+    # Rotula cada grupo usando a estatística do grupo INTEIRO (cromagrama e
+    # baixo medianos do trecho), descartando quase-silêncio e fundindo rótulos
+    # iguais consecutivos.
+    timeline = []
+    for st, i0, i1 in groups:
+        e = float(np.mean(seg_e[i0:i1])) if i1 > i0 else 0.0
+        if e < min_e:
             continue
-        ti = int(path[si])
-        label = seg_label(si, ti)
-        a, b = seg_span[si]
-        start = float(times[bounds.index(a)]) if a in bounds else float(librosa.frames_to_time(a, sr=sr, hop_length=HOP))
-        end = float(times[bounds.index(b)]) if b in bounds else float(librosa.frames_to_time(b, sr=sr, hop_length=HOP))
-        conf = float(raw[si, ti])
+        a, b = seg_span[i0][0], seg_span[i1 - 1][1]
+        gc = np.median(chroma[:, a:b], axis=1)
+        gb = np.median(bass[:, a:b], axis=1)
+        root, m, vec = templates[st]
+        label = label_chord(root, m, gc, gb, names)
+        start, end = t_of(a), t_of(b)
+        conf = float(np.dot(gc, vec) / (np.linalg.norm(gc) + 1e-9))
+        conf = max(0.0, min(1.0, conf))
         if timeline and timeline[-1]["symbol"] == label:
             timeline[-1]["end"] = end
             timeline[-1]["confidence"] = max(timeline[-1]["confidence"], conf)
         else:
             timeline.append(
-                {"symbol": label, "start": start, "end": end, "confidence": max(0.0, min(1.0, conf))}
+                {"symbol": label, "start": start, "end": end, "confidence": conf}
             )
 
     chords = [t["symbol"] for t in timeline]
