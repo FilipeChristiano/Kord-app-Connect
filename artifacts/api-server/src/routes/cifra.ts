@@ -57,6 +57,23 @@ function slugify(s: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+// Tokens de "ruído" que costumam aparecer em títulos copiados do YouTube/etc.,
+// mas NÃO fazem parte do nome da música ("Jó - COM LETRA - MK MUSIC" → "Jó").
+const NOISE_TOKENS = new Set([
+  "com", "letra", "letras", "legendado", "legendada", "oficial", "official",
+  "video", "videoclipe", "clipe", "lyric", "lyrics", "lyricvideo", "ao", "vivo",
+  "aovivo", "live", "playback", "cover", "acustico", "acustica", "hd", "hq",
+  "4k", "audio", "mk", "music", "gospel", "original", "feat", "ft",
+]);
+
+// Remove tokens de ruído do FINAL de um slug, preservando o nome real da música.
+// Só corta no fim para não estragar nomes que contenham essas palavras no meio.
+function stripTrailingNoise(slug: string): string {
+  const toks = slug.split("-").filter(Boolean);
+  while (toks.length > 1 && NOISE_TOKENS.has(toks[toks.length - 1])) toks.pop();
+  return toks.join("-");
+}
+
 // Decodifica entidades HTML mais comuns + numéricas.
 function decodeEntities(s: string): string {
   return s
@@ -183,7 +200,10 @@ function artistSongSlugs(html: string, artist: string): string[] {
 // tokens com o que o usuário pediu.
 function bestSongMatch(wantSlug: string, candidates: string[]): string | null {
   if (candidates.includes(wantSlug)) return wantSlug;
-  const want = new Set(wantSlug.split("-").filter(Boolean));
+  // Ignora tokens de ruído ao pontuar, para o limiar não ser inflado por eles.
+  const want = new Set(
+    wantSlug.split("-").filter((t) => t && !NOISE_TOKENS.has(t)),
+  );
   if (want.size === 0) return null;
   let best: string | null = null;
   let bestScore = 0;
@@ -229,13 +249,22 @@ async function resolveCifra(query: string): Promise<Parsed | null> {
   if (a && b) {
     const sa = slugify(a);
     const sb = slugify(b);
-    const direct = (await fetchPrint(sa, sb)) || (await fetchPrint(sb, sa));
+    // Versões sem ruído ("jo-com-letra-mk-music" → "jo"). Usadas como FALLBACK,
+    // depois do slug bruto, para não estragar títulos que tenham esses tokens.
+    const saClean = stripTrailingNoise(sa) || sa;
+    const sbClean = stripTrailingNoise(sb) || sb;
+    const direct =
+      (await fetchPrint(sa, sb)) ||
+      (sbClean !== sb ? await fetchPrint(sa, sbClean) : null) ||
+      (await fetchPrint(sb, sa)) ||
+      (saClean !== sa ? await fetchPrint(sb, saClean) : null);
     if (direct) return direct;
 
-    // 2) Página do artista + casamento aproximado (tenta os dois como artista).
+    // 2) Página do artista + casamento aproximado, nas duas ordens reais
+    //    (a como artista / b como artista). bestSongMatch já ignora ruído.
     for (const [artistSlug, songSlug] of [
-      [sa, sb],
-      [sb, sa],
+      [sa, sbClean],
+      [sb, saClean],
     ]) {
       const ap = await fetchText(`https://www.cifraclub.com.br/${artistSlug}/`, 15000);
       if (!ap.ok || !ap.text) continue;
