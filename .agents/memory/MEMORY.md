@@ -1,5 +1,6 @@
 - [Code review cumulative diff](code-review-cumulative-diff.md) — architect/validation review the whole uncommitted diff; don't revert prior published work they flag.
 - [Framer Motion transform conflict](framer-motion-transform-conflict.md) — motion elements that animate x/y/scale override Tailwind hover:translate/scale; use whileHover or a plain child.
+- [Clerk dev-preview auth bypass](clerk-dev-preview-auth-bypass.md) — Clerk cookies blocked in dev iframe; gate authed api routes behind NODE_ENV==="development" to mirror frontend PREVIEW_MODE.
 - [api-server dev no watch](api-server-dev-no-watch.md) — api-server runs tsx without --watch; restart the workflow after route changes or new routes 404 / show generic client errors.
 - [librosa/numba JIT cache](librosa-numba-cache.md) — first librosa run ~2min JIT; set NUMBA_CACHE_DIR to a writable dir (Nix store is read-only) or every request recompiles.
 - [Transcription pipeline (acordes)](transcription-pipeline.md) — never invent lyrics; ElevenLabs Scribe (precise word times) → OpenAI fallback (estimated); always transcode to 16k mono first; whisper-1/TTS blocked on proxy.

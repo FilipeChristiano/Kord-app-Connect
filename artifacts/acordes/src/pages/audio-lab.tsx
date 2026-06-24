@@ -18,7 +18,6 @@ import {
   Pencil,
   Mic,
   Search,
-  ExternalLink,
   ListMusic,
 } from "lucide-react";
 import { useLocation } from "wouter";
@@ -155,6 +154,87 @@ function buildLyricChart(
   }
 
   return `${header}\n\n${blocks.join("\n\n")}`;
+}
+
+// ── Renderização nativa da cifra (folha de cifra) ─────────────────────────────
+// Em vez de despejar o texto cru (que parece copiado de outro site), classificamos
+// cada linha e estilizamos: seções viram etiquetas, acordes ganham cor e a letra
+// fica legível. O alinhamento acorde-sobre-letra é preservado com fonte monoespaçada.
+
+// Reconhece um token de acorde (raiz maiúscula A–G + sufixos/baixo).
+// O conjunto restrito de caracteres evita confundir palavras da letra com acordes.
+function isChordToken(t: string): boolean {
+  return /^[A-G][#b]?(?:[mM]|maj|min|dim|aug|sus|add|°|º|\+|\d|\(|\)|#|b|\/|[A-G])*$/.test(t);
+}
+
+type LineKind = "section" | "chords" | "tab" | "lyric" | "blank";
+
+function classifyLine(line: string): LineKind {
+  const trimmed = line.trim();
+  if (!trimmed) return "blank";
+  if (/^\[[^\]]+\]$/.test(trimmed)) return "section";
+  // Linhas de tablatura: corda + barra + traços (ex.: "E|--3--2--").
+  if (/\|/.test(line) && /-{2,}/.test(line)) return "tab";
+  // Ignora tokens que são só pontuação (ex.: parênteses de progressão "( Em7 C9 )").
+  const tokens = trimmed.split(/\s+/).filter((t) => !/^[()|:.-]+$/.test(t));
+  if (tokens.length === 0) return "lyric";
+  const chordCount = tokens.filter(isChordToken).length;
+  if (chordCount > 0 && chordCount / tokens.length >= 0.8) return "chords";
+  return "lyric";
+}
+
+function SectionLabel({ text }: { text: string }) {
+  return (
+    <div className="mt-5 mb-1.5 first:mt-0">
+      <span className="inline-block font-sans text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 rounded-md px-2 py-0.5">
+        {text}
+      </span>
+    </div>
+  );
+}
+
+function ChordSheet({ text }: { text: string }) {
+  const lines = text.replace(/\r/g, "").split("\n");
+  return (
+    <div className="w-full overflow-x-auto rounded-xl border border-white/10 bg-secondary/40 px-4 py-4 font-mono text-sm leading-snug notranslate" translate="no">
+      {lines.map((line, i) => {
+        const kind = classifyLine(line);
+        if (kind === "blank") return <div key={i} className="h-3" aria-hidden />;
+        if (kind === "section") {
+          return <SectionLabel key={i} text={line.trim().replace(/^\[|\]$/g, "")} />;
+        }
+        // Linha que começa com [Seção] seguida de acordes na mesma linha.
+        const inline = line.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
+        if (inline && inline[2].trim()) {
+          return (
+            <div key={i} className="mt-5 first:mt-0">
+              <SectionLabel text={inline[1]} />
+              <div className="whitespace-pre text-primary font-semibold">{inline[2]}</div>
+            </div>
+          );
+        }
+        if (kind === "chords") {
+          return (
+            <div key={i} className="whitespace-pre text-primary font-semibold">
+              {line || " "}
+            </div>
+          );
+        }
+        if (kind === "tab") {
+          return (
+            <div key={i} className="whitespace-pre text-white/40">
+              {line || " "}
+            </div>
+          );
+        }
+        return (
+          <div key={i} className="whitespace-pre text-white/85">
+            {line || " "}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function AudioLab() {
@@ -771,25 +851,8 @@ export default function AudioLab() {
               )}
 
               {cifraMeta && chartOrigin === "cifra" && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-4 text-sm">
-                  <span className="inline-flex items-center gap-1.5 text-emerald-300 shrink-0">
-                    <Check className="w-4 h-4" /> Cifra encontrada
-                  </span>
-                  <span className="text-white/70 min-w-0 truncate">
-                    {cifraMeta.title}
-                    {cifraMeta.artist ? ` — ${cifraMeta.artist}` : ""}
-                    {cifraMeta.key ? ` · Tom ${cifraMeta.key}` : ""}
-                  </span>
-                  {cifraMeta.url && (
-                    <a
-                      href={cifraMeta.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> ver original
-                    </a>
-                  )}
+                <div className="flex items-center gap-1.5 mt-4 text-sm text-emerald-300">
+                  <Check className="w-4 h-4 shrink-0" /> Cifra encontrada — veja abaixo.
                 </div>
               )}
             </div>
@@ -937,33 +1000,42 @@ export default function AudioLab() {
                   exit={{ opacity: 0, y: 10 }}
                   className="glass-card rounded-3xl border border-white/10 p-6"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="w-4 h-4 text-primary" />
-                    <h4 className="font-display font-bold text-white">
-                      {chartOrigin === "cifra" ? "Cifra encontrada" : "Letra + cifra organizada"}
-                    </h4>
-                  </div>
                   {chartOrigin === "cifra" ? (
-                    <p className="text-[12px] text-muted-foreground/70 mb-3">
-                      Cifra do CifraClub
-                      {cifraMeta?.key ? ` (Tom ${cifraMeta.key})` : ""}. Você pode ajustar o
-                      que quiser antes de usar.{" "}
-                      {cifraMeta?.url && (
-                        <a
-                          href={cifraMeta.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:underline align-baseline"
-                        >
-                          <ExternalLink className="w-3 h-3" /> ver original
-                        </a>
-                      )}
-                    </p>
+                    <div className="mb-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h4 className="font-display font-bold text-white text-lg leading-tight truncate">
+                            {cifraMeta?.title || "Cifra"}
+                          </h4>
+                          {cifraMeta?.artist && (
+                            <p className="text-sm text-white/50 truncate mt-0.5">
+                              {cifraMeta.artist}
+                            </p>
+                          )}
+                        </div>
+                        {cifraMeta?.key && (
+                          <span className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+                            <Music2 className="w-3.5 h-3.5" /> Tom {cifraMeta.key}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[12px] text-muted-foreground/70 mt-2">
+                        Você pode ajustar o que quiser antes de usar.
+                      </p>
+                    </div>
                   ) : (
-                    <p className="text-[12px] text-muted-foreground/70 mb-3">
-                      Esta cifra foi organizada automaticamente. Revise a posição dos acordes
-                      antes de usar.
-                    </p>
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4 text-primary" />
+                        <h4 className="font-display font-bold text-white">
+                          Letra + cifra organizada
+                        </h4>
+                      </div>
+                      <p className="text-[12px] text-muted-foreground/70">
+                        Esta cifra foi organizada automaticamente. Revise a posição dos acordes
+                        antes de usar.
+                      </p>
+                    </div>
                   )}
                   {chartHasUncertain && (
                     <div className="flex items-start gap-2 mb-3 text-[12px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2.5">
@@ -986,9 +1058,7 @@ export default function AudioLab() {
                       className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
                     />
                   ) : (
-                    <pre className="w-full overflow-x-auto bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm leading-loose whitespace-pre notranslate" translate="no">
-                      {chart}
-                    </pre>
+                    <ChordSheet text={chart} />
                   )}
 
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -1017,6 +1087,20 @@ export default function AudioLab() {
                       <Wand2 className="w-3.5 h-3.5" /> Sofisticar cifra
                     </button>
                   </div>
+
+                  {chartOrigin === "cifra" && cifraMeta?.url && (
+                    <p className="mt-4 text-[11px] text-muted-foreground/50">
+                      Fonte:{" "}
+                      <a
+                        href={cifraMeta.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-muted-foreground underline underline-offset-2"
+                      >
+                        CifraClub
+                      </a>
+                    </p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

@@ -294,8 +294,14 @@ async function resolveCifra(query: string): Promise<Parsed | null> {
 }
 
 router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res: Response) => {
+  // No preview de desenvolvimento o app roda dentro de um iframe e os cookies de
+  // login do Clerk são bloqueados por serem de "terceiros" — então getAuth() não
+  // enxerga a sessão e toda busca cairia em 401. Espelhamos o PREVIEW_MODE do
+  // frontend e liberamos a busca em dev. Em produção (NODE_ENV=production) o
+  // acesso continua exigindo login.
+  const isDev = process.env.NODE_ENV === "development";
   const auth = getAuth(req);
-  if (!auth?.userId) {
+  if (!auth?.userId && !isDev) {
     return res
       .status(401)
       .json({ status: "unauthorized", message: "Faça login para buscar a cifra." });
