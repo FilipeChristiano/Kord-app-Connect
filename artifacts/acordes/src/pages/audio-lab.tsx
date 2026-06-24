@@ -561,7 +561,7 @@ export default function AudioLab() {
 
     if (!out.found) {
       setCifraNotice(
-        "Não encontrei essa cifra no CifraClub. Confira o nome (ex.: “Artista - Música”) ou cole/edite a cifra manualmente abaixo.",
+        "Não encontrei a cifra dessa música. Confira o nome (ex.: “Artista - Música”) ou cole/edite a cifra manualmente abaixo.",
       );
       setCifraMeta(null);
       return;
@@ -787,61 +787,34 @@ export default function AudioLab() {
               </div>
             </div>
 
-            {/* ── Buscar cifra pronta (CifraClub) — primário ──────────────── */}
+            {/* ── Cifra da música (busca automática) — primário ──────────────── */}
             <div className="glass-card rounded-3xl border border-primary/20 bg-primary/5 p-6">
               <div className="flex items-center gap-2 mb-1">
                 <ListMusic className="w-4 h-4 text-primary" />
                 <h3 className="font-display font-bold text-white">
-                  Buscar cifra pronta
+                  Cifra da música
                 </h3>
               </div>
               <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
                 <span>
-                  O Harmonic procura a cifra da música no CifraClub (feita por pessoas) e
-                  traz a letra com os acordes já posicionados. Para encontrar certinho, use
-                  o formato <span className="text-white/80">Artista - Música</span>.
+                  O Harmonic entrega a cifra de acordo com a música que você enviou — com a
+                  letra e os acordes já posicionados. A busca começa automaticamente assim
+                  que a música é analisada.
                 </span>
               </div>
 
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Nome da música
-              </label>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="text"
-                  value={cifraQuery}
-                  onChange={(e) => setCifraQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void handleFetchCifra();
-                    }
-                  }}
-                  placeholder="Ex.: Gabriela Rocha - Atos 2"
-                  className="flex-1 bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                />
-                <button
-                  onClick={handleFetchCifra}
-                  disabled={cifraState === "running" || cifraQuery.trim().length === 0}
-                  className={cn(
-                    "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
-                    cifraState === "running" || cifraQuery.trim().length === 0
-                      ? "bg-white/5 text-white/30 cursor-not-allowed"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90",
-                  )}
-                >
-                  {cifraState === "running" ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Buscando…
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" /> Buscar cifra
-                    </>
-                  )}
-                </button>
-              </div>
+              {/* Status da busca automática */}
+              {cifraState === "running" ? (
+                <div className="flex items-center gap-2 text-sm text-white/70">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  Procurando a cifra da sua música…
+                </div>
+              ) : chartOrigin === "cifra" ? (
+                <div className="flex items-center gap-1.5 text-sm text-emerald-300">
+                  <Check className="w-4 h-4 shrink-0" /> Cifra encontrada — veja abaixo.
+                </div>
+              ) : null}
 
               {cifraNotice && (
                 <div className="flex items-start gap-2 mt-4 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
@@ -850,9 +823,41 @@ export default function AudioLab() {
                 </div>
               )}
 
-              {cifraMeta && chartOrigin === "cifra" && (
-                <div className="flex items-center gap-1.5 mt-4 text-sm text-emerald-300">
-                  <Check className="w-4 h-4 shrink-0" /> Cifra encontrada — veja abaixo.
+              {/* Ajuste manual (fallback): quando o nome derivado do arquivo não bate */}
+              {cifraState !== "running" && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    {chartOrigin === "cifra"
+                      ? "Não é essa música? Ajuste o nome e busque de novo"
+                      : "Não encontrou? Ajuste o nome da música e tente de novo"}
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      value={cifraQuery}
+                      onChange={(e) => setCifraQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleFetchCifra();
+                        }
+                      }}
+                      placeholder="Ex.: Gabriela Rocha - Atos 2"
+                      className="flex-1 bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    />
+                    <button
+                      onClick={handleFetchCifra}
+                      disabled={cifraQuery.trim().length === 0}
+                      className={cn(
+                        "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
+                        cifraQuery.trim().length === 0
+                          ? "bg-white/5 text-white/30 cursor-not-allowed"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90",
+                      )}
+                    >
+                      <Search className="w-4 h-4" /> Buscar cifra
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1087,20 +1092,6 @@ export default function AudioLab() {
                       <Wand2 className="w-3.5 h-3.5" /> Sofisticar cifra
                     </button>
                   </div>
-
-                  {chartOrigin === "cifra" && cifraMeta?.url && (
-                    <p className="mt-4 text-[11px] text-muted-foreground/50">
-                      Fonte:{" "}
-                      <a
-                        href={cifraMeta.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-muted-foreground underline underline-offset-2"
-                      >
-                        CifraClub
-                      </a>
-                    </p>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>
