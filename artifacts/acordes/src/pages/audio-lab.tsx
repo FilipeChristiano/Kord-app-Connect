@@ -38,6 +38,7 @@ import { analyzeChordsRemote } from "@/lib/chord-remote";
 import {
   fetchCifra,
   fetchCifraByLyrics,
+  fetchYoutubeAudio,
   pickCifra,
   type FetchedCifra,
   type CifraCandidate,
@@ -272,6 +273,7 @@ export default function AudioLab() {
   // Estúdio de áudio (separação voz/instrumental no navegador)
   const [stemKind, setStemKind] = useState<"instrumental" | "vocals" | null>(null);
   const [stemBusy, setStemBusy] = useState(false);
+  const [stemFetching, setStemFetching] = useState(false); // baixando o áudio do YouTube
   const [stemProgress, setStemProgress] = useState(0);
   const [stemUrl, setStemUrl] = useState<string | null>(null);
   const [stemError, setStemError] = useState("");
@@ -324,6 +326,7 @@ export default function AudioLab() {
     }
     setStemKind(null);
     setStemBusy(false);
+    setStemFetching(false);
     setStemProgress(0);
     setStemUrl(null);
     setStemError("");
@@ -357,14 +360,47 @@ export default function AudioLab() {
     setStep("lendo");
   }, [stopStream, clearStems]);
 
-  // Gera a versão sem voz / com voz em destaque DO ÁUDIO ENVIADO, no navegador.
+  // Gera a versão sem voz / com voz em destaque, no navegador. O áudio vem do
+  // arquivo enviado ou, no modo pesquisa, é extraído do YouTube automaticamente.
   const generateStem = useCallback(async (kind: "instrumental" | "vocals") => {
-    const file = audioFileRef.current;
-    if (!file || stemBusy) return;
+    if (stemBusy || stemFetching) return;
     const runId = ++stemRunIdRef.current;
-    setStemBusy(true);
     setStemKind(kind);
     setStemError("");
+
+    // Garante que temos o arquivo de áudio: usa o enviado ou baixa do YouTube.
+    let file = audioFileRef.current;
+    if (!file) {
+      const ytId = cifraMeta?.youtubeId;
+      if (inputMode === "search" && ytId) {
+        setStemFetching(true);
+        try {
+          const res = await fetchYoutubeAudio(ytId);
+          if (stemRunIdRef.current !== runId) return;
+          if (!res.ok) {
+            setStemError(
+              res.reason === "unauthorized"
+                ? "Sua sessão expirou. Atualize a página e entre novamente."
+                : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+            );
+            return;
+          }
+          file = new File([res.blob], "audio.mp3", { type: "audio/mpeg" });
+          audioFileRef.current = file;
+          setStemFileName(
+            cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
+          );
+        } finally {
+          if (stemRunIdRef.current === runId) setStemFetching(false);
+        }
+      } else {
+        setStemError("Envie o arquivo de áudio da música para usar o estúdio.");
+        return;
+      }
+    }
+    if (!file || stemRunIdRef.current !== runId) return;
+
+    setStemBusy(true);
     setStemProgress(0);
     if (stemUrlRef.current) {
       URL.revokeObjectURL(stemUrlRef.current);
@@ -396,7 +432,7 @@ export default function AudioLab() {
     } finally {
       if (stemRunIdRef.current === runId) setStemBusy(false);
     }
-  }, [stemBusy]);
+  }, [stemBusy, stemFetching, inputMode, cifraMeta]);
 
   // ── Pipeline: transcreve a letra do áudio/canto → identifica a música →
   //    busca a cifra pronta na internet. Nunca inventa letra nem acordes.
@@ -1327,7 +1363,7 @@ export default function AudioLab() {
                   }}
                 />
 
-                {inputMode === "search" && !stemFileName ? (
+                {inputMode === "search" && !stemFileName && !cifraMeta?.youtubeId ? (
                   <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-center">
                     <p className="text-sm text-white/70 mb-1">
                       Para criar a versão sem voz ou destacar o vocal, envie o arquivo de áudio
@@ -1352,19 +1388,31 @@ export default function AudioLab() {
                   </div>
                 ) : (
                 <>
-                {stemFileName && (
+                {stemFileName ? (
                   <div className="flex items-center gap-2 mb-3 text-[12px] text-white/50">
                     <FileAudio className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span className="truncate">{stemFileName}</span>
                   </div>
+                ) : (
+                  inputMode === "search" && (
+                    <p className="text-[12px] text-muted-foreground/70 mb-3">
+                      Vamos usar o áudio desta música do YouTube — é só escolher uma opção abaixo.{" "}
+                      <button
+                        onClick={() => studioInputRef.current?.click()}
+                        className="text-primary/90 hover:text-primary underline underline-offset-2"
+                      >
+                        ou envie seu próprio arquivo
+                      </button>
+                    </p>
+                  )
                 )}
                 <div className="grid sm:grid-cols-2 gap-3">
                   <button
                     onClick={() => generateStem("instrumental")}
-                    disabled={stemBusy}
+                    disabled={stemBusy || stemFetching}
                     className={cn(
                       "flex items-center gap-3 text-left rounded-2xl border px-4 py-3 transition-all",
-                      stemBusy
+                      stemBusy || stemFetching
                         ? "border-white/5 bg-white/[0.02] opacity-60 cursor-not-allowed"
                         : "border-white/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
                     )}
@@ -1374,17 +1422,17 @@ export default function AudioLab() {
                       <p className="font-semibold text-white text-sm">Sem voz (instrumental)</p>
                       <p className="text-[12px] text-white/50">Modo karaokê</p>
                     </div>
-                    {stemBusy && stemKind === "instrumental" && (
+                    {(stemBusy || stemFetching) && stemKind === "instrumental" && (
                       <Loader2 className="w-4 h-4 ml-auto shrink-0 animate-spin text-primary" />
                     )}
                   </button>
 
                   <button
                     onClick={() => generateStem("vocals")}
-                    disabled={stemBusy}
+                    disabled={stemBusy || stemFetching}
                     className={cn(
                       "flex items-center gap-3 text-left rounded-2xl border px-4 py-3 transition-all",
-                      stemBusy
+                      stemBusy || stemFetching
                         ? "border-white/5 bg-white/[0.02] opacity-60 cursor-not-allowed"
                         : "border-white/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
                     )}
@@ -1394,11 +1442,18 @@ export default function AudioLab() {
                       <p className="font-semibold text-white text-sm">Voz em destaque</p>
                       <p className="text-[12px] text-white/50">Realça o vocal</p>
                     </div>
-                    {stemBusy && stemKind === "vocals" && (
+                    {(stemBusy || stemFetching) && stemKind === "vocals" && (
                       <Loader2 className="w-4 h-4 ml-auto shrink-0 animate-spin text-primary" />
                     )}
                   </button>
                 </div>
+
+                {stemFetching && (
+                  <div className="mt-4 flex items-center gap-2 text-[12px] text-white/60">
+                    <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
+                    Baixando o áudio da música do YouTube…
+                  </div>
+                )}
 
                 {stemBusy && stemKind === "vocals" && (
                   <div className="mt-4">

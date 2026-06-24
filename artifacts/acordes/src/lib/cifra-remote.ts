@@ -118,3 +118,27 @@ export async function pickCifra(id: string): Promise<CifraOutcome> {
   if (!p) return { ok: false, reason: "empty" };
   return postCifra({ pick: p });
 }
+
+export type YoutubeAudioOutcome =
+  | { ok: true; blob: Blob }
+  | { ok: false; reason: "unauthorized" | "error" | "network" };
+
+// Extrai o áudio da música (vídeo público do YouTube) para usar no estúdio.
+// O player embutido não deixa ler as amostras do som, então o servidor baixa a
+// faixa de áudio e devolve o arquivo para o app processar localmente.
+export async function fetchYoutubeAudio(youtubeId: string): Promise<YoutubeAudioOutcome> {
+  const id = youtubeId.trim();
+  if (!id) return { ok: false, reason: "error" };
+  try {
+    const r = await fetch(`${API_BASE}/yt-audio?id=${encodeURIComponent(id)}`, {
+      credentials: "include",
+    });
+    if (r.status === 401) return { ok: false, reason: "unauthorized" };
+    if (!r.ok) return { ok: false, reason: "error" };
+    const blob = await r.blob();
+    if (!blob.size) return { ok: false, reason: "error" };
+    return { ok: true, blob };
+  } catch {
+    return { ok: false, reason: "network" };
+  }
+}

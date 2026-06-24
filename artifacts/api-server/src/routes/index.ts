@@ -5,6 +5,7 @@ import hotmartWebhookRouter from "./webhooks-hotmart";
 import transcribeRouter from "./transcribe";
 import chordsRouter from "./chords";
 import cifraRouter from "./cifra";
+import ytAudioRouter from "./yt-audio";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(hotmartWebhookRouter);
 router.use(transcribeRouter);
 router.use(chordsRouter);
 router.use(cifraRouter);
+router.use(ytAudioRouter);
 
 export default router;
