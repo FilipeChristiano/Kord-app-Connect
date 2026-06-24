@@ -1,23 +1,28 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Estúdio de áudio — separação simples de voz/instrumental NO NAVEGADOR.
 //
-// Roda 100% local (Web Audio), sem servidor, sem custo e sem plataforma externa.
-// É um EFEITO, não uma separação de estúdio com IA:
+// Roda 100% local (Web Audio), sem custo e sem plataforma externa. É um EFEITO,
+// não uma separação de estúdio com IA:
 //   • "Sem voz" (instrumental/karaokê): cancela o que está no CENTRO da mixagem
-//     (geralmente a voz) subtraindo os canais (L−R). Simples e eficaz, mas leva
-//     junto parte do que também está no centro (grave/bumbo). Precisa de estéreo.
+//     (geralmente a voz) subtraindo os canais (L−R). Para tocar ao vivo/instantâneo
+//     usamos nós nativos do Web Audio (ver audio-live.ts); aqui ficou só a versão
+//     offline usada para gerar o arquivo de download.
 //   • "Voz em destaque": realça o centro com uma máscara no domínio da frequência
-//     (STFT) que atenua as faixas dominadas pelos instrumentos panoramizados.
+//     (STFT). É o efeito mais pesado, então roda num Web Worker (fora da thread
+//     principal) para não travar o aparelho.
 //
 // Para download, geramos um WAV PCM16.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { decodeAudioFile } from "./audio-analysis";
+import {
+  emphasizeVocalsCore,
+  makeInstrumentalCore,
+  type Channels,
+  type DspResult,
+} from "./audio-dsp";
 
-export interface StemResult {
-  sampleRate: number;
-  samples: Float32Array; // mono
-}
+export type StemResult = DspResult;
 
 // Erro específico: o cancelamento de centro precisa de uma faixa ESTÉREO. Em um
 // áudio mono (ex.: uma gravação de microfone) não há o que cancelar.
@@ -33,157 +38,88 @@ export async function fileToAudioBuffer(file: File): Promise<AudioBuffer> {
   return decodeAudioFile(data);
 }
 
-function channelsOf(buffer: AudioBuffer): { L: Float32Array; R: Float32Array; n: number } {
+function channelsOf(buffer: AudioBuffer): Channels {
   const L = buffer.getChannelData(0);
   const R = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : L;
-  return { L, R, n: Math.min(L.length, R.length) };
+  return { L, R, n: Math.min(L.length, R.length), sampleRate: buffer.sampleRate };
 }
 
-// Normaliza para um pico seguro (evita estouro/clipping no WAV).
-function normalize(samples: Float32Array, target = 0.97): Float32Array {
-  let peak = 0;
-  for (let i = 0; i < samples.length; i++) {
-    const a = Math.abs(samples[i]);
-    if (a > peak) peak = a;
-  }
-  if (peak > 0 && peak !== target) {
-    const g = target / peak;
-    for (let i = 0; i < samples.length; i++) samples[i] *= g;
-  }
-  return samples;
-}
-
-// ── Sem voz (instrumental) ────────────────────────────────────────────────────
-// Cancelamento de centro: out = L − R. O conteúdo idêntico nos dois canais (voz
-// ao centro) some; o que está panoramizado (instrumentos) permanece.
+// ── Sem voz (instrumental), versão offline para download ─────────────────────
 export function makeInstrumental(buffer: AudioBuffer): StemResult {
   if (buffer.numberOfChannels < 2) throw new MonoSourceError();
-  const { L, R, n } = channelsOf(buffer);
-  const out = new Float32Array(n);
-  for (let i = 0; i < n; i++) out[i] = (L[i] - R[i]) * 0.5;
-  return { sampleRate: buffer.sampleRate, samples: normalize(out) };
+  return makeInstrumentalCore(channelsOf(buffer));
 }
 
-// ── FFT radix-2 iterativa (in-place) ─────────────────────────────────────────
-function makeFft(size: number) {
-  const levels = Math.log2(size);
-  if (levels % 1 !== 0) throw new Error("FFT size must be power of 2");
-  const rev = new Uint32Array(size);
-  for (let i = 0; i < size; i++) {
-    let x = i;
-    let r = 0;
-    for (let j = 0; j < levels; j++) {
-      r = (r << 1) | (x & 1);
-      x >>= 1;
-    }
-    rev[i] = r;
-  }
-  const cos = new Float32Array(size / 2);
-  const sin = new Float32Array(size / 2);
-  for (let i = 0; i < size / 2; i++) {
-    cos[i] = Math.cos((-2 * Math.PI * i) / size);
-    sin[i] = Math.sin((-2 * Math.PI * i) / size);
-  }
-  // inverse = true → conjuga twiddles e divide por N (feito fora).
-  return function fft(re: Float32Array, im: Float32Array, inverse: boolean) {
-    for (let i = 0; i < size; i++) {
-      const j = rev[i];
-      if (j > i) {
-        let t = re[i]; re[i] = re[j]; re[j] = t;
-        t = im[i]; im[i] = im[j]; im[j] = t;
-      }
-    }
-    for (let half = 1; half < size; half <<= 1) {
-      const step = size / (half << 1);
-      for (let i = 0; i < size; i += half << 1) {
-        for (let k = 0, idx = 0; k < half; k++, idx += step) {
-          const c = cos[idx];
-          const s = inverse ? -sin[idx] : sin[idx];
-          const a = i + k;
-          const b = a + half;
-          const tre = re[b] * c - im[b] * s;
-          const tim = re[b] * s + im[b] * c;
-          re[b] = re[a] - tre;
-          im[b] = im[a] - tim;
-          re[a] += tre;
-          im[a] += tim;
-        }
-      }
-    }
-  };
-}
-
-// ── Voz em destaque (máscara STFT no centro) ─────────────────────────────────
-// Para cada quadro e faixa de frequência: mid = (L+R)/2 (tudo, centro forte),
-// side = (L−R)/2 (só o panoramizado). Onde o lado domina, é instrumento → atenua;
-// onde o centro domina, é voz → preserva. Reconstrução por overlap-add.
-export async function emphasizeVocals(
+// ── Voz em destaque (offline, na própria thread) ─────────────────────────────
+// Mantida como fallback caso o Worker não esteja disponível.
+export function emphasizeVocals(
   buffer: AudioBuffer,
   onProgress?: (p: number) => void,
-): Promise<StemResult> {
-  const FRAME = 4096;
-  const HOP = 1024;
-  const { L, R, n } = channelsOf(buffer);
+): StemResult {
+  return emphasizeVocalsCore(channelsOf(buffer), onProgress);
+}
 
-  const win = new Float32Array(FRAME);
-  for (let i = 0; i < FRAME; i++) win[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / FRAME);
-
-  const fft = makeFft(FRAME);
-  const out = new Float32Array(n + FRAME);
-  const norm = new Float32Array(n + FRAME);
-
-  const mRe = new Float32Array(FRAME);
-  const mIm = new Float32Array(FRAME);
-  const sRe = new Float32Array(FRAME);
-  const sIm = new Float32Array(FRAME);
-
-  const frames = Math.max(1, Math.ceil((n - FRAME) / HOP) + 1);
-  let frame = 0;
-  for (let start = 0; start < n; start += HOP) {
-    for (let i = 0; i < FRAME; i++) {
-      const idx = start + i;
-      const l = idx < n ? L[idx] : 0;
-      const r = idx < n ? R[idx] : 0;
-      const w = win[i];
-      mRe[i] = (l + r) * 0.5 * w;
-      sRe[i] = (l - r) * 0.5 * w;
-      mIm[i] = 0;
-      sIm[i] = 0;
-    }
-    fft(mRe, mIm, false);
-    fft(sRe, sIm, false);
-
-    for (let k = 0; k < FRAME; k++) {
-      const magM = Math.hypot(mRe[k], mIm[k]);
-      const magS = Math.hypot(sRe[k], sIm[k]);
-      // 1 quando o centro domina (voz), → 0 quando o lado domina (instrumento).
-      let mask = 1 - (1.6 * magS) / (magM + 1e-6);
-      if (mask < 0) mask = 0;
-      else if (mask > 1) mask = 1;
-      mRe[k] *= mask;
-      mIm[k] *= mask;
-    }
-
-    fft(mRe, mIm, true);
-    const inv = 1 / FRAME;
-    for (let i = 0; i < FRAME; i++) {
-      const idx = start + i;
-      const w = win[i];
-      out[idx] += mRe[i] * inv * w;
-      norm[idx] += w * w;
-    }
-
-    frame++;
-    if (onProgress && frame % 32 === 0) {
-      onProgress(Math.min(0.99, frame / frames));
-      await new Promise((r) => setTimeout(r, 0));
-    }
+// ── Voz em destaque FORA da thread principal (Web Worker) ────────────────────
+// Decodifica na thread principal (Web Audio exige) e envia só as amostras para o
+// Worker processar. Assim a interface não congela e o processamento é mais rápido.
+export function emphasizeVocalsViaWorker(
+  buffer: AudioBuffer,
+  onProgress?: (p: number) => void,
+): { promise: Promise<StemResult>; cancel: () => void } {
+  if (buffer.numberOfChannels < 2) {
+    return {
+      promise: Promise.reject(new MonoSourceError()),
+      cancel: () => {},
+    };
   }
 
-  const result = new Float32Array(n);
-  for (let i = 0; i < n; i++) result[i] = norm[i] > 1e-6 ? out[i] / norm[i] : 0;
-  onProgress?.(1);
-  return { sampleRate: buffer.sampleRate, samples: normalize(result) };
+  // Sem suporte a Worker: cai para o processamento na própria thread.
+  if (typeof Worker === "undefined") {
+    return {
+      promise: Promise.resolve(emphasizeVocals(buffer, onProgress)),
+      cancel: () => {},
+    };
+  }
+
+  const ch = channelsOf(buffer);
+  // Copia os canais para ArrayBuffers transferíveis (getChannelData devolve uma
+  // view do AudioBuffer, que não pode ser transferida com segurança).
+  const L = new Float32Array(ch.L.subarray(0, ch.n));
+  const R = new Float32Array(ch.R.subarray(0, ch.n));
+
+  const worker = new Worker(new URL("./stem-worker.ts", import.meta.url), {
+    type: "module",
+  });
+  const id = Math.floor(Math.random() * 1e9);
+
+  const promise = new Promise<StemResult>((resolve, reject) => {
+    worker.onmessage = (e: MessageEvent) => {
+      const data = e.data as
+        | { id: number; type: "progress"; value: number }
+        | { id: number; type: "done"; samples: Float32Array; sampleRate: number }
+        | { id: number; type: "error"; message: string };
+      if (data.id !== id) return;
+      if (data.type === "progress") {
+        onProgress?.(data.value);
+      } else if (data.type === "done") {
+        resolve({ samples: data.samples, sampleRate: data.sampleRate });
+        worker.terminate();
+      } else {
+        reject(new Error(data.message));
+        worker.terminate();
+      }
+    };
+    worker.onerror = (e) => {
+      reject(new Error(e.message || "worker_error"));
+      worker.terminate();
+    };
+    worker.postMessage(
+      { id, L, R, n: ch.n, sampleRate: ch.sampleRate },
+      [L.buffer, R.buffer],
+    );
+  });
+
+  return { promise, cancel: () => worker.terminate() };
 }
 
 // ── WAV PCM16 (mono) para download/preview ───────────────────────────────────

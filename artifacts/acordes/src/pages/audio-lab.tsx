@@ -24,6 +24,7 @@ import {
   Headphones,
   Download,
   Music,
+  Play,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -46,10 +47,11 @@ import {
 import {
   fileToAudioBuffer,
   makeInstrumental,
-  emphasizeVocals,
+  emphasizeVocalsViaWorker,
   encodeWav,
   MonoSourceError,
 } from "@/lib/audio-stems";
+import { LiveStudioPlayer } from "@/lib/audio-live";
 import { cn } from "@/lib/utils";
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
@@ -270,16 +272,31 @@ export default function AudioLab() {
   const [editingChart, setEditingChart] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Estúdio de áudio (separação voz/instrumental no navegador)
-  const [stemKind, setStemKind] = useState<"instrumental" | "vocals" | null>(null);
-  const [stemBusy, setStemBusy] = useState(false);
-  const [stemFetching, setStemFetching] = useState(false); // baixando o áudio do YouTube
-  const [stemProgress, setStemProgress] = useState(0);
-  const [stemUrl, setStemUrl] = useState<string | null>(null);
-  const [stemError, setStemError] = useState("");
+  // Estúdio de áudio
   const [stemFileName, setStemFileName] = useState(""); // áudio carregado para o estúdio
-  const stemUrlRef = useRef<string | null>(null);
+
+  // ── "Sem voz" AO VIVO (cancelamento de centro em tempo real) ───────────────
+  const [liveStarted, setLiveStarted] = useState(false); // já começou a tocar
+  const [liveLoading, setLiveLoading] = useState(false); // preparando o áudio para tocar
+  const [liveActive, setLiveActive] = useState(true); // efeito "sem voz" ligado
+  const [liveError, setLiveError] = useState("");
+  const liveAudioRef = useRef<HTMLAudioElement | null>(null);
+  const livePlayerRef = useRef<LiveStudioPlayer | null>(null);
+  const liveBlobUrlRef = useRef<string | null>(null); // blob do arquivo enviado (revogar)
+
+  // ── "Voz em destaque" (STFT pesado, fora da thread principal) ──────────────
+  const [vocalsBusy, setVocalsBusy] = useState(false);
+  const [vocalsFetching, setVocalsFetching] = useState(false); // baixando o áudio do YouTube
+  const [vocalsProgress, setVocalsProgress] = useState(0);
+  const [vocalsUrl, setVocalsUrl] = useState<string | null>(null);
+  const [vocalsError, setVocalsError] = useState("");
+  const vocalsUrlRef = useRef<string | null>(null);
   const stemRunIdRef = useRef(0);
+  const vocalsCancelRef = useRef<(() => void) | null>(null);
+
+  // ── Download do "sem voz" (gerado offline sob demanda) ─────────────────────
+  const [instDownloadBusy, setInstDownloadBusy] = useState(false);
+
   const studioInputRef = useRef<HTMLInputElement | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -309,9 +326,17 @@ export default function AudioLab() {
       runIdRef.current++;
       pipelineRunIdRef.current++;
       stemRunIdRef.current++;
-      if (stemUrlRef.current) {
-        URL.revokeObjectURL(stemUrlRef.current);
-        stemUrlRef.current = null;
+      vocalsCancelRef.current?.();
+      vocalsCancelRef.current = null;
+      if (vocalsUrlRef.current) {
+        URL.revokeObjectURL(vocalsUrlRef.current);
+        vocalsUrlRef.current = null;
+      }
+      livePlayerRef.current?.dispose();
+      livePlayerRef.current = null;
+      if (liveBlobUrlRef.current) {
+        URL.revokeObjectURL(liveBlobUrlRef.current);
+        liveBlobUrlRef.current = null;
       }
       stopStream();
     };
@@ -320,17 +345,45 @@ export default function AudioLab() {
   // Limpa qualquer resultado do estúdio de áudio (ao recomeçar/enviar outro áudio).
   const clearStems = useCallback(() => {
     stemRunIdRef.current++;
-    if (stemUrlRef.current) {
-      URL.revokeObjectURL(stemUrlRef.current);
-      stemUrlRef.current = null;
+    vocalsCancelRef.current?.();
+    vocalsCancelRef.current = null;
+    if (vocalsUrlRef.current) {
+      URL.revokeObjectURL(vocalsUrlRef.current);
+      vocalsUrlRef.current = null;
     }
-    setStemKind(null);
-    setStemBusy(false);
-    setStemFetching(false);
-    setStemProgress(0);
-    setStemUrl(null);
-    setStemError("");
+    // Não descartamos o LiveStudioPlayer: o nó MediaElementSource só pode ser
+    // criado uma vez por elemento <audio>; recriá-lo no mesmo elemento lança erro.
+    // Apenas paramos e limpamos a fonte para que o próximo "Ouvir" resolva um
+    // áudio novo. O player é descartado de fato só ao desmontar a tela.
+    const liveEl = liveAudioRef.current;
+    if (liveEl) {
+      try {
+        liveEl.pause();
+      } catch {
+        // ignore
+      }
+      liveEl.removeAttribute("src");
+      try {
+        liveEl.load();
+      } catch {
+        // ignore
+      }
+    }
+    if (liveBlobUrlRef.current) {
+      URL.revokeObjectURL(liveBlobUrlRef.current);
+      liveBlobUrlRef.current = null;
+    }
     setStemFileName("");
+    setLiveStarted(false);
+    setLiveLoading(false);
+    setLiveActive(true);
+    setLiveError("");
+    setVocalsBusy(false);
+    setVocalsFetching(false);
+    setVocalsProgress(0);
+    setVocalsUrl(null);
+    setVocalsError("");
+    setInstDownloadBusy(false);
   }, []);
 
   const reset = useCallback(() => {
@@ -360,25 +413,92 @@ export default function AudioLab() {
     setStep("lendo");
   }, [stopStream, clearStems]);
 
-  // Gera a versão sem voz / com voz em destaque, no navegador. O áudio vem do
-  // arquivo enviado ou, no modo pesquisa, é extraído do YouTube automaticamente.
-  const generateStem = useCallback(async (kind: "instrumental" | "vocals") => {
-    if (stemBusy || stemFetching) return;
-    const runId = ++stemRunIdRef.current;
-    setStemKind(kind);
-    setStemError("");
+  // Define a fonte de áudio (URL) para o player ao vivo, sem baixar o arquivo
+  // inteiro: arquivo enviado vira um blob; no modo pesquisa, tocamos em streaming
+  // direto do servidor (que extrai o áudio do YouTube).
+  const resolveLiveSrc = useCallback((): string | null => {
+    if (liveBlobUrlRef.current) return liveBlobUrlRef.current;
+    if (audioFileRef.current) {
+      const url = URL.createObjectURL(audioFileRef.current);
+      liveBlobUrlRef.current = url;
+      return url;
+    }
+    const ytId = cifraMeta?.youtubeId;
+    if (inputMode === "search" && ytId) {
+      return `/api/yt-audio?id=${encodeURIComponent(ytId)}`;
+    }
+    return null;
+  }, [inputMode, cifraMeta]);
 
-    // Garante que temos o arquivo de áudio: usa o enviado ou baixa do YouTube.
+  // ── "Sem voz" AO VIVO: começa a tocar com o cancelamento de centro ligado ──
+  // O efeito é aplicado em tempo real (nós nativos do Web Audio), então começa
+  // quase instantâneo e não pesa no aparelho.
+  const startLive = useCallback(async () => {
+    const el = liveAudioRef.current;
+    if (!el) return;
+    setLiveError("");
+
+    if (!el.getAttribute("src")) {
+      const src = resolveLiveSrc();
+      if (!src) {
+        setLiveError("Envie o arquivo de áudio da música para usar o estúdio.");
+        return;
+      }
+      if (inputMode === "search" && !audioFileRef.current) {
+        setStemFileName(
+          cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
+        );
+      }
+      setLiveLoading(true);
+      el.src = src;
+    }
+    setLiveStarted(true);
+
+    try {
+      // O elemento <audio> pode ser remontado (troca de tela/estado). Como o nó
+      // MediaElementSource fica preso ao elemento original, recriamos o player só
+      // quando o elemento muda; caso contrário reaproveitamos o mesmo.
+      if (livePlayerRef.current && livePlayerRef.current.element !== el) {
+        livePlayerRef.current.dispose();
+        livePlayerRef.current = null;
+      }
+      if (!livePlayerRef.current) livePlayerRef.current = new LiveStudioPlayer(el);
+      await livePlayerRef.current.resume();
+      await livePlayerRef.current.setMode(liveActive ? "instrumental" : "original");
+      await el.play();
+    } catch {
+      // A reprodução pode ser bloqueada até o áudio carregar; os controles
+      // nativos (play) seguem disponíveis para o usuário tentar de novo.
+    }
+  }, [resolveLiveSrc, inputMode, cifraMeta, liveActive]);
+
+  // Liga/desliga o efeito "sem voz" durante a reprodução (instantâneo).
+  const toggleLive = useCallback(async () => {
+    const next = !liveActive;
+    setLiveActive(next);
+    if (livePlayerRef.current) {
+      await livePlayerRef.current.setMode(next ? "instrumental" : "original");
+    }
+  }, [liveActive]);
+
+  // ── "Voz em destaque": processa fora da thread principal (Web Worker) ──────
+  // O áudio é decodificado aqui e o cálculo pesado (STFT) roda no Worker, então
+  // a interface não trava. No modo pesquisa, baixamos o áudio do YouTube antes.
+  const prepareVocals = useCallback(async () => {
+    if (vocalsBusy || vocalsFetching) return;
+    const runId = ++stemRunIdRef.current;
+    setVocalsError("");
+
     let file = audioFileRef.current;
     if (!file) {
       const ytId = cifraMeta?.youtubeId;
       if (inputMode === "search" && ytId) {
-        setStemFetching(true);
+        setVocalsFetching(true);
         try {
           const res = await fetchYoutubeAudio(ytId);
           if (stemRunIdRef.current !== runId) return;
           if (!res.ok) {
-            setStemError(
+            setVocalsError(
               res.reason === "unauthorized"
                 ? "Sua sessão expirou. Atualize a página e entre novamente."
                 : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
@@ -391,48 +511,107 @@ export default function AudioLab() {
             cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
           );
         } finally {
-          if (stemRunIdRef.current === runId) setStemFetching(false);
+          if (stemRunIdRef.current === runId) setVocalsFetching(false);
         }
       } else {
-        setStemError("Envie o arquivo de áudio da música para usar o estúdio.");
+        setVocalsError("Envie o arquivo de áudio da música para usar o estúdio.");
         return;
       }
     }
     if (!file || stemRunIdRef.current !== runId) return;
 
-    setStemBusy(true);
-    setStemProgress(0);
-    if (stemUrlRef.current) {
-      URL.revokeObjectURL(stemUrlRef.current);
-      stemUrlRef.current = null;
-      setStemUrl(null);
+    setVocalsBusy(true);
+    setVocalsProgress(0);
+    if (vocalsUrlRef.current) {
+      URL.revokeObjectURL(vocalsUrlRef.current);
+      vocalsUrlRef.current = null;
+      setVocalsUrl(null);
     }
     try {
       const buffer = await fileToAudioBuffer(file);
-      const stem =
-        kind === "instrumental"
-          ? makeInstrumental(buffer)
-          : await emphasizeVocals(buffer, (p) => {
-              if (stemRunIdRef.current === runId) setStemProgress(p);
-            });
+      if (stemRunIdRef.current !== runId) return;
+      const { promise, cancel } = emphasizeVocalsViaWorker(buffer, (p) => {
+        if (stemRunIdRef.current === runId) setVocalsProgress(p);
+      });
+      vocalsCancelRef.current = cancel;
+      const stem = await promise;
+      vocalsCancelRef.current = null;
       // Outro run começou (reset/novo áudio/desmontagem): descarta este resultado.
       if (stemRunIdRef.current !== runId) return;
       const blob = encodeWav(stem);
       const url = URL.createObjectURL(blob);
-      stemUrlRef.current = url;
-      setStemUrl(url);
+      vocalsUrlRef.current = url;
+      setVocalsUrl(url);
     } catch (err) {
+      vocalsCancelRef.current = null;
       if (stemRunIdRef.current !== runId) return;
-      setStemUrl(null);
-      setStemError(
+      setVocalsUrl(null);
+      setVocalsError(
         err instanceof MonoSourceError
           ? "Esse áudio é mono (um canal só), então não dá para separar a voz. Envie a faixa estéreo original da música."
           : "Não consegui processar esse áudio agora. Tente enviar a música em MP3 ou WAV.",
       );
     } finally {
-      if (stemRunIdRef.current === runId) setStemBusy(false);
+      if (stemRunIdRef.current === runId) setVocalsBusy(false);
     }
-  }, [stemBusy, stemFetching, inputMode, cifraMeta]);
+  }, [vocalsBusy, vocalsFetching, inputMode, cifraMeta]);
+
+  // ── Baixar a versão "sem voz" (gerada offline sob demanda) ─────────────────
+  // O efeito ao vivo não gera arquivo; quando o usuário quer baixar, calculamos
+  // o instrumental no momento e disparamos o download (WAV).
+  const downloadInstrumental = useCallback(async () => {
+    if (instDownloadBusy) return;
+    setLiveError("");
+
+    let file = audioFileRef.current;
+    if (!file) {
+      const ytId = cifraMeta?.youtubeId;
+      if (inputMode === "search" && ytId) {
+        setInstDownloadBusy(true);
+        try {
+          const res = await fetchYoutubeAudio(ytId);
+          if (!res.ok) {
+            setLiveError(
+              res.reason === "unauthorized"
+                ? "Sua sessão expirou. Atualize a página e entre novamente."
+                : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+            );
+            return;
+          }
+          file = new File([res.blob], "audio.mp3", { type: "audio/mpeg" });
+          audioFileRef.current = file;
+        } finally {
+          setInstDownloadBusy(false);
+        }
+      } else {
+        setLiveError("Envie o arquivo de áudio da música para baixar a versão sem voz.");
+        return;
+      }
+    }
+    if (!file) return;
+
+    setInstDownloadBusy(true);
+    try {
+      const buffer = await fileToAudioBuffer(file);
+      const blob = encodeWav(makeInstrumental(buffer));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "harmonic-instrumental.wav";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (err) {
+      setLiveError(
+        err instanceof MonoSourceError
+          ? "Esse áudio é mono (um canal só), então não dá para separar a voz. Envie a faixa estéreo original da música."
+          : "Não consegui gerar o arquivo agora. Tente enviar a música em MP3 ou WAV.",
+      );
+    } finally {
+      setInstDownloadBusy(false);
+    }
+  }, [instDownloadBusy, inputMode, cifraMeta]);
 
   // ── Pipeline: transcreve a letra do áudio/canto → identifica a música →
   //    busca a cifra pronta na internet. Nunca inventa letra nem acordes.
@@ -761,11 +940,11 @@ export default function AudioLab() {
   const loadStudioFile = useCallback(
     (file: File) => {
       if (!isAllowedFile(file)) {
-        setStemError("Envie um arquivo MP3, WAV ou M4A.");
+        setLiveError("Envie um arquivo MP3, WAV ou M4A.");
         return;
       }
       if (file.size > MAX_SIZE) {
-        setStemError("Esse arquivo é muito grande. Tente enviar um áudio menor (até 50MB).");
+        setLiveError("Esse arquivo é muito grande. Tente enviar um áudio menor (até 50MB).");
         return;
       }
       clearStems();
@@ -1344,11 +1523,11 @@ export default function AudioLab() {
                   <h3 className="font-display font-bold text-white text-base">Estúdio de áudio</h3>
                 </div>
                 <p className="text-[12px] text-muted-foreground/70 mb-4">
-                  Gere uma versão da música <strong className="text-white/80">sem a voz</strong>{" "}
-                  (para cantar/tocar por cima) ou com a{" "}
-                  <strong className="text-white/80">voz em destaque</strong>. É um efeito feito no
-                  seu navegador — funciona melhor em gravações de estúdio em estéreo e não fica
-                  perfeito como uma separação profissional.
+                  Ouça a música <strong className="text-white/80">sem a voz</strong> na hora (para
+                  cantar/tocar por cima) ou realce a{" "}
+                  <strong className="text-white/80">voz em destaque</strong>. É um efeito do próprio
+                  app — funciona melhor em gravações de estúdio em estéreo e não fica perfeito como
+                  uma separação profissional.
                 </p>
 
                 <input
@@ -1366,7 +1545,7 @@ export default function AudioLab() {
                 {inputMode === "search" && !stemFileName && !cifraMeta?.youtubeId ? (
                   <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-center">
                     <p className="text-sm text-white/70 mb-1">
-                      Para criar a versão sem voz ou destacar o vocal, envie o arquivo de áudio
+                      Para ouvir a versão sem voz ou destacar o vocal, envie o arquivo de áudio
                       desta música.
                     </p>
                     <p className="text-[12px] text-muted-foreground/60 mb-4">
@@ -1379,10 +1558,10 @@ export default function AudioLab() {
                     >
                       <UploadCloud className="w-4 h-4" /> Enviar áudio (MP3, WAV)
                     </button>
-                    {stemError && (
+                    {liveError && (
                       <div className="mt-4 flex items-start gap-2 text-left text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
                         <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>{stemError}</span>
+                        <span>{liveError}</span>
                       </div>
                     )}
                   </div>
@@ -1406,95 +1585,179 @@ export default function AudioLab() {
                     </p>
                   )
                 )}
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <button
-                    onClick={() => generateStem("instrumental")}
-                    disabled={stemBusy || stemFetching}
-                    className={cn(
-                      "flex items-center gap-3 text-left rounded-2xl border px-4 py-3 transition-all",
-                      stemBusy || stemFetching
-                        ? "border-white/5 bg-white/[0.02] opacity-60 cursor-not-allowed"
-                        : "border-white/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
-                    )}
-                  >
-                    <Music className="w-5 h-5 text-primary shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-white text-sm">Sem voz (instrumental)</p>
-                      <p className="text-[12px] text-white/50">Modo karaokê</p>
-                    </div>
-                    {(stemBusy || stemFetching) && stemKind === "instrumental" && (
-                      <Loader2 className="w-4 h-4 ml-auto shrink-0 animate-spin text-primary" />
-                    )}
-                  </button>
 
-                  <button
-                    onClick={() => generateStem("vocals")}
-                    disabled={stemBusy || stemFetching}
-                    className={cn(
-                      "flex items-center gap-3 text-left rounded-2xl border px-4 py-3 transition-all",
-                      stemBusy || stemFetching
-                        ? "border-white/5 bg-white/[0.02] opacity-60 cursor-not-allowed"
-                        : "border-white/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
-                    )}
-                  >
-                    <Mic className="w-5 h-5 text-primary shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-white text-sm">Voz em destaque</p>
-                      <p className="text-[12px] text-white/50">Realça o vocal</p>
+                {/* ── Sem voz AO VIVO ─────────────────────────────────────── */}
+                <div className="rounded-2xl border border-white/10 bg-secondary/40 p-4">
+                  <div className="flex items-center gap-3">
+                    <Music className="w-5 h-5 text-primary shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-white text-sm">Sem voz (ao vivo)</p>
+                      <p className="text-[12px] text-white/50">
+                        Modo karaokê — toca na hora, sem espera
+                      </p>
                     </div>
-                    {(stemBusy || stemFetching) && stemKind === "vocals" && (
-                      <Loader2 className="w-4 h-4 ml-auto shrink-0 animate-spin text-primary" />
+                    {!liveStarted && (
+                      <button
+                        onClick={() => void startLive()}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shrink-0"
+                      >
+                        <Play className="w-4 h-4" /> Ouvir
+                      </button>
                     )}
-                  </button>
+                  </div>
+
+                  {/* O elemento de áudio fica sempre montado para o player ao
+                      vivo funcionar; só aparece depois que o usuário inicia. */}
+                  <div className={cn("mt-3", liveStarted ? "block" : "hidden")}>
+                    {liveLoading && (
+                      <div className="mb-3 flex items-center gap-2 text-[12px] text-white/60">
+                        <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
+                        Preparando o áudio…
+                      </div>
+                    )}
+                    <audio
+                      ref={liveAudioRef}
+                      controls
+                      className="w-full"
+                      onCanPlay={() => setLiveLoading(false)}
+                      onPlaying={() => setLiveLoading(false)}
+                      onError={() => {
+                        setLiveLoading(false);
+                        setLiveError(
+                          "Não consegui tocar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+                        );
+                      }}
+                    />
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <button
+                        onClick={() => void toggleLive()}
+                        role="switch"
+                        aria-checked={liveActive}
+                        className={cn(
+                          "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border",
+                          liveActive
+                            ? "bg-primary/15 border-primary/40 text-primary"
+                            : "bg-white/[0.03] border-white/10 text-white/60 hover:text-white",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "relative inline-block w-9 h-5 rounded-full transition-colors",
+                            liveActive ? "bg-primary" : "bg-white/20",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform",
+                              liveActive && "translate-x-4",
+                            )}
+                          />
+                        </span>
+                        Sem voz {liveActive ? "ligado" : "desligado"}
+                      </button>
+                      <button
+                        onClick={() => void downloadInstrumental()}
+                        disabled={instDownloadBusy}
+                        className={cn(
+                          "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border transition-all",
+                          instDownloadBusy
+                            ? "border-white/5 text-white/40 cursor-not-allowed"
+                            : "border-white/10 text-white/70 hover:text-white hover:bg-white/5",
+                        )}
+                      >
+                        {instDownloadBusy ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Download className="w-4 h-4" />
+                        )}
+                        Baixar (WAV)
+                      </button>
+                    </div>
+                  </div>
+
+                  {liveError && (
+                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{liveError}</span>
+                    </div>
+                  )}
                 </div>
 
-                {stemFetching && (
-                  <div className="mt-4 flex items-center gap-2 text-[12px] text-white/60">
-                    <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
-                    Baixando o áudio da música do YouTube…
-                  </div>
-                )}
-
-                {stemBusy && stemKind === "vocals" && (
-                  <div className="mt-4">
-                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${Math.round(stemProgress * 100)}%` }}
-                      />
+                {/* ── Voz em destaque (processada fora da thread principal) ── */}
+                <div className="mt-3 rounded-2xl border border-white/10 bg-secondary/40 p-4">
+                  <div className="flex items-center gap-3">
+                    <Mic className="w-5 h-5 text-primary shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-white text-sm">Voz em destaque</p>
+                      <p className="text-[12px] text-white/50">
+                        Realça o vocal — processa sem travar seu aparelho
+                      </p>
                     </div>
-                    <p className="text-[12px] text-white/50 mt-2">
-                      Processando o áudio… {Math.round(stemProgress * 100)}%
-                    </p>
+                    {!vocalsUrl && (
+                      <button
+                        onClick={() => void prepareVocals()}
+                        disabled={vocalsBusy || vocalsFetching}
+                        className={cn(
+                          "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0",
+                          vocalsBusy || vocalsFetching
+                            ? "bg-white/[0.04] text-white/40 cursor-not-allowed"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90",
+                        )}
+                      >
+                        {vocalsBusy || vocalsFetching ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                        Preparar
+                      </button>
+                    )}
                   </div>
-                )}
 
-                {stemError && (
-                  <div className="mt-4 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
-                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span>{stemError}</span>
-                  </div>
-                )}
+                  {vocalsFetching && (
+                    <div className="mt-3 flex items-center gap-2 text-[12px] text-white/60">
+                      <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
+                      Baixando o áudio da música do YouTube…
+                    </div>
+                  )}
 
-                {stemUrl && !stemBusy && (
-                  <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                    <p className="text-sm font-semibold text-white/90 mb-3">
-                      {stemKind === "instrumental"
-                        ? "Versão sem voz pronta"
-                        : "Voz em destaque pronta"}
-                    </p>
-                    <audio src={stemUrl} controls className="w-full" />
-                    <a
-                      href={stemUrl}
-                      download={`harmonic-${
-                        stemKind === "instrumental" ? "instrumental" : "voz"
-                      }.wav`}
-                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                    >
-                      <Download className="w-4 h-4" /> Baixar (WAV)
-                    </a>
-                  </div>
-                )}
+                  {vocalsBusy && (
+                    <div className="mt-3">
+                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all"
+                          style={{ width: `${Math.round(vocalsProgress * 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-[12px] text-white/50 mt-2">
+                        Preparando a voz em destaque… {Math.round(vocalsProgress * 100)}%
+                      </p>
+                    </div>
+                  )}
+
+                  {vocalsError && (
+                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{vocalsError}</span>
+                    </div>
+                  )}
+
+                  {vocalsUrl && !vocalsBusy && (
+                    <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                      <p className="text-sm font-semibold text-white/90 mb-3">
+                        Voz em destaque pronta
+                      </p>
+                      <audio src={vocalsUrl} controls className="w-full" />
+                      <a
+                        href={vocalsUrl}
+                        download="harmonic-voz.wav"
+                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                      >
+                        <Download className="w-4 h-4" /> Baixar (WAV)
+                      </a>
+                    </div>
+                  )}
+                </div>
                 </>
                 )}
               </div>
