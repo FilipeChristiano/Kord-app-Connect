@@ -25,17 +25,15 @@ export type CifraOutcome =
   | { ok: true; found: false }
   | { ok: false; reason: "unauthorized" | "empty" | "error" | "network" };
 
-// Busca a cifra a partir de um texto livre (idealmente "Artista - Música").
-export async function fetchCifra(query: string): Promise<CifraOutcome> {
-  const q = query.trim();
-  if (!q) return { ok: false, reason: "empty" };
-
+// Envia a requisição ao servidor e normaliza a resposta. Compartilhado pela
+// busca por NOME e pela identificação por LETRA.
+async function postCifra(payload: { query?: string; lyrics?: string }): Promise<CifraOutcome> {
   try {
     const r = await fetch(`${API_BASE}/cifra`, {
       method: "POST",
       credentials: "include",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ query: q }),
+      body: JSON.stringify(payload),
     });
 
     if (r.status === 401) return { ok: false, reason: "unauthorized" };
@@ -66,4 +64,19 @@ export async function fetchCifra(query: string): Promise<CifraOutcome> {
   } catch {
     return { ok: false, reason: "network" };
   }
+}
+
+// Busca a cifra a partir de um texto livre (idealmente "Artista - Música").
+export async function fetchCifra(query: string): Promise<CifraOutcome> {
+  const q = query.trim();
+  if (!q) return { ok: false, reason: "empty" };
+  return postCifra({ query: q });
+}
+
+// Identifica a música a partir de um trecho da LETRA (transcrita do áudio/canto)
+// e devolve a cifra pronta correspondente.
+export async function fetchCifraByLyrics(lyrics: string): Promise<CifraOutcome> {
+  const l = lyrics.trim().slice(0, 2000);
+  if (!l) return { ok: false, reason: "empty" };
+  return postCifra({ lyrics: l });
 }

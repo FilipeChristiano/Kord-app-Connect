@@ -1,7 +1,18 @@
 ---
 name: Transcription pipeline (acordes Audio Lab)
-description: Why lyric transcription is a pluggable external worker, not local.
+description: Why lyric transcription is a pluggable external worker, not local; and how transcription drives song identification.
 ---
+
+# Como a transcrição é usada no Audio Lab (modelo atual)
+
+Os DOIS modos de entrada (enviar áudio OU cantar via microfone/MediaRecorder)
+seguem o mesmo pipeline: **transcrever → identificar a música por um trecho da
+LETRA → puxar a cifra pronta do CifraClub**. Não existe mais colar letra manual,
+e os acordes detectados do áudio NÃO são usados para montar a cifra. Resta apenas
+uma rede de segurança "ajustar o nome da música" (busca por nome via `fetchCifra`).
+No upload, a análise local de tom/BPM continua e roda antes do pipeline de letra.
+Identificação por letra: `POST /api/cifra` aceita `{lyrics}` (snippet → DuckDuckGo
+`site:cifraclub.com.br` → primeiro hit → fetchPrint) além de `{query}`.
 
 # Pipeline de transcrição de letra (Audio Lab)
 
@@ -10,10 +21,9 @@ reconhecimento com Faster-Whisper) **não roda no ambiente Replit**: sem GPU, RA
 limitada e sem stack Python de ML. Por isso o pipeline é **plugável via worker
 externo**.
 
-**Regra:** o app NUNCA simula nem inventa letra. Sem worker, a UI mostra status
-honesto ("Transcrição automática exige processamento externo") e a colagem manual
-fica como alternativa secundária. A detecção de acordes (tom/BPM/acordes +
-timestamps) é client-side e independe do worker.
+**Regra:** o app NUNCA simula nem inventa letra. Sem worker/STT disponível, a UI
+mostra status honesto e oferece o ajuste manual do nome da música. A detecção de
+tom/BPM continua client-side e independe do STT.
 
 **Como conectar:** definir `TRANSCRIPTION_WORKER_URL`. O backend
 (`api-server/src/routes/transcribe.ts`) encaminha os bytes do áudio para

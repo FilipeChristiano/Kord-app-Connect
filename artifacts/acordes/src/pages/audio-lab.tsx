@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AudioWaveform,
@@ -12,13 +12,12 @@ import {
   Wand2,
   Info,
   AlertTriangle,
-  FileText,
   Copy,
   Check,
   Pencil,
   Mic,
+  Square,
   Search,
-  ListMusic,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -28,33 +27,28 @@ import {
   type AnalysisStep,
   type AudioAnalysisResult,
 } from "@/lib/audio-analysis";
-import {
-  getTranscriptionStatus,
-  transcribeAudio,
-} from "@/lib/transcription";
+import { transcribeAudio, type TranscribeOutcome } from "@/lib/transcription";
 import { analyzeChordsRemote } from "@/lib/chord-remote";
-import { fetchCifra, type FetchedCifra } from "@/lib/cifra-remote";
-import { buildAlignedChart } from "@/lib/lyric-align";
-import {
-  processChordChartFull,
-  type SophisticationLevel,
-} from "@/data/substitutions";
+import { fetchCifra, fetchCifraByLyrics, type FetchedCifra } from "@/lib/cifra-remote";
 import { cn } from "@/lib/utils";
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_DURATION = 12 * 60; // 12 minutos (limita memória/CPU mesmo com arquivos comprimidos)
+const MAX_RECORD_SECONDS = 30; // gravação de canto: um trecho curto já identifica a música
 const ACCEPT = ".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-m4a,audio/mp4,audio/*";
 
 const STEPS: { key: AnalysisStep; label: string }[] = [
   { key: "lendo", label: "Lendo o áudio" },
   { key: "tom", label: "Detectando o tom" },
   { key: "bpm", label: "Detectando o BPM" },
-  { key: "acordes", label: "Detectando os acordes" },
+  { key: "acordes", label: "Refinando a análise" },
   { key: "finalizando", label: "Gerando o resultado" },
 ];
 
 type Phase = "idle" | "analyzing" | "result" | "error";
-type ChartSource = "detectados" | "sofisticados";
+type InputMode = "upload" | "record";
+// Estado do pipeline que identifica a música pela letra e busca a cifra pronta.
+type CifraStatus = "idle" | "transcribing" | "searching" | "done" | "failed";
 
 // Chave usada para enviar a cifra montada ao Sofisticador de Cifras.
 // O mesmo literal é lido em chord-substitutor.tsx.
@@ -65,104 +59,35 @@ function isAllowedFile(file: File): boolean {
   return /\.(mp3|wav|m4a)$/.test(name) || file.type.startsWith("audio/");
 }
 
-// Transforma o nome do arquivo num palpite de busca ("Artista - Música").
-// Tira a extensão, troca separadores por espaço e remove ruídos comuns.
-function guessQueryFromFile(name: string): string {
-  return name
-    .replace(/\.[a-z0-9]+$/i, "")
-    .replace(/[_]+/g, " ")
-    .replace(/\s*\(.*?\)\s*/g, " ") // remove "(Ao Vivo)", "(Clipe)" etc.
-    .replace(/\b(official|oficial|lyric|lyrics|video|clipe|audio|hd|hq)\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+function formatClock(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// ── Montagem da cifra com letra ───────────────────────────────────────────────
-// Divide a letra em linhas, preservando as quebras coladas pelo usuário.
-// Se vier em bloco único, tenta dividir por frases.
-function splitLyrics(raw: string): string[] {
-  const byLine = raw
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (byLine.length > 1) return byLine;
-
-  const single = (byLine[0] ?? raw).trim();
-  if (!single) return [];
-
-  let phrases = single
-    .split(/(?<=[.!?…])\s+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (phrases.length <= 1) {
-    phrases = single
-      .split(/[,;]\s*/)
-      .map((p) => p.trim())
-      .filter(Boolean);
+// Mensagem amigável a partir de uma falha de transcrição.
+function transcribeErrorMessage(outcome: Extract<TranscribeOutcome, { ok: false }>): string {
+  switch (outcome.reason) {
+    case "external_processing_required":
+      return "A transcrição automática não está ativa neste ambiente no momento. Você pode ajustar o nome da música abaixo.";
+    case "empty":
+      return "Nenhum áudio para transcrever.";
+    case "unauthorized":
+      return "Sua sessão expirou. Atualize a página e entre novamente.";
+    default:
+      return (
+        outcome.message ||
+        "Não consegui entender a letra desse áudio. Tente um trecho mais limpo (voz clara) ou ajuste o nome da música abaixo."
+      );
   }
-  return phrases.length > 1 ? phrases : [single];
-}
-
-// Posiciona os acordes acima de uma linha, espaçados de forma legível.
-function buildChordLine(chordsForLine: string[], lyric: string): string {
-  if (chordsForLine.length === 0) return "";
-  const len = Math.max(lyric.length, 1);
-  let line = "";
-  chordsForLine.forEach((ch, idx) => {
-    let col = Math.round((idx * len) / chordsForLine.length);
-    if (line.length > 0 && col <= line.length) col = line.length + 1; // não grudar
-    while (line.length < col) line += " ";
-    line += ch;
-  });
-  return line.replace(/\s+$/, "");
-}
-
-// Monta a cifra completa: cabeçalho + acordes distribuídos sobre cada linha.
-function buildLyricChart(
-  lyricsRaw: string,
-  progression: string[],
-  keySymbol: string,
-  bpm: number,
-): string {
-  const lines = splitLyrics(lyricsRaw);
-  if (lines.length === 0) return "";
-  const prog = progression.map((c) => c.trim()).filter(Boolean);
-
-  const headerParts = [`Tom: ${keySymbol}`];
-  if (bpm > 0) headerParts.push(`BPM: ${bpm}`);
-  const header = headerParts.join("   ");
-
-  // Distribuição proporcional: garante que TODA a progressão apareça.
-  // - menos linhas que acordes  → mais de um acorde por linha
-  // - mais linhas que acordes    → a progressão se repete ao longo das linhas
-  const perLine = prog.length > 0 ? Math.max(1, Math.ceil(prog.length / lines.length)) : 0;
-
-  const blocks: string[] = [];
-  let ci = 0;
-  for (const lyric of lines) {
-    if (prog.length === 0) {
-      blocks.push(lyric);
-      continue;
-    }
-    const chordsForLine: string[] = [];
-    for (let k = 0; k < perLine; k++) {
-      chordsForLine.push(prog[ci % prog.length]);
-      ci++;
-    }
-    const chordLine = buildChordLine(chordsForLine, lyric);
-    blocks.push(chordLine ? `${chordLine}\n${lyric}` : lyric);
-  }
-
-  return `${header}\n\n${blocks.join("\n\n")}`;
 }
 
 // ── Renderização nativa da cifra (folha de cifra) ─────────────────────────────
-// Em vez de despejar o texto cru (que parece copiado de outro site), classificamos
-// cada linha e estilizamos: seções viram etiquetas, acordes ganham cor e a letra
-// fica legível. O alinhamento acorde-sobre-letra é preservado com fonte monoespaçada.
+// Classificamos cada linha e estilizamos: seções viram etiquetas, acordes ganham
+// cor e a letra fica legível. O alinhamento acorde-sobre-letra é preservado com
+// fonte monoespaçada e bastante respiro vertical para facilitar a leitura.
 
 // Reconhece um token de acorde (raiz maiúscula A–G + sufixos/baixo).
-// O conjunto restrito de caracteres evita confundir palavras da letra com acordes.
 function isChordToken(t: string): boolean {
   return /^[A-G][#b]?(?:[mM]|maj|min|dim|aug|sus|add|°|º|\+|\d|\(|\)|#|b|\/|[A-G])*$/.test(t);
 }
@@ -185,37 +110,43 @@ function classifyLine(line: string): LineKind {
 
 function SectionLabel({ text }: { text: string }) {
   return (
-    <div className="mt-5 mb-1.5 first:mt-0">
-      <span className="inline-block font-sans text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 rounded-md px-2 py-0.5">
-        {text}
-      </span>
-    </div>
+    <span className="inline-block font-sans text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1">
+      {text}
+    </span>
   );
 }
 
 function ChordSheet({ text }: { text: string }) {
   const lines = text.replace(/\r/g, "").split("\n");
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-white/10 bg-secondary/40 px-4 py-4 font-mono text-sm leading-snug notranslate" translate="no">
+    <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-secondary/30 px-5 py-5 sm:px-7 sm:py-6 font-mono text-[13px] sm:text-[15px] leading-[1.85] notranslate" translate="no">
       {lines.map((line, i) => {
         const kind = classifyLine(line);
-        if (kind === "blank") return <div key={i} className="h-3" aria-hidden />;
+        if (kind === "blank") return <div key={i} className="h-5" aria-hidden />;
         if (kind === "section") {
-          return <SectionLabel key={i} text={line.trim().replace(/^\[|\]$/g, "")} />;
+          return (
+            <div key={i} className="mt-7 mb-2 first:mt-0">
+              <SectionLabel text={line.trim().replace(/^\[|\]$/g, "")} />
+            </div>
+          );
         }
         // Linha que começa com [Seção] seguida de acordes na mesma linha.
         const inline = line.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
         if (inline && inline[2].trim()) {
           return (
-            <div key={i} className="mt-5 first:mt-0">
-              <SectionLabel text={inline[1]} />
-              <div className="whitespace-pre text-primary font-semibold">{inline[2]}</div>
+            <div key={i} className="mt-7 first:mt-0">
+              <div className="mb-2">
+                <SectionLabel text={inline[1]} />
+              </div>
+              <div className="whitespace-pre text-primary font-semibold tracking-wide">
+                {inline[2]}
+              </div>
             </div>
           );
         }
         if (kind === "chords") {
           return (
-            <div key={i} className="whitespace-pre text-primary font-semibold">
+            <div key={i} className="whitespace-pre text-primary font-semibold tracking-wide">
               {line || " "}
             </div>
           );
@@ -228,7 +159,7 @@ function ChordSheet({ text }: { text: string }) {
           );
         }
         return (
-          <div key={i} className="whitespace-pre text-white/85">
+          <div key={i} className="whitespace-pre text-white/90">
             {line || " "}
           </div>
         );
@@ -241,173 +172,242 @@ export default function AudioLab() {
   const [, navigate] = useLocation();
 
   const [phase, setPhase] = useState<Phase>("idle");
+  const [inputMode, setInputMode] = useState<InputMode | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string>("");
   const [step, setStep] = useState<AnalysisStep>("lendo");
   const [error, setError] = useState<string>("");
 
   const [result, setResult] = useState<AudioAnalysisResult | null>(null);
-  const [chords, setChords] = useState<string[]>([]);
-  const level: SophisticationLevel = "intermediario";
 
-  // ── Montar cifra com letra ─────────────────────────────────────────────────
-  const [lyrics, setLyrics] = useState("");
-  const [chartSource, setChartSource] = useState<ChartSource>("detectados");
+  // ── Gravação (cantar) ──────────────────────────────────────────────────────
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+
+  // ── Identificação da música + cifra pronta ─────────────────────────────────
+  const [cifraStatus, setCifraStatus] = useState<CifraStatus>("idle");
+  const [cifraNotice, setCifraNotice] = useState("");
+  const [cifraMeta, setCifraMeta] = useState<FetchedCifra | null>(null);
+  const [cifraQuery, setCifraQuery] = useState(""); // rede de segurança: ajustar nome
+
+  // ── Cifra exibida ──────────────────────────────────────────────────────────
   const [chart, setChart] = useState("");
   const [chartReady, setChartReady] = useState(false);
   const [editingChart, setEditingChart] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [chartHasUncertain, setChartHasUncertain] = useState(false);
-
-  // ── Pipeline automático (transcrição) ──────────────────────────────────────
-  const [autoAvailable, setAutoAvailable] = useState<boolean | null>(null);
-  const [autoState, setAutoState] = useState<"idle" | "running">("idle");
-  const [autoMessage, setAutoMessage] = useState("");
-
-  // Busca de cifra pronta (CifraClub)
-  const [cifraQuery, setCifraQuery] = useState("");
-  const [cifraState, setCifraState] = useState<"idle" | "running">("idle");
-  const [cifraNotice, setCifraNotice] = useState("");
-  const [cifraMeta, setCifraMeta] = useState<FetchedCifra | null>(null);
-  // Origem da cifra montada (muda o cabeçalho e as dicas exibidas).
-  const [chartOrigin, setChartOrigin] = useState<"cifra" | "auto" | "manual" | null>(null);
-  const cifraRunIdRef = useRef(0);
-  const cifraTriggeredRef = useRef(false);
-  // Token de escrita compartilhado: garante que apenas a operação mais recente
-  // (cifra, transcrição ou montagem manual) escreva no estado `chart`, evitando
-  // que uma resposta tardia sobrescreva conteúdo já gerado/editado pelo usuário.
-  const chartClaimRef = useRef(0);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioFileRef = useRef<File | null>(null);
-  const runIdRef = useRef(0);
-  const autoRunIdRef = useRef(0);
-  const autoTriggeredRef = useRef(false);
+  const runIdRef = useRef(0); // análise local
+  const pipelineRunIdRef = useRef(0); // transcrição + identificação
+  const chartClaimRef = useRef(0); // última escrita em `chart` vence
   const busyRef = useRef(false);
+
+  // Gravação
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<number | null>(null);
+
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
-      runIdRef.current++; // invalida análise pendente ao sair
+      runIdRef.current++;
+      pipelineRunIdRef.current++;
+      stopStream();
     };
-  }, []);
+  }, [stopStream]);
 
   const reset = useCallback(() => {
     runIdRef.current++;
+    pipelineRunIdRef.current++;
+    chartClaimRef.current++;
     busyRef.current = false;
+    stopStream();
     setPhase("idle");
+    setInputMode(null);
     setFileName("");
     setError("");
     setResult(null);
-    setChords([]);
-    setLyrics("");
-    setChartSource("detectados");
+    setIsRecording(false);
+    setRecordSeconds(0);
+    setCifraStatus("idle");
+    setCifraNotice("");
+    setCifraMeta(null);
+    setCifraQuery("");
     setChart("");
     setChartReady(false);
     setEditingChart(false);
     setCopied(false);
-    setChartHasUncertain(false);
-    setAutoAvailable(null);
-    setAutoState("idle");
-    setAutoMessage("");
-    setCifraQuery("");
-    setCifraState("idle");
-    setCifraNotice("");
-    setCifraMeta(null);
-    setChartOrigin(null);
-    cifraRunIdRef.current++; // invalida busca de cifra pendente
-    cifraTriggeredRef.current = false;
-    chartClaimRef.current++; // invalida qualquer escrita pendente em `chart`
-    autoRunIdRef.current++; // invalida transcrição pendente
-    autoTriggeredRef.current = false;
     audioFileRef.current = null;
     setStep("lendo");
-  }, []);
+  }, [stopStream]);
 
-  const handleFile = useCallback(async (file: File) => {
-    if (busyRef.current) return; // evita uploads simultâneos
-    if (!isAllowedFile(file)) {
-      setPhase("error");
-      setError("Envie um arquivo MP3, WAV ou M4A.");
+  // ── Pipeline: transcreve a letra do áudio/canto → identifica a música →
+  //    busca a cifra pronta na internet. Nunca inventa letra nem acordes.
+  const identifyFromAudio = useCallback(async (file: File) => {
+    const runId = ++pipelineRunIdRef.current;
+    const claim = ++chartClaimRef.current;
+    setCifraStatus("transcribing");
+    setCifraNotice("");
+    setCifraMeta(null);
+    setChartReady(false);
+
+    const t = await transcribeAudio(file);
+    if (runId !== pipelineRunIdRef.current) return;
+
+    if (!t.ok) {
+      setCifraStatus("failed");
+      setCifraNotice(transcribeErrorMessage(t));
       return;
     }
-    if (file.size > MAX_SIZE) {
-      setPhase("error");
-      setError("Esse arquivo é muito grande. Tente enviar um áudio menor (até 50MB).");
-      return;
-    }
 
-    const runId = ++runIdRef.current;
-    busyRef.current = true;
-    autoTriggeredRef.current = false;
-    cifraTriggeredRef.current = false;
-    audioFileRef.current = file;
-    setFileName(file.name);
-    setCifraQuery(guessQueryFromFile(file.name));
-    setError("");
-    setResult(null);
-    setStep("lendo");
-    setPhase("analyzing");
-
-    try {
-      const data = await file.arrayBuffer();
-      if (runId !== runIdRef.current) return;
-      const buffer = await decodeAudioFile(data);
-      if (runId !== runIdRef.current) return;
-
-      if (buffer.duration > MAX_DURATION) {
-        setPhase("error");
-        setError(
-          "Esse áudio é muito longo. Envie uma música ou um trecho de até 12 minutos.",
-        );
-        return;
-      }
-
-      const analysis = await analyzeAudioBuffer(buffer, (s) => {
-        if (runId === runIdRef.current) setStep(s);
-      });
-      if (runId !== runIdRef.current) return;
-
-      if (!analysis.bpm.bpm && analysis.chords.length === 0) {
-        setPhase("error");
-        setError(
-          "Não conseguimos analisar esse áudio com precisão. Tente um trecho mais limpo ou com menos instrumentos.",
-        );
-        return;
-      }
-
-      // Análise harmônica profissional no servidor (muito mais precisa). Mantém
-      // o BPM e a duração locais; substitui apenas tom/acordes quando o servidor
-      // responde. Em qualquer falha, fica com o detector local (fallback).
-      let finalAnalysis = analysis;
-      try {
-        setStep("acordes");
-        const remote = await analyzeChordsRemote(file, analysis.bpm.bpm);
-        if (runId !== runIdRef.current) return;
-        if (remote.ok && remote.result.chords.length > 0) {
-          finalAnalysis = {
-            ...analysis,
-            key: remote.result.key ?? analysis.key,
-            chords: remote.result.chords,
-            chordTimeline: remote.result.chordTimeline,
-          };
-        }
-      } catch {
-        // Mantém o resultado local.
-      }
-
-      setResult(finalAnalysis);
-      setChords(finalAnalysis.chords);
-      setPhase("result");
-    } catch {
-      if (runId !== runIdRef.current) return;
-      setPhase("error");
-      setError(
-        "Não foi possível analisar esse áudio. O formato pode não ser suportado neste navegador (tente MP3 ou WAV).",
+    const lyrics = (t.result.text || t.result.lines.map((l) => l.text).join(" ")).trim();
+    if (!lyrics) {
+      setCifraStatus("failed");
+      setCifraNotice(
+        "Não consegui entender a letra desse áudio. Tente um trecho mais limpo ou ajuste o nome da música abaixo.",
       );
-    } finally {
-      if (runId === runIdRef.current) busyRef.current = false;
+      return;
     }
+
+    setCifraStatus("searching");
+    const out = await fetchCifraByLyrics(lyrics);
+    if (runId !== pipelineRunIdRef.current) return;
+
+    if (!out.ok) {
+      setCifraStatus("failed");
+      setCifraNotice(
+        out.reason === "unauthorized"
+          ? "Sua sessão expirou. Atualize a página e entre novamente."
+          : "Não consegui acessar a cifra agora. Verifique sua conexão e tente de novo.",
+      );
+      return;
+    }
+
+    if (!out.found) {
+      setCifraStatus("failed");
+      setCifraNotice(
+        "Identifiquei a letra, mas não encontrei a cifra dessa música automaticamente. Ajuste o nome (ex.: “Artista - Música”) abaixo.",
+      );
+      return;
+    }
+
+    // Se uma busca/identificação mais recente já reivindicou a escrita, não sobrescreve.
+    if (claim !== chartClaimRef.current) {
+      setCifraMeta(out.cifra);
+      return;
+    }
+
+    setCifraMeta(out.cifra);
+    setChart(out.cifra.body);
+    setChartReady(true);
+    setEditingChart(false);
+    setCopied(false);
+    setCifraQuery(
+      out.cifra.artist ? `${out.cifra.artist} - ${out.cifra.title}` : out.cifra.title,
+    );
+    setCifraStatus("done");
   }, []);
+
+  // ── Enviar áudio (Opção A) ─────────────────────────────────────────────────
+  const handleFile = useCallback(
+    async (file: File) => {
+      if (busyRef.current) return;
+      if (!isAllowedFile(file)) {
+        setPhase("error");
+        setError("Envie um arquivo MP3, WAV ou M4A.");
+        return;
+      }
+      if (file.size > MAX_SIZE) {
+        setPhase("error");
+        setError("Esse arquivo é muito grande. Tente enviar um áudio menor (até 50MB).");
+        return;
+      }
+
+      const runId = ++runIdRef.current;
+      busyRef.current = true;
+      audioFileRef.current = file;
+      setInputMode("upload");
+      setFileName(file.name);
+      setError("");
+      setResult(null);
+      setCifraStatus("idle");
+      setCifraNotice("");
+      setCifraMeta(null);
+      setChart("");
+      setChartReady(false);
+      setStep("lendo");
+      setPhase("analyzing");
+
+      try {
+        const data = await file.arrayBuffer();
+        if (runId !== runIdRef.current) return;
+        const buffer = await decodeAudioFile(data);
+        if (runId !== runIdRef.current) return;
+
+        if (buffer.duration > MAX_DURATION) {
+          setPhase("error");
+          setError("Esse áudio é muito longo. Envie uma música ou um trecho de até 12 minutos.");
+          return;
+        }
+
+        const analysis = await analyzeAudioBuffer(buffer, (s) => {
+          if (runId === runIdRef.current) setStep(s);
+        });
+        if (runId !== runIdRef.current) return;
+
+        if (!analysis.bpm.bpm && analysis.chords.length === 0) {
+          setPhase("error");
+          setError(
+            "Não conseguimos analisar esse áudio com precisão. Tente um trecho mais limpo ou com menos instrumentos.",
+          );
+          return;
+        }
+
+        // Refino harmônico no servidor (tom mais preciso). Best-effort: em falha
+        // fica com o detector local.
+        let finalAnalysis = analysis;
+        try {
+          setStep("acordes");
+          const remote = await analyzeChordsRemote(file, analysis.bpm.bpm);
+          if (runId !== runIdRef.current) return;
+          if (remote.ok && remote.result.chords.length > 0) {
+            finalAnalysis = {
+              ...analysis,
+              key: remote.result.key ?? analysis.key,
+              chords: remote.result.chords,
+              chordTimeline: remote.result.chordTimeline,
+            };
+          }
+        } catch {
+          // mantém local
+        }
+
+        setResult(finalAnalysis);
+        setPhase("result");
+        // Identifica a música pela letra e busca a cifra pronta.
+        void identifyFromAudio(file);
+      } catch {
+        if (runId !== runIdRef.current) return;
+        setPhase("error");
+        setError(
+          "Não foi possível analisar esse áudio. O formato pode não ser suportado neste navegador (tente MP3 ou WAV).",
+        );
+      } finally {
+        if (runId === runIdRef.current) busyRef.current = false;
+      }
+    },
+    [identifyFromAudio],
+  );
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -419,168 +419,118 @@ export default function AudioLab() {
     [handleFile],
   );
 
-  // ── Sofisticação ────────────────────────────────────────────────────────────
-  const sophisticated = useMemo(() => {
-    const clean = chords.map((c) => c.trim()).filter(Boolean);
-    if (clean.length === 0) return [];
-    const { lines } = processChordChartFull(clean.join("  "), level);
-    return lines
-      .flatMap((l) => l.tokens)
-      .filter((t) => t.type === "chord" && t.substitution)
-      .map((t) => ({
-        original: t.substitution!.original,
-        substituted: t.substitution!.substituted,
-        chordId: t.substitution!.chordId,
-      }));
-  }, [chords, level]);
+  // ── Cantar / gravar (Opção B) ──────────────────────────────────────────────
+  const startRecording = useCallback(async () => {
+    setError("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
 
-  const bpmOpt = result?.bpm.options[result.bpm.recommendedIndex];
-  const altBpms = result
-    ? result.bpm.options
-        .filter((_, i) => i !== result.bpm.recommendedIndex)
-        .map((o) => o.bpm)
-        .filter((b) => b > 0)
-    : [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const type = chunksRef.current[0]?.type || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type });
+        stopStream();
+        setIsRecording(false);
+        if (blob.size === 0) {
+          setError("A gravação ficou vazia. Tente novamente.");
+          return;
+        }
+        const file = new File([blob], "gravacao.webm", { type });
+        audioFileRef.current = file;
+        setInputMode("record");
+        setFileName("Sua gravação");
+        setResult(null);
+        setPhase("result");
+        void identifyFromAudio(file);
+      };
 
-  // Progressão sofisticada (na ordem) para usar na cifra com letra
-  const sophisticatedChords = useMemo(
-    () => sophisticated.map((s) => s.substituted),
-    [sophisticated],
-  );
-  const bpmValue = bpmOpt?.bpm ?? result?.bpm.bpm ?? 0;
-
-  // Ao entrar no resultado: dispara a busca da cifra pronta (uma vez) e verifica,
-  // em segundo plano, se a transcrição automática está disponível como alternativa.
-  useEffect(() => {
-    if (phase !== "result") return;
-    let active = true;
-
-    if (!cifraTriggeredRef.current && cifraQuery.trim()) {
-      cifraTriggeredRef.current = true;
-      void handleFetchCifra();
+      recorder.start();
+      setIsRecording(true);
+      setRecordSeconds(0);
+      timerRef.current = window.setInterval(() => {
+        setRecordSeconds((prev) => {
+          const next = prev + 1;
+          if (next >= MAX_RECORD_SECONDS) {
+            mediaRecorderRef.current?.stop();
+          }
+          return next;
+        });
+      }, 1000);
+    } catch {
+      setError("Não foi possível acessar o microfone. Verifique a permissão do navegador.");
+      stopStream();
+      setIsRecording(false);
     }
+  }, [identifyFromAudio, stopStream]);
 
-    setAutoAvailable(null);
-    getTranscriptionStatus().then((s) => {
-      if (!active) return;
-      setAutoAvailable(s.available);
-    });
-    return () => {
-      active = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, result]);
-
-  const buildChart = useCallback(() => {
-    if (!result) return;
-    const prog =
-      chartSource === "sofisticados" && sophisticatedChords.length > 0
-        ? sophisticatedChords
-        : chords;
-    chartClaimRef.current++; // assume a escrita: invalida cifra/transcrição pendentes
-    const text = buildLyricChart(lyrics, prog, result.key.symbol, bpmValue);
-    setChart(text);
-    setChartReady(true);
-    setChartHasUncertain(false);
-    setEditingChart(false);
-    setCopied(false);
-    setChartOrigin("manual");
-  }, [result, chartSource, sophisticatedChords, chords, lyrics, bpmValue]);
-
-  // Pipeline automático: transcreve a letra (worker externo) e alinha os acordes
-  // detectados (com timestamps) sobre as palavras. Nunca inventa letra.
-  const generateAutoChart = useCallback(async () => {
-    if (!result || !audioFileRef.current || autoState === "running") return;
-    const runId = ++autoRunIdRef.current;
-    const claim = ++chartClaimRef.current; // reivindica a escrita em `chart`
-    setAutoState("running");
-    setAutoMessage("");
-
-    const outcome = await transcribeAudio(audioFileRef.current);
-    if (runId !== autoRunIdRef.current) return; // descarta resposta obsoleta (reset/troca)
-
-    if (!outcome.ok) {
-      setAutoState("idle");
-      setAutoMessage(outcome.message);
-      if (outcome.reason === "external_processing_required") setAutoAvailable(false);
-      return;
+  const stopRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") recorder.stop();
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+  }, []);
 
-    // Se o usuário gerou/editou outra cifra enquanto transcrevíamos, não sobrescreve.
-    if (claim !== chartClaimRef.current) {
-      setAutoState("idle");
-      return;
+  const cancelRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.onstop = null;
+      recorder.stop();
     }
+    stopStream();
+    setIsRecording(false);
+    setRecordSeconds(0);
+  }, [stopStream]);
 
-    const { chart: aligned, hasUncertain } = buildAlignedChart(
-      outcome.result,
-      result.chordTimeline,
-      result.key.symbol,
-      bpmValue,
-    );
-    setChart(aligned);
-    setChartReady(true);
-    setChartHasUncertain(hasUncertain);
-    setEditingChart(false);
-    setCopied(false);
-    setChartOrigin("auto");
-    setAutoState("idle");
-    setAutoMessage("");
-  }, [result, autoState, bpmValue]);
-
-  // Busca uma cifra pronta no CifraClub a partir do texto digitado/derivado do
-  // nome do arquivo. Em caso de sucesso, a cifra (acordes sobre a letra) vira a
-  // cifra montada editável — substituindo a detecção do áudio.
-  const handleFetchCifra = useCallback(async () => {
+  // ── Rede de segurança: ajustar o nome e buscar de novo ─────────────────────
+  const handleFetchCifraByName = useCallback(async () => {
     const q = cifraQuery.trim();
-    if (!q || cifraState === "running") return;
-    const runId = ++cifraRunIdRef.current;
-    const claim = ++chartClaimRef.current; // reivindica a escrita em `chart`
-    setCifraState("running");
+    if (!q || cifraStatus === "searching") return;
+    const runId = ++pipelineRunIdRef.current;
+    const claim = ++chartClaimRef.current;
+    setCifraStatus("searching");
     setCifraNotice("");
 
     const out = await fetchCifra(q);
-    if (runId !== cifraRunIdRef.current) return; // descarta resposta obsoleta
-
-    setCifraState("idle");
+    if (runId !== pipelineRunIdRef.current) return;
 
     if (!out.ok) {
-      if (out.reason === "unauthorized") {
-        setCifraNotice(
-          "Sua sessão expirou. Atualize a página e entre novamente para buscar a cifra.",
-        );
-      } else if (out.reason === "empty") {
-        setCifraNotice("Digite o nome da música (de preferência: Artista - Música).");
-      } else {
-        setCifraNotice(
-          "Não consegui acessar a cifra agora. Verifique sua conexão e tente de novo.",
-        );
-      }
+      setCifraStatus("failed");
+      setCifraNotice(
+        out.reason === "unauthorized"
+          ? "Sua sessão expirou. Atualize a página e entre novamente."
+          : out.reason === "empty"
+            ? "Digite o nome da música (de preferência: Artista - Música)."
+            : "Não consegui acessar a cifra agora. Verifique sua conexão e tente de novo.",
+      );
       return;
     }
-
     if (!out.found) {
+      setCifraStatus("failed");
       setCifraNotice(
-        "Não encontrei a cifra dessa música. Confira o nome (ex.: “Artista - Música”) ou cole/edite a cifra manualmente abaixo.",
+        "Não encontrei a cifra dessa música. Confira o nome (ex.: “Artista - Música”).",
       );
       setCifraMeta(null);
       return;
     }
-
-    // Se o usuário já montou/editou outra cifra enquanto buscávamos, não sobrescreve.
     if (claim !== chartClaimRef.current) {
       setCifraMeta(out.cifra);
       return;
     }
-
     setCifraMeta(out.cifra);
     setChart(out.cifra.body);
     setChartReady(true);
-    setChartHasUncertain(false);
     setEditingChart(false);
     setCopied(false);
-    setChartOrigin("cifra");
-  }, [cifraQuery, cifraState]);
+    setCifraStatus("done");
+  }, [cifraQuery, cifraStatus]);
 
   const copyChart = useCallback(async () => {
     try {
@@ -588,7 +538,7 @@ export default function AudioLab() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      // clipboard indisponível — ignora silenciosamente
+      // clipboard indisponível — ignora
     }
   }, [chart]);
 
@@ -596,10 +546,12 @@ export default function AudioLab() {
     try {
       sessionStorage.setItem(SOFISTICADOR_PREFILL_KEY, chart);
     } catch {
-      // sessionStorage indisponível — segue para a página mesmo assim
+      // sessionStorage indisponível — segue mesmo assim
     }
     navigate("/sofisticador");
   }, [chart, navigate]);
+
+  const bpmOpt = result?.bpm.options[result.bpm.recommendedIndex];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
@@ -612,53 +564,88 @@ export default function AudioLab() {
           <h1 className="font-display text-3xl font-bold text-white">Audio Lab</h1>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
-          Envie uma música e descubra o tom, o BPM e os acordes. Depois é só ajustar e
-          mandar a progressão para o Sofisticador de Cifras.
+          Envie a música ou cante um trecho. O Harmonic descobre a música pela letra e
+          entrega a cifra pronta — depois é só ajustar e mandar para o Sofisticador.
         </p>
       </div>
 
       <AnimatePresence mode="wait">
-        {/* ── Upload ─────────────────────────────────────────────────────────── */}
+        {/* ── Início: escolher como obter a cifra ──────────────────────────── */}
         {(phase === "idle" || phase === "error") && (
           <motion.div
-            key="upload"
+            key="idle"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
           >
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={onDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                "glass-card rounded-3xl border-2 border-dashed p-10 sm:p-14 text-center cursor-pointer transition-all",
-                dragOver
-                  ? "border-primary bg-primary/10"
-                  : "border-white/15 hover:border-primary/50 hover:bg-white/[0.03]",
-              )}
-            >
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary mb-5">
-                <UploadCloud className="w-8 h-8" />
+            {isRecording ? (
+              <RecordingPanel
+                seconds={recordSeconds}
+                onStop={stopRecording}
+                onCancel={cancelRecording}
+              />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Opção A: enviar áudio */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={onDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn(
+                    "glass-card rounded-3xl border-2 border-dashed p-8 text-center cursor-pointer transition-all flex flex-col items-center",
+                    dragOver
+                      ? "border-primary bg-primary/10"
+                      : "border-white/15 hover:border-primary/50 hover:bg-white/[0.03]",
+                  )}
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary mb-4">
+                    <UploadCloud className="w-7 h-7" />
+                  </div>
+                  <h2 className="font-display text-lg font-bold text-white mb-1.5">
+                    Enviar o áudio da música
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-5">
+                    O Harmonic detecta o tom, descobre a música pela letra e entrega a cifra.
+                    Arraste o arquivo ou clique para escolher.
+                  </p>
+                  <span className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-white bg-primary hover:bg-primary/90 transition-all">
+                    <FileAudio className="w-5 h-5" />
+                    Escolher áudio
+                  </span>
+                  <p className="text-xs text-muted-foreground/60 mt-4">
+                    MP3, WAV ou M4A • até 50MB
+                  </p>
+                </div>
+
+                {/* Opção B: cantar */}
+                <div className="glass-card rounded-3xl border border-white/15 p-8 text-center flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary mb-4">
+                    <Mic className="w-7 h-7" />
+                  </div>
+                  <h2 className="font-display text-lg font-bold text-white mb-1.5">
+                    Cantar a música
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-5">
+                    Cante um trecho e o Harmonic identifica a música pela letra e entrega a
+                    cifra. Funciona melhor com voz clara e pouca música ao fundo.
+                  </p>
+                  <button
+                    onClick={startRecording}
+                    className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-white bg-primary hover:bg-primary/90 transition-all"
+                  >
+                    <Mic className="w-5 h-5" />
+                    Gravar canto
+                  </button>
+                  <p className="text-xs text-muted-foreground/60 mt-4">
+                    Até {MAX_RECORD_SECONDS}s • precisa de microfone
+                  </p>
+                </div>
               </div>
-              <h2 className="font-display text-xl font-bold text-white mb-2">
-                Envie uma música
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-                O Harmonic analisa o áudio e identifica tom, BPM e acordes. Arraste o
-                arquivo aqui ou clique para escolher.
-              </p>
-              <span className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-white bg-primary hover:bg-primary/90 transition-all">
-                <FileAudio className="w-5 h-5" />
-                Enviar áudio
-              </span>
-              <p className="text-xs text-muted-foreground/60 mt-5">
-                Formatos: MP3, WAV ou M4A • até 50MB
-              </p>
-            </div>
+            )}
 
             <input
               ref={fileInputRef}
@@ -679,17 +666,20 @@ export default function AudioLab() {
               </div>
             )}
 
-            <div className="flex items-start gap-2 mt-5 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
-              <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
-              <span>
-                A análise acontece direto no seu navegador. A detecção de acordes é uma
-                estimativa — você poderá ajustar tudo antes de sofisticar.
-              </span>
-            </div>
+            {!isRecording && (
+              <div className="flex items-start gap-2 mt-5 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+                <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                <span>
+                  A cifra é uma transcrição pronta da internet. A identificação pela letra é
+                  automática e pode errar — você poderá ajustar o nome da música e a cifra
+                  antes de sofisticar.
+                </span>
+              </div>
+            )}
           </motion.div>
         )}
 
-        {/* ── Analisando ─────────────────────────────────────────────────────── */}
+        {/* ── Analisando o áudio enviado ───────────────────────────────────── */}
         {phase === "analyzing" && (
           <motion.div
             key="analyzing"
@@ -709,8 +699,7 @@ export default function AudioLab() {
             <div className="space-y-3">
               {STEPS.map((s, i) => {
                 const currentIdx = STEPS.findIndex((x) => x.key === step);
-                const state =
-                  i < currentIdx ? "done" : i === currentIdx ? "active" : "todo";
+                const state = i < currentIdx ? "done" : i === currentIdx ? "active" : "todo";
                 return (
                   <div key={s.key} className="flex items-center gap-3">
                     <span
@@ -721,11 +710,7 @@ export default function AudioLab() {
                         state === "todo" && "border-white/15 text-white/30",
                       )}
                     >
-                      {state === "active" ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        i + 1
-                      )}
+                      {state === "active" ? <Loader2 className="w-3 h-3 animate-spin" /> : i + 1}
                     </span>
                     <span
                       className={cn(
@@ -742,8 +727,8 @@ export default function AudioLab() {
           </motion.div>
         )}
 
-        {/* ── Resultado ──────────────────────────────────────────────────────── */}
-        {phase === "result" && result && (
+        {/* ── Resultado ────────────────────────────────────────────────────── */}
+        {phase === "result" && (
           <motion.div
             key="result"
             initial={{ opacity: 0, y: 8 }}
@@ -751,85 +736,105 @@ export default function AudioLab() {
             exit={{ opacity: 0, y: -8 }}
             className="space-y-5"
           >
-            {/* Resumo */}
-            <div className="glass-card rounded-3xl border border-white/10 p-6">
-              <div className="flex items-center justify-between gap-3 mb-5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileAudio className="w-4 h-4 text-primary shrink-0" />
-                  <p className="text-sm text-white/80 truncate">{fileName}</p>
+            {/* Resumo (só quando há análise do áudio enviado) */}
+            {result ? (
+              <div className="glass-card rounded-3xl border border-white/10 p-6">
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileAudio className="w-4 h-4 text-primary shrink-0" />
+                    <p className="text-sm text-white/80 truncate">{fileName}</p>
+                  </div>
+                  <button
+                    onClick={reset}
+                    className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors shrink-0"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Nova música
+                  </button>
                 </div>
-                <button
-                  onClick={reset}
-                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors shrink-0"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" /> Nova música
-                </button>
-              </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <SummaryCard icon={Music2} label="Tom" value={result.key.symbol} hint={result.key.ptLabel} />
-                <SummaryCard
-                  icon={Gauge}
-                  label="BPM"
-                  value={String(bpmOpt?.bpm ?? result.bpm.bpm)}
-                  hint={altBpms.length ? `alt: ${altBpms.join(" / ")}` : undefined}
-                />
-                <SummaryCard
-                  icon={AudioWaveform}
-                  label="Compasso"
-                  value={result.bpm.timeSignature ?? "—"}
-                />
-                <SummaryCard
-                  icon={Clock}
-                  label="Duração"
-                  value={formatDuration(result.duration)}
-                />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <SummaryCard icon={Music2} label="Tom" value={result.key.symbol} hint={result.key.ptLabel} />
+                  <SummaryCard
+                    icon={Gauge}
+                    label="BPM"
+                    value={String(bpmOpt?.bpm ?? result.bpm.bpm)}
+                  />
+                  <SummaryCard
+                    icon={AudioWaveform}
+                    label="Compasso"
+                    value={result.bpm.timeSignature ?? "—"}
+                  />
+                  <SummaryCard icon={Clock} label="Duração" value={formatDuration(result.duration)} />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="glass-card rounded-3xl border border-white/10 p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Mic className="w-4 h-4 text-primary shrink-0" />
+                    <p className="text-sm text-white/80 truncate">{fileName}</p>
+                  </div>
+                  <button
+                    onClick={reset}
+                    className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors shrink-0"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Nova música
+                  </button>
+                </div>
+              </div>
+            )}
 
-            {/* ── Cifra da música (busca automática) — primário ──────────────── */}
+            {/* ── Cifra da música ──────────────────────────────────────────── */}
             <div className="glass-card rounded-3xl border border-primary/20 bg-primary/5 p-6">
-              <div className="flex items-center gap-2 mb-1">
-                <ListMusic className="w-4 h-4 text-primary" />
-                <h3 className="font-display font-bold text-white">
-                  Cifra da música
-                </h3>
-              </div>
-              <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
-                <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
-                <span>
-                  O Harmonic entrega a cifra de acordo com a música que você enviou — com a
-                  letra e os acordes já posicionados. A busca começa automaticamente assim
-                  que a música é analisada.
-                </span>
-              </div>
-
-              {/* Status da busca automática */}
-              {cifraState === "running" ? (
+              {/* Status do pipeline */}
+              {(cifraStatus === "transcribing" || cifraStatus === "searching") && (
                 <div className="flex items-center gap-2 text-sm text-white/70">
                   <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  Detectando acordes
+                  {cifraStatus === "transcribing"
+                    ? inputMode === "record"
+                      ? "Ouvindo o que você cantou…"
+                      : "Lendo a letra do áudio…"
+                    : "Procurando a cifra dessa música…"}
                 </div>
-              ) : chartOrigin === "cifra" ? (
-                <div className="flex items-center gap-1.5 text-sm text-emerald-300">
-                  <Check className="w-4 h-4 shrink-0" /> Cifra encontrada — veja abaixo.
-                </div>
-              ) : null}
+              )}
 
-              {cifraNotice && (
-                <div className="flex items-start gap-2 mt-4 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+              {cifraStatus === "done" && cifraMeta && (
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-display font-bold text-white text-lg leading-tight">
+                        {cifraMeta.title || "Cifra"}
+                      </h3>
+                      {cifraMeta.artist && (
+                        <p className="text-sm text-white/50 mt-0.5">{cifraMeta.artist}</p>
+                      )}
+                    </div>
+                    {cifraMeta.key && (
+                      <span className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+                        <Music2 className="w-3.5 h-3.5" /> Tom {cifraMeta.key}
+                      </span>
+                    )}
+                  </div>
+                  <p className="flex items-center gap-1.5 text-[12px] text-emerald-300 mt-2">
+                    <Check className="w-3.5 h-3.5 shrink-0" /> Cifra encontrada — veja abaixo.
+                  </p>
+                </div>
+              )}
+
+              {cifraStatus === "failed" && cifraNotice && (
+                <div className="flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{cifraNotice}</span>
                 </div>
               )}
 
-              {/* Ajuste manual (fallback): quando o nome derivado do arquivo não bate */}
-              {cifraState !== "running" && (
+              {/* Rede de segurança: ajustar o nome e buscar de novo */}
+              {cifraStatus !== "transcribing" && cifraStatus !== "searching" && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-white/80 mb-2">
-                    {chartOrigin === "cifra"
+                    {cifraStatus === "done"
                       ? "Não é essa música? Ajuste o nome e busque de novo"
-                      : "Não encontrou? Ajuste o nome da música e tente de novo"}
+                      : "Ajuste o nome da música e tente de novo"}
                   </label>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <input
@@ -839,14 +844,14 @@ export default function AudioLab() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          void handleFetchCifra();
+                          void handleFetchCifraByName();
                         }
                       }}
                       placeholder="Ex.: Gabriela Rocha - Atos 2"
                       className="flex-1 bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     />
                     <button
-                      onClick={handleFetchCifra}
+                      onClick={handleFetchCifraByName}
                       disabled={cifraQuery.trim().length === 0}
                       className={cn(
                         "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
@@ -862,141 +867,7 @@ export default function AudioLab() {
               )}
             </div>
 
-            {/* ── Transcrição automática do áudio (alternativa) ────────────── */}
-            <div className="glass-card rounded-3xl border border-white/10 p-6">
-              <div className="flex items-center gap-2 mb-1">
-                <Mic className="w-4 h-4 text-primary" />
-                <h3 className="font-display font-bold text-white">
-                  Transcrição automática do áudio
-                </h3>
-              </div>
-              <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
-                <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
-                <span>
-                  Não achou a cifra pronta? O Harmonic pode transcrever a letra a partir do
-                  áudio e posicionar os acordes detectados. É uma estimativa (funciona melhor
-                  com vocal claro) e o posicionamento é aproximado — trechos incertos ficam
-                  marcados com “?”.
-                </span>
-              </div>
-
-              {autoAvailable === false ? (
-                <div className="flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-amber-100">
-                      Transcrição automática indisponível
-                    </p>
-                    <p className="mt-1 text-amber-200/80">
-                      {autoMessage ||
-                        "A transcrição automática não está ativa neste ambiente no momento."}
-                    </p>
-                    <p className="mt-2 text-amber-200/70">
-                      Enquanto isso, você pode colar a letra manualmente logo abaixo.
-                    </p>
-                  </div>
-                </div>
-              ) : autoState === "running" || autoAvailable === null ? (
-                <div className="flex items-center gap-2 text-sm text-white/70">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  {autoAvailable === null ? "Preparando…" : "Transcrevendo a letra…"}
-                </div>
-              ) : autoMessage ? (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-2 text-sm text-rose-200/90 bg-rose-500/10 border border-rose-500/25 rounded-xl px-4 py-3">
-                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span>{autoMessage}</span>
-                  </div>
-                  <button
-                    onClick={generateAutoChart}
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                  >
-                    <RotateCcw className="w-4 h-4" /> Tentar novamente
-                  </button>
-                </div>
-              ) : chartOrigin === "auto" ? (
-                <div className="flex items-center gap-2 text-sm text-emerald-300">
-                  <Check className="w-4 h-4" /> Letra gerada — veja abaixo.
-                </div>
-              ) : (
-                <button
-                  onClick={generateAutoChart}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-white/10 text-white hover:bg-white/15 border border-white/10 transition-all"
-                >
-                  <Mic className="w-4 h-4" /> Transcrever a letra do áudio
-                </button>
-              )}
-            </div>
-
-            {/* ── Ou cole a letra manualmente (alternativa) ────────────────── */}
-            <div className="glass-card rounded-3xl border border-white/10 p-6">
-              <div className="flex items-center gap-2 mb-1">
-                <FileText className="w-4 h-4 text-primary" />
-                <h3 className="font-display font-bold text-white">
-                  Ou cole a letra manualmente
-                </h3>
-              </div>
-              <div className="flex items-start gap-2 mb-4 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
-                <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
-                <span>
-                  Se preferir, cole a letra da música e o Harmonic organiza a cifra com base
-                  nos acordes detectados. Você pode ajustar tudo antes de usar.
-                </span>
-              </div>
-
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Cole a letra da música
-              </label>
-              <textarea
-                value={lyrics}
-                onChange={(e) => setLyrics(e.target.value)}
-                placeholder={"Cole aqui a letra da música…"}
-                className="w-full min-h-[140px] bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-relaxed"
-              />
-
-              {/* Seletor de acordes + ação */}
-              <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground mr-1">Usar acordes:</span>
-                  {(["detectados", "sofisticados"] as ChartSource[]).map((src) => {
-                    const disabled =
-                      src === "sofisticados" && sophisticatedChords.length === 0;
-                    return (
-                      <button
-                        key={src}
-                        onClick={() => !disabled && setChartSource(src)}
-                        disabled={disabled}
-                        className={cn(
-                          "text-xs font-medium px-3 py-1.5 rounded-lg border transition-all capitalize",
-                          chartSource === src
-                            ? "bg-primary/20 border-primary/30 text-primary"
-                            : disabled
-                              ? "border-white/5 text-white/20 cursor-not-allowed"
-                              : "border-white/10 text-white/50 hover:bg-white/5 hover:text-white",
-                        )}
-                      >
-                        {src}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={buildChart}
-                  disabled={lyrics.trim().length === 0}
-                  className={cn(
-                    "sm:ml-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all",
-                    lyrics.trim().length === 0
-                      ? "bg-white/5 text-white/30 cursor-not-allowed"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90",
-                  )}
-                >
-                  <FileText className="w-4 h-4" /> Montar cifra com letra
-                </button>
-              </div>
-
-            </div>
-
-            {/* ── Cifra montada (compartilhada: automática ou manual) ──────── */}
+            {/* ── Cifra exibida ────────────────────────────────────────────── */}
             <AnimatePresence>
               {chartReady && (
                 <motion.div
@@ -1005,52 +876,9 @@ export default function AudioLab() {
                   exit={{ opacity: 0, y: 10 }}
                   className="glass-card rounded-3xl border border-white/10 p-6"
                 >
-                  {chartOrigin === "cifra" ? (
-                    <div className="mb-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h4 className="font-display font-bold text-white text-lg leading-tight truncate">
-                            {cifraMeta?.title || "Cifra"}
-                          </h4>
-                          {cifraMeta?.artist && (
-                            <p className="text-sm text-white/50 truncate mt-0.5">
-                              {cifraMeta.artist}
-                            </p>
-                          )}
-                        </div>
-                        {cifraMeta?.key && (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
-                            <Music2 className="w-3.5 h-3.5" /> Tom {cifraMeta.key}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[12px] text-muted-foreground/70 mt-2">
-                        Você pode ajustar o que quiser antes de usar.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mb-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-4 h-4 text-primary" />
-                        <h4 className="font-display font-bold text-white">
-                          Letra + cifra organizada
-                        </h4>
-                      </div>
-                      <p className="text-[12px] text-muted-foreground/70">
-                        Esta cifra foi organizada automaticamente. Revise a posição dos acordes
-                        antes de usar.
-                      </p>
-                    </div>
-                  )}
-                  {chartHasUncertain && (
-                    <div className="flex items-start gap-2 mb-3 text-[12px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2.5">
-                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>
-                        Alguns trechos ficaram incertos (marcados com “?”). Confira a letra e
-                        os acordes nesses pontos.
-                      </span>
-                    </div>
-                  )}
+                  <p className="text-[12px] text-muted-foreground/70 mb-4">
+                    Você pode ajustar o que quiser antes de usar.
+                  </p>
 
                   {editingChart ? (
                     <textarea
@@ -1102,6 +930,49 @@ export default function AudioLab() {
   );
 }
 
+function RecordingPanel({
+  seconds,
+  onStop,
+  onCancel,
+}: {
+  seconds: number;
+  onStop: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="glass-card rounded-3xl border border-primary/30 bg-primary/5 p-10 text-center flex flex-col items-center">
+      <div className="relative mb-5">
+        <span className="absolute inset-0 rounded-full bg-rose-500/30 animate-ping" />
+        <div className="relative w-16 h-16 rounded-full bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-rose-300">
+          <Mic className="w-8 h-8" />
+        </div>
+      </div>
+      <p className="font-display text-xl font-bold text-white mb-1">Gravando…</p>
+      <p className="text-sm text-muted-foreground mb-1">
+        Cante o trecho da música com clareza.
+      </p>
+      <p className="font-mono text-2xl text-white tabular-nums mb-6">
+        {formatClock(seconds)}{" "}
+        <span className="text-sm text-muted-foreground/60">/ {formatClock(MAX_RECORD_SECONDS)}</span>
+      </p>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <button
+          onClick={onStop}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-white bg-primary hover:bg-primary/90 transition-all"
+        >
+          <Square className="w-4 h-4" /> Parar e identificar
+        </button>
+        <button
+          onClick={onCancel}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-medium text-white/70 border border-white/10 hover:bg-white/5 hover:text-white transition-all"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SummaryCard({
   icon: Icon,
   label,
@@ -1117,12 +988,10 @@ function SummaryCard({
     <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
       <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
         <Icon className="w-3.5 h-3.5" />
-        <span className="text-[11px] font-bold uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
       </div>
-      <p className="text-2xl font-display font-bold text-white notranslate" translate="no">
-        {value}
-      </p>
-      {hint && <p className="text-[11px] text-muted-foreground/70 mt-0.5">{hint}</p>}
+      <p className="text-xl font-bold text-white leading-none">{value}</p>
+      {hint && <p className="text-[11px] text-muted-foreground/70 mt-1.5 truncate">{hint}</p>}
     </div>
   );
 }

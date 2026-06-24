@@ -242,6 +242,44 @@ function splitQuery(q: string): { a?: string; b?: string } {
   return {};
 }
 
+// Extrai um trecho distintivo da letra (transcrita do áudio/canto) para buscar
+// a música. Remove marcações de seção e excesso de espaços, e pega as primeiras
+// palavras — o bastante para um buscador identificar a música sem ruído.
+function lyricsSnippet(lyrics: string): string {
+  const clean = lyrics
+    .replace(/\[[^\]]*\]/g, " ") // tira [Intro], [Refrão] etc.
+    .replace(/[“”"]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = clean.split(" ").filter(Boolean);
+  return words.slice(0, 10).join(" ");
+}
+
+// Identifica a música a partir de um trecho da LETRA (não do nome). Pesquisa no
+// DuckDuckGo restringindo ao CifraClub e segue o primeiro resultado /artista/musica/.
+async function resolveCifraByLyrics(lyrics: string): Promise<Parsed | null> {
+  const snippet = lyricsSnippet(lyrics);
+  if (!snippet) return null;
+  const queries = [
+    `site:cifraclub.com.br "${snippet}"`,
+    `site:cifraclub.com.br ${snippet}`,
+    `${snippet} cifra cifraclub`,
+  ];
+  for (const q of queries) {
+    const ddg = await fetchText(
+      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
+      18000,
+    );
+    if (!ddg.text || ddg.text.toLowerCase().includes("anomaly")) continue;
+    const hit = ddgFirstHit(ddg.text);
+    if (hit) {
+      const got = await fetchPrint(hit.artist, hit.song);
+      if (got) return got;
+    }
+  }
+  return null;
+}
+
 async function resolveCifra(query: string): Promise<Parsed | null> {
   const { a, b } = splitQuery(query);
 
@@ -307,15 +345,21 @@ router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res:
       .json({ status: "unauthorized", message: "Faça login para buscar a cifra." });
   }
 
-  const query = String((req.body as { query?: unknown })?.query ?? "").trim();
-  if (!query) {
-    return res.status(400).json({ status: "empty_query", message: "Informe o nome da música." });
+  const body = (req.body ?? {}) as { query?: unknown; lyrics?: unknown };
+  const query = String(body.query ?? "").trim();
+  const lyrics = String(body.lyrics ?? "").trim();
+  if (!query && !lyrics) {
+    return res
+      .status(400)
+      .json({ status: "empty_query", message: "Informe o nome da música ou um trecho da letra." });
   }
 
   try {
-    const parsed = await resolveCifra(query);
+    // Quando vem a LETRA (transcrita do áudio/canto), identificamos pela letra.
+    // Caso contrário, busca pelo nome ("Artista - Música").
+    const parsed = lyrics ? await resolveCifraByLyrics(lyrics) : await resolveCifra(query);
     if (!parsed) {
-      return res.status(200).json({ found: false, query });
+      return res.status(200).json({ found: false, query: query || lyrics });
     }
     return res.status(200).json({ found: true, source: "cifraclub", ...parsed });
   } catch (err) {

@@ -281,8 +281,12 @@ router.post(
   "/transcribe",
   express.raw({ type: () => true, limit: "60mb" }),
   async (req: Request, res: Response) => {
+    // No preview de desenvolvimento o app roda em iframe e os cookies do Clerk
+    // são bloqueados (terceiros), então getAuth() não vê a sessão. Espelhamos o
+    // PREVIEW_MODE do frontend e liberamos em dev; em produção exige login.
+    const isDev = process.env.NODE_ENV === "development";
     const auth = getAuth(req);
-    if (!auth?.userId) {
+    if (!auth?.userId && !isDev) {
       return res
         .status(401)
         .json({ status: "unauthorized", message: "Faça login para usar a transcrição automática." });
