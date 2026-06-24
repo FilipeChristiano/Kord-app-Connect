@@ -65,7 +65,7 @@ const STEPS: { key: AnalysisStep; label: string }[] = [
 ];
 
 type Phase = "idle" | "analyzing" | "result" | "error";
-type InputMode = "upload" | "record";
+type InputMode = "upload" | "record" | "search";
 // Estado do pipeline que identifica a música pela letra e busca a cifra pronta.
 type CifraStatus = "idle" | "transcribing" | "searching" | "done" | "failed";
 
@@ -259,6 +259,7 @@ export default function AudioLab() {
   const [cifraNotice, setCifraNotice] = useState("");
   const [cifraMeta, setCifraMeta] = useState<FetchedCifra | null>(null);
   const [cifraQuery, setCifraQuery] = useState(""); // rede de segurança: ajustar nome
+  const [searchTitle, setSearchTitle] = useState(""); // busca por título na tela inicial
   const [cifraVersions, setCifraVersions] = useState<CifraCandidate[]>([]); // versões sugeridas
   const [pickingId, setPickingId] = useState<string | null>(null); // versão sendo carregada
 
@@ -274,8 +275,10 @@ export default function AudioLab() {
   const [stemProgress, setStemProgress] = useState(0);
   const [stemUrl, setStemUrl] = useState<string | null>(null);
   const [stemError, setStemError] = useState("");
+  const [stemFileName, setStemFileName] = useState(""); // áudio carregado para o estúdio
   const stemUrlRef = useRef<string | null>(null);
   const stemRunIdRef = useRef(0);
+  const studioInputRef = useRef<HTMLInputElement | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioFileRef = useRef<File | null>(null);
@@ -324,6 +327,7 @@ export default function AudioLab() {
     setStemProgress(0);
     setStemUrl(null);
     setStemError("");
+    setStemFileName("");
   }, []);
 
   const reset = useCallback(() => {
@@ -343,6 +347,7 @@ export default function AudioLab() {
     setCifraNotice("");
     setCifraMeta(null);
     setCifraQuery("");
+    setSearchTitle("");
     setChart("");
     setChartReady(false);
     setEditingChart(false);
@@ -637,10 +642,13 @@ export default function AudioLab() {
     setRecordSeconds(0);
   }, [stopStream]);
 
-  // ── Rede de segurança: ajustar o nome e buscar de novo ─────────────────────
-  const handleFetchCifraByName = useCallback(async () => {
-    const q = cifraQuery.trim();
-    if (!q || cifraStatus === "searching") return;
+  // ── Busca da cifra pronta a partir de um título ────────────────────────────
+  const runCifraSearch = useCallback(async (rawQuery: string) => {
+    const q = rawQuery.trim();
+    if (!q) return;
+    // Uma nova busca SEMPRE cancela a anterior: incrementamos os tokens
+    // (pipelineRunIdRef/chartClaimRef) para que um resultado antigo, que ainda
+    // esteja chegando, seja descartado e nunca sobrescreva a busca mais recente.
     const runId = ++pipelineRunIdRef.current;
     const claim = ++chartClaimRef.current;
     setCifraStatus("searching");
@@ -682,7 +690,54 @@ export default function AudioLab() {
     setEditingChart(false);
     setCopied(false);
     setCifraStatus("done");
-  }, [cifraQuery, cifraStatus]);
+  }, []);
+
+  // ── Rede de segurança: ajustar o nome e buscar de novo ─────────────────────
+  const handleFetchCifraByName = useCallback(() => {
+    void runCifraSearch(cifraQuery);
+  }, [cifraQuery, runCifraSearch]);
+
+  // ── Pesquisar pelo título na tela inicial → player do YouTube + cifra ──────
+  const handleSearchByTitle = useCallback(() => {
+    const q = searchTitle.trim();
+    if (!q) return;
+    runIdRef.current++;
+    busyRef.current = false;
+    stopStream();
+    clearStems();
+    setInputMode("search");
+    setFileName(q);
+    setError("");
+    setResult(null);
+    setCifraVersions([]);
+    setCifraMeta(null);
+    setChart("");
+    setChartReady(false);
+    setEditingChart(false);
+    setCopied(false);
+    setCifraQuery(q);
+    audioFileRef.current = null;
+    setPhase("result");
+    void runCifraSearch(q);
+  }, [searchTitle, stopStream, clearStems, runCifraSearch]);
+
+  // ── Carregar o áudio da música para usar o estúdio (modo pesquisa) ─────────
+  const loadStudioFile = useCallback(
+    (file: File) => {
+      if (!isAllowedFile(file)) {
+        setStemError("Envie um arquivo MP3, WAV ou M4A.");
+        return;
+      }
+      if (file.size > MAX_SIZE) {
+        setStemError("Esse arquivo é muito grande. Tente enviar um áudio menor (até 50MB).");
+        return;
+      }
+      clearStems();
+      audioFileRef.current = file;
+      setStemFileName(file.name);
+    },
+    [clearStems],
+  );
 
   // ── Carregar uma das versões sugeridas ─────────────────────────────────────
   const handlePickVersion = useCallback(async (cand: CifraCandidate) => {
@@ -777,6 +832,54 @@ export default function AudioLab() {
                 onCancel={cancelRecording}
               />
             ) : (
+              <>
+              {/* Pesquisar pelo título → ouvir no YouTube + cifra */}
+              <div className="glass-card rounded-3xl border border-white/15 p-6 mb-4">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Search className="w-4 h-4 text-primary" />
+                  <h2 className="font-display text-lg font-bold text-white">
+                    Pesquisar pelo título
+                  </h2>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Já sabe a música? Digite o nome e o Harmonic abre o player para você ouvir e
+                  entrega a cifra pronta.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    value={searchTitle}
+                    onChange={(e) => setSearchTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSearchByTitle();
+                      }
+                    }}
+                    placeholder="Ex.: Gabriela Rocha - Atos 2"
+                    className="flex-1 bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  />
+                  <button
+                    onClick={handleSearchByTitle}
+                    disabled={searchTitle.trim().length === 0}
+                    className={cn(
+                      "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
+                      searchTitle.trim().length === 0
+                        ? "bg-white/5 text-white/30 cursor-not-allowed"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90",
+                    )}
+                  >
+                    <Search className="w-4 h-4" /> Pesquisar
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 my-4">
+                <div className="h-px flex-1 bg-white/10" />
+                <span className="text-xs uppercase tracking-wider text-white/30">ou</span>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Opção A: enviar áudio */}
                 <div
@@ -837,6 +940,7 @@ export default function AudioLab() {
                   </p>
                 </div>
               </div>
+              </>
             )}
 
             <input
@@ -963,7 +1067,11 @@ export default function AudioLab() {
               <div className="glass-card rounded-3xl border border-white/10 p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Mic className="w-4 h-4 text-primary shrink-0" />
+                    {inputMode === "search" ? (
+                      <Search className="w-4 h-4 text-primary shrink-0" />
+                    ) : (
+                      <Mic className="w-4 h-4 text-primary shrink-0" />
+                    )}
                     <p className="text-sm text-white/80 truncate">{fileName}</p>
                   </div>
                   <button
@@ -1193,7 +1301,7 @@ export default function AudioLab() {
             </AnimatePresence>
 
             {/* ── Estúdio de áudio: sem voz / voz em destaque ───────────────── */}
-            {inputMode === "upload" && result && (
+            {(inputMode === "upload" || inputMode === "search") && (
               <div className="glass-card rounded-3xl border border-white/10 p-6">
                 <div className="flex items-center gap-2 mb-1">
                   <Headphones className="w-4 h-4 text-primary" />
@@ -1207,6 +1315,49 @@ export default function AudioLab() {
                   perfeito como uma separação profissional.
                 </p>
 
+                <input
+                  ref={studioInputRef}
+                  type="file"
+                  accept={ACCEPT}
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) loadStudioFile(f);
+                    e.target.value = "";
+                  }}
+                />
+
+                {inputMode === "search" && !stemFileName ? (
+                  <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-center">
+                    <p className="text-sm text-white/70 mb-1">
+                      Para criar a versão sem voz ou destacar o vocal, envie o arquivo de áudio
+                      desta música.
+                    </p>
+                    <p className="text-[12px] text-muted-foreground/60 mb-4">
+                      O som do player não pode ser editado — o estúdio trabalha no arquivo que você
+                      enviar.
+                    </p>
+                    <button
+                      onClick={() => studioInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                    >
+                      <UploadCloud className="w-4 h-4" /> Enviar áudio (MP3, WAV)
+                    </button>
+                    {stemError && (
+                      <div className="mt-4 flex items-start gap-2 text-left text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>{stemError}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                <>
+                {stemFileName && (
+                  <div className="flex items-center gap-2 mb-3 text-[12px] text-white/50">
+                    <FileAudio className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="truncate">{stemFileName}</span>
+                  </div>
+                )}
                 <div className="grid sm:grid-cols-2 gap-3">
                   <button
                     onClick={() => generateStem("instrumental")}
@@ -1288,6 +1439,8 @@ export default function AudioLab() {
                       <Download className="w-4 h-4" /> Baixar (WAV)
                     </a>
                   </div>
+                )}
+                </>
                 )}
               </div>
             )}
