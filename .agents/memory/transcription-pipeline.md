@@ -30,12 +30,42 @@ depois Solr por prefixos curtos (3,4,6 palavras) como reforço (útil quando o
 trecho começa pelo título). Pelo NOME → Solr primeiro. Se Solr-por-prefixo roda
 antes do Deezer, ele preenche os 5 slots com músicas HOMÔNIMAS erradas (o prefixo
 "nós estamos aqui" casa títulos literais "Nós Estamos Aqui", não "Atos 2"). O
-Deezer é calculado UMA vez por request e reusado em resolve+gatherCandidates.
-DuckDuckGo virou só reserva (responde 202 "anomaly"/CAPTCHA quase sempre — era a
-causa original de "nenhuma versão"). Resolve direto só com 1 música clara; com
-várias, devolve candidatos `{id,title,artist}` (id = base64url "artist/song").
+Deezer/`identifyByLyrics` é calculado UMA vez por request e reusado em
+resolve+gatherCandidates. DuckDuckGo virou só reserva (responde 202
+"anomaly"/CAPTCHA quase sempre — era a causa original de "nenhuma versão").
 **Why:** scraping de buscador genérico é bloqueado; Solr+Deezer não são, e juntos
 cobrem nome E letra (com ou sem o título no trecho).
+
+## Letra CANTADA é ruidosa → IA SÓ limpa a transcrição, Deezer identifica
+
+O trecho CANTADO chega transcrito sem acentos / com grafia errada / palavra
+parecida trocada. A busca textual do Deezer é **sensível a acento E a tamanho**:
+casa "Atos 2" só com trecho CURTO (≈3–8 palavras iniciais) e COM acentos; com
+acento removido ou ≥9 palavras, erra ou volta vazio → caía no Solr-por-prefixo →
+homônimos errados. Era a causa do bug "cantei e veio a música errada".
+
+**Decisão durável (NÃO reverter para LLM-identifica):** usar LLM **APENAS para
+CORRIGIR a transcrição** (`llmCleanLyrics`, gpt-4o-mini, JSON `{text}`, mesmas
+palavras/ordem, sem adivinhar) e então identificar pelo Deezer com o texto limpo.
+- **NUNCA** pedir à IA para IDENTIFICAR a música: testado e REJEITADO — gpt-4o
+  chuta louvores de TEMA parecido ("Santo Espírito", "Sol da Manhã"), gerando até
+  auto-resolve para a música ERRADA. Sede/fogo/graça/render-se são comuns a muitos
+  louvores; identificar por tema é alucinação.
+- `deezerByLyricText`: tenta o texto limpo, depois o original como reserva, com
+  contagem decrescente de palavras iniciais [8,6,5,4] até obter hits (Deezer
+  prefere trechos curtos).
+- `identifyByLyrics`: confirma cada hit no Solr (`confirmSong`) e DEDUPLICA por
+  TÍTULO normalizado (covers do mesmo louvor por artistas diferentes = MESMA
+  música → fica a 1ª, canônica no topo do Deezer).
+- **Auto-resolve (precisão):** só resolve direto com UMA música distinta confirmada
+  E sinal forte — Deezer trouxe 1 resultado OU o mesmo título DOMINOU o topo (≥2
+  gravações). Vários títulos homônimos distintos casando trecho genérico → devolve
+  candidatos `{id,title,artist}` p/ o usuário escolher (id = base64url
+  "artist/song").
+- `confirmSong`: reserva de "1 único hit no Solr" só vale se o TÍTULO também bate
+  (`titleClose`); evita aceitar um hit solto de OUTRA música.
+**Why:** Deezer é o único que indexa letra mas é frágil a ruído; a IA cobre só o
+ruído (acentos/grafia) onde é confiável, sem o risco de identificação por tema.
 
 # Pipeline de transcrição de letra (Audio Lab)
 

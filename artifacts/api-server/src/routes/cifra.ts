@@ -1,5 +1,6 @@
 import express, { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth } from "@clerk/express";
+import { getOpenAI } from "../lib/openai-client";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busca de CIFRA PRONTA (feita por humanos) no CifraClub.
@@ -429,33 +430,153 @@ async function deezerSearch(query: string, max = 8): Promise<DeezerSong[]> {
   return out;
 }
 
-// Trecho da letra → Deezer (nome/artista) → confirma a cifra no CifraClub (Solr).
-// Devolve candidatos {id,title,artist} já validados (existe cifra e o artista bate).
-async function deezerToCandidates(lyrics: string, max = 5): Promise<Candidate[]> {
-  const snippet = lyricsSnippet(lyrics, 12);
-  if (!snippet) return [];
-  const songs = await deezerSearch(snippet, 8);
-  const out: Candidate[] = [];
+// Confirma uma música (título + artista) na base do CifraClub (Solr): a cifra
+// precisa EXISTIR e o artista precisa bater. Evita inventar músicas que o
+// identificador (LLM/Deezer) possa ter alucinado. Devolve o candidato pronto.
+async function confirmSong(title: string, artist: string): Promise<Candidate | null> {
+  const base = cleanDeezerTitle(title);
+  if (!base) return null;
+  let hits = await solrSearch(`${base} ${artist}`, 5);
+  if (!hits.length) hits = await solrSearch(base, 5);
+  // O título do CifraClub bate com o que buscamos? (evita aceitar um único
+  // resultado solto que, por acaso, seja de OUTRA música.)
+  const nbase = normName(base);
+  const titleClose = (h: SolrSong) => {
+    const nt = normName(h.title);
+    return nt === nbase || nt.includes(nbase) || nbase.includes(nt);
+  };
+  // Preferimos o artista que bate; como reserva, aceitamos um único resultado
+  // SÓ se o título também for compatível.
+  const match =
+    hits.find((h) => artistMatches(h.artistName, artist) && titleClose(h)) ??
+    hits.find((h) => artistMatches(h.artistName, artist)) ??
+    (hits.length === 1 && titleClose(hits[0]) ? hits[0] : undefined);
+  return match ? solrToCandidate(match) : null;
+}
+
+// ─── Identificação por LETRA via IA (OpenAI, proxy gerenciado pelo Replit) ────
+// O ponto fraco da busca textual (Deezer/Solr) é que o trecho CANTADO chega
+// transcrito de forma imperfeita — sem acentos, com palavras trocadas — e a
+// busca literal erra ("nos estamos aqui tao sedentos" deixa de casar "Atos 2").
+//
+// A IA NÃO é confiável para ADIVINHAR a música (chuta louvores de tema parecido).
+// Mas é ótima no que importa aqui: CORRIGIR a transcrição do canto — devolver os
+// acentos e a grafia certa, sem mudar as palavras. Com o trecho corrigido, o
+// Deezer (que indexa a letra) identifica a música com precisão. É esse o papel da
+// IA: limpar a transcrição, não identificar.
+async function llmCleanLyrics(lyrics: string): Promise<string> {
+  const openai = getOpenAI();
+  if (!openai) return "";
+  const snippet = lyricsSnippet(lyrics, 16);
+  if (!snippet) return "";
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Você recebe um TRECHO de letra de música em português, transcrito do canto de alguém — pode estar sem acentos, com grafia errada ou palavras muito parecidas trocadas (ex.: \"sede\" no lugar de \"sedentos\"). " +
+            "Corrija para o português CORRETO (acentuação e ortografia), preservando EXATAMENTE as mesmas palavras, na MESMA ordem. NÃO complete, não acrescente, não remova e não tente adivinhar de qual música é. " +
+            'Responda APENAS JSON no formato {"text":"<trecho corrigido>"}.',
+        },
+        { role: "user", content: snippet },
+      ],
+    });
+    const txt = completion.choices?.[0]?.message?.content ?? "";
+    const parsed = JSON.parse(txt) as { text?: unknown };
+    return String(parsed.text ?? "").trim();
+  } catch (err) {
+    console.warn(
+      "[/api/cifra] llm clean failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return "";
+  }
+}
+
+// Resultado da identificação por letra: lista de versões confirmadas (melhor
+// primeiro) e, quando há confiança alta, a versão para resolver direto.
+interface LyricIdent {
+  ordered: Candidate[];
+  confident: Candidate | null;
+}
+
+// Busca no Deezer (indexa a letra) tolerante: o Deezer casa melhor com trechos
+// CURTOS — vai diminuindo o número de palavras iniciais até obter resultados.
+async function deezerByLyricText(text: string): Promise<DeezerSong[]> {
+  const toks = text.split(" ").filter(Boolean);
+  if (toks.length < 3) return [];
+  for (const n of [8, 6, 5, 4]) {
+    if (n > toks.length && n !== 4) continue;
+    const q = toks.slice(0, Math.min(n, toks.length)).join(" ");
+    const songs = await deezerSearch(q, 8);
+    if (songs.length) return songs;
+  }
+  return [];
+}
+
+// Identifica a música a partir de um trecho da LETRA. A IA corrige a transcrição
+// do canto (acentos/grafia), o Deezer identifica pela letra corrigida e o
+// CifraClub confirma a cifra. Covers do mesmo louvor (mesmo título, artistas
+// diferentes) são colapsados na versão canônica. É calculada UMA vez por
+// requisição e reusada na resolução e nos candidatos.
+async function identifyByLyrics(lyrics: string): Promise<LyricIdent> {
+  const original = lyricsSnippet(lyrics, 12);
+  if (!original) return { ordered: [], confident: null };
+
+  const cleaned = await llmCleanLyrics(lyrics);
+
+  // Tenta primeiro a letra corrigida (com acentos), depois o original como reserva.
+  let deezerSongs: DeezerSong[] = [];
+  for (const src of [cleaned, original]) {
+    if (!src) continue;
+    deezerSongs = await deezerByLyricText(src);
+    if (deezerSongs.length) break;
+  }
+
+  // Quantas vezes cada título aparece no topo do Deezer. Quando a MESMA música
+  // domina (várias gravações do mesmo louvor casam o trecho), é sinal forte de
+  // que o trecho pertence mesmo a ela.
+  const titleCount = new Map<string, number>();
+  for (const s of deezerSongs) {
+    const t = normName(s.title);
+    if (t) titleCount.set(t, (titleCount.get(t) ?? 0) + 1);
+  }
+
+  // Confirma no CifraClub e DEDUPLICA por TÍTULO: covers do mesmo louvor por
+  // artistas diferentes são a MESMA música — ficamos com a 1ª (a mais tocada/
+  // canônica, no topo do Deezer). Assim, quando o trecho casa uma única música,
+  // sobra um único candidato → identificação confiável.
+  const ordered: Candidate[] = [];
+  const seenTitle = new Set<string>();
   const seenId = new Set<string>();
-  const seenSong = new Set<string>();
-  for (const s of songs) {
-    if (out.length >= max) break;
-    const baseKey = normName(s.title);
-    if (!baseKey || seenSong.has(baseKey)) continue;
-    let hits = await solrSearch(`${s.title} ${s.artist}`, 5);
-    if (!hits.length) hits = await solrSearch(s.title, 5);
-    const match =
-      hits.find((h) => artistMatches(h.artistName, s.artist)) ??
-      (hits.length === 1 ? hits[0] : undefined);
-    if (!match) continue;
-    seenSong.add(baseKey);
-    const cand = solrToCandidate(match);
+  let topTitleCount = 0;
+  for (const s of deezerSongs) {
+    if (ordered.length >= 5) break;
+    const tkey = normName(s.title);
+    if (!tkey || seenTitle.has(tkey)) continue;
+    const cand = await confirmSong(s.title, s.artist);
+    if (!cand) continue;
+    seenTitle.add(tkey);
     if (!seenId.has(cand.id)) {
       seenId.add(cand.id);
-      out.push(cand);
+      if (ordered.length === 0) topTitleCount = titleCount.get(tkey) ?? 1;
+      ordered.push(cand);
     }
   }
-  return out;
+
+  // Resolve direto APENAS quando há uma única música distinta confirmada E essa
+  // identificação é forte: ou o Deezer trouxe um único resultado, ou o mesmo
+  // título dominou o topo (>= 2 gravações). Isso evita resolver para a música
+  // errada quando vários títulos HOMÔNIMOS distintos casam um trecho genérico.
+  const confident =
+    ordered.length === 1 && (deezerSongs.length === 1 || topTitleCount >= 2)
+      ? ordered[0]
+      : null;
+  return { ordered, confident };
 }
 
 // Reúne algumas versões da música a partir do nome e/ou de um trecho da letra.
@@ -464,8 +585,8 @@ async function deezerToCandidates(lyrics: string, max = 5): Promise<Candidate[]>
 // (a cifra só é baixada quando o usuário escolhe uma versão).
 async function gatherCandidates(
   opts: { query?: string; lyrics?: string },
-  // Candidatos do Deezer já calculados nesta requisição (evita rede repetida).
-  preloadedDeezer?: Candidate[],
+  // Identificação por letra já calculada nesta requisição (evita rede repetida).
+  preloadedLyric?: LyricIdent,
 ): Promise<Candidate[]> {
   const out: Candidate[] = [];
   const seenId = new Set<string>();
@@ -486,13 +607,13 @@ async function gatherCandidates(
   }
   if (out.length >= 5) return out.slice(0, 5);
 
-  // 0b) Pela LETRA: identificação real pela base musical (Deezer indexa a letra)
-  //     e confirmação da cifra no CifraClub. Vem ANTES do palpite por prefixo do
-  //     Solr, pois cobre o caso (comum) do trecho cantado não conter o título —
-  //     que o Solr sozinho erraria, casando o prefixo com OUTRA música homônima.
+  // 0b) Pela LETRA: identificação real por IA + base musical (Deezer), confirmada
+  //     no CifraClub. Vem ANTES do palpite por prefixo do Solr, pois cobre o caso
+  //     (comum) do trecho cantado não conter o título — que o Solr sozinho
+  //     erraria, casando o prefixo com OUTRA música homônima.
   if (opts.lyrics && out.length < 5) {
-    const deezerCands = preloadedDeezer ?? (await deezerToCandidates(opts.lyrics, 5));
-    for (const c of deezerCands) {
+    const ident = preloadedLyric ?? (await identifyByLyrics(opts.lyrics));
+    for (const c of ident.ordered) {
       pushCand(c);
       if (out.length >= 5) break;
     }
@@ -601,26 +722,26 @@ function lyricsSnippet(lyrics: string, words = 10): string {
 // DuckDuckGo restringindo ao CifraClub e segue o primeiro resultado /artista/musica/.
 async function resolveCifraByLyrics(
   lyrics: string,
-  // Candidatos do Deezer já calculados nesta requisição (evita rede repetida).
-  preloadedDeezer?: Candidate[],
+  // Identificação por letra já calculada nesta requisição (evita rede repetida).
+  preloadedLyric?: LyricIdent,
 ): Promise<Parsed | null> {
   const snippet = lyricsSnippet(lyrics);
   if (!snippet) return null;
 
-  // 1) Identificação real pela LETRA via base musical (Deezer indexa a letra) e
-  //    confirmação da cifra no CifraClub. Vem ANTES do palpite por prefixo do
-  //    Solr, pois identifica a música mesmo quando o trecho não contém o título.
-  //    Resolve direto só com 1 música clara; com várias, devolve null para o
-  //    usuário escolher entre os candidatos.
-  const viaDeezer = preloadedDeezer ?? (await deezerToCandidates(lyrics, 5));
-  if (viaDeezer.length === 1) {
-    const hit = decodePick(viaDeezer[0].id);
+  // 1) Identificação real pela LETRA por IA + base musical (Deezer), confirmada no
+  //    CifraClub. Vem ANTES do palpite por prefixo do Solr, pois identifica a
+  //    música mesmo quando o trecho não contém o título e mesmo com transcrição
+  //    ruidosa. Resolve direto só quando há confiança alta (concordância IA+Deezer
+  //    ou versão única); com várias versões, devolve null para o usuário escolher.
+  const ident = preloadedLyric ?? (await identifyByLyrics(lyrics));
+  if (ident.confident) {
+    const hit = decodePick(ident.confident.id);
     if (hit) {
       const got = await fetchPrint(hit.artist, hit.song);
       if (got) return got;
     }
   }
-  if (viaDeezer.length > 1) return null;
+  if (ident.ordered.length >= 1) return null;
 
   // 2) Índice do CifraClub (Solr), por prefixos cada vez menores da letra (reforço
   //    quando o trecho COMEÇA pelo título/refrão). Só resolve direto com um único
@@ -763,16 +884,16 @@ router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res:
 
     // Quando vem a LETRA (transcrita do áudio/canto), identificamos pela letra.
     // Caso contrário, busca pelo nome ("Artista - Música"). A identificação por
-    // letra via Deezer é calculada UMA vez e reusada na resolução e nos candidatos.
-    const deezerCands = lyrics ? await deezerToCandidates(lyrics, 5) : undefined;
+    // letra (IA + Deezer) é calculada UMA vez e reusada na resolução e nos candidatos.
+    const lyricIdent = lyrics ? await identifyByLyrics(lyrics) : undefined;
     const parsed = lyrics
-      ? await resolveCifraByLyrics(lyrics, deezerCands)
+      ? await resolveCifraByLyrics(lyrics, lyricIdent)
       : await resolveCifra(query);
     if (!parsed) {
       // Sem um casamento confiável: oferece algumas VERSÕES para o usuário escolher.
       const candidates = await gatherCandidates(
         { query: query || undefined, lyrics: lyrics || undefined },
-        deezerCands,
+        lyricIdent,
       );
       return res.status(200).json({ found: false, candidates });
     }
