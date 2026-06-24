@@ -7,6 +7,7 @@ import {
   SophisticationLevel,
   ProcessedLine,
   DetectedTonality,
+  SubstitutionResult,
 } from "@/data/substitutions";
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 
@@ -51,11 +52,74 @@ function lineToText(line: ProcessedLine): string {
     .join("");
 }
 
+// Linha em branco (sem conteúdo visível).
+function isBlankLine(line: ProcessedLine): boolean {
+  return lineToText(line).trim() === "";
+}
+
+// Linha só de acordes (acordes + espaços, sem letra).
+function isChordOnlyLine(line: ProcessedLine): boolean {
+  if (!line.hasChords) return false;
+  return line.tokens.every((t) => t.type === "chord" || /^\s*$/.test(t.value));
+}
+
+// Linha de letra (tem texto visível que não é seção nem só acordes).
+function isLyricLine(line: ProcessedLine): boolean {
+  const t = lineToText(line).trim();
+  if (!t || SECTION_RE.test(t) || isChordOnlyLine(line)) return false;
+  return true;
+}
+
+// Uma linha de acordes é "instrumental" (intro/solo/passagem) quando NÃO há uma
+// linha de letra logo abaixo. Nesse caso o espaçamento gigante herdado da fonte
+// não serve para alinhar nada — normalizamos para uma fileira limpa. Quando há
+// letra embaixo, preservamos o alinhamento monoespaçado (acorde sobre a sílaba).
+function isInstrumentalChordLine(lines: ProcessedLine[], i: number): boolean {
+  if (!isChordOnlyLine(lines[i])) return false;
+  let j = i + 1;
+  while (j < lines.length && isBlankLine(lines[j])) j++;
+  const next = j < lines.length ? lines[j] : null;
+  return !next || !isLyricLine(next);
+}
+
+function ChordToken({
+  sub,
+  chip,
+  onChordClick,
+}: {
+  sub: SubstitutionResult;
+  chip: boolean;
+  onChordClick: (id: string) => void;
+}) {
+  const changed = sub.original !== sub.substituted;
+  return (
+    <span
+      onClick={() => sub.chordId && onChordClick(sub.chordId)}
+      title={changed ? `${sub.original} → ${sub.substituted}` : sub.original}
+      className={[
+        "group relative cursor-pointer font-bold",
+        changed ? "text-primary" : "text-amber-200/80 hover:text-amber-200",
+        changed && chip ? "bg-primary/15 rounded-md px-1.5 py-0.5" : "",
+        changed && !chip ? "bg-primary/15 rounded-[3px]" : "",
+      ].join(" ")}
+    >
+      {sub.substituted}
+      {changed && (
+        <span className="absolute -top-5 left-0 text-[10px] text-white/60 whitespace-nowrap hidden group-hover:block bg-black/85 rounded px-1.5 py-0.5 pointer-events-none z-10">
+          era: {sub.original}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function RenderedLine({
   line,
+  instrumental,
   onChordClick,
 }: {
   line: ProcessedLine;
+  instrumental: boolean;
   onChordClick: (id: string) => void;
 }) {
   const text = lineToText(line);
@@ -75,33 +139,27 @@ function RenderedLine({
     );
   }
 
-  // Linha de acordes/letra: preserva o alinhamento (whitespace-pre, sem quebra)
-  // com bastante respiro vertical. Os acordes não usam caixa com padding (que
-  // alargaria o token e quebraria a grade) — só cor/realce.
+  // Linha de acordes instrumental (sem letra embaixo): espaçamento uniforme,
+  // sem os recuos enormes da fonte que deixavam a intro "bagunçada".
+  if (instrumental) {
+    const chords = line.tokens.filter((t) => t.type === "chord" && t.substitution);
+    return (
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 leading-[2.05]">
+        {chords.map((t, i) => (
+          <ChordToken key={i} sub={t.substitution!} chip onChordClick={onChordClick} />
+        ))}
+      </div>
+    );
+  }
+
+  // Linha de acordes sobre letra (ou linha de letra): preserva o alinhamento
+  // (whitespace-pre, sem quebra). Acordes sem padding para não quebrar a grade.
   return (
     <div className="whitespace-pre leading-[2.05]">
       {line.tokens.map((token, i) => {
         if (token.type === "chord" && token.substitution) {
-          const sub = token.substitution;
-          const changed = sub.original !== sub.substituted;
           return (
-            <span
-              key={i}
-              onClick={() => sub.chordId && onChordClick(sub.chordId)}
-              title={changed ? `${sub.original} → ${sub.substituted}` : sub.original}
-              className={`group relative cursor-pointer font-bold ${
-                changed
-                  ? "text-primary bg-primary/15 rounded-[3px]"
-                  : "text-amber-200/80 hover:text-amber-200"
-              }`}
-            >
-              {sub.substituted}
-              {changed && (
-                <span className="absolute -top-5 left-0 text-[10px] text-white/60 whitespace-nowrap hidden group-hover:block bg-black/85 rounded px-1.5 py-0.5 pointer-events-none z-10">
-                  era: {sub.original}
-                </span>
-              )}
-            </span>
+            <ChordToken key={i} sub={token.substitution} chip={false} onChordClick={onChordClick} />
           );
         }
         return (
@@ -376,7 +434,12 @@ export default function ChordSubstitutor() {
             ) : (
               <div className="font-mono text-sm w-max min-w-full notranslate" translate="no">
                 {processed.map((line, i) => (
-                  <RenderedLine key={i} line={line} onChordClick={handleChordClick} />
+                  <RenderedLine
+                    key={i}
+                    line={line}
+                    instrumental={isInstrumentalChordLine(processed, i)}
+                    onChordClick={handleChordClick}
+                  />
                 ))}
               </div>
             )}
