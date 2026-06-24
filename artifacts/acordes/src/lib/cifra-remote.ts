@@ -20,14 +20,26 @@ export interface FetchedCifra {
   body: string;
 }
 
+// Uma versão sugerida da música. `id` é um token opaco — o app nunca expõe a
+// origem; apenas mostra título e artista para o usuário escolher.
+export interface CifraCandidate {
+  id: string;
+  title: string;
+  artist: string;
+}
+
 export type CifraOutcome =
   | { ok: true; found: true; cifra: FetchedCifra }
-  | { ok: true; found: false }
+  | { ok: true; found: false; candidates: CifraCandidate[] }
   | { ok: false; reason: "unauthorized" | "empty" | "error" | "network" };
 
 // Envia a requisição ao servidor e normaliza a resposta. Compartilhado pela
 // busca por NOME e pela identificação por LETRA.
-async function postCifra(payload: { query?: string; lyrics?: string }): Promise<CifraOutcome> {
+async function postCifra(payload: {
+  query?: string;
+  lyrics?: string;
+  pick?: string;
+}): Promise<CifraOutcome> {
   try {
     const r = await fetch(`${API_BASE}/cifra`, {
       method: "POST",
@@ -41,19 +53,30 @@ async function postCifra(payload: { query?: string; lyrics?: string }): Promise<
     if (!r.ok) return { ok: false, reason: "error" };
 
     const data = (await r.json()) as
-      | { found: false }
+      | { found: false; candidates?: CifraCandidate[] }
       | ({ found: true } & FetchedCifra);
 
-    if (!data || data.found !== true) return { ok: true, found: false };
+    if (!data || data.found !== true) {
+      const raw = (data as { candidates?: unknown })?.candidates;
+      const candidates = Array.isArray(raw)
+        ? (raw.filter(
+            (c) =>
+              c &&
+              typeof (c as CifraCandidate).id === "string" &&
+              typeof (c as CifraCandidate).title === "string",
+          ) as CifraCandidate[])
+        : [];
+      return { ok: true, found: false, candidates };
+    }
     if (typeof data.body !== "string" || data.body.trim().length === 0) {
-      return { ok: true, found: false };
+      return { ok: true, found: false, candidates: [] };
     }
 
     return {
       ok: true,
       found: true,
       cifra: {
-        source: data.source ?? "cifraclub",
+        source: data.source ?? "harmonic",
         url: data.url ?? "",
         title: data.title ?? "",
         artist: data.artist ?? "",
@@ -79,4 +102,11 @@ export async function fetchCifraByLyrics(lyrics: string): Promise<CifraOutcome> 
   const l = lyrics.trim().slice(0, 2000);
   if (!l) return { ok: false, reason: "empty" };
   return postCifra({ lyrics: l });
+}
+
+// Carrega a cifra de uma das VERSÕES sugeridas que o usuário escolheu.
+export async function pickCifra(id: string): Promise<CifraOutcome> {
+  const p = id.trim();
+  if (!p) return { ok: false, reason: "empty" };
+  return postCifra({ pick: p });
 }

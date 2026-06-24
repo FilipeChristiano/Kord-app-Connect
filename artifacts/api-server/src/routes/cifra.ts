@@ -130,6 +130,24 @@ function prettySlug(slug: string): string {
     .join(" ");
 }
 
+// Conectores que ficam em minúsculo no meio de um título.
+const LOWER_WORDS = new Set([
+  "a", "e", "o", "as", "os", "de", "da", "do", "das", "dos", "em", "no", "na",
+  "nos", "nas", "com", "para", "pra", "por", "ao", "aos", "à", "às", "que",
+]);
+
+// Transforma um slug em texto legível, deixando conectores em minúsculo
+// (exceto a primeira palavra). Ex.: "celebrai-a-cristo" → "Celebrai a Cristo".
+function humanizeSlug(slug: string): string {
+  const words = slug.split("-").filter(Boolean);
+  return words
+    .map((w, i) => {
+      if (i > 0 && LOWER_WORDS.has(w)) return w;
+      return w[0].toUpperCase() + w.slice(1);
+    })
+    .join(" ");
+}
+
 // Extrai "Música" e "Artista" legíveis (com acentos) do og:title quando houver.
 function parseTitleArtist(html: string, hit: CifraHit): { title: string; artist: string } {
   let title = prettySlug(hit.song);
@@ -220,17 +238,124 @@ function bestSongMatch(wantSlug: string, candidates: string[]): string | null {
   return bestScore >= Math.max(1, Math.ceil(want.size / 2)) ? best : null;
 }
 
-// Reserva: primeiro resultado /artista/musica/ no HTML do DuckDuckGo.
-function ddgFirstHit(html: string): CifraHit | null {
+// Resultados /artista/musica/ no HTML do DuckDuckGo (distintos, em ordem).
+function ddgHits(html: string, max = 8): CifraHit[] {
   const re = /cifraclub\.com\.br(?:%2F|\/)([a-z0-9][a-z0-9-]*)(?:%2F|\/)([a-z0-9][a-z0-9-]*)/gi;
+  const out: CifraHit[] = [];
+  const seen = new Set<string>();
   let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
+  while ((m = re.exec(html)) !== null && out.length < max) {
     const artist = m[1].toLowerCase();
     const song = m[2].toLowerCase();
     if (NON_SONG.has(song) || NON_SONG.has(artist) || artist === "www" || artist === "img") continue;
-    return { artist, song };
+    const key = `${artist}/${song}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ artist, song });
   }
-  return null;
+  return out;
+}
+
+function ddgFirstHit(html: string): CifraHit | null {
+  return ddgHits(html, 1)[0] ?? null;
+}
+
+// ─── Versões sugeridas (candidatos) ──────────────────────────────────────────
+// Um "candidato" é uma versão da música que o usuário pode escolher. Para o app
+// transmitir uma INTELIGÊNCIA que detecta a cifra, o cliente recebe apenas
+// { id, title, artist } — nunca a origem nem a URL. O `id` é um token opaco que
+// guarda internamente o par artista/música para resolver a cifra na escolha.
+export interface Candidate {
+  id: string;
+  title: string;
+  artist: string;
+}
+
+function encodePick(hit: CifraHit): string {
+  return Buffer.from(`${hit.artist}/${hit.song}`, "utf8").toString("base64url");
+}
+
+function decodePick(id: string): CifraHit | null {
+  try {
+    const raw = Buffer.from(id, "base64url").toString("utf8");
+    const slash = raw.indexOf("/");
+    if (slash <= 0) return null;
+    const artist = raw.slice(0, slash);
+    const song = raw.slice(slash + 1);
+    if (!/^[a-z0-9-]+$/.test(artist) || !/^[a-z0-9-]+$/.test(song)) return null;
+    return { artist, song };
+  } catch {
+    return null;
+  }
+}
+
+function hitToCandidate(hit: CifraHit): Candidate {
+  return {
+    id: encodePick(hit),
+    title: humanizeSlug(hit.song),
+    artist: humanizeSlug(hit.artist),
+  };
+}
+
+// Reúne algumas versões da música a partir do nome e/ou de um trecho da letra.
+// Combina a página do artista (quando há "Artista - Música") com os resultados
+// do DuckDuckGo. Devolve candidatos distintos, sem fazer download de cada cifra
+// (a cifra só é baixada quando o usuário escolhe uma versão).
+async function gatherCandidates(opts: { query?: string; lyrics?: string }): Promise<Candidate[]> {
+  const hits: CifraHit[] = [];
+  const seen = new Set<string>();
+  const add = (h: CifraHit) => {
+    const k = `${h.artist}/${h.song}`;
+    if (!seen.has(k)) {
+      seen.add(k);
+      hits.push(h);
+    }
+  };
+
+  // 1) Quando há "Artista - Música", lista músicas próximas na página do artista.
+  if (opts.query) {
+    const { a, b } = splitQuery(opts.query);
+    if (a && b) {
+      const sa = slugify(a);
+      const sb = slugify(b);
+      for (const [artistSlug, songSlug] of [
+        [sa, stripTrailingNoise(sb) || sb],
+        [sb, stripTrailingNoise(sa) || sa],
+      ]) {
+        const ap = await fetchText(`https://www.cifraclub.com.br/${artistSlug}/`, 12000);
+        if (!ap.ok || !ap.text) continue;
+        const cands = artistSongSlugs(ap.text, artistSlug);
+        const wantToks = new Set(songSlug.split("-").filter((t) => t && !NOISE_TOKENS.has(t)));
+        for (const c of cands) {
+          const toks = c.split("-").filter(Boolean);
+          const shared = toks.filter((t) => wantToks.has(t)).length;
+          if (shared >= 1) add({ artist: artistSlug, song: c });
+        }
+      }
+    }
+  }
+
+  // 2) DuckDuckGo (várias ocorrências) pelo nome e/ou pela letra.
+  const ddgQueries: string[] = [];
+  if (opts.query) ddgQueries.push(`site:cifraclub.com.br ${opts.query}`);
+  if (opts.lyrics) {
+    const snippet = lyricsSnippet(opts.lyrics);
+    if (snippet) {
+      ddgQueries.push(`site:cifraclub.com.br "${snippet}"`);
+      ddgQueries.push(`site:cifraclub.com.br ${snippet}`);
+    }
+  }
+  for (const q of ddgQueries) {
+    if (hits.length >= 6) break;
+    const ddg = await fetchText(
+      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`,
+      15000,
+    );
+    if (!ddg.text || ddg.text.toLowerCase().includes("anomaly")) continue;
+    for (const h of ddgHits(ddg.text, 8)) add(h);
+  }
+
+  return hits.slice(0, 5).map(hitToCandidate);
 }
 
 // Separa "Artista - Música" (vários tipos de traço).
@@ -345,23 +470,45 @@ router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res:
       .json({ status: "unauthorized", message: "Faça login para buscar a cifra." });
   }
 
-  const body = (req.body ?? {}) as { query?: unknown; lyrics?: unknown };
+  const body = (req.body ?? {}) as { query?: unknown; lyrics?: unknown; pick?: unknown };
   const query = String(body.query ?? "").trim();
   const lyrics = String(body.lyrics ?? "").trim();
-  if (!query && !lyrics) {
+  const pick = String(body.pick ?? "").trim();
+  if (!query && !lyrics && !pick) {
     return res
       .status(400)
       .json({ status: "empty_query", message: "Informe o nome da música ou um trecho da letra." });
   }
 
+  // Resposta enxuta ao cliente: nunca expõe a origem nem a URL — o app apresenta
+  // a cifra como detectada por ele.
+  const toClient = (p: Parsed) => ({
+    found: true as const,
+    source: "harmonic",
+    title: p.title,
+    artist: p.artist,
+    key: p.key,
+    body: p.body,
+  });
+
   try {
+    // O usuário escolheu uma das versões sugeridas → baixa a cifra dessa versão.
+    if (pick) {
+      const hit = decodePick(pick);
+      const got = hit ? await fetchPrint(hit.artist, hit.song) : null;
+      if (!got) return res.status(200).json({ found: false, candidates: [] });
+      return res.status(200).json(toClient(got));
+    }
+
     // Quando vem a LETRA (transcrita do áudio/canto), identificamos pela letra.
     // Caso contrário, busca pelo nome ("Artista - Música").
     const parsed = lyrics ? await resolveCifraByLyrics(lyrics) : await resolveCifra(query);
     if (!parsed) {
-      return res.status(200).json({ found: false, query: query || lyrics });
+      // Sem um casamento confiável: oferece algumas VERSÕES para o usuário escolher.
+      const candidates = await gatherCandidates({ query: query || undefined, lyrics: lyrics || undefined });
+      return res.status(200).json({ found: false, candidates });
     }
-    return res.status(200).json({ found: true, source: "cifraclub", ...parsed });
+    return res.status(200).json(toClient(parsed));
   } catch (err) {
     console.error("[/api/cifra] error:", err instanceof Error ? err.message : err);
     return res

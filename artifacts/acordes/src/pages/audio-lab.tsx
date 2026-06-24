@@ -18,6 +18,8 @@ import {
   Mic,
   Square,
   Search,
+  Sparkles,
+  ChevronRight,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -29,7 +31,13 @@ import {
 } from "@/lib/audio-analysis";
 import { transcribeAudio, type TranscribeOutcome } from "@/lib/transcription";
 import { analyzeChordsRemote } from "@/lib/chord-remote";
-import { fetchCifra, fetchCifraByLyrics, type FetchedCifra } from "@/lib/cifra-remote";
+import {
+  fetchCifra,
+  fetchCifraByLyrics,
+  pickCifra,
+  type FetchedCifra,
+  type CifraCandidate,
+} from "@/lib/cifra-remote";
 import { cn } from "@/lib/utils";
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
@@ -240,6 +248,8 @@ export default function AudioLab() {
   const [cifraNotice, setCifraNotice] = useState("");
   const [cifraMeta, setCifraMeta] = useState<FetchedCifra | null>(null);
   const [cifraQuery, setCifraQuery] = useState(""); // rede de segurança: ajustar nome
+  const [cifraVersions, setCifraVersions] = useState<CifraCandidate[]>([]); // versões sugeridas
+  const [pickingId, setPickingId] = useState<string | null>(null); // versão sendo carregada
 
   // ── Cifra exibida ──────────────────────────────────────────────────────────
   const [chart, setChart] = useState("");
@@ -310,6 +320,7 @@ export default function AudioLab() {
     setCifraStatus("transcribing");
     setCifraNotice("");
     setCifraMeta(null);
+    setCifraVersions([]);
     setChartReady(false);
 
     const t = await transcribeAudio(file);
@@ -345,9 +356,12 @@ export default function AudioLab() {
     }
 
     if (!out.found) {
+      setCifraVersions(out.candidates);
       setCifraStatus("failed");
       setCifraNotice(
-        "Identifiquei a letra, mas não encontrei a cifra dessa música automaticamente. Ajuste o nome (ex.: “Artista - Música”) abaixo.",
+        out.candidates.length > 0
+          ? "Detectei a letra e encontrei algumas versões dessa música. Escolha a sua abaixo."
+          : "Detectei a letra, mas não consegui reconhecer a cifra dessa música. Ajuste o nome (ex.: “Artista - Música”) abaixo.",
       );
       return;
     }
@@ -358,6 +372,7 @@ export default function AudioLab() {
       return;
     }
 
+    setCifraVersions([]);
     setCifraMeta(out.cifra);
     setChart(out.cifra.body);
     setChartReady(true);
@@ -564,9 +579,12 @@ export default function AudioLab() {
       return;
     }
     if (!out.found) {
+      setCifraVersions(out.candidates);
       setCifraStatus("failed");
       setCifraNotice(
-        "Não encontrei a cifra dessa música. Confira o nome (ex.: “Artista - Música”).",
+        out.candidates.length > 0
+          ? "Encontrei algumas versões dessa música. Escolha a sua abaixo."
+          : "Não reconheci a cifra dessa música. Confira o nome (ex.: “Artista - Música”).",
       );
       setCifraMeta(null);
       return;
@@ -575,6 +593,7 @@ export default function AudioLab() {
       setCifraMeta(out.cifra);
       return;
     }
+    setCifraVersions([]);
     setCifraMeta(out.cifra);
     setChart(out.cifra.body);
     setChartReady(true);
@@ -582,6 +601,46 @@ export default function AudioLab() {
     setCopied(false);
     setCifraStatus("done");
   }, [cifraQuery, cifraStatus]);
+
+  // ── Carregar uma das versões sugeridas ─────────────────────────────────────
+  const handlePickVersion = useCallback(async (cand: CifraCandidate) => {
+    if (pickingId) return;
+    const runId = ++pipelineRunIdRef.current;
+    const claim = ++chartClaimRef.current;
+    setPickingId(cand.id);
+    setCifraNotice("");
+
+    const out = await pickCifra(cand.id);
+    if (runId !== pipelineRunIdRef.current) {
+      setPickingId(null);
+      return;
+    }
+
+    if (!out.ok || !out.found) {
+      setPickingId(null);
+      setCifraStatus("failed");
+      setCifraNotice(
+        "Não consegui carregar essa versão agora. Tente outra versão ou ajuste o nome abaixo.",
+      );
+      return;
+    }
+    if (claim !== chartClaimRef.current) {
+      setPickingId(null);
+      setCifraMeta(out.cifra);
+      return;
+    }
+    setPickingId(null);
+    setCifraVersions([]);
+    setCifraMeta(out.cifra);
+    setChart(out.cifra.body);
+    setChartReady(true);
+    setEditingChart(false);
+    setCopied(false);
+    setCifraQuery(
+      out.cifra.artist ? `${out.cifra.artist} - ${out.cifra.title}` : out.cifra.title,
+    );
+    setCifraStatus("done");
+  }, [pickingId]);
 
   const copyChart = useCallback(async () => {
     try {
@@ -721,9 +780,9 @@ export default function AudioLab() {
               <div className="flex items-start gap-2 mt-5 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
                 <span>
-                  A cifra é uma transcrição pronta da internet. A identificação pela letra é
-                  automática e pode errar — você poderá ajustar o nome da música e a cifra
-                  antes de sofisticar.
+                  A cifra é detectada automaticamente por inteligência a partir da letra — e
+                  pode errar. Se não for a versão certa, você poderá escolher outra versão,
+                  ajustar o nome da música e a cifra antes de sofisticar.
                 </span>
               </div>
             )}
@@ -845,7 +904,7 @@ export default function AudioLab() {
                     ? inputMode === "record"
                       ? "Ouvindo o que você cantou…"
                       : "Lendo a letra do áudio…"
-                    : "Procurando a cifra dessa música…"}
+                    : "Detectando a cifra dessa música…"}
                 </div>
               )}
 
@@ -879,12 +938,57 @@ export default function AudioLab() {
                 </div>
               )}
 
+              {/* Versões detectadas — o usuário escolhe a sua */}
+              {cifraVersions.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <p className="text-sm font-semibold text-white/90">
+                      Versões que o Harmonic detectou
+                    </p>
+                  </div>
+                  <div className="grid gap-2.5">
+                    {cifraVersions.map((v) => {
+                      const loading = pickingId === v.id;
+                      const disabled = pickingId !== null && !loading;
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={() => handlePickVersion(v)}
+                          disabled={pickingId !== null}
+                          className={cn(
+                            "group flex items-center justify-between gap-3 text-left rounded-2xl border px-4 py-3 transition-all",
+                            disabled
+                              ? "border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed"
+                              : "border-white/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-white truncate">{v.title}</p>
+                            {v.artist && (
+                              <p className="text-[13px] text-white/50 truncate">{v.artist}</p>
+                            )}
+                          </div>
+                          {loading ? (
+                            <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
+                          ) : (
+                            <span className="shrink-0 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary/80 group-hover:text-primary">
+                              Usar esta <ChevronRight className="w-4 h-4" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Rede de segurança: ajustar o nome e buscar de novo */}
               {cifraStatus !== "transcribing" && cifraStatus !== "searching" && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-white/80 mb-2">
                     {cifraStatus === "done"
-                      ? "Não é essa música? Ajuste o nome e busque de novo"
+                      ? "Não é essa música? Ajuste o nome e detecte de novo"
                       : "Ajuste o nome da música e tente de novo"}
                   </label>
                   <div className="flex flex-col sm:flex-row gap-3">
@@ -911,7 +1015,7 @@ export default function AudioLab() {
                           : "bg-primary text-primary-foreground hover:bg-primary/90",
                       )}
                     >
-                      <Search className="w-4 h-4" /> Buscar cifra
+                      <Sparkles className="w-4 h-4" /> Detectar cifra
                     </button>
                   </div>
                 </div>
