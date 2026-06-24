@@ -808,7 +808,7 @@ export default function AudioLab() {
               {cifraState === "running" ? (
                 <div className="flex items-center gap-2 text-sm text-white/70">
                   <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  Procurando a cifra da sua música…
+                  Detectando acordes
                 </div>
               ) : chartOrigin === "cifra" ? (
                 <div className="flex items-center gap-1.5 text-sm text-emerald-300">
