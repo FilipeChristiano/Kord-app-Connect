@@ -92,7 +92,12 @@ function isChordToken(t: string): boolean {
   return /^[A-G][#b]?(?:[mM]|maj|min|dim|aug|sus|add|°|º|\+|\d|\(|\)|#|b|\/|[A-G])*$/.test(t);
 }
 
-type LineKind = "section" | "chords" | "tab" | "lyric" | "blank";
+type LineKind = "section" | "chords" | "tab" | "lyric" | "blank" | "annotation";
+
+// Marcações de execução (não são letra nem acorde): "(2x)", "Solo", "Intro",
+// "Instrumental", "repete 2x", "bis", "Final"…
+const ANNOTATION_RE =
+  /^\(?\s*(?:\d+\s*x|x\s*\d+|bis|solo|intro|instrumental|final|riff|coda|tutti|(?:repete|repetir)[a-zçãõéêáà0-9 ]*)\s*\)?\s*[:.\-–—]*\s*$/i;
 
 function classifyLine(line: string): LineKind {
   const trimmed = line.trim();
@@ -100,6 +105,8 @@ function classifyLine(line: string): LineKind {
   if (/^\[[^\]]+\]$/.test(trimmed)) return "section";
   // Linhas de tablatura: corda + barra + traços (ex.: "E|--3--2--").
   if (/\|/.test(line) && /-{2,}/.test(line)) return "tab";
+  // Marcação de execução isolada — tratada como não-letra.
+  if (ANNOTATION_RE.test(trimmed)) return "annotation";
   // Ignora tokens que são só pontuação (ex.: parênteses de progressão "( Em7 C9 )").
   const tokens = trimmed.split(/\s+/).filter((t) => !/^[()|:.-]+$/.test(t));
   if (tokens.length === 0) return "lyric";
@@ -116,12 +123,40 @@ function SectionLabel({ text }: { text: string }) {
   );
 }
 
+// Quebra uma linha de acordes em tokens, ignorando separadores soltos.
+function chordRowTokens(s: string): string[] {
+  return s.trim().split(/\s+/).filter((t) => t && !/^[()|]+$/.test(t));
+}
+
+// Fileira de acordes com espaçamento uniforme (intro/solo/passagem sem letra).
+function ChordRow({ source }: { source: string }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-primary font-semibold tracking-wide">
+      {chordRowTokens(source).map((t, k) => (
+        <span key={k}>{t}</span>
+      ))}
+    </div>
+  );
+}
+
 function ChordSheet({ text }: { text: string }) {
   const lines = text.replace(/\r/g, "").split("\n");
+  const kinds = lines.map(classifyLine);
+
+  // Uma linha de acordes é "instrumental" quando a próxima linha com conteúdo
+  // NÃO é uma letra — aí os recuos enormes da fonte não alinham nada e podem
+  // ser normalizados. Se houver letra embaixo, mantemos o alinhamento exato.
+  const isInstrumental = (i: number): boolean => {
+    for (let j = i + 1; j < lines.length; j++) {
+      if (kinds[j] !== "blank") return kinds[j] !== "lyric";
+    }
+    return true;
+  };
+
   return (
     <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-secondary/30 px-5 py-5 sm:px-7 sm:py-6 font-mono text-[13px] sm:text-[15px] leading-[1.85] notranslate" translate="no">
       {lines.map((line, i) => {
-        const kind = classifyLine(line);
+        const kind = kinds[i];
         if (kind === "blank") return <div key={i} className="h-5" aria-hidden />;
         if (kind === "section") {
           return (
@@ -130,7 +165,8 @@ function ChordSheet({ text }: { text: string }) {
             </div>
           );
         }
-        // Linha que começa com [Seção] seguida de acordes na mesma linha.
+        // Linha que começa com [Seção] seguida de acordes na mesma linha. Se
+        // houver letra logo abaixo, preserva o alinhamento; senão, fileira limpa.
         const inline = line.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
         if (inline && inline[2].trim()) {
           return (
@@ -138,15 +174,30 @@ function ChordSheet({ text }: { text: string }) {
               <div className="mb-2">
                 <SectionLabel text={inline[1]} />
               </div>
-              <div className="whitespace-pre text-primary font-semibold tracking-wide">
-                {inline[2]}
-              </div>
+              {isInstrumental(i) ? (
+                <ChordRow source={inline[2]} />
+              ) : (
+                <div className="whitespace-pre text-primary font-semibold tracking-wide">
+                  {inline[2]}
+                </div>
+              )}
             </div>
           );
         }
         if (kind === "chords") {
+          // Sem letra embaixo → normaliza; com letra embaixo → preserva a grade.
+          if (isInstrumental(i)) {
+            return <ChordRow key={i} source={line} />;
+          }
           return (
             <div key={i} className="whitespace-pre text-primary font-semibold tracking-wide">
+              {line || " "}
+            </div>
+          );
+        }
+        if (kind === "annotation") {
+          return (
+            <div key={i} className="whitespace-pre text-white/40 italic">
               {line || " "}
             </div>
           );

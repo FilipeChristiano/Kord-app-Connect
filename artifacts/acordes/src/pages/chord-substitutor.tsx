@@ -63,10 +63,14 @@ function isChordOnlyLine(line: ProcessedLine): boolean {
   return line.tokens.every((t) => t.type === "chord" || /^\s*$/.test(t.value));
 }
 
-// Linha de letra (tem texto visível que não é seção nem só acordes).
+// Marcações de execução isoladas ("(2x)", "Solo", "Intro"…) — não são letra.
+const ANNOTATION_RE =
+  /^\(?\s*(?:\d+\s*x|x\s*\d+|bis|solo|intro|instrumental|final|riff|coda|tutti|(?:repete|repetir)[a-zçãõéêáà0-9 ]*)\s*\)?\s*[:.\-–—]*\s*$/i;
+
+// Linha de letra (tem texto visível que não é seção, marcação nem só acordes).
 function isLyricLine(line: ProcessedLine): boolean {
   const t = lineToText(line).trim();
-  if (!t || SECTION_RE.test(t) || isChordOnlyLine(line)) return false;
+  if (!t || SECTION_RE.test(t) || ANNOTATION_RE.test(t) || isChordOnlyLine(line)) return false;
   return true;
 }
 
