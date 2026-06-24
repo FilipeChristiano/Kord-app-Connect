@@ -353,11 +353,120 @@ function solrToCandidate(s: SolrSong): Candidate {
   };
 }
 
+// ─── Identificação por LETRA via base musical (Deezer) ───────────────────────
+// O índice do CifraClub (Solr) acha a música pelo NOME, mas não pela letra
+// inteira. Quando o trecho cantado NÃO contém o título (ex.: "Atos 2" começa em
+// "nós estamos aqui..."), a busca aberta do Deezer — que indexa a letra — devolve
+// o nome/artista certo a partir do trecho. Em seguida confirmamos a cifra no
+// próprio CifraClub. Nada disso vaza ao cliente: usamos só para descobrir o
+// título/artista e devolver a cifra como detecção do app.
+interface DeezerSong {
+  title: string;
+  artist: string;
+}
+
+// Limpa sufixos do título do Deezer ("(Ao Vivo)", "[Playback]", "feat. ...",
+// "- Live") para casar melhor com o índice do CifraClub.
+function cleanDeezerTitle(t: string): string {
+  return t
+    .replace(/\s*[([][^)\]]*[)\]]/g, " ")
+    .replace(/\s*[-–—]\s*(ao vivo|aovivo|playback|live|remix|vers[aã]o).*$/i, "")
+    .replace(/\s+feat\.?\s+.*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Normaliza nomes para comparação tolerante (sem acento, minúsculo, só letras/números).
+function normName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+// O artista do Deezer e o do CifraClub batem? (igual, um contém o outro, ou
+// compartilham um token significativo).
+function artistMatches(a: string, b: string): boolean {
+  const na = normName(a);
+  const nb = normName(b);
+  if (!na || !nb) return false;
+  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+  const setA = new Set(na.split(" ").filter((t) => t.length > 2));
+  const shared = nb.split(" ").filter((t) => t.length > 2 && setA.has(t)).length;
+  return shared >= 1;
+}
+
+async function deezerSearch(query: string, max = 8): Promise<DeezerSong[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const r = await fetchText(
+    `https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=${max}`,
+    10000,
+  );
+  if (!r.text) return [];
+  let data: unknown;
+  try {
+    data = (JSON.parse(r.text) as { data?: unknown }).data;
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(data)) return [];
+  const out: DeezerSong[] = [];
+  const seen = new Set<string>();
+  for (const raw of data) {
+    const t = raw as { title?: unknown; artist?: { name?: unknown } };
+    const title = cleanDeezerTitle(String(t.title ?? ""));
+    const artist = String(t.artist?.name ?? "").trim();
+    if (!title || !artist) continue;
+    const key = `${title}|${artist}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ title, artist });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+// Trecho da letra → Deezer (nome/artista) → confirma a cifra no CifraClub (Solr).
+// Devolve candidatos {id,title,artist} já validados (existe cifra e o artista bate).
+async function deezerToCandidates(lyrics: string, max = 5): Promise<Candidate[]> {
+  const snippet = lyricsSnippet(lyrics, 12);
+  if (!snippet) return [];
+  const songs = await deezerSearch(snippet, 8);
+  const out: Candidate[] = [];
+  const seenId = new Set<string>();
+  const seenSong = new Set<string>();
+  for (const s of songs) {
+    if (out.length >= max) break;
+    const baseKey = normName(s.title);
+    if (!baseKey || seenSong.has(baseKey)) continue;
+    let hits = await solrSearch(`${s.title} ${s.artist}`, 5);
+    if (!hits.length) hits = await solrSearch(s.title, 5);
+    const match =
+      hits.find((h) => artistMatches(h.artistName, s.artist)) ??
+      (hits.length === 1 ? hits[0] : undefined);
+    if (!match) continue;
+    seenSong.add(baseKey);
+    const cand = solrToCandidate(match);
+    if (!seenId.has(cand.id)) {
+      seenId.add(cand.id);
+      out.push(cand);
+    }
+  }
+  return out;
+}
+
 // Reúne algumas versões da música a partir do nome e/ou de um trecho da letra.
 // Combina a página do artista (quando há "Artista - Música") com os resultados
 // do DuckDuckGo. Devolve candidatos distintos, sem fazer download de cada cifra
 // (a cifra só é baixada quando o usuário escolhe uma versão).
-async function gatherCandidates(opts: { query?: string; lyrics?: string }): Promise<Candidate[]> {
+async function gatherCandidates(
+  opts: { query?: string; lyrics?: string },
+  // Candidatos do Deezer já calculados nesta requisição (evita rede repetida).
+  preloadedDeezer?: Candidate[],
+): Promise<Candidate[]> {
   const out: Candidate[] = [];
   const seenId = new Set<string>();
   const pushCand = (c: Candidate) => {
@@ -367,24 +476,39 @@ async function gatherCandidates(opts: { query?: string; lyrics?: string }): Prom
     }
   };
 
-  // 0) Fonte primária: o índice de busca do próprio CifraClub (Solr). Estável e
-  //    sem CAPTCHA. Funciona tanto pelo nome quanto por um trecho da letra (quando
-  //    o trecho contém o título). Para a letra tentamos prefixos cada vez menores.
-  const solrQueries: string[] = [];
-  if (opts.query) solrQueries.push(opts.query);
-  if (opts.lyrics) {
-    // Prefixos curtos primeiro: o trecho cantado costuma começar pelo título/refrão,
-    // e trechos curtos casam o título com mais precisão (trechos longos viram ruído).
-    for (const n of [3, 4, 6]) {
-      const snip = lyricsSnippet(opts.lyrics, n);
-      if (snip) solrQueries.push(snip);
-    }
-  }
-  for (const q of solrQueries) {
-    if (out.length >= 5) break;
-    for (const s of await solrSearch(q, 8)) {
+  // 0) Pelo NOME: índice de busca do próprio CifraClub (Solr). Estável e sem
+  //    CAPTCHA, casa título/artista com precisão.
+  if (opts.query) {
+    for (const s of await solrSearch(opts.query, 8)) {
       pushCand(solrToCandidate(s));
       if (out.length >= 5) break;
+    }
+  }
+  if (out.length >= 5) return out.slice(0, 5);
+
+  // 0b) Pela LETRA: identificação real pela base musical (Deezer indexa a letra)
+  //     e confirmação da cifra no CifraClub. Vem ANTES do palpite por prefixo do
+  //     Solr, pois cobre o caso (comum) do trecho cantado não conter o título —
+  //     que o Solr sozinho erraria, casando o prefixo com OUTRA música homônima.
+  if (opts.lyrics && out.length < 5) {
+    const deezerCands = preloadedDeezer ?? (await deezerToCandidates(opts.lyrics, 5));
+    for (const c of deezerCands) {
+      pushCand(c);
+      if (out.length >= 5) break;
+    }
+  }
+
+  // 0c) Pela LETRA via Solr por prefixos cada vez menores (reforço — útil quando o
+  //     trecho cantado COMEÇA pelo título/refrão).
+  if (opts.lyrics && out.length < 5) {
+    for (const n of [3, 4, 6]) {
+      if (out.length >= 5) break;
+      const snip = lyricsSnippet(opts.lyrics, n);
+      if (!snip) continue;
+      for (const s of await solrSearch(snip, 8)) {
+        pushCand(solrToCandidate(s));
+        if (out.length >= 5) break;
+      }
     }
   }
   if (out.length >= 5) return out.slice(0, 5);
@@ -475,13 +599,32 @@ function lyricsSnippet(lyrics: string, words = 10): string {
 
 // Identifica a música a partir de um trecho da LETRA (não do nome). Pesquisa no
 // DuckDuckGo restringindo ao CifraClub e segue o primeiro resultado /artista/musica/.
-async function resolveCifraByLyrics(lyrics: string): Promise<Parsed | null> {
+async function resolveCifraByLyrics(
+  lyrics: string,
+  // Candidatos do Deezer já calculados nesta requisição (evita rede repetida).
+  preloadedDeezer?: Candidate[],
+): Promise<Parsed | null> {
   const snippet = lyricsSnippet(lyrics);
   if (!snippet) return null;
 
-  // 1) Índice do CifraClub (Solr), por prefixos cada vez menores da letra.
-  //    Só resolve direto quando há um único resultado claro; com várias versões
-  //    devolvemos null para o usuário escolher entre os candidatos.
+  // 1) Identificação real pela LETRA via base musical (Deezer indexa a letra) e
+  //    confirmação da cifra no CifraClub. Vem ANTES do palpite por prefixo do
+  //    Solr, pois identifica a música mesmo quando o trecho não contém o título.
+  //    Resolve direto só com 1 música clara; com várias, devolve null para o
+  //    usuário escolher entre os candidatos.
+  const viaDeezer = preloadedDeezer ?? (await deezerToCandidates(lyrics, 5));
+  if (viaDeezer.length === 1) {
+    const hit = decodePick(viaDeezer[0].id);
+    if (hit) {
+      const got = await fetchPrint(hit.artist, hit.song);
+      if (got) return got;
+    }
+  }
+  if (viaDeezer.length > 1) return null;
+
+  // 2) Índice do CifraClub (Solr), por prefixos cada vez menores da letra (reforço
+  //    quando o trecho COMEÇA pelo título/refrão). Só resolve direto com um único
+  //    resultado claro; com várias versões devolve null para o usuário escolher.
   for (const n of [3, 4, 6]) {
     const snip = lyricsSnippet(lyrics, n);
     if (!snip) continue;
@@ -493,7 +636,7 @@ async function resolveCifraByLyrics(lyrics: string): Promise<Parsed | null> {
     if (songs.length > 1) return null;
   }
 
-  // 2) DuckDuckGo (reserva, melhor esforço — costuma estar bloqueado por CAPTCHA).
+  // 3) DuckDuckGo (reserva, melhor esforço — costuma estar bloqueado por CAPTCHA).
   const queries = [
     `site:cifraclub.com.br "${snippet}"`,
     `site:cifraclub.com.br ${snippet}`,
@@ -619,11 +762,18 @@ router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res:
     }
 
     // Quando vem a LETRA (transcrita do áudio/canto), identificamos pela letra.
-    // Caso contrário, busca pelo nome ("Artista - Música").
-    const parsed = lyrics ? await resolveCifraByLyrics(lyrics) : await resolveCifra(query);
+    // Caso contrário, busca pelo nome ("Artista - Música"). A identificação por
+    // letra via Deezer é calculada UMA vez e reusada na resolução e nos candidatos.
+    const deezerCands = lyrics ? await deezerToCandidates(lyrics, 5) : undefined;
+    const parsed = lyrics
+      ? await resolveCifraByLyrics(lyrics, deezerCands)
+      : await resolveCifra(query);
     if (!parsed) {
       // Sem um casamento confiável: oferece algumas VERSÕES para o usuário escolher.
-      const candidates = await gatherCandidates({ query: query || undefined, lyrics: lyrics || undefined });
+      const candidates = await gatherCandidates(
+        { query: query || undefined, lyrics: lyrics || undefined },
+        deezerCands,
+      );
       return res.status(200).json({ found: false, candidates });
     }
     return res.status(200).json(toClient(parsed));

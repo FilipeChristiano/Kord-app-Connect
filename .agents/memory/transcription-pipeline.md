@@ -13,19 +13,29 @@ uma rede de segurança "ajustar o nome da música" (busca por nome via `fetchCif
 No upload, a análise local de tom/BPM continua e roda antes do pipeline de letra.
 Identificação: `POST /api/cifra` aceita `{lyrics}`, `{query}` e `{pick}`.
 
-**Fonte de busca (decisão durável):** o índice Solr do próprio CifraClub
-(`https://solr.sscdn.co/cc/h2/?q=...`, JSONP — tirar o `(...)`) é a fonte PRIMÁRIA
-e confiável. Cada doc traz slug do artista (`d`), slug da música (`u`), título
-real (`m`), nome do artista (`a`). DuckDuckGo (`site:cifraclub.com.br`) virou só
-reserva — ele responde 202 "anomaly"/CAPTCHA de forma praticamente permanente, e
-era a causa de "nenhuma versão" aparecer. **Why:** o scraping de buscadores
-genéricos é bloqueado; o Solr do CifraClub não é. Letra usa prefixos CURTOS
-(3,4,6 palavras) — o trecho cantado costuma começar pelo título/refrão e trechos
-longos viram ruído no índice (que indexa título/artista, não a letra inteira).
-Resolve direto só com 1 resultado claro; com vários, devolve candidatos
-`{id,title,artist}` (id = base64url "artist/song") para o usuário escolher.
-Limite: se o título NÃO aparece no trecho cantado, o Solr não acha (não é
-full-text de letra) — cai no ajuste manual do nome.
+**Fontes de busca (decisão durável):** combinação de DUAS fontes abertas, sem
+chave nem connector, ambas funcionam server-side:
+- **CifraClub Solr** (`https://solr.sscdn.co/cc/h2/?q=...`, JSONP — tirar o
+  `(...)`): índice do próprio CifraClub. Doc traz slug do artista (`d`), slug da
+  música (`u`), título (`m`), nome do artista (`a`). É a fonte da CIFRA em si e
+  busca PELO NOME. **Indexa título/artista, NÃO a letra inteira.**
+- **Deezer** (`https://api.deezer.com/search?q=...`, JSON aberto, sem key):
+  **indexa a letra**, então identifica a música por um trecho CANTADO mesmo
+  quando o título não está no trecho (ex.: "Atos 2" começa em "nós estamos
+  aqui..."). Usado só internamente p/ achar título+artista → confirma a cifra no
+  Solr (`"title artist"`, valida que o artista bate). Nunca vaza ao cliente.
+
+**Ordenação que importa:** pela LETRA → Deezer PRIMEIRO (casa a letra de verdade),
+depois Solr por prefixos curtos (3,4,6 palavras) como reforço (útil quando o
+trecho começa pelo título). Pelo NOME → Solr primeiro. Se Solr-por-prefixo roda
+antes do Deezer, ele preenche os 5 slots com músicas HOMÔNIMAS erradas (o prefixo
+"nós estamos aqui" casa títulos literais "Nós Estamos Aqui", não "Atos 2"). O
+Deezer é calculado UMA vez por request e reusado em resolve+gatherCandidates.
+DuckDuckGo virou só reserva (responde 202 "anomaly"/CAPTCHA quase sempre — era a
+causa original de "nenhuma versão"). Resolve direto só com 1 música clara; com
+várias, devolve candidatos `{id,title,artist}` (id = base64url "artist/song").
+**Why:** scraping de buscador genérico é bloqueado; Solr+Deezer não são, e juntos
+cobrem nome E letra (com ou sem o título no trecho).
 
 # Pipeline de transcrição de letra (Audio Lab)
 
