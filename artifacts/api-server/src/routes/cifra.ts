@@ -297,11 +297,100 @@ function hitToCandidate(hit: CifraHit): Candidate {
   };
 }
 
+// ─── Busca pela base do CifraClub (Solr) ─────────────────────────────────────
+// Fonte primária e confiável de detecção: o índice de busca do próprio CifraClub
+// (mesmo usado pelo site). Retorna o slug do artista (`d`), o slug da música
+// (`u`), o título real (`m`) e o nome do artista (`a`). É bem mais estável que
+// raspar buscadores genéricos (que costumam responder com CAPTCHA/anomaly).
+interface SolrSong {
+  artist: string; // slug do artista
+  song: string; // slug da música
+  title: string; // título legível
+  artistName: string; // nome legível do artista
+}
+
+async function solrSearch(query: string, max = 8): Promise<SolrSong[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const r = await fetchText(
+    `https://solr.sscdn.co/cc/h2/?q=${encodeURIComponent(q)}`,
+    12000,
+  );
+  if (!r.text) return [];
+  // A resposta vem embrulhada como JSONP: "(​{…})". Remove o invólucro.
+  const jsonText = r.text.trim().replace(/^\(/, "").replace(/\)\s*;?\s*$/, "");
+  let docs: unknown;
+  try {
+    docs = (JSON.parse(jsonText) as { response?: { docs?: unknown } })?.response?.docs;
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(docs)) return [];
+
+  const out: SolrSong[] = [];
+  const seen = new Set<string>();
+  for (const raw of docs) {
+    const d = raw as { d?: unknown; u?: unknown; m?: unknown; a?: unknown };
+    const artist = String(d.d ?? "").toLowerCase();
+    const song = String(d.u ?? "").toLowerCase();
+    if (!/^[a-z0-9-]+$/.test(artist) || !/^[a-z0-9-]+$/.test(song)) continue;
+    const key = `${artist}/${song}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const title = String(d.m ?? "").trim() || humanizeSlug(song);
+    const artistName = String(d.a ?? "").trim() || humanizeSlug(artist);
+    out.push({ artist, song, title, artistName });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+function solrToCandidate(s: SolrSong): Candidate {
+  return {
+    id: encodePick({ artist: s.artist, song: s.song }),
+    title: s.title,
+    artist: s.artistName,
+  };
+}
+
 // Reúne algumas versões da música a partir do nome e/ou de um trecho da letra.
 // Combina a página do artista (quando há "Artista - Música") com os resultados
 // do DuckDuckGo. Devolve candidatos distintos, sem fazer download de cada cifra
 // (a cifra só é baixada quando o usuário escolhe uma versão).
 async function gatherCandidates(opts: { query?: string; lyrics?: string }): Promise<Candidate[]> {
+  const out: Candidate[] = [];
+  const seenId = new Set<string>();
+  const pushCand = (c: Candidate) => {
+    if (!seenId.has(c.id)) {
+      seenId.add(c.id);
+      out.push(c);
+    }
+  };
+
+  // 0) Fonte primária: o índice de busca do próprio CifraClub (Solr). Estável e
+  //    sem CAPTCHA. Funciona tanto pelo nome quanto por um trecho da letra (quando
+  //    o trecho contém o título). Para a letra tentamos prefixos cada vez menores.
+  const solrQueries: string[] = [];
+  if (opts.query) solrQueries.push(opts.query);
+  if (opts.lyrics) {
+    // Prefixos curtos primeiro: o trecho cantado costuma começar pelo título/refrão,
+    // e trechos curtos casam o título com mais precisão (trechos longos viram ruído).
+    for (const n of [3, 4, 6]) {
+      const snip = lyricsSnippet(opts.lyrics, n);
+      if (snip) solrQueries.push(snip);
+    }
+  }
+  for (const q of solrQueries) {
+    if (out.length >= 5) break;
+    for (const s of await solrSearch(q, 8)) {
+      pushCand(solrToCandidate(s));
+      if (out.length >= 5) break;
+    }
+  }
+  if (out.length >= 5) return out.slice(0, 5);
+
+  // 1) Reforço (melhor esforço): raspagem do CifraClub via página do artista e
+  //    DuckDuckGo, caso o Solr não tenha trazido versões suficientes.
   const hits: CifraHit[] = [];
   const seen = new Set<string>();
   const add = (h: CifraHit) => {
@@ -312,7 +401,7 @@ async function gatherCandidates(opts: { query?: string; lyrics?: string }): Prom
     }
   };
 
-  // 1) Quando há "Artista - Música", lista músicas próximas na página do artista.
+  // 1a) Quando há "Artista - Música", lista músicas próximas na página do artista.
   if (opts.query) {
     const { a, b } = splitQuery(opts.query);
     if (a && b) {
@@ -355,7 +444,11 @@ async function gatherCandidates(opts: { query?: string; lyrics?: string }): Prom
     for (const h of ddgHits(ddg.text, 8)) add(h);
   }
 
-  return hits.slice(0, 5).map(hitToCandidate);
+  for (const h of hits) {
+    pushCand(hitToCandidate(h));
+    if (out.length >= 5) break;
+  }
+  return out.slice(0, 5);
 }
 
 // Separa "Artista - Música" (vários tipos de traço).
@@ -370,14 +463,14 @@ function splitQuery(q: string): { a?: string; b?: string } {
 // Extrai um trecho distintivo da letra (transcrita do áudio/canto) para buscar
 // a música. Remove marcações de seção e excesso de espaços, e pega as primeiras
 // palavras — o bastante para um buscador identificar a música sem ruído.
-function lyricsSnippet(lyrics: string): string {
+function lyricsSnippet(lyrics: string, words = 10): string {
   const clean = lyrics
     .replace(/\[[^\]]*\]/g, " ") // tira [Intro], [Refrão] etc.
     .replace(/[“”"]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  const words = clean.split(" ").filter(Boolean);
-  return words.slice(0, 10).join(" ");
+  const toks = clean.split(" ").filter(Boolean);
+  return toks.slice(0, words).join(" ");
 }
 
 // Identifica a música a partir de um trecho da LETRA (não do nome). Pesquisa no
@@ -385,6 +478,22 @@ function lyricsSnippet(lyrics: string): string {
 async function resolveCifraByLyrics(lyrics: string): Promise<Parsed | null> {
   const snippet = lyricsSnippet(lyrics);
   if (!snippet) return null;
+
+  // 1) Índice do CifraClub (Solr), por prefixos cada vez menores da letra.
+  //    Só resolve direto quando há um único resultado claro; com várias versões
+  //    devolvemos null para o usuário escolher entre os candidatos.
+  for (const n of [3, 4, 6]) {
+    const snip = lyricsSnippet(lyrics, n);
+    if (!snip) continue;
+    const songs = await solrSearch(snip, 8);
+    if (songs.length === 1) {
+      const got = await fetchPrint(songs[0].artist, songs[0].song);
+      if (got) return got;
+    }
+    if (songs.length > 1) return null;
+  }
+
+  // 2) DuckDuckGo (reserva, melhor esforço — costuma estar bloqueado por CAPTCHA).
   const queries = [
     `site:cifraclub.com.br "${snippet}"`,
     `site:cifraclub.com.br ${snippet}`,
@@ -440,7 +549,16 @@ async function resolveCifra(query: string): Promise<Parsed | null> {
     }
   }
 
-  // 3) DuckDuckGo (reserva, melhor esforço).
+  // 3) Índice do CifraClub (Solr): resolve direto só quando há um único resultado
+  //    claro. Com várias versões devolvemos null para o usuário escolher.
+  const solrSongs = await solrSearch(query, 8);
+  if (solrSongs.length === 1) {
+    const got = await fetchPrint(solrSongs[0].artist, solrSongs[0].song);
+    if (got) return got;
+  }
+  if (solrSongs.length > 1) return null;
+
+  // 4) DuckDuckGo (reserva, melhor esforço — costuma estar bloqueado por CAPTCHA).
   const ddg = await fetchText(
     `https://html.duckduckgo.com/html/?q=${encodeURIComponent("site:cifraclub.com.br " + query)}`,
     18000,

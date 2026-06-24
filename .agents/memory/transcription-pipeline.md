@@ -11,8 +11,21 @@ LETRA → puxar a cifra pronta do CifraClub**. Não existe mais colar letra manu
 e os acordes detectados do áudio NÃO são usados para montar a cifra. Resta apenas
 uma rede de segurança "ajustar o nome da música" (busca por nome via `fetchCifra`).
 No upload, a análise local de tom/BPM continua e roda antes do pipeline de letra.
-Identificação por letra: `POST /api/cifra` aceita `{lyrics}` (snippet → DuckDuckGo
-`site:cifraclub.com.br` → primeiro hit → fetchPrint) além de `{query}`.
+Identificação: `POST /api/cifra` aceita `{lyrics}`, `{query}` e `{pick}`.
+
+**Fonte de busca (decisão durável):** o índice Solr do próprio CifraClub
+(`https://solr.sscdn.co/cc/h2/?q=...`, JSONP — tirar o `(...)`) é a fonte PRIMÁRIA
+e confiável. Cada doc traz slug do artista (`d`), slug da música (`u`), título
+real (`m`), nome do artista (`a`). DuckDuckGo (`site:cifraclub.com.br`) virou só
+reserva — ele responde 202 "anomaly"/CAPTCHA de forma praticamente permanente, e
+era a causa de "nenhuma versão" aparecer. **Why:** o scraping de buscadores
+genéricos é bloqueado; o Solr do CifraClub não é. Letra usa prefixos CURTOS
+(3,4,6 palavras) — o trecho cantado costuma começar pelo título/refrão e trechos
+longos viram ruído no índice (que indexa título/artista, não a letra inteira).
+Resolve direto só com 1 resultado claro; com vários, devolve candidatos
+`{id,title,artist}` (id = base64url "artist/song") para o usuário escolher.
+Limite: se o título NÃO aparece no trecho cantado, o Solr não acha (não é
+full-text de letra) — cai no ajuste manual do nome.
 
 # Pipeline de transcrição de letra (Audio Lab)
 
