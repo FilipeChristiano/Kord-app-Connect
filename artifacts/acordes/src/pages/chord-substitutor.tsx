@@ -39,32 +39,65 @@ const EXAMPLES = [
   { label: "Adoração em Ab", text: "Ab  Db  Eb  Ab\nFm  Db  Eb  Ab" },
 ];
 
-function RenderedLine({ line, onChordClick }: { line: ProcessedLine; onChordClick: (id: string) => void }) {
+const SECTION_RE = /^\[[^\]]+\]$/;
+
+// Reconstrói o texto puro da linha (acorde sofisticado + espaços/letra) para
+// classificar seções e linhas vazias sem perder o alinhamento monoespaçado.
+function lineToText(line: ProcessedLine): string {
+  return line.tokens
+    .map((t) =>
+      t.type === "chord" ? t.substitution?.substituted ?? t.value ?? "" : t.value ?? "",
+    )
+    .join("");
+}
+
+function RenderedLine({
+  line,
+  onChordClick,
+}: {
+  line: ProcessedLine;
+  onChordClick: (id: string) => void;
+}) {
+  const text = lineToText(line);
+  const trimmed = text.trim();
+
+  // Linha em branco → respiro entre as partes.
+  if (!trimmed) return <div className="h-4" aria-hidden />;
+
+  // Cabeçalho de seção ([Intro], [Refrão]…) → etiqueta destacada.
+  if (SECTION_RE.test(trimmed)) {
+    return (
+      <div className="mt-6 mb-1 first:mt-0">
+        <span className="inline-block font-sans text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1">
+          {trimmed.replace(/^\[|\]$/g, "")}
+        </span>
+      </div>
+    );
+  }
+
+  // Linha de acordes/letra: preserva o alinhamento (whitespace-pre, sem quebra)
+  // com bastante respiro vertical. Os acordes não usam caixa com padding (que
+  // alargaria o token e quebraria a grade) — só cor/realce.
   return (
-    <span className="block whitespace-pre-wrap font-mono text-sm leading-loose">
+    <div className="whitespace-pre leading-[2.05]">
       {line.tokens.map((token, i) => {
         if (token.type === "chord" && token.substitution) {
           const sub = token.substitution;
+          const changed = sub.original !== sub.substituted;
           return (
             <span
               key={i}
-              className={`inline-flex items-center gap-1 group relative cursor-pointer ${
-                sub.original !== sub.substituted
-                  ? "text-primary font-bold"
-                  : "text-white/70"
-              }`}
               onClick={() => sub.chordId && onChordClick(sub.chordId)}
-              title={
-                sub.original !== sub.substituted
-                  ? `${sub.original} → ${sub.substituted}`
-                  : sub.original
-              }
+              title={changed ? `${sub.original} → ${sub.substituted}` : sub.original}
+              className={`group relative cursor-pointer font-bold ${
+                changed
+                  ? "text-primary bg-primary/15 rounded-[3px]"
+                  : "text-amber-200/80 hover:text-amber-200"
+              }`}
             >
-              <span className="bg-primary/15 border border-primary/30 rounded px-1.5 py-0.5 hover:bg-primary/25 transition-colors">
-                {sub.substituted}
-              </span>
-              {sub.original !== sub.substituted && (
-                <span className="absolute -top-6 left-0 text-[10px] text-white/40 whitespace-nowrap hidden group-hover:block bg-black/80 rounded px-1.5 py-0.5 pointer-events-none z-10">
+              {sub.substituted}
+              {changed && (
+                <span className="absolute -top-5 left-0 text-[10px] text-white/60 whitespace-nowrap hidden group-hover:block bg-black/85 rounded px-1.5 py-0.5 pointer-events-none z-10">
                   era: {sub.original}
                 </span>
               )}
@@ -72,12 +105,12 @@ function RenderedLine({ line, onChordClick }: { line: ProcessedLine; onChordClic
           );
         }
         return (
-          <span key={i} className="text-white/40">
+          <span key={i} className="text-white/85">
             {token.value}
           </span>
         );
       })}
-    </span>
+    </div>
   );
 }
 
@@ -190,7 +223,7 @@ export default function ChordSubstitutor() {
   const levelAtual = LEVELS.find((l) => l.key === level);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
@@ -332,7 +365,7 @@ export default function ChordSubstitutor() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[280px] bg-primary/5 border border-primary/20 rounded-xl px-5 py-4 overflow-auto">
+          <div className="flex-1 min-h-[280px] bg-primary/5 border border-primary/20 rounded-2xl px-5 py-5 sm:px-6 overflow-auto">
             {processed.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center text-muted-foreground/40">
@@ -341,7 +374,7 @@ export default function ChordSubstitutor() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-0">
+              <div className="font-mono text-sm w-max min-w-full notranslate" translate="no">
                 {processed.map((line, i) => (
                   <RenderedLine key={i} line={line} onChordClick={handleChordClick} />
                 ))}
