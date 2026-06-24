@@ -20,6 +20,10 @@ import {
   Search,
   Sparkles,
   ChevronRight,
+  Youtube,
+  Headphones,
+  Download,
+  Music,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -38,6 +42,13 @@ import {
   type FetchedCifra,
   type CifraCandidate,
 } from "@/lib/cifra-remote";
+import {
+  fileToAudioBuffer,
+  makeInstrumental,
+  emphasizeVocals,
+  encodeWav,
+  MonoSourceError,
+} from "@/lib/audio-stems";
 import { cn } from "@/lib/utils";
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
@@ -257,6 +268,15 @@ export default function AudioLab() {
   const [editingChart, setEditingChart] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Estúdio de áudio (separação voz/instrumental no navegador)
+  const [stemKind, setStemKind] = useState<"instrumental" | "vocals" | null>(null);
+  const [stemBusy, setStemBusy] = useState(false);
+  const [stemProgress, setStemProgress] = useState(0);
+  const [stemUrl, setStemUrl] = useState<string | null>(null);
+  const [stemError, setStemError] = useState("");
+  const stemUrlRef = useRef<string | null>(null);
+  const stemRunIdRef = useRef(0);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioFileRef = useRef<File | null>(null);
   const runIdRef = useRef(0); // análise local
@@ -283,9 +303,28 @@ export default function AudioLab() {
     return () => {
       runIdRef.current++;
       pipelineRunIdRef.current++;
+      stemRunIdRef.current++;
+      if (stemUrlRef.current) {
+        URL.revokeObjectURL(stemUrlRef.current);
+        stemUrlRef.current = null;
+      }
       stopStream();
     };
   }, [stopStream]);
+
+  // Limpa qualquer resultado do estúdio de áudio (ao recomeçar/enviar outro áudio).
+  const clearStems = useCallback(() => {
+    stemRunIdRef.current++;
+    if (stemUrlRef.current) {
+      URL.revokeObjectURL(stemUrlRef.current);
+      stemUrlRef.current = null;
+    }
+    setStemKind(null);
+    setStemBusy(false);
+    setStemProgress(0);
+    setStemUrl(null);
+    setStemError("");
+  }, []);
 
   const reset = useCallback(() => {
     runIdRef.current++;
@@ -308,9 +347,51 @@ export default function AudioLab() {
     setChartReady(false);
     setEditingChart(false);
     setCopied(false);
+    clearStems();
     audioFileRef.current = null;
     setStep("lendo");
-  }, [stopStream]);
+  }, [stopStream, clearStems]);
+
+  // Gera a versão sem voz / com voz em destaque DO ÁUDIO ENVIADO, no navegador.
+  const generateStem = useCallback(async (kind: "instrumental" | "vocals") => {
+    const file = audioFileRef.current;
+    if (!file || stemBusy) return;
+    const runId = ++stemRunIdRef.current;
+    setStemBusy(true);
+    setStemKind(kind);
+    setStemError("");
+    setStemProgress(0);
+    if (stemUrlRef.current) {
+      URL.revokeObjectURL(stemUrlRef.current);
+      stemUrlRef.current = null;
+      setStemUrl(null);
+    }
+    try {
+      const buffer = await fileToAudioBuffer(file);
+      const stem =
+        kind === "instrumental"
+          ? makeInstrumental(buffer)
+          : await emphasizeVocals(buffer, (p) => {
+              if (stemRunIdRef.current === runId) setStemProgress(p);
+            });
+      // Outro run começou (reset/novo áudio/desmontagem): descarta este resultado.
+      if (stemRunIdRef.current !== runId) return;
+      const blob = encodeWav(stem);
+      const url = URL.createObjectURL(blob);
+      stemUrlRef.current = url;
+      setStemUrl(url);
+    } catch (err) {
+      if (stemRunIdRef.current !== runId) return;
+      setStemUrl(null);
+      setStemError(
+        err instanceof MonoSourceError
+          ? "Esse áudio é mono (um canal só), então não dá para separar a voz. Envie a faixa estéreo original da música."
+          : "Não consegui processar esse áudio agora. Tente enviar a música em MP3 ou WAV.",
+      );
+    } finally {
+      if (stemRunIdRef.current === runId) setStemBusy(false);
+    }
+  }, [stemBusy]);
 
   // ── Pipeline: transcreve a letra do áudio/canto → identifica a música →
   //    busca a cifra pronta na internet. Nunca inventa letra nem acordes.
@@ -402,6 +483,7 @@ export default function AudioLab() {
       const runId = ++runIdRef.current;
       busyRef.current = true;
       audioFileRef.current = file;
+      clearStems();
       setInputMode("upload");
       setFileName(file.name);
       setError("");
@@ -472,7 +554,7 @@ export default function AudioLab() {
         if (runId === runIdRef.current) busyRef.current = false;
       }
     },
-    [identifyFromAudio],
+    [identifyFromAudio, clearStems],
   );
 
   const onDrop = useCallback(
@@ -928,6 +1010,37 @@ export default function AudioLab() {
                   <p className="flex items-center gap-1.5 text-[12px] text-emerald-300 mt-2">
                     <Check className="w-3.5 h-3.5 shrink-0" /> Cifra encontrada — veja abaixo.
                   </p>
+
+                  {/* Áudio da música para ouvir enquanto toca */}
+                  {(cifraMeta.youtubeId || cifraMeta.youtubeUrl) && (
+                    <div className="mt-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Youtube className="w-4 h-4 text-primary" />
+                        <p className="text-sm font-semibold text-white/90">Ouça a música</p>
+                      </div>
+                      {cifraMeta.youtubeId ? (
+                        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black aspect-video">
+                          <iframe
+                            key={cifraMeta.youtubeId}
+                            src={`https://www.youtube-nocookie.com/embed/${cifraMeta.youtubeId}`}
+                            title={`${cifraMeta.title} — ${cifraMeta.artist}`}
+                            className="w-full h-full"
+                            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      ) : (
+                        <a
+                          href={cifraMeta.youtubeUrl ?? undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
+                        >
+                          <Youtube className="w-4 h-4" /> Ouvir no YouTube
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1078,6 +1191,106 @@ export default function AudioLab() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* ── Estúdio de áudio: sem voz / voz em destaque ───────────────── */}
+            {inputMode === "upload" && result && (
+              <div className="glass-card rounded-3xl border border-white/10 p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Headphones className="w-4 h-4 text-primary" />
+                  <h3 className="font-display font-bold text-white text-base">Estúdio de áudio</h3>
+                </div>
+                <p className="text-[12px] text-muted-foreground/70 mb-4">
+                  Gere uma versão da música <strong className="text-white/80">sem a voz</strong>{" "}
+                  (para cantar/tocar por cima) ou com a{" "}
+                  <strong className="text-white/80">voz em destaque</strong>. É um efeito feito no
+                  seu navegador — funciona melhor em gravações de estúdio em estéreo e não fica
+                  perfeito como uma separação profissional.
+                </p>
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => generateStem("instrumental")}
+                    disabled={stemBusy}
+                    className={cn(
+                      "flex items-center gap-3 text-left rounded-2xl border px-4 py-3 transition-all",
+                      stemBusy
+                        ? "border-white/5 bg-white/[0.02] opacity-60 cursor-not-allowed"
+                        : "border-white/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
+                    )}
+                  >
+                    <Music className="w-5 h-5 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-white text-sm">Sem voz (instrumental)</p>
+                      <p className="text-[12px] text-white/50">Modo karaokê</p>
+                    </div>
+                    {stemBusy && stemKind === "instrumental" && (
+                      <Loader2 className="w-4 h-4 ml-auto shrink-0 animate-spin text-primary" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => generateStem("vocals")}
+                    disabled={stemBusy}
+                    className={cn(
+                      "flex items-center gap-3 text-left rounded-2xl border px-4 py-3 transition-all",
+                      stemBusy
+                        ? "border-white/5 bg-white/[0.02] opacity-60 cursor-not-allowed"
+                        : "border-white/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
+                    )}
+                  >
+                    <Mic className="w-5 h-5 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-white text-sm">Voz em destaque</p>
+                      <p className="text-[12px] text-white/50">Realça o vocal</p>
+                    </div>
+                    {stemBusy && stemKind === "vocals" && (
+                      <Loader2 className="w-4 h-4 ml-auto shrink-0 animate-spin text-primary" />
+                    )}
+                  </button>
+                </div>
+
+                {stemBusy && stemKind === "vocals" && (
+                  <div className="mt-4">
+                    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${Math.round(stemProgress * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-[12px] text-white/50 mt-2">
+                      Processando o áudio… {Math.round(stemProgress * 100)}%
+                    </p>
+                  </div>
+                )}
+
+                {stemError && (
+                  <div className="mt-4 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{stemError}</span>
+                  </div>
+                )}
+
+                {stemUrl && !stemBusy && (
+                  <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                    <p className="text-sm font-semibold text-white/90 mb-3">
+                      {stemKind === "instrumental"
+                        ? "Versão sem voz pronta"
+                        : "Voz em destaque pronta"}
+                    </p>
+                    <audio src={stemUrl} controls className="w-full" />
+                    <a
+                      href={stemUrl}
+                      download={`harmonic-${
+                        stemKind === "instrumental" ? "instrumental" : "voz"
+                      }.wav`}
+                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                    >
+                      <Download className="w-4 h-4" /> Baixar (WAV)
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

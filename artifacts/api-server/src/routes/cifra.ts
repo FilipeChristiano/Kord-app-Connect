@@ -838,6 +838,35 @@ async function resolveCifra(query: string): Promise<Parsed | null> {
   return null;
 }
 
+// ─── Áudio da música (YouTube) ───────────────────────────────────────────────
+// Quando a música é identificada, oferecemos o ÁUDIO para o usuário ouvir. Não
+// baixamos nem hospedamos nada: resolvemos o vídeo público do YouTube a partir do
+// título+artista (1ª ocorrência da busca) e devolvemos o id para um player embed,
+// com a própria URL de busca como reserva. Best-effort: se falhar, manda só a
+// busca — nunca quebra a resposta da cifra.
+const ytCache = new Map<string, { id: string | null; url: string }>();
+async function youtubeFor(
+  title: string,
+  artist: string,
+): Promise<{ youtubeId: string | null; youtubeUrl: string | null }> {
+  const q = [artist, title].map((s) => s.trim()).filter(Boolean).join(" ");
+  if (!q) return { youtubeId: null, youtubeUrl: null };
+  const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  const cached = ytCache.get(q);
+  if (cached) return { youtubeId: cached.id, youtubeUrl: cached.url };
+  let id: string | null = null;
+  try {
+    const r = await fetchText(searchUrl, 7000);
+    if (r.ok) id = r.text.match(/"videoId":"([\w-]{11})"/)?.[1] ?? null;
+  } catch {
+    id = null;
+  }
+  const url = id ? `https://www.youtube.com/watch?v=${id}` : searchUrl;
+  if (ytCache.size > 500) ytCache.clear();
+  ytCache.set(q, { id, url });
+  return { youtubeId: id, youtubeUrl: url };
+}
+
 router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res: Response) => {
   // No preview de desenvolvimento o app roda dentro de um iframe e os cookies de
   // login do Clerk são bloqueados por serem de "terceiros" — então getAuth() não
@@ -872,6 +901,11 @@ router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res:
     key: p.key,
     body: p.body,
   });
+  // Anexa o áudio (YouTube) à cifra encontrada. Best-effort: não atrapalha a cifra.
+  const sendFound = async (p: Parsed) => {
+    const yt = await youtubeFor(p.title, p.artist);
+    return res.status(200).json({ ...toClient(p), ...yt });
+  };
 
   try {
     // O usuário escolheu uma das versões sugeridas → baixa a cifra dessa versão.
@@ -879,7 +913,7 @@ router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res:
       const hit = decodePick(pick);
       const got = hit ? await fetchPrint(hit.artist, hit.song) : null;
       if (!got) return res.status(200).json({ found: false, candidates: [] });
-      return res.status(200).json(toClient(got));
+      return await sendFound(got);
     }
 
     // Quando vem a LETRA (transcrita do áudio/canto), identificamos pela letra.
@@ -897,7 +931,7 @@ router.post("/cifra", express.json({ limit: "16kb" }), async (req: Request, res:
       );
       return res.status(200).json({ found: false, candidates });
     }
-    return res.status(200).json(toClient(parsed));
+    return await sendFound(parsed);
   } catch (err) {
     console.error("[/api/cifra] error:", err instanceof Error ? err.message : err);
     return res

@@ -18,6 +18,10 @@ export interface FetchedCifra {
   artist: string;
   key: string | null;
   body: string;
+  // Áudio da música para ouvir (vídeo público do YouTube). `youtubeId` alimenta o
+  // player embed; `youtubeUrl` é o link de reserva (busca quando não há id).
+  youtubeId: string | null;
+  youtubeUrl: string | null;
 }
 
 // Uma versão sugerida da música. `id` é um token opaco — o app nunca expõe a
@@ -82,6 +86,10 @@ async function postCifra(payload: {
         artist: data.artist ?? "",
         key: data.key ?? null,
         body: data.body,
+        youtubeId:
+          typeof data.youtubeId === "string" && data.youtubeId ? data.youtubeId : null,
+        youtubeUrl:
+          typeof data.youtubeUrl === "string" && data.youtubeUrl ? data.youtubeUrl : null,
       },
     };
   } catch {
