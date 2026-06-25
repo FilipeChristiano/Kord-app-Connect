@@ -1751,135 +1751,6 @@ export default function AudioLab() {
               )}
             </div>
 
-            {/* ── Cifra exibida ────────────────────────────────────────────── */}
-            <AnimatePresence>
-              {chartReady && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="glass-card rounded-3xl border border-white/10 p-6"
-                >
-                  <p className="text-[12px] text-muted-foreground/70 mb-4">
-                    Você pode ajustar o que quiser antes de usar.
-                  </p>
-
-                  {/* ── Mudar o tom ──────────────────────────────────────── */}
-                  {!editingChart && (
-                    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-secondary/30 px-3 py-2.5">
-                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/80 mr-1">
-                        <Music2 className="w-4 h-4 text-primary" /> Mudar o tom
-                      </span>
-                      <button
-                        onClick={() => stepSemitone(-1)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
-                        title="Descer meio tom"
-                      >
-                        <Minus className="w-3.5 h-3.5" /> Descer ½ tom
-                      </button>
-                      <button
-                        onClick={() => stepSemitone(1)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
-                        title="Subir meio tom"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Subir ½ tom
-                      </button>
-
-                      {currentKeyName ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
-                          {currentKeyName}
-                          {transpose !== 0 && (
-                            <span className="text-primary/60">
-                              ({transpose > 0 ? "+" : ""}
-                              {transpose})
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm font-medium text-white/50">
-                          Tom não detectado
-                          {transpose !== 0 && (
-                            <span>
-                              ({transpose > 0 ? "+" : ""}
-                              {transpose})
-                            </span>
-                          )}
-                        </span>
-                      )}
-
-                      {keySelectOptions.length > 0 && currentKeyPc !== null && (
-                        <label className="inline-flex items-center gap-1.5 text-sm text-white/60">
-                          <span className="hidden sm:inline">Tom específico:</span>
-                          <select
-                            value={currentKeyPc}
-                            onChange={(e) => selectKeyPc(Number(e.target.value))}
-                            className="bg-secondary/60 border border-white/10 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                          >
-                            {keySelectOptions.map((o) => (
-                              <option key={o.pc} value={o.pc}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      )}
-
-                      {transpose !== 0 && (
-                        <button
-                          onClick={() => setTranspose(0)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all"
-                          title="Voltar ao tom original"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" /> Original
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {editingChart ? (
-                    <textarea
-                      value={chart}
-                      onChange={(e) => {
-                        chartClaimRef.current++; // edição do usuário tem prioridade
-                        setChart(e.target.value);
-                      }}
-                      spellCheck={false}
-                      className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
-                    />
-                  ) : (
-                    <ChordSheet text={displayChart} />
-                  )}
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      onClick={toggleEditChart}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      {editingChart ? "Concluir edição" : "Editar"}
-                    </button>
-                    <button
-                      onClick={copyChart}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
-                    >
-                      {copied ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                      {copied ? "Copiado!" : "Copiar cifra"}
-                    </button>
-                    <button
-                      onClick={sendChartToSofisticador}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                    >
-                      <Wand2 className="w-3.5 h-3.5" /> Sofisticar cifra
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* ── Estúdio de áudio: sem voz / voz em destaque ───────────────── */}
             {(inputMode === "upload" || inputMode === "search") && (
               <div className="glass-card rounded-3xl border border-white/10 p-6">
@@ -2136,6 +2007,135 @@ export default function AudioLab() {
                 )}
               </div>
             )}
+
+            {/* ── Cifra exibida ────────────────────────────────────────────── */}
+            <AnimatePresence>
+              {chartReady && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="glass-card rounded-3xl border border-white/10 p-6"
+                >
+                  <p className="text-[12px] text-muted-foreground/70 mb-4">
+                    Você pode ajustar o que quiser antes de usar.
+                  </p>
+
+                  {/* ── Mudar o tom ──────────────────────────────────────── */}
+                  {!editingChart && (
+                    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-secondary/30 px-3 py-2.5">
+                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/80 mr-1">
+                        <Music2 className="w-4 h-4 text-primary" /> Mudar o tom
+                      </span>
+                      <button
+                        onClick={() => stepSemitone(-1)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
+                        title="Descer meio tom"
+                      >
+                        <Minus className="w-3.5 h-3.5" /> Descer ½ tom
+                      </button>
+                      <button
+                        onClick={() => stepSemitone(1)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
+                        title="Subir meio tom"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Subir ½ tom
+                      </button>
+
+                      {currentKeyName ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+                          {currentKeyName}
+                          {transpose !== 0 && (
+                            <span className="text-primary/60">
+                              ({transpose > 0 ? "+" : ""}
+                              {transpose})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm font-medium text-white/50">
+                          Tom não detectado
+                          {transpose !== 0 && (
+                            <span>
+                              ({transpose > 0 ? "+" : ""}
+                              {transpose})
+                            </span>
+                          )}
+                        </span>
+                      )}
+
+                      {keySelectOptions.length > 0 && currentKeyPc !== null && (
+                        <label className="inline-flex items-center gap-1.5 text-sm text-white/60">
+                          <span className="hidden sm:inline">Tom específico:</span>
+                          <select
+                            value={currentKeyPc}
+                            onChange={(e) => selectKeyPc(Number(e.target.value))}
+                            className="bg-secondary/60 border border-white/10 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            {keySelectOptions.map((o) => (
+                              <option key={o.pc} value={o.pc}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+
+                      {transpose !== 0 && (
+                        <button
+                          onClick={() => setTranspose(0)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                          title="Voltar ao tom original"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" /> Original
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {editingChart ? (
+                    <textarea
+                      value={chart}
+                      onChange={(e) => {
+                        chartClaimRef.current++; // edição do usuário tem prioridade
+                        setChart(e.target.value);
+                      }}
+                      spellCheck={false}
+                      className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
+                    />
+                  ) : (
+                    <ChordSheet text={displayChart} />
+                  )}
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={toggleEditChart}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      {editingChart ? "Concluir edição" : "Editar"}
+                    </button>
+                    <button
+                      onClick={copyChart}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                    >
+                      {copied ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      {copied ? "Copiado!" : "Copiar cifra"}
+                    </button>
+                    <button
+                      onClick={sendChartToSofisticador}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                    >
+                      <Wand2 className="w-3.5 h-3.5" /> Sofisticar cifra
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
