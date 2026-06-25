@@ -97,6 +97,27 @@ removes accumulated drift entirely because each click is independently placed.
   server beats cache key MUST include the hint (or changing the BPM option serves
   a stale, possibly half/double-time map for that song key).
 
+## Rule: beat-map "contratempo" = double-time lock; fix the octave inside detect_beats, don't trust the BPM hint
+User reported the click on the offbeat ("contratempo"). Cause: server beat tracking
+locked onto DOUBLE the felt tempo (e.g. 143 BPM on a ~72 BPM ballad) — so every
+other detected beat is an offbeat. The app's own BPM hint is unreliable here: both
+`chord_analyze` (`librosa.beat.tempo`) and the client `bpm-detector` keep the doubled
+value inside their [70,150] window, and passing it as `start_bpm` forces librosa into
+the wrong octave.
+
+**Why:** `start_bpm` strongly biases the DP tracker's octave; a doubled hint → doubled grid.
+
+**How to apply (both layers live in `detect_beats.py`):**
+- Fold the hint into the felt range before using it as `start_bpm` (e.g. 143→~71.5);
+  default to a neutral ~100 when there's no hint (avoid librosa's 120 double-bias).
+- Safety net: real beats have much stronger onset strength than the in-between ones.
+  If the result is still double-time (fast tempo + strong/weak sub-phase asymmetry),
+  halve by KEEPING the stronger sub-phase (the real beats) — never the offbeat.
+- Validate octave changes against onset strength at beat times, not by range alone
+  (143 BPM is "in range" yet wrong) — the half-fold sub-phase test picks the true phase.
+- `.py` script edits need no api-server restart (spawned fresh per request), but DELETE
+  cached `beats*.json` under `/tmp/harmonic-stems/<key>/` so maps recompute.
+
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
 every beat is `playClick(..., "weak")` — no strong downbeat. The standalone
