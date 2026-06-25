@@ -20,6 +20,15 @@ in-browser DSP separation. Per-song the user picks fast vs máxima.
   short 30s clip suggests. Keep the job timeout generous (12 min) and the UI copy
   honest ("pode levar alguns minutos"). First run also pays model-weight download.
 
+## CPU-only torch (deploy size)
+- The env has NO GPU. Pin torch + torchaudio to the CPU index
+  (`https://download.pytorch.org/whl/cpu`) or the lock pulls the full nvidia/CUDA
+  chain (~several GB, 60+ lock refs) that just bloats the deploy.
+- **uv gotcha:** `[tool.uv.sources]` is only honored for *direct* project
+  dependencies. torch/torchaudio come in transitively via demucs, so the CPU pin
+  is ignored until you also list `torch` + `torchaudio` in `[project].dependencies`.
+  Then `uv lock` resolves them as `X.Y.Z+cpu` and drops every nvidia package.
+
 ## Resource hygiene (must keep)
 - Uploaded source files (`<key>.src`) MUST be deleted after the job (success or
   failure) — pass a cleanupSource flag through the job runner's `finally`.

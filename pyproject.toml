@@ -9,5 +9,18 @@ dependencies = [
     "numpy>=2.4.6",
     "scipy>=1.17.1",
     "soundfile>=0.14.0",
+    "torch>=2.0",
+    "torchaudio>=2.0",
     "yt-dlp>=2026.6.9",
 ]
+
+# Ambiente é CPU-only (sem GPU). Forçamos a build de CPU do torch/torchaudio
+# para não puxar toda a cadeia CUDA da NVIDIA (vários GB) no deploy.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchaudio = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
