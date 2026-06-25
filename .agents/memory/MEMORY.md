@@ -4,3 +4,4 @@
 - [api-server dev no watch](api-server-dev-no-watch.md) — api-server runs tsx without --watch; restart the workflow after route changes or new routes 404 / show generic client errors.
 - [librosa/numba JIT cache](librosa-numba-cache.md) — first librosa run ~2min JIT; set NUMBA_CACHE_DIR to a writable dir (Nix store is read-only) or every request recompiles.
 - [Transcription pipeline (acordes)](transcription-pipeline.md) — never invent lyrics; ElevenLabs Scribe (precise word times) → OpenAI fallback (estimated); always transcode to 16k mono first; whisper-1/TTS blocked on proxy.
+- [Audio separation DSP (acordes)](audio-separation-dsp.md) — center-extraction soft mask (panBalance×phaseAlign); instrumental keeps stereo (not L−R mono); live needs dry/wet crossfade since lp+hp≠dry.

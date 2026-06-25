@@ -46,7 +46,7 @@ import {
 } from "@/lib/cifra-remote";
 import {
   fileToAudioBuffer,
-  makeInstrumental,
+  makeInstrumentalViaWorker,
   emphasizeVocalsViaWorker,
   encodeWav,
   MonoSourceError,
@@ -593,7 +593,8 @@ export default function AudioLab() {
     setInstDownloadBusy(true);
     try {
       const buffer = await fileToAudioBuffer(file);
-      const blob = encodeWav(makeInstrumental(buffer));
+      const stem = await makeInstrumentalViaWorker(buffer).promise;
+      const blob = encodeWav(stem);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
