@@ -2199,6 +2199,15 @@ const METRO_MIN_BPM = 40;
 const METRO_MAX_BPM = 240;
 const METRO_DEFAULT_BPM = 90;
 
+// Calibração de sincronia do clique (compensação de latência), em segundos.
+// Padrão positivo: o áudio em streaming costuma soar um pouco atrás do clique do
+// Web Audio, então adiantamos a música atrasando levemente o clique para colá-lo.
+const METRO_SYNC_KEY = "harmonic.metroSync";
+const METRO_SYNC_DEFAULT = 0.08;
+const METRO_SYNC_MIN = -0.3;
+const METRO_SYNC_MAX = 0.4;
+const METRO_SYNC_STEP = 0.02;
+
 function StemMixer({
   vocalsUrl,
   instrumentalUrl,
@@ -2233,6 +2242,28 @@ function StemMixer({
   const [metroTs, setMetroTs] = useState<DetectedTimeSignature | null>(initialTimeSignature ?? null);
   const [metroVol, setMetroVol] = useState(0.5);
   const [bpmDetecting, setBpmDetecting] = useState(true);
+  // Calibração de sincronia (s): o áudio em streaming tem uma latência um pouco
+  // maior que o clique do Web Audio, então o clique soa levemente À FRENTE. Um
+  // valor positivo atrasa o clique para colá-lo na música. É por DISPOSITIVO
+  // (a latência varia entre aparelhos), por isso fica salvo no navegador.
+  const [metroSync, setMetroSync] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem(METRO_SYNC_KEY);
+      const n = raw === null ? NaN : Number.parseFloat(raw);
+      return Number.isFinite(n) ? Math.max(METRO_SYNC_MIN, Math.min(METRO_SYNC_MAX, n)) : METRO_SYNC_DEFAULT;
+    } catch {
+      return METRO_SYNC_DEFAULT;
+    }
+  });
+  const changeMetroSync = useCallback((next: number) => {
+    const clamped = Math.max(METRO_SYNC_MIN, Math.min(METRO_SYNC_MAX, Math.round(next * 1000) / 1000));
+    setMetroSync(clamped);
+    try {
+      localStorage.setItem(METRO_SYNC_KEY, String(clamped));
+    } catch {
+      /* armazenamento indisponível: mantém só em memória */
+    }
+  }, []);
 
   const beatsPerBar = metroTs === "3/4" ? 3 : 4;
   const metro = useSyncedMetronome({
@@ -2240,6 +2271,7 @@ function StemMixer({
     bpm: metroBpm,
     beatsPerBar,
     beatOffsetSec: metroOffset,
+    syncOffsetSec: metroSync,
     volume: metroVol,
   });
   // Mantém start/stop do metrônomo acessíveis dentro de efeitos/handlers estáveis.
@@ -2482,6 +2514,54 @@ function StemMixer({
             </span>
           </div>
         )}
+      </div>
+
+      {/* Ajuste fino do clique — calibração de sincronia (latência do aparelho).
+          O som tem um pequeno atraso que muda de aparelho p/ aparelho; um toque
+          aqui cola o clique 100% na música e fica salvo neste dispositivo. */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+        <div className="flex flex-col">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
+            <Gauge className="w-3.5 h-3.5 text-primary" /> Ajuste fino do clique
+          </span>
+          <span className="text-[11px] text-white/40 mt-0.5">
+            {metroSync === 0
+              ? "no tempo da música"
+              : metroSync > 0
+                ? `clique ${Math.round(metroSync * 1000)} ms mais tarde`
+                : `clique ${Math.round(-metroSync * 1000)} ms mais cedo`}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => changeMetroSync(metroSync - METRO_SYNC_STEP)}
+            disabled={metroSync <= METRO_SYNC_MIN}
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.06] text-white/80 hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Clique mais cedo"
+            title="Clique mais cedo"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => changeMetroSync(METRO_SYNC_DEFAULT)}
+            className="px-2 h-8 rounded-lg text-[11px] font-medium bg-white/[0.06] text-white/70 hover:bg-white/10 transition-all"
+            title="Voltar ao ajuste padrão"
+          >
+            Padrão
+          </button>
+          <button
+            type="button"
+            onClick={() => changeMetroSync(metroSync + METRO_SYNC_STEP)}
+            disabled={metroSync >= METRO_SYNC_MAX}
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.06] text-white/80 hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Clique mais tarde"
+            title="Clique mais tarde"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

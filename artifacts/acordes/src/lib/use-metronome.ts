@@ -233,6 +233,14 @@ export interface SyncedMetronomeConfig {
    * erro constante (a batida 1 quase nunca cai em t=0; há introdução antes).
    */
   beatOffsetSec: number;
+  /**
+   * Compensação de latência (s) entre o áudio em streaming (elemento <audio>) e
+   * o relógio do Web Audio que toca o clique. Os dois caminhos de saída têm
+   * latências um pouco diferentes, então o clique tende a soar levemente à
+   * FRENTE da música. Um valor POSITIVO atrasa o clique para colá-lo na música.
+   * É uma calibração por dispositivo (a latência varia entre aparelhos).
+   */
+  syncOffsetSec: number;
   /** Volume do clique (0..1). */
   volume: number;
 }
@@ -271,6 +279,12 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
   const nextBeatRef = useRef(0); // índice absoluto da próxima batida a agendar
   const secPerBeatRef = useRef(0);
   const beatOffsetRef = useRef(0); // fase corrente da grade (s)
+  const syncOffsetRef = useRef(0); // compensação de latência corrente (s)
+  // Após reancorar (mudança de BPM/fase/calibração ou seek), as batidas já
+  // agendadas na janela de lookahead continuam tocando (não dá p/ cancelá-las
+  // sem estalo). Seguramos o agendamento das NOVAS batidas até este instante do
+  // relógio para não sobrepor cliques (evita "duplo"/flam ao calibrar ao vivo).
+  const holdUntilRef = useRef(0);
 
   const cfgRef = useRef(config);
   useEffect(() => {
@@ -300,21 +314,43 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
     const master = masterGainRef.current;
     if (!ctx || !master) return;
 
-    const { getPosition, bpm, beatsPerBar, beatOffsetSec } = cfgRef.current;
+    const { getPosition, bpm, beatsPerBar, beatOffsetSec, syncOffsetSec } = cfgRef.current;
     if (!bpm || bpm <= 0) return;
 
     const secPerBeat = 60 / bpm;
     const offset = Number.isFinite(beatOffsetSec) ? beatOffsetSec : 0;
+    const syncOffset = Number.isFinite(syncOffsetSec) ? syncOffsetSec : 0;
     const beats = Math.max(1, beatsPerBar);
     const ctxNow = ctx.currentTime;
     const actualSong = getPosition();
 
-    // Se o tempo (BPM) ou a fase mudaram, a contagem perde o sentido: reancora.
-    if (secPerBeat !== secPerBeatRef.current || offset !== beatOffsetRef.current) {
+    // A música ainda não começou de fato (buffering pós-play): a posição fica
+    // colada em ~0 por alguns instantes. Se agendássemos agora, sairia um clique
+    // prematuro seguido de um vão até a música entrar ("primeiro clique + espaço").
+    // Mantemos a âncora colada no zero e só começamos a agendar quando a posição
+    // realmente avança — aí a contagem entra já alinhada.
+    if (actualSong <= 0.01) {
       secPerBeatRef.current = secPerBeat;
       beatOffsetRef.current = offset;
+      syncOffsetRef.current = syncOffset;
       anchorAt(actualSong, ctxNow, secPerBeat, offset);
       beatQueueRef.current = [];
+      return;
+    }
+
+    // Se o tempo (BPM), a fase ou a calibração mudaram, a contagem perde o
+    // sentido (ou as batidas já agendadas ficariam desalinhadas): reancora.
+    if (
+      secPerBeat !== secPerBeatRef.current ||
+      offset !== beatOffsetRef.current ||
+      syncOffset !== syncOffsetRef.current
+    ) {
+      secPerBeatRef.current = secPerBeat;
+      beatOffsetRef.current = offset;
+      syncOffsetRef.current = syncOffset;
+      anchorAt(actualSong, ctxNow, secPerBeat, offset);
+      beatQueueRef.current = [];
+      holdUntilRef.current = ctxNow + SYNCED_SCHEDULE_AHEAD;
     } else {
       // Posição prevista pela âncora vs. posição real da música.
       const predicted = anchorSongRef.current + (ctxNow - anchorCtxRef.current);
@@ -323,6 +359,7 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
         // Salto grande (seek/pausa-retomada): recontagem a partir da nova posição.
         anchorAt(actualSong, ctxNow, secPerBeat, offset);
         beatQueueRef.current = [];
+        holdUntilRef.current = ctxNow + SYNCED_SCHEDULE_AHEAD;
       } else if (Math.abs(diff) > DRIFT_CORRECTION) {
         // Desvio pequeno: recola o mapeamento à posição real, mantendo a contagem.
         anchorSongRef.current = actualSong;
@@ -339,9 +376,13 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
       if (guard++ > 512) break;
       const n = nextBeatRef.current;
       const songTime = offset + n * secPerBeat;
-      const ctxTime = anchorCtxRef.current + (songTime - anchorSongRef.current);
-      if (ctxTime < ctxNow - 0.005) {
-        // Batida já passou (atraso/seek à frente): pula sem tocar.
+      // `syncOffset` (positivo) atrasa o clique para compensar a latência do
+      // áudio em streaming e colá-lo exatamente na música.
+      const ctxTime = anchorCtxRef.current + (songTime - anchorSongRef.current) + syncOffset;
+      if (ctxTime < ctxNow - 0.005 || ctxTime < holdUntilRef.current) {
+        // Batida já passou (atraso/seek à frente) OU está dentro da janela
+        // "segurada" pós-reancoragem (já coberta pelos cliques antigos): pula
+        // sem tocar para não sobrepor.
         nextBeatRef.current = n + 1;
         continue;
       }
@@ -400,8 +441,10 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
     const bpm = cfgRef.current.bpm;
     const secPerBeat = bpm > 0 ? 60 / bpm : 0;
     const offset = Number.isFinite(cfgRef.current.beatOffsetSec) ? cfgRef.current.beatOffsetSec : 0;
+    const syncOffset = Number.isFinite(cfgRef.current.syncOffsetSec) ? cfgRef.current.syncOffsetSec : 0;
     secPerBeatRef.current = secPerBeat;
     beatOffsetRef.current = offset;
+    syncOffsetRef.current = syncOffset;
     beatQueueRef.current = [];
     if (secPerBeat > 0) anchorAt(cfgRef.current.getPosition(), ctx.currentTime, secPerBeat, offset);
 

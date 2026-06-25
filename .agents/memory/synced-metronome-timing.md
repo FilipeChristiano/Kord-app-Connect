@@ -50,6 +50,34 @@ END of the track. Returns `{bpm (float), bpmRounded, beatOffsetSec, timeSignatur
   display. `useSyncedMetronome` takes `beatOffsetSec` and re-anchors when phase
   OR bpm changes; `nextBeat = ceil((songPos − offset)/secPerBeat)`.
 
+## Rule: a constant "click slightly AHEAD of the music" is a latency mismatch, not a grid error — needs a per-device sync offset
+After anchor + phase + precise BPM, the user still heard the click a CONSTANT
+small distance ahead the whole song (not drifting). Cause: the instrumental
+streams through an `<audio>` (HTMLMediaElement) whose output path has more
+latency than the Web Audio click; anchoring `audio.currentTime ↔ ctx.currentTime`
+assumes both = "now", so the ctx-scheduled clicks land ahead of the heard music
+by `L_media − L_ctx`.
+
+**Why not route the music through the AudioContext (the "proper" fix):** the HQ
+stems are served by the **api-server (different origin)**. `createMediaElementSource`
+on a cross-origin element without CORS outputs **silence** — it would break HQ
+playback entirely. So the music must stay on the plain `<audio>` path.
+
+**Fix:** `syncOffsetSec` in `SyncedMetronomeConfig` — positive value delays the
+click (`ctxTime += syncOffset`). Exposed as a persisted (localStorage,
+`harmonic.metroSync`) "Ajuste fino do clique" −/+/Padrão control in StemMixer
+(default +0.08s; latency is device-specific so it can't be computed, only
+calibrated once per device). This is the standard play-along/karaoke calibration.
+
+**How to apply:**
+- Treat any re-anchor (BPM/phase/sync change OR seek) as needing a one-lookahead
+  **hold**: set `holdUntil = ctxNow + SYNCED_SCHEDULE_AHEAD` and skip scheduling
+  new beats before it. Already-scheduled oscillators in the 250ms window can't be
+  cancelled without a pop, so without the hold a live +/- press doubles/flams.
+- Startup blip ("first click then a gap"): while `getPosition() <= 0.01` (media
+  buffering pins currentTime at ~0 just after play()), keep re-anchoring and DON'T
+  schedule. Scheduling only begins once position truly advances → no premature click.
+
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
 every beat is `playClick(..., "weak")` — no strong downbeat. The standalone
