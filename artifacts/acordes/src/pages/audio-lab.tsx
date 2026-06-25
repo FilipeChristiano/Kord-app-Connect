@@ -99,8 +99,9 @@ function isAllowedFile(file: File): boolean {
 }
 
 function formatClock(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
+  const safe = Number.isFinite(totalSeconds) ? Math.max(0, totalSeconds) : 0;
+  const m = Math.floor(safe / 60);
+  const s = Math.floor(safe % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
@@ -290,11 +291,24 @@ export default function AudioLab() {
   const [vocalsUrl, setVocalsUrl] = useState<string | null>(null);
   const [vocalsError, setVocalsError] = useState("");
   const vocalsUrlRef = useRef<string | null>(null);
-  const stemRunIdRef = useRef(0);
+  const stemRunIdRef = useRef(0); // "voz em destaque" (legado)
+  const fastRunIdRef = useRef(0); // mesa de mistura rápida
+  const hqRunIdRef = useRef(0); // máxima qualidade (servidor)
   const vocalsCancelRef = useRef<(() => void) | null>(null);
 
   // ── Download do "sem voz" (gerado offline sob demanda) ─────────────────────
   const [instDownloadBusy, setInstDownloadBusy] = useState(false);
+
+  // ── Mesa de mistura RÁPIDA (gera voz + sem voz no navegador) ───────────────
+  const [fastMixBusy, setFastMixBusy] = useState(false);
+  const [fastMixFetching, setFastMixFetching] = useState(false);
+  const [fastMixProgress, setFastMixProgress] = useState(0);
+  const [fastMixUrls, setFastMixUrls] = useState<{ vocals: string; instrumental: string } | null>(
+    null,
+  );
+  const [fastMixError, setFastMixError] = useState("");
+  const fastVocalsUrlRef = useRef<string | null>(null);
+  const fastInstUrlRef = useRef<string | null>(null);
 
   // ── Máxima qualidade: separação completa no servidor (gera as duas faixas) ──
   const [studioQuality, setStudioQuality] = useState<"fast" | "max">("fast");
@@ -332,11 +346,21 @@ export default function AudioLab() {
       runIdRef.current++;
       pipelineRunIdRef.current++;
       stemRunIdRef.current++;
+      fastRunIdRef.current++;
+      hqRunIdRef.current++;
       vocalsCancelRef.current?.();
       vocalsCancelRef.current = null;
       if (vocalsUrlRef.current) {
         URL.revokeObjectURL(vocalsUrlRef.current);
         vocalsUrlRef.current = null;
+      }
+      if (fastVocalsUrlRef.current) {
+        URL.revokeObjectURL(fastVocalsUrlRef.current);
+        fastVocalsUrlRef.current = null;
+      }
+      if (fastInstUrlRef.current) {
+        URL.revokeObjectURL(fastInstUrlRef.current);
+        fastInstUrlRef.current = null;
       }
       if (hqPollTimerRef.current !== null) {
         clearTimeout(hqPollTimerRef.current);
@@ -355,6 +379,8 @@ export default function AudioLab() {
   // Limpa qualquer resultado do estúdio de áudio (ao recomeçar/enviar outro áudio).
   const clearStems = useCallback(() => {
     stemRunIdRef.current++;
+    fastRunIdRef.current++;
+    hqRunIdRef.current++;
     vocalsCancelRef.current?.();
     vocalsCancelRef.current = null;
     if (vocalsUrlRef.current) {
@@ -394,6 +420,19 @@ export default function AudioLab() {
     setVocalsUrl(null);
     setVocalsError("");
     setInstDownloadBusy(false);
+    if (fastVocalsUrlRef.current) {
+      URL.revokeObjectURL(fastVocalsUrlRef.current);
+      fastVocalsUrlRef.current = null;
+    }
+    if (fastInstUrlRef.current) {
+      URL.revokeObjectURL(fastInstUrlRef.current);
+      fastInstUrlRef.current = null;
+    }
+    setFastMixBusy(false);
+    setFastMixFetching(false);
+    setFastMixProgress(0);
+    setFastMixUrls(null);
+    setFastMixError("");
     if (hqPollTimerRef.current !== null) {
       clearTimeout(hqPollTimerRef.current);
       hqPollTimerRef.current = null;
@@ -580,7 +619,7 @@ export default function AudioLab() {
   // pede a preparação, acompanha o status e libera as faixas quando prontas.
   const prepareHq = useCallback(async () => {
     if (hqStatus === "preparing") return;
-    const runId = ++stemRunIdRef.current;
+    const runId = ++hqRunIdRef.current;
     setHqError("");
     setHqStatus("preparing");
 
@@ -604,7 +643,7 @@ export default function AudioLab() {
         return;
       }
     }
-    if (stemRunIdRef.current !== runId) return;
+    if (hqRunIdRef.current !== runId) return;
 
     if (!outcome.ok) {
       setHqStatus("error");
@@ -628,9 +667,9 @@ export default function AudioLab() {
     const startedAt = Date.now();
     const MAX_WAIT_MS = 12 * 60 * 1000;
     const tick = async () => {
-      if (stemRunIdRef.current !== runId) return;
+      if (hqRunIdRef.current !== runId) return;
       const status = await pollStemsStatus(key);
-      if (stemRunIdRef.current !== runId) return;
+      if (hqRunIdRef.current !== runId) return;
       if (status === "ready") {
         setHqStatus("ready");
         return;
@@ -707,6 +746,101 @@ export default function AudioLab() {
       setInstDownloadBusy(false);
     }
   }, [instDownloadBusy, inputMode, cifraMeta]);
+
+  // ── Mesa de mistura RÁPIDA: gera as DUAS faixas no navegador ────────────────
+  // Mesma ideia da máxima qualidade (um player, dois faders), mas processado
+  // localmente: rápido e sem espera de servidor. Decodifica uma vez e roda os
+  // dois cálculos (voz e sem voz) fora da thread principal.
+  const revokeFastMixUrls = useCallback(() => {
+    if (fastVocalsUrlRef.current) {
+      URL.revokeObjectURL(fastVocalsUrlRef.current);
+      fastVocalsUrlRef.current = null;
+    }
+    if (fastInstUrlRef.current) {
+      URL.revokeObjectURL(fastInstUrlRef.current);
+      fastInstUrlRef.current = null;
+    }
+  }, []);
+
+  const prepareFastMix = useCallback(async () => {
+    if (fastMixBusy || fastMixFetching) return;
+    const runId = ++fastRunIdRef.current;
+    setFastMixError("");
+
+    let file = audioFileRef.current;
+    if (!file) {
+      const ytId = cifraMeta?.youtubeId;
+      if (inputMode === "search" && ytId) {
+        setFastMixFetching(true);
+        try {
+          const res = await fetchYoutubeAudio(ytId);
+          if (fastRunIdRef.current !== runId) return;
+          if (!res.ok) {
+            setFastMixError(
+              res.reason === "unauthorized"
+                ? "Sua sessão expirou. Atualize a página e entre novamente."
+                : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+            );
+            return;
+          }
+          file = new File([res.blob], "audio.mp3", { type: "audio/mpeg" });
+          audioFileRef.current = file;
+          setStemFileName(
+            cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
+          );
+        } finally {
+          if (fastRunIdRef.current === runId) setFastMixFetching(false);
+        }
+      } else {
+        setFastMixError("Envie o arquivo de áudio da música para usar a mesa de mistura.");
+        return;
+      }
+    }
+    if (!file || fastRunIdRef.current !== runId) return;
+
+    setFastMixBusy(true);
+    setFastMixProgress(0);
+    revokeFastMixUrls();
+    setFastMixUrls(null);
+    try {
+      const buffer = await fileToAudioBuffer(file);
+      if (fastRunIdRef.current !== runId) return;
+
+      // Voz (0–50% do progresso) e, em seguida, sem voz (50–100%).
+      const vocals = emphasizeVocalsViaWorker(buffer, (p) => {
+        if (fastRunIdRef.current === runId) setFastMixProgress(p * 0.5);
+      });
+      vocalsCancelRef.current = vocals.cancel;
+      const vocalsStem = await vocals.promise;
+      if (fastRunIdRef.current !== runId) return;
+
+      const inst = makeInstrumentalViaWorker(buffer, (p) => {
+        if (fastRunIdRef.current === runId) setFastMixProgress(0.5 + p * 0.5);
+      });
+      vocalsCancelRef.current = inst.cancel;
+      const instStem = await inst.promise;
+      vocalsCancelRef.current = null;
+      if (fastRunIdRef.current !== runId) return;
+
+      setFastMixProgress(1);
+      const vUrl = URL.createObjectURL(encodeWav(vocalsStem));
+      const iUrl = URL.createObjectURL(encodeWav(instStem));
+      fastVocalsUrlRef.current = vUrl;
+      fastInstUrlRef.current = iUrl;
+      setFastMixUrls({ vocals: vUrl, instrumental: iUrl });
+    } catch (err) {
+      vocalsCancelRef.current = null;
+      if (fastRunIdRef.current !== runId) return;
+      setFastMixUrls(null);
+      setFastMixError(
+        err instanceof MonoSourceError
+          ? "Esse áudio é mono (um canal só), então não dá para separar a voz. Envie a faixa estéreo original da música."
+          : "Não consegui processar esse áudio agora. Tente enviar a música em MP3 ou WAV.",
+      );
+    } finally {
+      if (fastRunIdRef.current === runId) setFastMixBusy(false);
+    }
+  }, [fastMixBusy, fastMixFetching, inputMode, cifraMeta, revokeFastMixUrls]);
 
   // ── Pipeline: transcreve a letra do áudio/canto → identifica a música →
   //    busca a cifra pronta na internet. Nunca inventa letra nem acordes.
@@ -1855,127 +1989,29 @@ export default function AudioLab() {
                   </div>
                 </div>
 
+                {/* ── Mesa de mistura RÁPIDA (voz + sem voz no navegador) ───── */}
                 {studioQuality === "fast" && (
-                <>
-                {/* ── Sem voz AO VIVO ─────────────────────────────────────── */}
                 <div className="rounded-2xl border border-white/10 bg-secondary/40 p-4">
                   <div className="flex items-center gap-3">
-                    <Music className="w-5 h-5 text-primary shrink-0" />
+                    <Headphones className="w-5 h-5 text-primary shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white text-sm">Sem voz (ao vivo)</p>
+                      <p className="font-semibold text-white text-sm">Mesa de mistura</p>
                       <p className="text-[12px] text-white/50">
-                        Modo karaokê — toca na hora, sem espera
+                        Um player com dois faders — ajuste a voz e o instrumental
                       </p>
                     </div>
-                    {!liveStarted && (
+                    {!fastMixUrls && (
                       <button
-                        onClick={() => void startLive()}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shrink-0"
-                      >
-                        <Play className="w-4 h-4" /> Ouvir
-                      </button>
-                    )}
-                  </div>
-
-                  {/* O elemento de áudio fica sempre montado para o player ao
-                      vivo funcionar; só aparece depois que o usuário inicia. */}
-                  <div className={cn("mt-3", liveStarted ? "block" : "hidden")}>
-                    {liveLoading && (
-                      <div className="mb-3 flex items-center gap-2 text-[12px] text-white/60">
-                        <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
-                        Preparando o áudio…
-                      </div>
-                    )}
-                    <audio
-                      ref={liveAudioRef}
-                      controls
-                      className="w-full"
-                      onCanPlay={() => setLiveLoading(false)}
-                      onPlaying={() => setLiveLoading(false)}
-                      onError={() => {
-                        setLiveLoading(false);
-                        setLiveError(
-                          "Não consegui tocar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
-                        );
-                      }}
-                    />
-                    <div className="mt-3 flex flex-wrap items-center gap-3">
-                      <button
-                        onClick={() => void toggleLive()}
-                        role="switch"
-                        aria-checked={liveActive}
-                        className={cn(
-                          "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border",
-                          liveActive
-                            ? "bg-primary/15 border-primary/40 text-primary"
-                            : "bg-white/[0.03] border-white/10 text-white/60 hover:text-white",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "relative inline-block w-9 h-5 rounded-full transition-colors",
-                            liveActive ? "bg-primary" : "bg-white/20",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform",
-                              liveActive && "translate-x-4",
-                            )}
-                          />
-                        </span>
-                        Sem voz {liveActive ? "ligado" : "desligado"}
-                      </button>
-                      <button
-                        onClick={() => void downloadInstrumental()}
-                        disabled={instDownloadBusy}
-                        className={cn(
-                          "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border transition-all",
-                          instDownloadBusy
-                            ? "border-white/5 text-white/40 cursor-not-allowed"
-                            : "border-white/10 text-white/70 hover:text-white hover:bg-white/5",
-                        )}
-                      >
-                        {instDownloadBusy ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
-                        Baixar (WAV)
-                      </button>
-                    </div>
-                  </div>
-
-                  {liveError && (
-                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
-                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{liveError}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── Voz em destaque (processada fora da thread principal) ── */}
-                <div className="mt-3 rounded-2xl border border-white/10 bg-secondary/40 p-4">
-                  <div className="flex items-center gap-3">
-                    <Mic className="w-5 h-5 text-primary shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white text-sm">Voz em destaque</p>
-                      <p className="text-[12px] text-white/50">
-                        Realça o vocal — processa sem travar seu aparelho
-                      </p>
-                    </div>
-                    {!vocalsUrl && (
-                      <button
-                        onClick={() => void prepareVocals()}
-                        disabled={vocalsBusy || vocalsFetching}
+                        onClick={() => void prepareFastMix()}
+                        disabled={fastMixBusy || fastMixFetching}
                         className={cn(
                           "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0",
-                          vocalsBusy || vocalsFetching
+                          fastMixBusy || fastMixFetching
                             ? "bg-white/[0.04] text-white/40 cursor-not-allowed"
                             : "bg-primary text-primary-foreground hover:bg-primary/90",
                         )}
                       >
-                        {vocalsBusy || vocalsFetching ? (
+                        {fastMixBusy || fastMixFetching ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Sparkles className="w-4 h-4" />
@@ -1985,51 +2021,45 @@ export default function AudioLab() {
                     )}
                   </div>
 
-                  {vocalsFetching && (
+                  {fastMixFetching && (
                     <div className="mt-3 flex items-center gap-2 text-[12px] text-white/60">
                       <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
                       Baixando o áudio da música do YouTube…
                     </div>
                   )}
 
-                  {vocalsBusy && (
+                  {fastMixBusy && (
                     <div className="mt-3">
                       <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
                         <div
                           className="h-full bg-primary transition-all"
-                          style={{ width: `${Math.round(vocalsProgress * 100)}%` }}
+                          style={{ width: `${Math.round(fastMixProgress * 100)}%` }}
                         />
                       </div>
                       <p className="text-[12px] text-white/50 mt-2">
-                        Preparando a voz em destaque… {Math.round(vocalsProgress * 100)}%
+                        Preparando a mistura… {Math.round(fastMixProgress * 100)}%
                       </p>
                     </div>
                   )}
 
-                  {vocalsError && (
+                  {fastMixError && (
                     <div className="mt-3 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{vocalsError}</span>
+                      <span>{fastMixError}</span>
                     </div>
                   )}
 
-                  {vocalsUrl && !vocalsBusy && (
-                    <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                      <p className="text-sm font-semibold text-white/90 mb-3">
-                        Voz em destaque pronta
-                      </p>
-                      <audio src={vocalsUrl} controls className="w-full" />
-                      <a
-                        href={vocalsUrl}
-                        download="harmonic-voz.wav"
-                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                      >
-                        <Download className="w-4 h-4" /> Baixar (WAV)
-                      </a>
+                  {fastMixUrls && !fastMixBusy && (
+                    <div className="mt-4">
+                      <StemMixer
+                        key={`fastmix-${fastMixUrls.instrumental}`}
+                        vocalsUrl={fastMixUrls.vocals}
+                        instrumentalUrl={fastMixUrls.instrumental}
+                        downloadExt="wav"
+                      />
                     </div>
                   )}
                 </div>
-                </>
                 )}
 
                 {/* ── Máxima qualidade: separação completa (voz + sem voz) ──── */}
@@ -2157,9 +2187,11 @@ function StemFader({
 function StemMixer({
   vocalsUrl,
   instrumentalUrl,
+  downloadExt = "mp3",
 }: {
   vocalsUrl: string;
   instrumentalUrl: string;
+  downloadExt?: "mp3" | "wav";
 }) {
   const instRef = useRef<HTMLAudioElement | null>(null);
   const vocalRef = useRef<HTMLAudioElement | null>(null);
@@ -2342,14 +2374,14 @@ function StemMixer({
       <div className="flex flex-wrap gap-2">
         <a
           href={instrumentalUrl}
-          download="harmonic-sem-voz.mp3"
+          download={`harmonic-sem-voz.${downloadExt}`}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/[0.06] text-white/90 hover:bg-white/10 transition-all"
         >
           <Download className="w-4 h-4" /> Sem voz
         </a>
         <a
           href={vocalsUrl}
-          download="harmonic-voz.mp3"
+          download={`harmonic-voz.${downloadExt}`}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/[0.06] text-white/90 hover:bg-white/10 transition-all"
         >
           <Download className="w-4 h-4" /> Só a voz

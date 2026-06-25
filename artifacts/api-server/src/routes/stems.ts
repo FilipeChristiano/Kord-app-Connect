@@ -357,9 +357,43 @@ router.get("/stems/file", (req: Request, res: Response) => {
     return res.status(404).json({ status: "not_ready" });
   }
   const stat = statSync(file);
+  const total = stat.size;
   res.setHeader("Content-Type", "audio/mpeg");
-  res.setHeader("Content-Length", String(stat.size));
   res.setHeader("Cache-Control", "private, max-age=3600");
+  // Aceita requisições parciais (Range) para o player poder adiantar/voltar
+  // a música sem precisar baixar tudo antes.
+  res.setHeader("Accept-Ranges", "bytes");
+
+  const range = req.headers.range;
+  const match = range ? /^bytes=(\d*)-(\d*)$/.exec(range) : null;
+  if (match) {
+    let start = match[1] === "" ? NaN : Number(match[1]);
+    let end = match[2] === "" ? NaN : Number(match[2]);
+    // Sufixo "bytes=-N": últimos N bytes.
+    if (Number.isNaN(start) && !Number.isNaN(end)) {
+      start = Math.max(0, total - end);
+      end = total - 1;
+    } else {
+      if (Number.isNaN(start)) start = 0;
+      if (Number.isNaN(end) || end >= total) end = total - 1;
+    }
+    if (start > end || start >= total) {
+      res.status(416).setHeader("Content-Range", `bytes */${total}`);
+      return res.end();
+    }
+    res.status(206);
+    res.setHeader("Content-Range", `bytes ${start}-${end}/${total}`);
+    res.setHeader("Content-Length", String(end - start + 1));
+    const stream = createReadStream(file, { start, end });
+    stream.on("error", () => {
+      if (!res.headersSent) res.status(500).end();
+      else res.destroy();
+    });
+    stream.pipe(res);
+    return;
+  }
+
+  res.setHeader("Content-Length", String(total));
   const stream = createReadStream(file);
   stream.on("error", () => {
     if (!res.headersSent) res.status(500).end();

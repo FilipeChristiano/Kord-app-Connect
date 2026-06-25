@@ -19,7 +19,26 @@ stays tight.
 
 **Why two faders not two players:** once both stems stream together, separate
 "sem voz" / "voz em destaque" players are redundant — two faders on one player do
-the same thing more clearly (user can isolate or balance either stem).
+the same thing more clearly (user can isolate or balance either stem). The SAME
+`StemMixer` is reused by BOTH modes: máxima qualidade feeds server stem URLs;
+modo rápido generates both stems in-browser (vocals + instrumental workers →
+WAV blob URLs) and feeds those. `StemMixer` takes a `downloadExt` prop ("mp3" for
+server, "wav" for in-browser blobs).
+
+**Seeking needs HTTP Range:** the `<audio>` master-clock can only fast-forward to
+unbuffered positions if the source supports `206`/`Content-Range`. The
+`/api/stems/file` route MUST honor `Range` (it didn't at first → "não deixa
+adiantar a música"). Blob URLs (modo rápido) seek natively, no server needed.
+
+**Per-flow run-id tokens:** fast mix, máxima qualidade, and the legacy vocals flow
+each need their OWN run-id ref (`fastRunIdRef`/`hqRunIdRef`/`stemRunIdRef`). A
+single shared token meant switching modes mid-run invalidated the other flow,
+leaving its busy/preparing flag stuck (state updates are guarded by
+`if (ref.current === runId)`). Global cancel points (unmount, clearStems) bump ALL
+tokens.
+
+**formatClock decimals:** floor the seconds (`Math.floor(safe % 60)`) — raw
+`currentTime`/`duration` are floats and otherwise render as `0:10.292473`.
 
 **Why:** the first implementation used `fetch().arrayBuffer()` +
 `decodeAudioData()` on BOTH stems before playback. Each stem mp3 is ~7–10MB; the
