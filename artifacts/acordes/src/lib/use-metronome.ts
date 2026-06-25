@@ -237,6 +237,16 @@ export interface UseSyncedMetronome {
   stop: () => void;
 }
 
+// Quanto agendamos à frente, no relógio do AudioContext. Uma janela larga deixa
+// o metrônomo imune a travadas da thread principal (ex.: arrastar um fader):
+// mesmo que o agendador atrase, as batidas já foram marcadas no relógio de áudio.
+const SYNCED_SCHEDULE_AHEAD = 0.25; // segundos
+// Acima deste desvio entre a posição real da música e a prevista pela âncora,
+// reancoramos suavemente (mantendo a contagem) para colar de volta no tempo.
+const DRIFT_CORRECTION = 0.045; // segundos
+// Acima deste salto, tratamos como seek/pausa: reancoramos e recontamos do zero.
+const SEEK_JUMP = 0.4; // segundos
+
 export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetronome {
   const [currentBeat, setCurrentBeat] = useState(0);
 
@@ -244,9 +254,16 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
   const masterGainRef = useRef<GainNode | null>(null);
   const schedulerIdRef = useRef<number | null>(null);
   const rafIdRef = useRef<number | null>(null);
-  const scheduledUntilRef = useRef(0);
   const beatQueueRef = useRef<{ beat: number; time: number }[]>([]);
   const runningRef = useRef(false);
+
+  // Âncora: mapeamento estável entre a posição da música (s) e o relógio do
+  // AudioContext (s). Todas as batidas derivam DAÍ — não da posição "ao vivo"
+  // (que tem jitter) lida a cada tique. Só reancoramos quando há desvio real.
+  const anchorSongRef = useRef(0);
+  const anchorCtxRef = useRef(0);
+  const nextBeatRef = useRef(0); // índice absoluto da próxima batida a agendar
+  const secPerBeatRef = useRef(0);
 
   const cfgRef = useRef(config);
   useEffect(() => {
@@ -260,6 +277,13 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
     if (g && ctx) g.gain.setTargetAtTime(Math.max(0, config.volume), ctx.currentTime, 0.01);
   }, [config.volume]);
 
+  // (Re)ancora o mapeamento música↔AudioContext na posição informada.
+  const anchorAt = useCallback((songPos: number, ctxNow: number, secPerBeat: number) => {
+    anchorSongRef.current = songPos;
+    anchorCtxRef.current = ctxNow;
+    nextBeatRef.current = Math.ceil(songPos / secPerBeat - 1e-6);
+  }, []);
+
   const scheduler = useCallback(() => {
     const ctx = audioCtxRef.current;
     const master = masterGainRef.current;
@@ -270,29 +294,52 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
 
     const secPerBeat = 60 / bpm;
     const beats = Math.max(1, beatsPerBar);
-    const pos = getPosition();
+    const ctxNow = ctx.currentTime;
+    const actualSong = getPosition();
 
-    // Detecta saltos de posição (seek / troca de tempo) e re-sincroniza.
-    if (pos < scheduledUntilRef.current - 0.5 || pos > scheduledUntilRef.current + 0.5) {
-      scheduledUntilRef.current = pos;
+    // Se o tempo (BPM) mudou, a contagem de batidas perde o sentido: reancora.
+    if (secPerBeat !== secPerBeatRef.current) {
+      secPerBeatRef.current = secPerBeat;
+      anchorAt(actualSong, ctxNow, secPerBeat);
+      beatQueueRef.current = [];
+    } else {
+      // Posição prevista pela âncora vs. posição real da música.
+      const predicted = anchorSongRef.current + (ctxNow - anchorCtxRef.current);
+      const diff = actualSong - predicted;
+      if (Math.abs(diff) > SEEK_JUMP) {
+        // Salto grande (seek/pausa-retomada): recontagem a partir da nova posição.
+        anchorAt(actualSong, ctxNow, secPerBeat);
+        beatQueueRef.current = [];
+      } else if (Math.abs(diff) > DRIFT_CORRECTION) {
+        // Desvio pequeno: recola o mapeamento à posição real, mantendo a contagem.
+        anchorSongRef.current = actualSong;
+        anchorCtxRef.current = ctxNow;
+      }
     }
 
-    const windowEnd = pos + SCHEDULE_AHEAD;
-    const startTime = Math.max(scheduledUntilRef.current, pos);
-    let n = Math.max(0, Math.ceil(startTime / secPerBeat - 1e-6));
-
-    for (; n * secPerBeat < windowEnd; n++) {
-      const beatSong = n * secPerBeat;
-      const ctxTime = ctx.currentTime + (beatSong - pos);
-      if (ctxTime < ctx.currentTime) continue;
+    // Agenda todas as batidas que caem dentro da janela de lookahead, derivando
+    // o instante no relógio do AudioContext a partir da âncora (estável).
+    const windowEndCtx = ctxNow + SYNCED_SCHEDULE_AHEAD;
+    // Trava de segurança contra loop infinito se o BPM for absurdamente alto.
+    let guard = 0;
+    for (;;) {
+      if (guard++ > 512) break;
+      const n = nextBeatRef.current;
+      const songTime = n * secPerBeat;
+      const ctxTime = anchorCtxRef.current + (songTime - anchorSongRef.current);
+      if (ctxTime < ctxNow - 0.005) {
+        // Batida já passou (atraso/seek à frente): pula sem tocar.
+        nextBeatRef.current = n + 1;
+        continue;
+      }
+      if (ctxTime > windowEndCtx) break;
       const beatInBar = ((n % beats) + beats) % beats;
       // Mixer: todas as batidas iguais, sem acentuação forte no tempo 1.
       playClick(ctx, master, ctxTime, "weak");
       beatQueueRef.current.push({ beat: beatInBar, time: ctxTime });
+      nextBeatRef.current = n + 1;
     }
-
-    scheduledUntilRef.current = windowEnd;
-  }, []);
+  }, [anchorAt]);
 
   const visualLoop = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -337,12 +384,16 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
     const ctx = audioCtxRef.current;
     if (ctx.state === "suspended") await ctx.resume();
 
-    runningRef.current = true;
-    scheduledUntilRef.current = cfgRef.current.getPosition();
+    const bpm = cfgRef.current.bpm;
+    const secPerBeat = bpm > 0 ? 60 / bpm : 0;
+    secPerBeatRef.current = secPerBeat;
     beatQueueRef.current = [];
+    if (secPerBeat > 0) anchorAt(cfgRef.current.getPosition(), ctx.currentTime, secPerBeat);
+
+    runningRef.current = true;
     schedulerIdRef.current = window.setInterval(scheduler, LOOKAHEAD_MS);
     rafIdRef.current = requestAnimationFrame(visualLoop);
-  }, [scheduler, visualLoop]);
+  }, [anchorAt, scheduler, visualLoop]);
 
   useEffect(() => {
     return () => {
