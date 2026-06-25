@@ -2160,7 +2160,15 @@ export default function AudioLab() {
 // Toca a voz e o instrumental juntos (streaming, sem baixar/decodificar tudo
 // antes) e cada um tem seu próprio controle de volume. O instrumental é o relógio
 // mestre; a voz é mantida alinhada com uma correção de sincronia leve.
-const SYNC_THRESHOLD = 0.12; // segundos de defasagem antes de re-sincronizar
+// Correção de sincronia voz↔instrumental. Antes a voz era "saltada"
+// (`currentTime =`) sempre que defasava — mas saltar um <audio> em reprodução
+// causa um pequeno corte/silêncio. Com a VOZ ISOLADA (instrumental no zero) cada
+// salto vira um corte audível ("vários cortes"). Agora corrigimos a defasagem
+// acelerando/desacelerando levemente a voz (sem corte); só saltamos em uma
+// defasagem grande (nível de "pulo"), que já é uma descontinuidade de qualquer jeito.
+const SYNC_DEADBAND = 0.035; // dentro disso, considera em sincronia (rate = 1)
+const SYNC_HARD_THRESHOLD = 0.35; // acima disso, salto inevitável (pulo/seek)
+const SYNC_MAX_RATE_ADJ = 0.06; // ajuste máximo de velocidade (±6%) ao recolar
 
 function StemFader({
   icon: Icon,
@@ -2394,9 +2402,22 @@ function StemMixer({
     const onTime = () => {
       setPosition(inst.currentTime);
       // Correção de sincronia: mantém a voz alinhada ao instrumental (mestre).
+      // Em vez de saltar a voz (que corta o áudio quando ela está isolada),
+      // ajustamos levemente a velocidade dela para recolar sem corte; só saltamos
+      // em uma defasagem grande (pulo/seek), que já é uma descontinuidade.
       const v = vocalRef.current;
-      if (v && !inst.paused && Math.abs(v.currentTime - inst.currentTime) > SYNC_THRESHOLD) {
+      if (!v || inst.paused) return;
+      const drift = v.currentTime - inst.currentTime; // + = voz adiantada
+      const ad = Math.abs(drift);
+      if (ad > SYNC_HARD_THRESHOLD) {
         v.currentTime = inst.currentTime;
+        v.playbackRate = 1;
+      } else if (ad > SYNC_DEADBAND) {
+        // Recola proporcionalmente à defasagem (suave, limitado a ±SYNC_MAX_RATE_ADJ).
+        const adj = Math.max(-SYNC_MAX_RATE_ADJ, Math.min(SYNC_MAX_RATE_ADJ, drift * 0.5));
+        v.playbackRate = 1 - adj; // adiantada → desacelera; atrasada → acelera
+      } else if (v.playbackRate !== 1) {
+        v.playbackRate = 1;
       }
     };
     const onCanPlay = () => setLoadState((s) => (s === "error" ? s : "ready"));
@@ -2409,6 +2430,7 @@ function StemMixer({
       if (v) {
         v.pause();
         v.currentTime = 0;
+        v.playbackRate = 1;
       }
       metroStopRef.current();
       setIsPlaying(false);
@@ -2463,12 +2485,14 @@ function StemMixer({
     if (!inst.paused) {
       inst.pause();
       vocal.pause();
+      vocal.playbackRate = 1;
       metroStopRef.current();
       setIsPlaying(false);
       return;
     }
     setLoadState((s) => (s === "ready" ? s : "loading"));
     vocal.currentTime = inst.currentTime;
+    vocal.playbackRate = 1;
     inst.volume = instVolRef.current;
     vocal.volume = vocalVolRef.current;
     try {
@@ -2492,6 +2516,7 @@ function StemMixer({
     const clamped = Math.max(0, Math.min(t, inst.duration || t));
     inst.currentTime = clamped;
     vocal.currentTime = clamped;
+    vocal.playbackRate = 1;
     setPosition(clamped);
   }, []);
 

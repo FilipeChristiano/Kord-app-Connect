@@ -11,11 +11,24 @@ default 100%). Play it by **streaming two HTMLAudioElements**, not by decoding W
 Audio buffers.
 
 **Rule:** each stem is its own `<audio>` with `.volume` = its fader (0–1). One
-element is the master clock (instrumental); keep the other aligned with light drift
-correction: on the master's `timeupdate`, if `Math.abs(other.currentTime -
-master.currentTime)` exceeds ~0.12s, snap `other.currentTime = master.currentTime`.
-Both stems share identical length and encoding (same htdemucs→ffmpeg mp3), so this
-stays tight.
+element is the master clock (instrumental); keep the other (vocal) aligned with
+drift correction on the master's `timeupdate`.
+
+**Drift correction must NOT hard-snap the audible stem.** The original code did
+`vocal.currentTime = inst.currentTime` whenever drift > ~0.12s. Seeking a *playing*
+media element causes a brief stall/silence — inaudible while both stems play, but
+with the voice ISOLATED (instrumental fader at 0) every snap is an audible cut
+("vários cortes"). Fix: correct drift by nudging `vocal.playbackRate` instead:
+- deadband ~0.035s → rate = 1 (in sync);
+- between deadband and ~0.35s → `playbackRate = 1 - clamp(drift*0.5, ±0.06)`
+  (drift = vocal − inst; ahead → slow down, behind → speed up) so it re-converges
+  continuously without a seek;
+- only above ~0.35s (seek/jump level, already a discontinuity) → hard-snap
+  `currentTime` and reset rate to 1.
+Reset `vocal.playbackRate = 1` on pause, seek, play-start, and ended so a nudge
+never persists. Tradeoff: tiny brief pitch wobble during correction, far less
+objectionable than a cut. Both stems share identical length/encoding so corrections
+stay small and rare.
 
 **Why two faders not two players:** once both stems stream together, separate
 "sem voz" / "voz em destaque" players are redundant — two faders on one player do
