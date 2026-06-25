@@ -2085,37 +2085,17 @@ export default function AudioLab() {
                   {hqStatus === "ready" && hqKey && (
                     <div className="mt-3 space-y-3">
                       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Music className="w-4 h-4 text-primary shrink-0" />
-                          <p className="text-sm font-semibold text-white/90">Sem voz</p>
-                          <span className="text-[11px] text-white/45">
-                            arraste para trazer a voz de volta
-                          </span>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Headphones className="w-4 h-4 text-primary shrink-0" />
+                          <p className="text-sm font-semibold text-white/90">Mesa de mistura</p>
                         </div>
+                        <p className="text-[11px] text-white/45 mb-3">
+                          Toque a música e ajuste a voz e o instrumental como quiser
+                        </p>
                         <StemMixer
-                          key={`semvoz-${hqKey}`}
-                          baseUrl={stemsFileUrl(hqKey, "instrumental")}
-                          addUrl={stemsFileUrl(hqKey, "vocals")}
-                          addLabel="voz"
-                          downloadUrl={stemsFileUrl(hqKey, "instrumental")}
-                          downloadName="harmonic-sem-voz.mp3"
-                        />
-                      </div>
-                      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Mic className="w-4 h-4 text-primary shrink-0" />
-                          <p className="text-sm font-semibold text-white/90">Voz em destaque</p>
-                          <span className="text-[11px] text-white/45">
-                            arraste para trazer o instrumental de volta
-                          </span>
-                        </div>
-                        <StemMixer
-                          key={`voz-${hqKey}`}
-                          baseUrl={stemsFileUrl(hqKey, "vocals")}
-                          addUrl={stemsFileUrl(hqKey, "instrumental")}
-                          addLabel="instrumental"
-                          downloadUrl={stemsFileUrl(hqKey, "vocals")}
-                          downloadName="harmonic-voz.mp3"
+                          key={`mixer-${hqKey}`}
+                          vocalsUrl={stemsFileUrl(hqKey, "vocals")}
+                          instrumentalUrl={stemsFileUrl(hqKey, "instrumental")}
                         />
                       </div>
                     </div>
@@ -2133,142 +2113,180 @@ export default function AudioLab() {
   );
 }
 
-// ── Mixer com fader ───────────────────────────────────────────────────────────
-// Toca DUAS faixas em sincronia (streaming): a faixa base sempre no volume cheio
-// e a "outra" faixa entrando aos poucos conforme o controle. Usa dois elementos
-// <audio> (sem baixar/decodificar tudo antes) com correção de sincronia leve.
-// Ex.: na versão "Sem voz", a base é o instrumental e o fader adiciona a voz.
+// ── Mesa de mistura ───────────────────────────────────────────────────────────
+// Toca a voz e o instrumental juntos (streaming, sem baixar/decodificar tudo
+// antes) e cada um tem seu próprio controle de volume. O instrumental é o relógio
+// mestre; a voz é mantida alinhada com uma correção de sincronia leve.
 const SYNC_THRESHOLD = 0.12; // segundos de defasagem antes de re-sincronizar
 
-function StemMixer({
-  baseUrl,
-  addUrl,
-  addLabel,
-  downloadUrl,
-  downloadName,
+function StemFader({
+  icon: Icon,
+  label,
+  value,
+  onChange,
 }: {
-  baseUrl: string;
-  addUrl: string;
-  addLabel: string;
-  downloadUrl: string;
-  downloadName: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
 }) {
-  const baseRef = useRef<HTMLAudioElement | null>(null);
-  const addRef = useRef<HTMLAudioElement | null>(null);
-  const mixRef = useRef(0);
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
+          <Icon className="w-3.5 h-3.5 text-primary" /> {label}
+        </span>
+        <span className="text-[12px] font-mono text-primary tabular-nums">
+          {Math.round(value * 100)}%
+        </span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-1.5 accent-primary cursor-pointer"
+        aria-label={`Quantidade de ${label}`}
+      />
+    </div>
+  );
+}
+
+function StemMixer({
+  vocalsUrl,
+  instrumentalUrl,
+}: {
+  vocalsUrl: string;
+  instrumentalUrl: string;
+}) {
+  const instRef = useRef<HTMLAudioElement | null>(null);
+  const vocalRef = useRef<HTMLAudioElement | null>(null);
+  const vocalVolRef = useRef(1);
+  const instVolRef = useRef(1);
 
   const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
-  const [mix, setMix] = useState(0);
+  const [vocalVol, setVocalVol] = useState(1);
+  const [instVol, setInstVol] = useState(1);
 
   // Cria os dois elementos de áudio uma única vez por par de faixas.
   useEffect(() => {
-    const base = new Audio();
-    base.src = baseUrl;
-    base.preload = "auto";
-    base.volume = 1;
-    const add = new Audio();
-    add.src = addUrl;
-    add.preload = "auto";
-    add.volume = 0;
-    baseRef.current = base;
-    addRef.current = add;
+    const inst = new Audio();
+    inst.src = instrumentalUrl;
+    inst.preload = "auto";
+    inst.volume = 1;
+    const vocal = new Audio();
+    vocal.src = vocalsUrl;
+    vocal.preload = "auto";
+    vocal.volume = 1;
+    instRef.current = inst;
+    vocalRef.current = vocal;
 
-    const onMeta = () => setDuration(base.duration || 0);
+    const onMeta = () => setDuration(inst.duration || 0);
     const onTime = () => {
-      setPosition(base.currentTime);
-      // Correção de sincronia: mantém a faixa adicional alinhada à base.
-      const add2 = addRef.current;
-      if (add2 && !base.paused && Math.abs(add2.currentTime - base.currentTime) > SYNC_THRESHOLD) {
-        add2.currentTime = base.currentTime;
+      setPosition(inst.currentTime);
+      // Correção de sincronia: mantém a voz alinhada ao instrumental (mestre).
+      const v = vocalRef.current;
+      if (v && !inst.paused && Math.abs(v.currentTime - inst.currentTime) > SYNC_THRESHOLD) {
+        v.currentTime = inst.currentTime;
       }
     };
     const onCanPlay = () => setLoadState((s) => (s === "error" ? s : "ready"));
     const onWaiting = () => setLoadState((s) => (s === "ready" ? "loading" : s));
     const onPlaying = () => setLoadState("ready");
     const onEnded = () => {
-      const add2 = addRef.current;
-      base.pause();
-      base.currentTime = 0;
-      if (add2) {
-        add2.pause();
-        add2.currentTime = 0;
+      const v = vocalRef.current;
+      inst.pause();
+      inst.currentTime = 0;
+      if (v) {
+        v.pause();
+        v.currentTime = 0;
       }
       setIsPlaying(false);
       setPosition(0);
     };
     const onError = () => setLoadState("error");
 
-    base.addEventListener("loadedmetadata", onMeta);
-    base.addEventListener("timeupdate", onTime);
-    base.addEventListener("canplay", onCanPlay);
-    base.addEventListener("waiting", onWaiting);
-    base.addEventListener("playing", onPlaying);
-    base.addEventListener("ended", onEnded);
-    base.addEventListener("error", onError);
-    add.addEventListener("error", onError);
+    inst.addEventListener("loadedmetadata", onMeta);
+    inst.addEventListener("timeupdate", onTime);
+    inst.addEventListener("canplay", onCanPlay);
+    inst.addEventListener("waiting", onWaiting);
+    inst.addEventListener("playing", onPlaying);
+    inst.addEventListener("ended", onEnded);
+    inst.addEventListener("error", onError);
+    vocal.addEventListener("error", onError);
 
     return () => {
-      base.removeEventListener("loadedmetadata", onMeta);
-      base.removeEventListener("timeupdate", onTime);
-      base.removeEventListener("canplay", onCanPlay);
-      base.removeEventListener("waiting", onWaiting);
-      base.removeEventListener("playing", onPlaying);
-      base.removeEventListener("ended", onEnded);
-      base.removeEventListener("error", onError);
-      add.removeEventListener("error", onError);
-      base.pause();
-      add.pause();
-      base.src = "";
-      add.src = "";
-      base.load();
-      add.load();
-      baseRef.current = null;
-      addRef.current = null;
+      inst.removeEventListener("loadedmetadata", onMeta);
+      inst.removeEventListener("timeupdate", onTime);
+      inst.removeEventListener("canplay", onCanPlay);
+      inst.removeEventListener("waiting", onWaiting);
+      inst.removeEventListener("playing", onPlaying);
+      inst.removeEventListener("ended", onEnded);
+      inst.removeEventListener("error", onError);
+      vocal.removeEventListener("error", onError);
+      inst.pause();
+      vocal.pause();
+      inst.src = "";
+      vocal.src = "";
+      inst.load();
+      vocal.load();
+      instRef.current = null;
+      vocalRef.current = null;
     };
-  }, [baseUrl, addUrl]);
+  }, [vocalsUrl, instrumentalUrl]);
 
   const togglePlay = useCallback(async () => {
-    const base = baseRef.current;
-    const add = addRef.current;
-    if (!base || !add) return;
-    if (!base.paused) {
-      base.pause();
-      add.pause();
+    const inst = instRef.current;
+    const vocal = vocalRef.current;
+    if (!inst || !vocal) return;
+    if (!inst.paused) {
+      inst.pause();
+      vocal.pause();
       setIsPlaying(false);
       return;
     }
     setLoadState((s) => (s === "ready" ? s : "loading"));
-    add.currentTime = base.currentTime;
-    add.volume = mixRef.current;
+    vocal.currentTime = inst.currentTime;
+    inst.volume = instVolRef.current;
+    vocal.volume = vocalVolRef.current;
     try {
-      await Promise.all([base.play(), add.play()]);
+      await Promise.all([inst.play(), vocal.play()]);
       setIsPlaying(true);
     } catch {
-      base.pause();
-      add.pause();
+      inst.pause();
+      vocal.pause();
       setIsPlaying(false);
       setLoadState("error");
     }
   }, []);
 
   const seek = useCallback((t: number) => {
-    const base = baseRef.current;
-    const add = addRef.current;
-    if (!base || !add) return;
-    const clamped = Math.max(0, Math.min(t, base.duration || t));
-    base.currentTime = clamped;
-    add.currentTime = clamped;
+    const inst = instRef.current;
+    const vocal = vocalRef.current;
+    if (!inst || !vocal) return;
+    const clamped = Math.max(0, Math.min(t, inst.duration || t));
+    inst.currentTime = clamped;
+    vocal.currentTime = clamped;
     setPosition(clamped);
   }, []);
 
-  const changeMix = useCallback((v: number) => {
-    mixRef.current = v;
-    setMix(v);
-    const add = addRef.current;
-    if (add) add.volume = v;
+  const changeVocal = useCallback((v: number) => {
+    vocalVolRef.current = v;
+    setVocalVol(v);
+    const el = vocalRef.current;
+    if (el) el.volume = v;
+  }, []);
+
+  const changeInst = useCallback((v: number) => {
+    instVolRef.current = v;
+    setInstVol(v);
+    const el = instRef.current;
+    if (el) el.volume = v;
   }, []);
 
   return (
@@ -2310,25 +2328,9 @@ function StemMixer({
         </span>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
-            <Volume2 className="w-3.5 h-3.5 text-primary" /> Adicionar {addLabel}
-          </span>
-          <span className="text-[12px] font-mono text-primary tabular-nums">
-            {Math.round(mix * 100)}%
-          </span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={mix}
-          onChange={(e) => changeMix(Number(e.target.value))}
-          className="w-full h-1.5 accent-primary cursor-pointer"
-          aria-label={`Quantidade de ${addLabel}`}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <StemFader icon={Mic} label="Voz" value={vocalVol} onChange={changeVocal} />
+        <StemFader icon={Music} label="Instrumental" value={instVol} onChange={changeInst} />
       </div>
 
       {loadState === "error" && (
@@ -2337,13 +2339,22 @@ function StemMixer({
         </p>
       )}
 
-      <a
-        href={downloadUrl}
-        download={downloadName}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-      >
-        <Download className="w-4 h-4" /> Baixar (MP3)
-      </a>
+      <div className="flex flex-wrap gap-2">
+        <a
+          href={instrumentalUrl}
+          download="harmonic-sem-voz.mp3"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/[0.06] text-white/90 hover:bg-white/10 transition-all"
+        >
+          <Download className="w-4 h-4" /> Sem voz
+        </a>
+        <a
+          href={vocalsUrl}
+          download="harmonic-voz.mp3"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/[0.06] text-white/90 hover:bg-white/10 transition-all"
+        >
+          <Download className="w-4 h-4" /> Só a voz
+        </a>
+      </div>
     </div>
   );
 }
