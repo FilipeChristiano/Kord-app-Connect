@@ -60,6 +60,8 @@ import {
   MonoSourceError,
 } from "@/lib/audio-stems";
 import { LiveStudioPlayer } from "@/lib/audio-live";
+import { analyzeBpm, type DetectedTimeSignature } from "@/lib/bpm-detector";
+import { useMetronome, type AccentLevel } from "@/lib/use-metronome";
 import {
   classifyLine,
   transposeChart,
@@ -1303,6 +1305,23 @@ export default function AudioLab() {
 
   const bpmOpt = result?.bpm.options[result.bpm.recommendedIndex];
 
+  // Identifica o tempo da música pesquisada sob demanda: baixa o áudio e analisa
+  // o BPM com o mesmo motor de detecção usado no envio de arquivos.
+  const detectSearchBpm = useCallback(async (): Promise<{
+    bpm: number;
+    timeSignature: DetectedTimeSignature | null;
+  } | null> => {
+    const ytId = cifraMeta?.youtubeId;
+    if (inputMode !== "search" || !ytId) return null;
+    const res = await fetchYoutubeAudio(ytId);
+    if (!res.ok) throw new Error("audio-indisponivel");
+    const file = new File([res.blob], "audio.mp3", { type: "audio/mpeg" });
+    const buffer = await fileToAudioBuffer(file);
+    const analysis = await analyzeBpm(buffer);
+    const opt = analysis.options[analysis.recommendedIndex];
+    return { bpm: opt?.bpm ?? analysis.bpm, timeSignature: analysis.timeSignature };
+  }, [cifraMeta, inputMode]);
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
       {/* Header */}
@@ -1589,6 +1608,16 @@ export default function AudioLab() {
                 </div>
               </div>
             )}
+
+            {/* ── Metrônomo da música ──────────────────────────────────────── */}
+            {result ? (
+              <SongMetronome
+                initialBpm={bpmOpt?.bpm ?? result.bpm.bpm}
+                initialTimeSignature={result.bpm.timeSignature}
+              />
+            ) : inputMode === "search" && cifraStatus === "done" && cifraMeta?.youtubeId ? (
+              <SongMetronome detect={detectSearchBpm} />
+            ) : null}
 
             {/* ── Cifra da música ──────────────────────────────────────────── */}
             <div className="glass-card rounded-3xl border border-primary/20 bg-primary/5 p-6">
@@ -2184,6 +2213,226 @@ function StemFader({
         className="w-full h-1.5 accent-primary cursor-pointer"
         aria-label={`Quantidade de ${label}`}
       />
+    </div>
+  );
+}
+
+// ── Metrônomo da música (usa o motor do metrônomo inteligente) ───────────────
+const METRO_MIN_BPM = 40;
+const METRO_MAX_BPM = 240;
+const METRO_DEFAULT_BPM = 90;
+
+function clampMetroBpm(v: number): number {
+  return Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, Math.round(v)));
+}
+
+function SongMetronome({
+  initialBpm,
+  initialTimeSignature,
+  detect,
+}: {
+  initialBpm?: number | null;
+  initialTimeSignature?: DetectedTimeSignature | null;
+  detect?: () => Promise<{ bpm: number; timeSignature: DetectedTimeSignature | null } | null>;
+}) {
+  const active = useIsActive();
+  const hasInitial = typeof initialBpm === "number" && initialBpm > 0;
+  const [bpm, setBpm] = useState(hasInitial ? clampMetroBpm(initialBpm as number) : METRO_DEFAULT_BPM);
+  const [ts, setTs] = useState<DetectedTimeSignature | null>(initialTimeSignature ?? null);
+  const [identified, setIdentified] = useState(hasInitial);
+  const [detecting, setDetecting] = useState(false);
+  const [detectError, setDetectError] = useState("");
+
+  const beatsPerBar = ts === "3/4" ? 3 : 4;
+  const accents = useMemo<AccentLevel[]>(
+    () => Array.from({ length: beatsPerBar }, (_, i) => (i === 0 ? "strong" : "weak")),
+    [beatsPerBar],
+  );
+
+  const { isPlaying, currentBeat, toggle, stop } = useMetronome({
+    bpm,
+    beatsPerBar,
+    subdivisionMultiplier: 1,
+    accents,
+  });
+
+  // Para o metrônomo ao sair do módulo (o keep-alive mantém a tela montada).
+  useEffect(() => {
+    if (!active) stop();
+  }, [active, stop]);
+
+  const runDetect = useCallback(async () => {
+    if (!detect || detecting) return;
+    setDetecting(true);
+    setDetectError("");
+    try {
+      const out = await detect();
+      if (out && out.bpm > 0) {
+        setBpm(clampMetroBpm(out.bpm));
+        setTs(out.timeSignature ?? null);
+        setIdentified(true);
+      } else {
+        setDetectError("Não consegui identificar o tempo dessa música. Toque em \u201cIdentificar o tempo\u201d de novo ou ajuste o BPM manualmente abaixo.");
+      }
+    } catch {
+      setDetectError("Não consegui ouvir o áudio para identificar o tempo agora. Tente de novo ou ajuste o BPM manualmente abaixo.");
+    } finally {
+      setDetecting(false);
+    }
+  }, [detect, detecting]);
+
+  const fillPct = ((bpm - METRO_MIN_BPM) / (METRO_MAX_BPM - METRO_MIN_BPM)) * 100;
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-secondary/40 p-4 sm:p-5">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+          <Gauge className="w-5 h-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-white text-sm">Metrônomo</p>
+          <p className="text-[12px] text-white/50">
+            {identified
+              ? "No tempo da música — ajuste como quiser"
+              : "Identifique o tempo da música ou ajuste no controle"}
+          </p>
+        </div>
+        {detect && !identified && (
+          <button
+            onClick={() => void runDetect()}
+            disabled={detecting}
+            className={cn(
+              "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0",
+              detecting
+                ? "bg-white/[0.04] text-white/40 cursor-not-allowed"
+                : "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+          >
+            {detecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gauge className="w-4 h-4" />}
+            {detecting ? "Identificando…" : "Identificar o tempo"}
+          </button>
+        )}
+      </div>
+
+      {detecting && (
+        <div className="mt-3 flex items-center gap-2 text-[12px] text-white/60">
+          <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
+          Ouvindo a música para identificar o tempo…
+        </div>
+      )}
+
+      {detectError && (
+        <div className="mt-3 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{detectError}</span>
+        </div>
+      )}
+
+      {/* BPM grande + indicador de pulso */}
+      <div className="mt-4 flex items-center justify-between gap-4">
+        <div className="flex items-baseline gap-2">
+          <span
+            className="font-display text-5xl font-bold text-white leading-none notranslate"
+            translate="no"
+          >
+            {bpm}
+          </span>
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">bpm</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {accents.map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "rounded-full transition-all duration-100",
+                i === 0 ? "w-3 h-3" : "w-2.5 h-2.5",
+                isPlaying && currentBeat === i
+                  ? i === 0
+                    ? "bg-primary scale-125"
+                    : "bg-amber-300 scale-110"
+                  : "bg-white/15",
+              )}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Fader (controle deslizante) do BPM */}
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          onClick={() => setBpm((v) => clampMetroBpm(v - 1))}
+          className="w-9 h-9 shrink-0 rounded-xl bg-secondary/70 border border-white/10 text-white/80 hover:text-white hover:border-white/20 flex items-center justify-center transition-all"
+          aria-label="Diminuir o BPM"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <input
+          type="range"
+          min={METRO_MIN_BPM}
+          max={METRO_MAX_BPM}
+          value={bpm}
+          onChange={(e) => setBpm(clampMetroBpm(Number(e.target.value)))}
+          className="metro-fader flex-1 h-2 rounded-full appearance-none cursor-pointer"
+          style={{
+            background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${fillPct}%, hsl(0 0% 100% / 0.1) ${fillPct}%, hsl(0 0% 100% / 0.1) 100%)`,
+          }}
+          aria-label="Ajustar o BPM"
+        />
+        <button
+          onClick={() => setBpm((v) => clampMetroBpm(v + 1))}
+          className="w-9 h-9 shrink-0 rounded-xl bg-secondary/70 border border-white/10 text-white/80 hover:text-white hover:border-white/20 flex items-center justify-center transition-all"
+          aria-label="Aumentar o BPM"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Tocar/Pausar + compasso */}
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          onClick={toggle}
+          className={cn(
+            "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none",
+            isPlaying
+              ? "bg-white text-background hover:bg-white/90"
+              : "bg-primary text-primary-foreground hover:bg-primary/90",
+          )}
+          aria-label={isPlaying ? "Pausar" : "Tocar"}
+        >
+          {isPlaying ? (
+            <Pause className="w-4 h-4 fill-current" />
+          ) : (
+            <Play className="w-4 h-4 fill-current" />
+          )}
+          {isPlaying ? "Pausar" : "Tocar"}
+        </button>
+        <span className="text-xs text-muted-foreground notranslate" translate="no">
+          Compasso {ts ?? "4/4"}
+        </span>
+      </div>
+
+      <style>{`
+        .metro-fader::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 9999px;
+          background: hsl(var(--primary));
+          border: 3px solid hsl(var(--background));
+          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          cursor: grab;
+        }
+        .metro-fader::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.1); }
+        .metro-fader::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 9999px;
+          background: hsl(var(--primary));
+          border: 3px solid hsl(var(--background));
+          cursor: grab;
+        }
+      `}</style>
     </div>
   );
 }

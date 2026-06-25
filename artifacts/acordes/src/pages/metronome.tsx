@@ -13,19 +13,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BpmDetector from "@/components/bpm-detector";
+import { useMetronome, ACCENT_CONFIG, type AccentLevel } from "@/lib/use-metronome";
 
 type TimeSignature = "2/4" | "3/4" | "4/4" | "6/8";
 type Subdivision = "none" | "eighth" | "sixteenth";
-type AccentLevel = "strong" | "medium" | "weak" | "muted";
 
 const ACCENT_ORDER: AccentLevel[] = ["strong", "medium", "weak", "muted"];
-
-const ACCENT_CONFIG: Record<AccentLevel, { label: string; volume: number; freq: number; peak: number; duration: number }> = {
-  strong: { label: "Forte", volume: 1.0, freq: 1500, peak: 0.7, duration: 0.06 },
-  medium: { label: "Médio", volume: 0.7, freq: 1050, peak: 0.49, duration: 0.05 },
-  weak: { label: "Fraco", volume: 0.4, freq: 850, peak: 0.28, duration: 0.045 },
-  muted: { label: "Mudo", volume: 0, freq: 0, peak: 0, duration: 0 },
-};
 
 interface Preset {
   id: string;
@@ -162,8 +155,6 @@ export default function Metronome() {
   const [bpmInput, setBpmInput] = useState(String(DEFAULT_BPM));
   const [timeSignature, setTimeSignature] = useState<TimeSignature>("4/4");
   const [subdivision, setSubdivision] = useState<Subdivision>("none");
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentBeat, setCurrentBeat] = useState(0);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [accentPattern, setAccentPattern] = useState<AccentLevel[]>(() => {
     const saved = loadSavedAccents();
@@ -171,23 +162,15 @@ export default function Metronome() {
   });
 
   const beatsPerBar = getBeatsPerBar(timeSignature);
+  const subdivisionMultiplier = getSubdivisionMultiplier(subdivision, timeSignature);
 
-  // ── Refs para o scheduler (Web Audio) ──────────────────────────────────────
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const nextNoteTimeRef = useRef(0);
-  const currentTickRef = useRef(0);
-  const schedulerIdRef = useRef<number | null>(null);
-  const bpmRef = useRef(bpm);
-  const timeSignatureRef = useRef(timeSignature);
-  const subdivisionRef = useRef(subdivision);
-  const accentPatternRef = useRef<AccentLevel[]>([]);
-  const beatQueueRef = useRef<{ tick: number; time: number }[]>([]);
-  const rafIdRef = useRef<number | null>(null);
-
-  useEffect(() => { bpmRef.current = bpm; }, [bpm]);
-  useEffect(() => { timeSignatureRef.current = timeSignature; }, [timeSignature]);
-  useEffect(() => { subdivisionRef.current = subdivision; }, [subdivision]);
-  useEffect(() => { accentPatternRef.current = accentPattern; }, [accentPattern]);
+  // ── Motor do metrônomo (agendador + som compartilhados) ─────────────────────
+  const { isPlaying, currentBeat, stop, toggle, resetBeat } = useMetronome({
+    bpm,
+    beatsPerBar,
+    subdivisionMultiplier,
+    accents: accentPattern,
+  });
 
   // Salva o padrão de acentuação por compasso (persistência local)
   useEffect(() => {
@@ -201,164 +184,12 @@ export default function Metronome() {
     }
   }, [accentPattern, timeSignature]);
 
-  // ── Som do clique (oscilador sintetizado) ──────────────────────────────────
-  const playClick = useCallback((time: number, kind: AccentLevel | "subdivision") => {
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
-
-    let freq = 600;
-    let peak = 0.16;
-    let duration = 0.025;
-
-    if (kind === "subdivision") {
-      freq = 600;
-      peak = 0.16;
-      duration = 0.025;
-    } else {
-      const cfg = ACCENT_CONFIG[kind];
-      if (cfg.peak <= 0) return; // "Mudo" — não emite som
-      freq = cfg.freq;
-      peak = cfg.peak;
-      duration = cfg.duration;
-    }
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(freq, time);
-
-    gain.gain.setValueAtTime(0, time);
-    gain.gain.linearRampToValueAtTime(peak, time + 0.002);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(time);
-    osc.stop(time + duration + 0.02);
-  }, []);
-
-  // ── Scheduler com lookahead (padrão Chris Wilson) ──────────────────────────
-  const SCHEDULE_AHEAD = 0.1; // segundos
-  const LOOKAHEAD_MS = 25;
-
-  const scheduler = useCallback(() => {
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
-
-    while (nextNoteTimeRef.current < ctx.currentTime + SCHEDULE_AHEAD) {
-      const ts = timeSignatureRef.current;
-      const sub = subdivisionRef.current;
-      const mult = getSubdivisionMultiplier(sub, ts);
-      const beats = getBeatsPerBar(ts);
-      const totalTicks = beats * mult;
-      const tick = currentTickRef.current;
-      const beatIndex = Math.floor(tick / mult);
-      const isOnBeat = tick % mult === 0;
-
-      if (isOnBeat) {
-        const pattern = accentPatternRef.current;
-        const level = pattern[beatIndex] ?? "weak";
-        playClick(nextNoteTimeRef.current, level);
-        beatQueueRef.current.push({ tick: beatIndex, time: nextNoteTimeRef.current });
-      } else {
-        playClick(nextNoteTimeRef.current, "subdivision");
-      }
-
-      // Avança o tempo: 1 beat = 60/bpm; cada tick = (60/bpm) / mult
-      const secondsPerTick = 60 / bpmRef.current / mult;
-      nextNoteTimeRef.current += secondsPerTick;
-      currentTickRef.current = (tick + 1) % totalTicks;
-    }
-  }, [playClick]);
-
-  // ── Loop visual sincronizado com o áudio ───────────────────────────────────
-  const visualLoop = useCallback(() => {
-    const ctx = audioCtxRef.current;
-    if (ctx) {
-      const now = ctx.currentTime;
-      while (
-        beatQueueRef.current.length > 0 &&
-        beatQueueRef.current[0].time <= now
-      ) {
-        const beat = beatQueueRef.current.shift()!;
-        setCurrentBeat(beat.tick);
-      }
-    }
-    rafIdRef.current = requestAnimationFrame(visualLoop);
-  }, []);
-
-  // ── Start / Stop ───────────────────────────────────────────────────────────
-  const stop = useCallback(() => {
-    if (schedulerIdRef.current !== null) {
-      window.clearInterval(schedulerIdRef.current);
-      schedulerIdRef.current = null;
-    }
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    beatQueueRef.current = [];
-    currentTickRef.current = 0;
-    setCurrentBeat(0);
-    setIsPlaying(false);
-    isRunningRef.current = false;
-  }, []);
-
-  const isRunningRef = useRef(false);
-
-  const start = useCallback(async () => {
-    if (isRunningRef.current) return;
-    isRunningRef.current = true;
-
-    // Defensive: limpa qualquer loop órfão antes de iniciar
-    if (schedulerIdRef.current !== null) {
-      window.clearInterval(schedulerIdRef.current);
-      schedulerIdRef.current = null;
-    }
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-
-    if (!audioCtxRef.current) {
-      const Ctor: typeof AudioContext =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioCtxRef.current = new Ctor();
-    }
-    const ctx = audioCtxRef.current;
-    if (ctx.state === "suspended") {
-      await ctx.resume();
-    }
-    currentTickRef.current = 0;
-    beatQueueRef.current = [];
-    nextNoteTimeRef.current = ctx.currentTime + 0.05;
-    setIsPlaying(true);
-    schedulerIdRef.current = window.setInterval(scheduler, LOOKAHEAD_MS);
-    rafIdRef.current = requestAnimationFrame(visualLoop);
-  }, [scheduler, visualLoop]);
-
-  const togglePlay = useCallback(() => {
-    if (isPlaying) stop();
-    else start();
-  }, [isPlaying, start, stop]);
-
   // Ao sair do módulo (keep-alive o mantém montado), para o metrônomo para não
   // ficar tocando em segundo plano. O estado/configuração continua preservado.
   const active = useIsActive();
   useEffect(() => {
-    if (!active && isRunningRef.current) stop();
+    if (!active) stop();
   }, [active, stop]);
-
-  useEffect(() => {
-    return () => {
-      if (schedulerIdRef.current !== null) window.clearInterval(schedulerIdRef.current);
-      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
-      if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
-    };
-  }, []);
 
   // Atalho: tecla espaço dá play/pause
   useEffect(() => {
@@ -366,12 +197,12 @@ export default function Metronome() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.code === "Space") {
         e.preventDefault();
-        togglePlay();
+        toggle();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePlay]);
+  }, [toggle]);
 
   // ── BPM helpers ────────────────────────────────────────────────────────────
   const setBpmClamped = useCallback((value: number) => {
@@ -476,8 +307,7 @@ export default function Metronome() {
     setTimeSignature(preset.timeSignature);
     setSubdivision(preset.subdivision);
     setAccentPattern(sanitizeAccents(preset.accents, preset.timeSignature));
-    currentTickRef.current = 0;
-    setCurrentBeat(0);
+    resetBeat();
   };
 
   // Se mudar o compasso, carrega o padrão de acentuação salvo (ou o padrão comum)
@@ -486,8 +316,7 @@ export default function Metronome() {
     setTimeSignature(ts);
     const saved = loadSavedAccents();
     setAccentPattern(sanitizeAccents(saved[ts], ts));
-    currentTickRef.current = 0;
-    setCurrentBeat(0);
+    resetBeat();
   };
 
   // ── Editor de acentuação ─────────────────────────────────────────────────────
@@ -502,7 +331,7 @@ export default function Metronome() {
 
   const handleSubdivisionChange = (sub: Subdivision) => {
     setSubdivision(sub);
-    currentTickRef.current = 0;
+    resetBeat();
   };
 
   // Aplica o BPM (e compasso, se detectado) vindo do detector de BPM
@@ -513,8 +342,7 @@ export default function Metronome() {
       setTimeSignature(ts);
       const saved = loadSavedAccents();
       setAccentPattern(sanitizeAccents(saved[ts], ts));
-      currentTickRef.current = 0;
-      setCurrentBeat(0);
+      resetBeat();
     }
   };
 
@@ -741,7 +569,7 @@ export default function Metronome() {
           {/* Play / Tap / Reset */}
           <div className="flex items-stretch justify-center gap-2 sm:gap-3 mt-8">
             <button
-              onClick={togglePlay}
+              onClick={toggle}
               className={cn(
                 "flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-3 px-3 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-sm sm:text-lg transition-all duration-300 shadow-lg",
                 isPlaying
