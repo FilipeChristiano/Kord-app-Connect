@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AudioWaveform,
@@ -25,6 +25,8 @@ import {
   Download,
   Music,
   Play,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -52,6 +54,15 @@ import {
   MonoSourceError,
 } from "@/lib/audio-stems";
 import { LiveStudioPlayer } from "@/lib/audio-live";
+import {
+  classifyLine,
+  transposeChart,
+  parseKeyName,
+  keyName,
+  keyOptions,
+  preferFlatsForKey,
+  detectKeyFromChart,
+} from "@/lib/chord-transpose";
 import { cn } from "@/lib/utils";
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
@@ -109,33 +120,8 @@ function transcribeErrorMessage(outcome: Extract<TranscribeOutcome, { ok: false 
 // cor e a letra fica legível. O alinhamento acorde-sobre-letra é preservado com
 // fonte monoespaçada e bastante respiro vertical para facilitar a leitura.
 
-// Reconhece um token de acorde (raiz maiúscula A–G + sufixos/baixo).
-function isChordToken(t: string): boolean {
-  return /^[A-G][#b]?(?:[mM]|maj|min|dim|aug|sus|add|°|º|\+|\d|\(|\)|#|b|\/|[A-G])*$/.test(t);
-}
-
-type LineKind = "section" | "chords" | "tab" | "lyric" | "blank" | "annotation";
-
-// Marcações de execução (não são letra nem acorde): "(2x)", "Solo", "Intro",
-// "Instrumental", "repete 2x", "bis", "Final"…
-const ANNOTATION_RE =
-  /^\(?\s*(?:\d+\s*x|x\s*\d+|bis|solo|intro|instrumental|final|riff|coda|tutti|(?:repete|repetir)[a-zçãõéêáà0-9 ]*)\s*\)?\s*[:.\-–—]*\s*$/i;
-
-function classifyLine(line: string): LineKind {
-  const trimmed = line.trim();
-  if (!trimmed) return "blank";
-  if (/^\[[^\]]+\]$/.test(trimmed)) return "section";
-  // Linhas de tablatura: corda + barra + traços (ex.: "E|--3--2--").
-  if (/\|/.test(line) && /-{2,}/.test(line)) return "tab";
-  // Marcação de execução isolada — tratada como não-letra.
-  if (ANNOTATION_RE.test(trimmed)) return "annotation";
-  // Ignora tokens que são só pontuação (ex.: parênteses de progressão "( Em7 C9 )").
-  const tokens = trimmed.split(/\s+/).filter((t) => !/^[()|:.-]+$/.test(t));
-  if (tokens.length === 0) return "lyric";
-  const chordCount = tokens.filter(isChordToken).length;
-  if (chordCount > 0 && chordCount / tokens.length >= 0.8) return "chords";
-  return "lyric";
-}
+// A classificação de linhas e a transposição vivem em "@/lib/chord-transpose"
+// para que a renderização da cifra e a mudança de tom usem a mesma lógica.
 
 function SectionLabel({ text }: { text: string }) {
   return (
@@ -271,6 +257,13 @@ export default function AudioLab() {
   const [chartReady, setChartReady] = useState(false);
   const [editingChart, setEditingChart] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // ── Mudar o tom (transposição) ─────────────────────────────────────────────
+  // `transpose` é o deslocamento em semitons sobre o tom-base da cifra exibida.
+  // `baseKeyName` é o tom da cifra quando transpose = 0 (vem do tom marcado na
+  // cifra ou, quando ausente, é detectado pelos próprios acordes).
+  const [transpose, setTranspose] = useState(0);
+  const [baseKeyName, setBaseKeyName] = useState<string | null>(null);
 
   // Estúdio de áudio
   const [stemFileName, setStemFileName] = useState(""); // áudio carregado para o estúdio
@@ -408,6 +401,8 @@ export default function AudioLab() {
     setChartReady(false);
     setEditingChart(false);
     setCopied(false);
+    setTranspose(0);
+    setBaseKeyName(null);
     clearStems();
     audioFileRef.current = null;
     setStep("lendo");
@@ -679,6 +674,8 @@ export default function AudioLab() {
     setChart(out.cifra.body);
     setChartReady(true);
     setEditingChart(false);
+    setTranspose(0);
+    setBaseKeyName(out.cifra.key ?? detectKeyFromChart(out.cifra.body));
     setCopied(false);
     setCifraQuery(
       out.cifra.artist ? `${out.cifra.artist} - ${out.cifra.title}` : out.cifra.title,
@@ -904,6 +901,8 @@ export default function AudioLab() {
     setChart(out.cifra.body);
     setChartReady(true);
     setEditingChart(false);
+    setTranspose(0);
+    setBaseKeyName(out.cifra.key ?? detectKeyFromChart(out.cifra.body));
     setCopied(false);
     setCifraStatus("done");
   }, []);
@@ -988,6 +987,8 @@ export default function AudioLab() {
     setChart(out.cifra.body);
     setChartReady(true);
     setEditingChart(false);
+    setTranspose(0);
+    setBaseKeyName(out.cifra.key ?? detectKeyFromChart(out.cifra.body));
     setCopied(false);
     setCifraQuery(
       out.cifra.artist ? `${out.cifra.artist} - ${out.cifra.title}` : out.cifra.title,
@@ -995,24 +996,76 @@ export default function AudioLab() {
     setCifraStatus("done");
   }, [pickingId]);
 
+  // ── Transposição: valores derivados ────────────────────────────────────────
+  const baseKeyParsed = useMemo(() => parseKeyName(baseKeyName), [baseKeyName]);
+  // Grafia (sustenidos/bemóis) que combina com o tom atual depois de transpor.
+  const transposePreferFlats = baseKeyParsed
+    ? preferFlatsForKey(baseKeyParsed.pc + transpose, baseKeyParsed.isMinor)
+    : transpose < 0; // sem tom conhecido: descer tende a bemóis, subir a sustenidos
+  // Tom atual (após transpor) para mostrar no selo.
+  const currentKeyName = baseKeyParsed
+    ? keyName(baseKeyParsed.pc + transpose, baseKeyParsed.isMinor)
+    : null;
+  // Cifra como deve aparecer/ser copiada (já no tom escolhido).
+  const displayChart = useMemo(
+    () => transposeChart(chart, transpose, transposePreferFlats),
+    [chart, transpose, transposePreferFlats],
+  );
+  // Opções do seletor "tom específico" (12 tons no mesmo modo do tom-base).
+  const keySelectOptions = useMemo(
+    () => (baseKeyParsed ? keyOptions(baseKeyParsed.isMinor) : []),
+    [baseKeyParsed],
+  );
+  const currentKeyPc = baseKeyParsed
+    ? (((baseKeyParsed.pc + transpose) % 12) + 12) % 12
+    : null;
+
+  const stepSemitone = useCallback((delta: number) => {
+    setTranspose((t) => t + delta);
+  }, []);
+
+  // Selecionar um tom específico: ajusta o deslocamento para chegar nele.
+  const selectKeyPc = useCallback(
+    (targetPc: number) => {
+      if (!baseKeyParsed) return;
+      const diff = (((targetPc - baseKeyParsed.pc) % 12) + 12) % 12;
+      setTranspose(diff);
+    },
+    [baseKeyParsed],
+  );
+
+  // Entrar em edição com o tom mudado: fixa o tom atual no texto para que o
+  // usuário edite exatamente o que vê (e a base passa a ser o tom atual).
+  const toggleEditChart = useCallback(() => {
+    setEditingChart((v) => {
+      const next = !v;
+      if (next && transpose !== 0) {
+        setChart(displayChart);
+        if (currentKeyName) setBaseKeyName(currentKeyName);
+        setTranspose(0);
+      }
+      return next;
+    });
+  }, [transpose, displayChart, currentKeyName]);
+
   const copyChart = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(chart);
+      await navigator.clipboard.writeText(displayChart);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
       // clipboard indisponível — ignora
     }
-  }, [chart]);
+  }, [displayChart]);
 
   const sendChartToSofisticador = useCallback(() => {
     try {
-      sessionStorage.setItem(SOFISTICADOR_PREFILL_KEY, chart);
+      sessionStorage.setItem(SOFISTICADOR_PREFILL_KEY, displayChart);
     } catch {
       // sessionStorage indisponível — segue mesmo assim
     }
     navigate("/sofisticador");
-  }, [chart, navigate]);
+  }, [displayChart, navigate]);
 
   const bpmOpt = result?.bpm.options[result.bpm.recommendedIndex];
 
@@ -1325,9 +1378,15 @@ export default function AudioLab() {
                         <p className="text-sm text-white/50 mt-0.5">{cifraMeta.artist}</p>
                       )}
                     </div>
-                    {cifraMeta.key && (
+                    {currentKeyName && (
                       <span className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
-                        <Music2 className="w-3.5 h-3.5" /> Tom {cifraMeta.key}
+                        <Music2 className="w-3.5 h-3.5" /> Tom {currentKeyName}
+                        {transpose !== 0 && (
+                          <span className="text-primary/60">
+                            ({transpose > 0 ? "+" : ""}
+                            {transpose})
+                          </span>
+                        )}
                       </span>
                     )}
                   </div>
@@ -1472,6 +1531,78 @@ export default function AudioLab() {
                     Você pode ajustar o que quiser antes de usar.
                   </p>
 
+                  {/* ── Mudar o tom ──────────────────────────────────────── */}
+                  {!editingChart && (
+                    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-secondary/30 px-3 py-2.5">
+                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/80 mr-1">
+                        <Music2 className="w-4 h-4 text-primary" /> Mudar o tom
+                      </span>
+                      <button
+                        onClick={() => stepSemitone(-1)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
+                        title="Descer meio tom"
+                      >
+                        <Minus className="w-3.5 h-3.5" /> Descer ½ tom
+                      </button>
+                      <button
+                        onClick={() => stepSemitone(1)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
+                        title="Subir meio tom"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Subir ½ tom
+                      </button>
+
+                      {currentKeyName ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+                          {currentKeyName}
+                          {transpose !== 0 && (
+                            <span className="text-primary/60">
+                              ({transpose > 0 ? "+" : ""}
+                              {transpose})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm font-medium text-white/50">
+                          Tom não detectado
+                          {transpose !== 0 && (
+                            <span>
+                              ({transpose > 0 ? "+" : ""}
+                              {transpose})
+                            </span>
+                          )}
+                        </span>
+                      )}
+
+                      {keySelectOptions.length > 0 && currentKeyPc !== null && (
+                        <label className="inline-flex items-center gap-1.5 text-sm text-white/60">
+                          <span className="hidden sm:inline">Tom específico:</span>
+                          <select
+                            value={currentKeyPc}
+                            onChange={(e) => selectKeyPc(Number(e.target.value))}
+                            className="bg-secondary/60 border border-white/10 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            {keySelectOptions.map((o) => (
+                              <option key={o.pc} value={o.pc}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+
+                      {transpose !== 0 && (
+                        <button
+                          onClick={() => setTranspose(0)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                          title="Voltar ao tom original"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" /> Original
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {editingChart ? (
                     <textarea
                       value={chart}
@@ -1483,12 +1614,12 @@ export default function AudioLab() {
                       className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
                     />
                   ) : (
-                    <ChordSheet text={chart} />
+                    <ChordSheet text={displayChart} />
                   )}
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
-                      onClick={() => setEditingChart((v) => !v)}
+                      onClick={toggleEditChart}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
                     >
                       <Pencil className="w-3.5 h-3.5" />
