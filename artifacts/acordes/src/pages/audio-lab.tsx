@@ -43,6 +43,10 @@ import {
   fetchCifraByLyrics,
   fetchYoutubeAudio,
   pickCifra,
+  prepareStemsYoutube,
+  prepareStemsUpload,
+  pollStemsStatus,
+  stemsFileUrl,
   type FetchedCifra,
   type CifraCandidate,
 } from "@/lib/cifra-remote";
@@ -290,6 +294,13 @@ export default function AudioLab() {
   // ── Download do "sem voz" (gerado offline sob demanda) ─────────────────────
   const [instDownloadBusy, setInstDownloadBusy] = useState(false);
 
+  // ── Máxima qualidade: separação completa no servidor (gera as duas faixas) ──
+  const [studioQuality, setStudioQuality] = useState<"fast" | "max">("fast");
+  const [hqStatus, setHqStatus] = useState<"idle" | "preparing" | "ready" | "error">("idle");
+  const [hqKey, setHqKey] = useState<string | null>(null);
+  const [hqError, setHqError] = useState("");
+  const hqPollTimerRef = useRef<number | null>(null);
+
   const studioInputRef = useRef<HTMLInputElement | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -324,6 +335,10 @@ export default function AudioLab() {
       if (vocalsUrlRef.current) {
         URL.revokeObjectURL(vocalsUrlRef.current);
         vocalsUrlRef.current = null;
+      }
+      if (hqPollTimerRef.current !== null) {
+        clearTimeout(hqPollTimerRef.current);
+        hqPollTimerRef.current = null;
       }
       livePlayerRef.current?.dispose();
       livePlayerRef.current = null;
@@ -377,6 +392,13 @@ export default function AudioLab() {
     setVocalsUrl(null);
     setVocalsError("");
     setInstDownloadBusy(false);
+    if (hqPollTimerRef.current !== null) {
+      clearTimeout(hqPollTimerRef.current);
+      hqPollTimerRef.current = null;
+    }
+    setHqStatus("idle");
+    setHqKey(null);
+    setHqError("");
   }, []);
 
   const reset = useCallback(() => {
@@ -550,6 +572,81 @@ export default function AudioLab() {
       if (stemRunIdRef.current === runId) setVocalsBusy(false);
     }
   }, [vocalsBusy, vocalsFetching, inputMode, cifraMeta]);
+
+  // ── Máxima qualidade: prepara as DUAS faixas no servidor (voz + sem voz) ────
+  // Uma única preparação gera tudo. É mais lenta (alguns minutos), então o app
+  // pede a preparação, acompanha o status e libera as faixas quando prontas.
+  const prepareHq = useCallback(async () => {
+    if (hqStatus === "preparing") return;
+    const runId = ++stemRunIdRef.current;
+    setHqError("");
+    setHqStatus("preparing");
+
+    // Descobre a fonte: arquivo enviado tem prioridade; senão, vídeo da pesquisa.
+    let outcome: Awaited<ReturnType<typeof prepareStemsYoutube>>;
+    const file = audioFileRef.current;
+    if (file) {
+      outcome = await prepareStemsUpload(file);
+    } else {
+      const ytId = cifraMeta?.youtubeId;
+      if (inputMode === "search" && ytId) {
+        if (!stemFileName) {
+          setStemFileName(
+            cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
+          );
+        }
+        outcome = await prepareStemsYoutube(ytId);
+      } else {
+        setHqStatus("error");
+        setHqError("Envie o arquivo de áudio da música para usar a máxima qualidade.");
+        return;
+      }
+    }
+    if (stemRunIdRef.current !== runId) return;
+
+    if (!outcome.ok) {
+      setHqStatus("error");
+      setHqError(
+        outcome.reason === "unauthorized"
+          ? "Sua sessão expirou. Atualize a página e entre novamente."
+          : "Não consegui preparar a máxima qualidade agora. Tente novamente em instantes.",
+      );
+      return;
+    }
+
+    const key = outcome.key;
+    setHqKey(key);
+    if (outcome.status === "ready") {
+      setHqStatus("ready");
+      return;
+    }
+
+    // Acompanha o status até concluir. A separação completa pode levar alguns
+    // minutos; consultamos a cada 3s com um teto generoso (~12 min).
+    const startedAt = Date.now();
+    const MAX_WAIT_MS = 12 * 60 * 1000;
+    const tick = async () => {
+      if (stemRunIdRef.current !== runId) return;
+      const status = await pollStemsStatus(key);
+      if (stemRunIdRef.current !== runId) return;
+      if (status === "ready") {
+        setHqStatus("ready");
+        return;
+      }
+      if (status === "error") {
+        setHqStatus("error");
+        setHqError("Não consegui preparar a máxima qualidade dessa música. Tente outra vez.");
+        return;
+      }
+      if (Date.now() - startedAt > MAX_WAIT_MS) {
+        setHqStatus("error");
+        setHqError("A preparação está demorando mais que o esperado. Tente novamente.");
+        return;
+      }
+      hqPollTimerRef.current = window.setTimeout(() => void tick(), 3000);
+    };
+    hqPollTimerRef.current = window.setTimeout(() => void tick(), 3000);
+  }, [hqStatus, inputMode, cifraMeta, stemFileName]);
 
   // ── Baixar a versão "sem voz" (gerada offline sob demanda) ─────────────────
   // O efeito ao vivo não gera arquivo; quando o usuário quer baixar, calculamos
@@ -1718,6 +1815,46 @@ export default function AudioLab() {
                   )
                 )}
 
+                {/* ── Qualidade da separação (escolha por música) ─────────── */}
+                <div className="mb-3 rounded-2xl border border-white/10 bg-secondary/40 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-semibold text-white/80">Qualidade</p>
+                      <p className="text-[11px] text-white/45">
+                        {studioQuality === "fast"
+                          ? "Rápido — toca na hora, direto no seu aparelho"
+                          : "Máxima qualidade — separa muito melhor, leva alguns minutos"}
+                      </p>
+                    </div>
+                    <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.03] p-1 shrink-0">
+                      <button
+                        onClick={() => setStudioQuality("fast")}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all",
+                          studioQuality === "fast"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-white/60 hover:text-white",
+                        )}
+                      >
+                        Rápido
+                      </button>
+                      <button
+                        onClick={() => setStudioQuality("max")}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all",
+                          studioQuality === "max"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-white/60 hover:text-white",
+                        )}
+                      >
+                        Máxima
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {studioQuality === "fast" && (
+                <>
                 {/* ── Sem voz AO VIVO ─────────────────────────────────────── */}
                 <div className="rounded-2xl border border-white/10 bg-secondary/40 p-4">
                   <div className="flex items-center gap-3">
@@ -1890,6 +2027,97 @@ export default function AudioLab() {
                     </div>
                   )}
                 </div>
+                </>
+                )}
+
+                {/* ── Máxima qualidade: separação completa (voz + sem voz) ──── */}
+                {studioQuality === "max" && (
+                <div className="rounded-2xl border border-white/10 bg-secondary/40 p-4">
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="w-5 h-5 text-primary shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-white text-sm">Máxima qualidade</p>
+                      <p className="text-[12px] text-white/50">
+                        Separa a voz e o instrumental com o máximo de isolamento
+                      </p>
+                    </div>
+                    {hqStatus !== "ready" && (
+                      <button
+                        onClick={() => void prepareHq()}
+                        disabled={hqStatus === "preparing"}
+                        className={cn(
+                          "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0",
+                          hqStatus === "preparing"
+                            ? "bg-white/[0.04] text-white/40 cursor-not-allowed"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90",
+                        )}
+                      >
+                        {hqStatus === "preparing" ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                        {hqStatus === "preparing" ? "Preparando…" : "Preparar"}
+                      </button>
+                    )}
+                  </div>
+
+                  {hqStatus === "preparing" && (
+                    <div className="mt-3 flex items-start gap-2 text-[12px] text-white/60">
+                      <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary mt-0.5" />
+                      <span>
+                        Preparando a separação de máxima qualidade. Isso pode levar
+                        alguns minutos — pode deixar esta tela aberta e voltar daqui a
+                        pouco.
+                      </span>
+                    </div>
+                  )}
+
+                  {hqError && (
+                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{hqError}</span>
+                    </div>
+                  )}
+
+                  {hqStatus === "ready" && hqKey && (
+                    <div className="mt-3 space-y-3">
+                      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Music className="w-4 h-4 text-primary shrink-0" />
+                          <p className="text-sm font-semibold text-white/90">Sem voz</p>
+                        </div>
+                        <audio
+                          src={stemsFileUrl(hqKey, "instrumental")}
+                          controls
+                          className="w-full"
+                        />
+                        <a
+                          href={stemsFileUrl(hqKey, "instrumental")}
+                          download="harmonic-sem-voz.mp3"
+                          className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                        >
+                          <Download className="w-4 h-4" /> Baixar (MP3)
+                        </a>
+                      </div>
+                      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Mic className="w-4 h-4 text-primary shrink-0" />
+                          <p className="text-sm font-semibold text-white/90">Voz em destaque</p>
+                        </div>
+                        <audio src={stemsFileUrl(hqKey, "vocals")} controls className="w-full" />
+                        <a
+                          href={stemsFileUrl(hqKey, "vocals")}
+                          download="harmonic-voz.mp3"
+                          className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                        >
+                          <Download className="w-4 h-4" /> Baixar (MP3)
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                )}
                 </>
                 )}
               </div>

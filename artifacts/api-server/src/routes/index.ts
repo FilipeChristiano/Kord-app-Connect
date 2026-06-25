@@ -6,6 +6,7 @@ import transcribeRouter from "./transcribe";
 import chordsRouter from "./chords";
 import cifraRouter from "./cifra";
 import ytAudioRouter from "./yt-audio";
+import stemsRouter from "./stems";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(transcribeRouter);
 router.use(chordsRouter);
 router.use(cifraRouter);
 router.use(ytAudioRouter);
+router.use(stemsRouter);
 
 export default router;

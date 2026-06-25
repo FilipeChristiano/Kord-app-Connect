@@ -142,3 +142,78 @@ export async function fetchYoutubeAudio(youtubeId: string): Promise<YoutubeAudio
     return { ok: false, reason: "network" };
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Estúdio — máxima qualidade (separação completa no servidor).
+//
+// Fluxo assíncrono: pede a preparação (por id do YouTube ou arquivo enviado),
+// consulta o status até ficar pronto e então toca/baixa cada faixa direto da URL
+// do arquivo. Uma única preparação gera as DUAS faixas (voz e sem voz).
+// ─────────────────────────────────────────────────────────────────────────────
+export type StemsPrepareOutcome =
+  | { ok: true; key: string; status: "processing" | "ready" }
+  | { ok: false; reason: "unauthorized" | "error" | "network" };
+
+export type StemsStatus = "processing" | "ready" | "error" | "unknown";
+
+// Inicia a preparação de máxima qualidade a partir de um vídeo do YouTube.
+export async function prepareStemsYoutube(youtubeId: string): Promise<StemsPrepareOutcome> {
+  const id = youtubeId.trim();
+  if (!id) return { ok: false, reason: "error" };
+  try {
+    const r = await fetch(`${API_BASE}/stems/prepare-yt`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (r.status === 401) return { ok: false, reason: "unauthorized" };
+    if (!r.ok) return { ok: false, reason: "error" };
+    const data = (await r.json()) as { key?: string; status?: string };
+    if (!data.key) return { ok: false, reason: "error" };
+    return { ok: true, key: data.key, status: data.status === "ready" ? "ready" : "processing" };
+  } catch {
+    return { ok: false, reason: "network" };
+  }
+}
+
+// Inicia a preparação de máxima qualidade a partir de um arquivo enviado.
+export async function prepareStemsUpload(file: File): Promise<StemsPrepareOutcome> {
+  try {
+    const r = await fetch(`${API_BASE}/stems/prepare-upload`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: file,
+    });
+    if (r.status === 401) return { ok: false, reason: "unauthorized" };
+    if (!r.ok) return { ok: false, reason: "error" };
+    const data = (await r.json()) as { key?: string; status?: string };
+    if (!data.key) return { ok: false, reason: "error" };
+    return { ok: true, key: data.key, status: data.status === "ready" ? "ready" : "processing" };
+  } catch {
+    return { ok: false, reason: "network" };
+  }
+}
+
+// Consulta o andamento da preparação de máxima qualidade.
+export async function pollStemsStatus(key: string): Promise<StemsStatus> {
+  try {
+    const r = await fetch(`${API_BASE}/stems/status?key=${encodeURIComponent(key)}`, {
+      credentials: "include",
+    });
+    if (!r.ok) return "error";
+    const data = (await r.json()) as { status?: string };
+    if (data.status === "ready") return "ready";
+    if (data.status === "error") return "error";
+    if (data.status === "unknown") return "unknown";
+    return "processing";
+  } catch {
+    return "error";
+  }
+}
+
+// URL do arquivo de uma faixa pronta (voz ou sem voz) para tocar/baixar.
+export function stemsFileUrl(key: string, mode: "vocals" | "instrumental"): string {
+  return `${API_BASE}/stems/file?key=${encodeURIComponent(key)}&mode=${mode}`;
+}

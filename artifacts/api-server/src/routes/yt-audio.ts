@@ -16,13 +16,16 @@ import path from "node:path";
 // Extração do ÁUDIO da música (vídeo público do YouTube) para o Estúdio de áudio.
 //
 // O estúdio (versão sem voz / voz em destaque) processa as AMOSTRAS reais do som
-// no navegador (Web Audio). O player embutido do YouTube não permite ler essas
-// amostras (proteção/cross-origin), então quando o usuário pesquisa pelo título
-// nós baixamos o áudio aqui no servidor e devolvemos o arquivo para o app tratar.
+// (no navegador, no modo rápido; no servidor, no modo máxima qualidade). O player
+// embutido do YouTube não permite ler essas amostras (proteção/cross-origin),
+// então quando o usuário pesquisa pelo título nós baixamos o áudio aqui no
+// servidor e devolvemos/reaproveitamos o arquivo.
 //
-// Baixamos a melhor faixa de áudio e convertemos para MP3 (mantém o estéreo, que
-// é necessário para o efeito de cancelamento de voz). O resultado fica em cache
-// em disco por id, evitando baixar de novo a cada clique.
+// Para deixar a preparação RÁPIDA, baixamos a faixa de áudio M4A (AAC) já pronta
+// do YouTube e apenas a remuxamos para o contêiner .m4a — SEM recodificar (o
+// passo de recodificar para MP3 era o gargalo). O AAC/M4A toca em todos os
+// navegadores (inclusive iOS/Safari) e mantém o estéreo, necessário para a
+// separação. O resultado fica em cache em disco por id.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const router: IRouter = Router();
@@ -33,11 +36,15 @@ const DOWNLOAD_TIMEOUT_MS = 90_000;
 // Limite simples do cache em disco (descarta os arquivos mais antigos acima disso).
 const MAX_CACHE_BYTES = 400 * 1024 * 1024;
 
+function cachePath(id: string): string {
+  return path.join(CACHE_DIR, `${id}.m4a`);
+}
+
 // Mantém apenas o cache mais recente sob o limite, removendo os arquivos antigos.
 async function pruneCache(): Promise<void> {
   try {
     const files = readdirSync(CACHE_DIR)
-      .filter((f) => f.endsWith(".mp3"))
+      .filter((f) => f.endsWith(".m4a"))
       .map((f) => {
         const full = path.join(CACHE_DIR, f);
         const st = statSync(full);
@@ -70,18 +77,17 @@ function downloadAudioOnce(id: string, outPath: string): Promise<void> {
   return p;
 }
 
-// Baixa a melhor faixa de áudio do vídeo e converte para MP3 em `outPath`.
+// Baixa a melhor faixa de áudio M4A e remuxa (sem recodificar) para `outPath`.
 function downloadAudio(id: string, outPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const url = `https://www.youtube.com/watch?v=${id}`;
-    // Template sem extensão: o yt-dlp baixa (webm/m4a) e o ffmpeg converte p/ mp3.
-    const outTemplate = outPath.replace(/\.mp3$/, ".%(ext)s");
+    // Template sem extensão: o yt-dlp resolve a extensão e remuxa para .m4a.
+    const outTemplate = outPath.replace(/\.m4a$/, ".%(ext)s");
     const args = [
       "-f",
-      "bestaudio/best",
-      "-x",
-      "--audio-format",
-      "mp3",
+      "bestaudio[ext=m4a]/bestaudio",
+      "--remux-video",
+      "m4a",
       "--no-playlist",
       "--no-progress",
       "--no-cache-dir",
@@ -113,6 +119,18 @@ function downloadAudio(id: string, outPath: string): Promise<void> {
   });
 }
 
+// Garante que o áudio do vídeo está no cache e devolve o caminho do arquivo.
+// Reutilizado pelo estúdio de máxima qualidade (separação no servidor).
+export async function ensureYoutubeAudio(id: string): Promise<string> {
+  mkdirSync(CACHE_DIR, { recursive: true });
+  const outPath = cachePath(id);
+  if (!existsSync(outPath)) {
+    await downloadAudioOnce(id, outPath);
+    void pruneCache();
+  }
+  return outPath;
+}
+
 router.get("/yt-audio", async (req: Request, res: Response) => {
   // Mesmo bypass de login do preview de desenvolvimento usado em /api/cifra:
   // os cookies do Clerk são bloqueados no iframe, então liberamos em dev.
@@ -130,14 +148,9 @@ router.get("/yt-audio", async (req: Request, res: Response) => {
   }
 
   try {
-    mkdirSync(CACHE_DIR, { recursive: true });
-    const outPath = path.join(CACHE_DIR, `${id}.mp3`);
-    if (!existsSync(outPath)) {
-      await downloadAudioOnce(id, outPath);
-      void pruneCache();
-    }
+    const outPath = await ensureYoutubeAudio(id);
     const stat = statSync(outPath);
-    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Content-Type", "audio/mp4");
     res.setHeader("Content-Length", String(stat.size));
     res.setHeader("Cache-Control", "private, max-age=3600");
     const stream = createReadStream(outPath);
