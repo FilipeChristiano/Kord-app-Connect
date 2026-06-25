@@ -78,6 +78,25 @@ calibrated once per device). This is the standard play-along/karaoke calibration
   buffering pins currentTime at ~0 just after play()), keep re-anchoring and DON'T
   schedule. Scheduling only begins once position truly advances → no premature click.
 
+## Rule: prefer real beat TIMES (server beat-tracking) over any client BPM grid
+A fitted grid (precise BPM + phase) still drifts on songs with tempo variation or
+imperfect detection — the user kept reporting "muito fora do tempo." The fix that
+finally held is "beat-map mode": click on the ACTUAL detected beat instants, not a
+synthesized grid.
+
+**Why:** professional tools (Moises) track every beat instant; a single global
+BPM can never follow a human-played song that breathes. Clicking on `beats[n]`
+removes accumulated drift entirely because each click is independently placed.
+
+**How to apply:**
+- Server (librosa `beat_track(units="time")`) returns `{bpm, beats:[]}`. Client
+  passes `beatTimes` into `useSyncedMetronome`; scheduler clicks at `map[n]` and
+  only falls back to the BPM grid when the map is absent or `< 2` entries.
+- The fitted-grid path stays as the fallback (browser-only / server unavailable).
+- BPM hint feeds librosa's `start_bpm`, so it changes the resulting grid — the
+  server beats cache key MUST include the hint (or changing the BPM option serves
+  a stale, possibly half/double-time map for that song key).
+
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
 every beat is `playClick(..., "weak")` — no strong downbeat. The standalone

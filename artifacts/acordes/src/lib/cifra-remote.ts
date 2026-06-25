@@ -217,3 +217,51 @@ export async function pollStemsStatus(key: string): Promise<StemsStatus> {
 export function stemsFileUrl(key: string, mode: "vocals" | "instrumental"): string {
   return `${API_BASE}/stems/file?key=${encodeURIComponent(key)}&mode=${mode}`;
 }
+
+// ── Batidas (beat tracking) — rastreamento profissional no servidor ───────────
+// Devolve os INSTANTES (s) de cada batida da música, para o metrônomo clicar
+// exatamente em cima de cada batida real (em vez de uma grade estimada).
+export interface StemBeats {
+  bpm: number;
+  beats: number[];
+}
+
+function parseBeats(data: unknown): StemBeats | null {
+  const d = data as { ok?: boolean; bpm?: number; beats?: unknown };
+  if (!d?.ok || !Array.isArray(d.beats) || d.beats.length < 2) return null;
+  const beats = d.beats.filter((t): t is number => typeof t === "number" && Number.isFinite(t));
+  if (beats.length < 2) return null;
+  return { bpm: typeof d.bpm === "number" && d.bpm > 0 ? d.bpm : 0, beats };
+}
+
+// Faixa já preparada (máxima qualidade): reaproveita o instrumental do servidor
+// pela chave — não reenvia o áudio.
+export async function fetchStemBeats(key: string, bpmHint?: number | null): Promise<StemBeats | null> {
+  try {
+    const qs = bpmHint && bpmHint > 0 ? `&bpm=${Math.round(bpmHint)}` : "";
+    const r = await fetch(`${API_BASE}/stems/beats?key=${encodeURIComponent(key)}${qs}`, {
+      credentials: "include",
+    });
+    if (!r.ok) return null;
+    return parseBeats(await r.json());
+  } catch {
+    return null;
+  }
+}
+
+// Áudio gerado no navegador (modo rápido): envia os bytes do instrumental.
+export async function analyzeBeatsBlob(blob: Blob, bpmHint?: number | null): Promise<StemBeats | null> {
+  try {
+    const qs = bpmHint && bpmHint > 0 ? `?bpm=${Math.round(bpmHint)}` : "";
+    const r = await fetch(`${API_BASE}/stems/beats${qs}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": blob.type || "application/octet-stream" },
+      body: blob,
+    });
+    if (!r.ok) return null;
+    return parseBeats(await r.json());
+  } catch {
+    return null;
+  }
+}

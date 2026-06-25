@@ -2,7 +2,7 @@ import express, { Router, type IRouter, type Request, type Response } from "expr
 import { getAuth } from "@clerk/express";
 import { spawn } from "node:child_process";
 import { createReadStream, existsSync, mkdirSync, statSync } from "node:fs";
-import { readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import os from "node:os";
 import { join, resolve } from "node:path";
@@ -69,11 +69,11 @@ function pythonBin(): string {
   return "python3";
 }
 
-function scriptPath(): string {
+function scriptPath(name: string): string {
   const candidates = [
-    join(WORKSPACE_ROOT, "artifacts", "api-server", "scripts", "separate_stems.py"),
-    resolve(process.cwd(), "scripts", "separate_stems.py"),
-    resolve(process.cwd(), "..", "scripts", "separate_stems.py"),
+    join(WORKSPACE_ROOT, "artifacts", "api-server", "scripts", name),
+    resolve(process.cwd(), "scripts", name),
+    resolve(process.cwd(), "..", "scripts", name),
   ];
   for (const c of candidates) if (existsSync(c)) return c;
   return candidates[0];
@@ -94,7 +94,7 @@ function stemsReady(key: string): boolean {
 // ── Execução do separador (Demucs) + transcodificação para MP3 ────────────────
 function runPythonSeparation(srcPath: string, outDir: string): Promise<void> {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(pythonBin(), [scriptPath(), srcPath, outDir, "7"], {
+    const child = spawn(pythonBin(), [scriptPath("separate_stems.py"), srcPath, outDir, "7"], {
       cwd: WORKSPACE_ROOT,
       env: {
         ...process.env,
@@ -136,6 +136,121 @@ function runPythonSeparation(srcPath: string, outDir: string): Promise<void> {
       }
     });
   });
+}
+
+// ffmpeg: normaliza qualquer entrada para WAV mono 22.05 kHz (o que o rastreador
+// de batidas espera). Usado tanto para o instrumental do cache (HQ) quanto para
+// o áudio enviado pelo navegador (modo rápido).
+function transcodeToWavMono(srcPath: string, wavPath: string): Promise<void> {
+  return new Promise((resolvePromise, reject) => {
+    const p = spawn("ffmpeg", ["-y", "-i", srcPath, "-ac", "1", "-ar", "22050", "-f", "wav", wavPath]);
+    let err = "";
+    p.stderr?.on("data", (d: Buffer) => {
+      err += d.toString();
+    });
+    p.on("error", reject);
+    p.on("close", (code) => {
+      if (code !== 0) reject(new Error(err.slice(-300) || `ffmpeg exit ${code}`));
+      else resolvePromise();
+    });
+  });
+}
+
+// ── Rastreamento de batidas (beat tracking) ──────────────────────────────────
+// Roda o detector profissional (librosa, programação dinâmica) sobre um WAV e
+// devolve os instantes (s) de cada batida + o andamento estimado. O primeiro uso
+// pode compilar kernels do numba (~min); os seguintes são rápidos (cache numba).
+const BEAT_TIMEOUT_MS = 4 * 60 * 1000;
+
+interface BeatResult {
+  bpm: number;
+  beats: number[];
+}
+
+function runBeatDetection(wavPath: string, bpmHint: number): Promise<BeatResult> {
+  return new Promise((resolvePromise, reject) => {
+    const args = [scriptPath("detect_beats.py"), wavPath];
+    if (bpmHint > 0) args.push(String(Math.round(bpmHint)));
+    const child = spawn(pythonBin(), args, {
+      cwd: WORKSPACE_ROOT,
+      env: {
+        ...process.env,
+        NUMBA_CACHE_DIR: join(WORKSPACE_ROOT, ".cache", "numba"),
+        OMP_NUM_THREADS: String(Math.max(1, os.cpus().length)),
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout?.on("data", (d: Buffer) => {
+      stdout += d.toString();
+    });
+    child.stderr?.on("data", (d: Buffer) => {
+      stderr += d.toString();
+    });
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error("beat_timeout"));
+    }, BEAT_TIMEOUT_MS);
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      try {
+        const last = stdout.trim().split("\n").pop() ?? "{}";
+        const parsed = JSON.parse(last) as { ok?: boolean; bpm?: number; beats?: number[]; error?: string };
+        if (code === 0 && parsed.ok && Array.isArray(parsed.beats)) {
+          resolvePromise({ bpm: typeof parsed.bpm === "number" ? parsed.bpm : 0, beats: parsed.beats });
+          return;
+        }
+        reject(new Error(parsed.error || stderr.slice(-300) || `exit ${code}`));
+      } catch {
+        reject(new Error(stderr.slice(-300) || `exit ${code}`));
+      }
+    });
+  });
+}
+
+// O cache das batidas depende da DICA de BPM: a dica alimenta o start_bpm do
+// rastreador, então uma dica diferente pode render uma grade diferente (meio/
+// dobro do andamento). Por isso a dica entra na chave do cache — assim trocar a
+// opção de BPM recalcula, em vez de reusar uma grade ruim.
+function beatsJson(key: string, bpmHint: number): string {
+  const tag = bpmHint > 0 ? Math.round(bpmHint) : "auto";
+  return join(keyDir(key), `beats_${tag}.json`);
+}
+
+const beatsInFlight = new Map<string, Promise<BeatResult>>();
+
+// Calcula (ou reaproveita do cache) as batidas do instrumental já preparado.
+async function computeBeatsForKey(key: string, bpmHint: number): Promise<BeatResult> {
+  const cacheFile = beatsJson(key, bpmHint);
+  if (existsSync(cacheFile)) {
+    try {
+      const parsed = JSON.parse(await readFile(cacheFile, "utf8")) as BeatResult;
+      if (Array.isArray(parsed.beats) && parsed.beats.length >= 2) return parsed;
+    } catch {
+      // cache corrompido: recalcula.
+    }
+  }
+  const inst = stemMp3(key, "instrumental");
+  if (!existsSync(inst)) throw new Error("not_ready");
+  const wav = join(keyDir(key), "beats.wav");
+  try {
+    await transcodeToWavMono(inst, wav);
+    const result = await runBeatDetection(wav, bpmHint);
+    await writeFile(cacheFile, JSON.stringify(result)).catch(() => {});
+    return result;
+  } finally {
+    await rm(wav, { force: true }).catch(() => {});
+  }
+}
+
+function parseBpmHint(q: unknown): number {
+  const n = Number(q);
+  return Number.isFinite(n) && n >= 40 && n <= 240 ? n : 0;
 }
 
 function transcodeToMp3(wavPath: string, mp3Path: string): Promise<void> {
@@ -402,5 +517,68 @@ router.get("/stems/file", (req: Request, res: Response) => {
   stream.pipe(res);
   return;
 });
+
+// ── Batidas (beat tracking) de uma faixa já preparada (HQ) ────────────────────
+// Reaproveita o instrumental do cache pela chave — sem reenviar o áudio. O
+// resultado fica em cache (beats.json) para não recalcular.
+router.get("/stems/beats", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
+  const key = String(req.query.key ?? "").trim();
+  if (!KEY_RE.test(key)) return res.status(400).json({ ok: false, error: "bad_request" });
+  if (!existsSync(stemMp3(key, "instrumental"))) {
+    return res.status(404).json({ ok: false, error: "not_ready" });
+  }
+  const bpmHint = parseBpmHint(req.query.bpm);
+  const inFlightKey = `${key}|${bpmHint > 0 ? Math.round(bpmHint) : "auto"}`;
+  try {
+    let p = beatsInFlight.get(inFlightKey);
+    if (!p) {
+      p = computeBeatsForKey(key, bpmHint).finally(() => beatsInFlight.delete(inFlightKey));
+      beatsInFlight.set(inFlightKey, p);
+    }
+    const result = await p;
+    return res.json({ ok: true, bpm: result.bpm, beats: result.beats });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[/api/stems/beats] falhou (${key}):`, msg);
+    return res.status(500).json({ ok: false, error: msg.slice(0, 200) });
+  }
+});
+
+// ── Batidas (beat tracking) de um áudio enviado (modo rápido) ─────────────────
+// O instrumental é gerado no navegador; aqui recebemos os bytes (corpo bruto,
+// como o prepare-upload) e devolvemos as batidas. Sem cache (efêmero).
+router.post(
+  "/stems/beats",
+  express.raw({ type: () => true, limit: "60mb" }),
+  async (req: Request, res: Response) => {
+    if (!requireAuth(req, res)) return;
+    const body = req.body as Buffer;
+    if (!Buffer.isBuffer(body) || body.length === 0) {
+      return res.status(400).json({ ok: false, error: "empty" });
+    }
+    if (body.length > MAX_UPLOAD_BYTES) {
+      return res.status(413).json({ ok: false, error: "too_large" });
+    }
+    const bpmHint = parseBpmHint(req.query.bpm);
+    mkdirSync(STEM_CACHE, { recursive: true });
+    const stamp = createHash("sha1").update(body).digest("hex").slice(0, 16);
+    const srcPath = join(STEM_CACHE, `beats_${stamp}.src`);
+    const wavPath = join(STEM_CACHE, `beats_${stamp}.wav`);
+    try {
+      await writeFile(srcPath, body);
+      await transcodeToWavMono(srcPath, wavPath);
+      const result = await runBeatDetection(wavPath, bpmHint);
+      return res.json({ ok: true, bpm: result.bpm, beats: result.beats });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[/api/stems/beats POST] falhou:", msg);
+      return res.status(500).json({ ok: false, error: msg.slice(0, 200) });
+    } finally {
+      await rm(srcPath, { force: true }).catch(() => {});
+      await rm(wavPath, { force: true }).catch(() => {});
+    }
+  },
+);
 
 export default router;

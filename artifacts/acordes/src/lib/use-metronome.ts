@@ -241,6 +241,15 @@ export interface SyncedMetronomeConfig {
    * É uma calibração por dispositivo (a latência varia entre aparelhos).
    */
   syncOffsetSec: number;
+  /**
+   * Lista de INSTANTES (s, no tempo da música) de cada batida detectada por
+   * rastreamento profissional (beat tracking) no servidor. Quando presente, o
+   * clique cai EXATAMENTE em cada batida real da música — em vez de uma grade
+   * rígida (bpm + fase) estimada. É o que mantém o clique colado mesmo com
+   * pequenas variações de andamento. Deve estar ordenada. Sem ela (ou com menos
+   * de 2 batidas), o motor volta para a grade baseada no BPM.
+   */
+  beatTimes?: number[];
   /** Volume do clique (0..1). */
   volume: number;
 }
@@ -280,6 +289,8 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
   const secPerBeatRef = useRef(0);
   const beatOffsetRef = useRef(0); // fase corrente da grade (s)
   const syncOffsetRef = useRef(0); // compensação de latência corrente (s)
+  // Lista de batidas corrente (modo "mapa de batidas"). null = grade por BPM.
+  const beatTimesRef = useRef<number[] | null>(null);
   // Após reancorar (mudança de BPM/fase/calibração ou seek), as batidas já
   // agendadas na janela de lookahead continuam tocando (não dá p/ cancelá-las
   // sem estalo). Seguramos o agendamento das NOVAS batidas até este instante do
@@ -301,10 +312,23 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
   // (Re)ancora o mapeamento música↔AudioContext na posição informada. A próxima
   // batida respeita a fase: as batidas caem em `offset + n·secPerBeat`.
   const anchorAt = useCallback(
-    (songPos: number, ctxNow: number, secPerBeat: number, offset: number) => {
+    (songPos: number, ctxNow: number, secPerBeat: number, offset: number, beatTimes?: number[] | null) => {
       anchorSongRef.current = songPos;
       anchorCtxRef.current = ctxNow;
-      nextBeatRef.current = Math.ceil((songPos - offset) / secPerBeat - 1e-6);
+      if (beatTimes && beatTimes.length >= 2) {
+        // Modo mapa de batidas: próxima batida = primeira cujo instante é >= à
+        // posição atual da música (busca binária na lista ordenada).
+        let lo = 0;
+        let hi = beatTimes.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (beatTimes[mid] < songPos) lo = mid + 1;
+          else hi = mid;
+        }
+        nextBeatRef.current = lo;
+      } else {
+        nextBeatRef.current = Math.ceil((songPos - offset) / secPerBeat - 1e-6);
+      }
     },
     [],
   );
@@ -314,10 +338,13 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
     const master = masterGainRef.current;
     if (!ctx || !master) return;
 
-    const { getPosition, bpm, beatsPerBar, beatOffsetSec, syncOffsetSec } = cfgRef.current;
-    if (!bpm || bpm <= 0) return;
+    const { getPosition, bpm, beatsPerBar, beatOffsetSec, syncOffsetSec, beatTimes } = cfgRef.current;
+    // Modo "mapa de batidas": clicamos nos instantes reais detectados (estilo
+    // profissional). Sem lista válida, voltamos para a grade baseada no BPM.
+    const map = Array.isArray(beatTimes) && beatTimes.length >= 2 ? beatTimes : null;
+    if (!map && (!bpm || bpm <= 0)) return;
 
-    const secPerBeat = 60 / bpm;
+    const secPerBeat = bpm > 0 ? 60 / bpm : 0;
     const offset = Number.isFinite(beatOffsetSec) ? beatOffsetSec : 0;
     const syncOffset = Number.isFinite(syncOffsetSec) ? syncOffsetSec : 0;
     const beats = Math.max(1, beatsPerBar);
@@ -333,22 +360,22 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
       secPerBeatRef.current = secPerBeat;
       beatOffsetRef.current = offset;
       syncOffsetRef.current = syncOffset;
-      anchorAt(actualSong, ctxNow, secPerBeat, offset);
+      beatTimesRef.current = map;
+      anchorAt(actualSong, ctxNow, secPerBeat, offset, map);
       beatQueueRef.current = [];
       return;
     }
 
-    // Se o tempo (BPM), a fase ou a calibração mudaram, a contagem perde o
-    // sentido (ou as batidas já agendadas ficariam desalinhadas): reancora.
-    if (
-      secPerBeat !== secPerBeatRef.current ||
-      offset !== beatOffsetRef.current ||
-      syncOffset !== syncOffsetRef.current
-    ) {
+    // Se a FONTE da grade mudou (lista de batidas, BPM, fase ou calibração), a
+    // contagem perde o sentido (ou as batidas já agendadas ficariam fora): reancora.
+    const beatTimesChanged = map !== beatTimesRef.current;
+    const gridChanged = secPerBeat !== secPerBeatRef.current || offset !== beatOffsetRef.current;
+    if (beatTimesChanged || syncOffset !== syncOffsetRef.current || (!map && gridChanged)) {
       secPerBeatRef.current = secPerBeat;
       beatOffsetRef.current = offset;
       syncOffsetRef.current = syncOffset;
-      anchorAt(actualSong, ctxNow, secPerBeat, offset);
+      beatTimesRef.current = map;
+      anchorAt(actualSong, ctxNow, secPerBeat, offset, map);
       beatQueueRef.current = [];
       holdUntilRef.current = ctxNow + SYNCED_SCHEDULE_AHEAD;
     } else {
@@ -357,7 +384,7 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
       const diff = actualSong - predicted;
       if (Math.abs(diff) > SEEK_JUMP) {
         // Salto grande (seek/pausa-retomada): recontagem a partir da nova posição.
-        anchorAt(actualSong, ctxNow, secPerBeat, offset);
+        anchorAt(actualSong, ctxNow, secPerBeat, offset, map);
         beatQueueRef.current = [];
         holdUntilRef.current = ctxNow + SYNCED_SCHEDULE_AHEAD;
       } else if (Math.abs(diff) > DRIFT_CORRECTION) {
@@ -375,7 +402,13 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
     for (;;) {
       if (guard++ > 512) break;
       const n = nextBeatRef.current;
-      const songTime = offset + n * secPerBeat;
+      let songTime: number;
+      if (map) {
+        if (n >= map.length) break; // acabaram as batidas detectadas
+        songTime = map[n];
+      } else {
+        songTime = offset + n * secPerBeat;
+      }
       // `syncOffset` (positivo) atrasa o clique para compensar a latência do
       // áudio em streaming e colá-lo exatamente na música.
       const ctxTime = anchorCtxRef.current + (songTime - anchorSongRef.current) + syncOffset;
@@ -442,11 +475,18 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
     const secPerBeat = bpm > 0 ? 60 / bpm : 0;
     const offset = Number.isFinite(cfgRef.current.beatOffsetSec) ? cfgRef.current.beatOffsetSec : 0;
     const syncOffset = Number.isFinite(cfgRef.current.syncOffsetSec) ? cfgRef.current.syncOffsetSec : 0;
+    const map =
+      Array.isArray(cfgRef.current.beatTimes) && cfgRef.current.beatTimes.length >= 2
+        ? cfgRef.current.beatTimes
+        : null;
     secPerBeatRef.current = secPerBeat;
     beatOffsetRef.current = offset;
     syncOffsetRef.current = syncOffset;
+    beatTimesRef.current = map;
     beatQueueRef.current = [];
-    if (secPerBeat > 0) anchorAt(cfgRef.current.getPosition(), ctx.currentTime, secPerBeat, offset);
+    if (map || secPerBeat > 0) {
+      anchorAt(cfgRef.current.getPosition(), ctx.currentTime, secPerBeat, offset, map);
+    }
 
     runningRef.current = true;
     schedulerIdRef.current = window.setInterval(scheduler, LOOKAHEAD_MS);
