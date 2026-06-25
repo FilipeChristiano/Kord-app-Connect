@@ -25,6 +25,8 @@ import {
   Download,
   Music,
   Play,
+  Pause,
+  Volume2,
   Minus,
   Plus,
 } from "lucide-react";
@@ -2086,33 +2088,35 @@ export default function AudioLab() {
                         <div className="flex items-center gap-2 mb-3">
                           <Music className="w-4 h-4 text-primary shrink-0" />
                           <p className="text-sm font-semibold text-white/90">Sem voz</p>
+                          <span className="text-[11px] text-white/45">
+                            arraste para trazer a voz de volta
+                          </span>
                         </div>
-                        <audio
-                          src={stemsFileUrl(hqKey, "instrumental")}
-                          controls
-                          className="w-full"
+                        <StemMixer
+                          key={`semvoz-${hqKey}`}
+                          baseUrl={stemsFileUrl(hqKey, "instrumental")}
+                          addUrl={stemsFileUrl(hqKey, "vocals")}
+                          addLabel="voz"
+                          downloadUrl={stemsFileUrl(hqKey, "instrumental")}
+                          downloadName="harmonic-sem-voz.mp3"
                         />
-                        <a
-                          href={stemsFileUrl(hqKey, "instrumental")}
-                          download="harmonic-sem-voz.mp3"
-                          className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                        >
-                          <Download className="w-4 h-4" /> Baixar (MP3)
-                        </a>
                       </div>
                       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                         <div className="flex items-center gap-2 mb-3">
                           <Mic className="w-4 h-4 text-primary shrink-0" />
                           <p className="text-sm font-semibold text-white/90">Voz em destaque</p>
+                          <span className="text-[11px] text-white/45">
+                            arraste para trazer o instrumental de volta
+                          </span>
                         </div>
-                        <audio src={stemsFileUrl(hqKey, "vocals")} controls className="w-full" />
-                        <a
-                          href={stemsFileUrl(hqKey, "vocals")}
-                          download="harmonic-voz.mp3"
-                          className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                        >
-                          <Download className="w-4 h-4" /> Baixar (MP3)
-                        </a>
+                        <StemMixer
+                          key={`voz-${hqKey}`}
+                          baseUrl={stemsFileUrl(hqKey, "vocals")}
+                          addUrl={stemsFileUrl(hqKey, "instrumental")}
+                          addLabel="instrumental"
+                          downloadUrl={stemsFileUrl(hqKey, "vocals")}
+                          downloadName="harmonic-voz.mp3"
+                        />
                       </div>
                     </div>
                   )}
@@ -2125,6 +2129,308 @@ export default function AudioLab() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Mixer com fader ───────────────────────────────────────────────────────────
+// Toca DUAS faixas em sincronia perfeita (Web Audio): a faixa base sempre no
+// volume cheio e a "outra" faixa entrando aos poucos conforme o controle.
+// Ex.: na versão "Sem voz", a base é o instrumental e o fader adiciona a voz.
+function StemMixer({
+  baseUrl,
+  addUrl,
+  addLabel,
+  downloadUrl,
+  downloadName,
+}: {
+  baseUrl: string;
+  addUrl: string;
+  addLabel: string;
+  downloadUrl: string;
+  downloadName: string;
+}) {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const baseBufRef = useRef<AudioBuffer | null>(null);
+  const addBufRef = useRef<AudioBuffer | null>(null);
+  const baseSrcRef = useRef<AudioBufferSourceNode | null>(null);
+  const addSrcRef = useRef<AudioBufferSourceNode | null>(null);
+  const baseGainRef = useRef<GainNode | null>(null);
+  const addGainRef = useRef<GainNode | null>(null);
+  const startedAtRef = useRef(0);
+  const offsetRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const isPlayingRef = useRef(false);
+  const mixRef = useRef(0);
+  const durationRef = useRef(0);
+
+  const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [position, setPosition] = useState(0);
+  const [mix, setMix] = useState(0);
+
+  const stopSources = useCallback(() => {
+    for (const ref of [baseSrcRef, addSrcRef]) {
+      const node = ref.current;
+      if (node) {
+        node.onended = null;
+        try {
+          node.stop();
+        } catch {
+          /* já parado */
+        }
+        try {
+          node.disconnect();
+        } catch {
+          /* ignore */
+        }
+        ref.current = null;
+      }
+    }
+    for (const ref of [baseGainRef, addGainRef]) {
+      if (ref.current) {
+        try {
+          ref.current.disconnect();
+        } catch {
+          /* ignore */
+        }
+        ref.current = null;
+      }
+    }
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
+
+  const ensureLoaded = useCallback(async () => {
+    if (baseBufRef.current && addBufRef.current) return true;
+    setLoadState("loading");
+    try {
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = ctxRef.current ?? new Ctx();
+      ctxRef.current = ctx;
+      const [baseArr, addArr] = await Promise.all([
+        fetch(baseUrl, { credentials: "include" }).then((r) => r.arrayBuffer()),
+        fetch(addUrl, { credentials: "include" }).then((r) => r.arrayBuffer()),
+      ]);
+      const [baseBuf, addBuf] = await Promise.all([
+        ctx.decodeAudioData(baseArr),
+        ctx.decodeAudioData(addArr),
+      ]);
+      baseBufRef.current = baseBuf;
+      addBufRef.current = addBuf;
+      const dur = Math.max(baseBuf.duration, addBuf.duration);
+      durationRef.current = dur;
+      setDuration(dur);
+      setLoadState("ready");
+      return true;
+    } catch {
+      setLoadState("error");
+      return false;
+    }
+  }, [baseUrl, addUrl]);
+
+  const finishPlayback = useCallback(() => {
+    isPlayingRef.current = false;
+    offsetRef.current = 0;
+    stopSources();
+    setIsPlaying(false);
+    setPosition(0);
+  }, [stopSources]);
+
+  const tick = useCallback(() => {
+    const ctx = ctxRef.current;
+    if (!ctx || !isPlayingRef.current) return;
+    const pos = offsetRef.current + (ctx.currentTime - startedAtRef.current);
+    if (pos >= durationRef.current) {
+      finishPlayback();
+      return;
+    }
+    setPosition(Math.max(0, pos));
+    rafRef.current = requestAnimationFrame(tick);
+  }, [finishPlayback]);
+
+  const startPlayback = useCallback(
+    (fromOffset: number) => {
+      const ctx = ctxRef.current;
+      const baseBuf = baseBufRef.current;
+      const addBuf = addBufRef.current;
+      if (!ctx || !baseBuf || !addBuf) return;
+      stopSources();
+
+      const from = Math.max(0, Math.min(fromOffset, durationRef.current));
+
+      const baseGain = ctx.createGain();
+      baseGain.gain.value = 1;
+      baseGain.connect(ctx.destination);
+      baseGainRef.current = baseGain;
+      const addGain = ctx.createGain();
+      addGain.gain.value = mixRef.current;
+      addGain.connect(ctx.destination);
+      addGainRef.current = addGain;
+
+      const baseSrc = ctx.createBufferSource();
+      baseSrc.buffer = baseBuf;
+      baseSrc.connect(baseGain);
+      const addSrc = ctx.createBufferSource();
+      addSrc.buffer = addBuf;
+      addSrc.connect(addGain);
+      baseSrcRef.current = baseSrc;
+      addSrcRef.current = addSrc;
+
+      const startTime = ctx.currentTime + 0.02;
+      baseSrc.start(startTime, from);
+      addSrc.start(startTime, from);
+      startedAtRef.current = startTime;
+      offsetRef.current = from;
+
+      const handleEnded = () => {
+        if (!isPlayingRef.current) return;
+        const ctxNow = ctxRef.current;
+        if (!ctxNow) return;
+        const pos = offsetRef.current + (ctxNow.currentTime - startedAtRef.current);
+        if (pos >= durationRef.current - 0.15) finishPlayback();
+      };
+      baseSrc.onended = handleEnded;
+      addSrc.onended = handleEnded;
+
+      isPlayingRef.current = true;
+      setIsPlaying(true);
+      rafRef.current = requestAnimationFrame(tick);
+    },
+    [stopSources, tick, finishPlayback],
+  );
+
+  const pause = useCallback(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const pos = Math.max(
+      0,
+      Math.min(offsetRef.current + (ctx.currentTime - startedAtRef.current), durationRef.current),
+    );
+    stopSources();
+    offsetRef.current = pos;
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    setPosition(pos);
+  }, [stopSources]);
+
+  const togglePlay = useCallback(async () => {
+    const ok = await ensureLoaded();
+    if (!ok) return;
+    const ctx = ctxRef.current;
+    if (ctx?.state === "suspended") await ctx.resume();
+    if (isPlayingRef.current) {
+      pause();
+    } else {
+      const from = offsetRef.current >= durationRef.current ? 0 : offsetRef.current;
+      startPlayback(from);
+    }
+  }, [ensureLoaded, pause, startPlayback]);
+
+  const seek = useCallback(
+    (t: number) => {
+      const clamped = Math.max(0, Math.min(t, durationRef.current));
+      offsetRef.current = clamped;
+      setPosition(clamped);
+      if (isPlayingRef.current) startPlayback(clamped);
+    },
+    [startPlayback],
+  );
+
+  const changeMix = useCallback((v: number) => {
+    mixRef.current = v;
+    setMix(v);
+    const g = addGainRef.current;
+    const ctx = ctxRef.current;
+    if (g && ctx) g.gain.setTargetAtTime(v, ctx.currentTime, 0.03);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopSources();
+      ctxRef.current?.close().catch(() => {});
+      ctxRef.current = null;
+    };
+  }, [stopSources]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => void togglePlay()}
+          disabled={loadState === "loading"}
+          className={cn(
+            "shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all",
+            loadState === "loading"
+              ? "bg-white/[0.06] text-white/40"
+              : "bg-primary text-primary-foreground hover:bg-primary/90",
+          )}
+          aria-label={isPlaying ? "Pausar" : "Tocar"}
+        >
+          {loadState === "loading" ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : isPlaying ? (
+            <Pause className="w-5 h-5" />
+          ) : (
+            <Play className="w-5 h-5 ml-0.5" />
+          )}
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={duration || 0.0001}
+          step={0.05}
+          value={position}
+          onChange={(e) => seek(Number(e.target.value))}
+          disabled={loadState !== "ready"}
+          className="flex-1 h-1.5 accent-primary cursor-pointer disabled:cursor-not-allowed"
+          aria-label="Posição da música"
+        />
+        <span className="text-[11px] font-mono text-white/50 tabular-nums w-[88px] text-right">
+          {formatClock(position)} / {formatClock(duration)}
+        </span>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
+            <Volume2 className="w-3.5 h-3.5 text-primary" /> Adicionar {addLabel}
+          </span>
+          <span className="text-[12px] font-mono text-primary tabular-nums">
+            {Math.round(mix * 100)}%
+          </span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={mix}
+          onChange={(e) => changeMix(Number(e.target.value))}
+          className="w-full h-1.5 accent-primary cursor-pointer"
+          aria-label={`Quantidade de ${addLabel}`}
+        />
+      </div>
+
+      {loadState === "error" && (
+        <p className="text-[12px] text-amber-200/90">
+          Não foi possível carregar o áudio para a mistura. Tente novamente.
+        </p>
+      )}
+
+      <a
+        href={downloadUrl}
+        download={downloadName}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+      >
+        <Download className="w-4 h-4" /> Baixar (MP3)
+      </a>
     </div>
   );
 }
