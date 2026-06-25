@@ -286,8 +286,8 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
       const ctxTime = ctx.currentTime + (beatSong - pos);
       if (ctxTime < ctx.currentTime) continue;
       const beatInBar = ((n % beats) + beats) % beats;
-      const level: AccentLevel = beatInBar === 0 ? "strong" : "weak";
-      playClick(ctx, master, ctxTime, level);
+      // Mixer: todas as batidas iguais, sem acentuação forte no tempo 1.
+      playClick(ctx, master, ctxTime, "weak");
       beatQueueRef.current.push({ beat: beatInBar, time: ctxTime });
     }
 

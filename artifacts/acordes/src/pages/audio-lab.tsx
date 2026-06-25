@@ -2455,7 +2455,7 @@ function StemMixer({
         </span>
       </div>
 
-      {/* Tempo da música (BPM) — descoberto automaticamente, ajustável */}
+      {/* Tempo da música (BPM) — cravado no tempo da música, sem edição */}
       <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
         <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
           <Gauge className="w-3.5 h-3.5 text-primary" /> Tempo da música
@@ -2466,26 +2466,10 @@ function StemMixer({
           </span>
         ) : (
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMetroBpm((v) => clampMetroBpm(v - 1))}
-              className="w-7 h-7 shrink-0 rounded-lg bg-secondary/70 border border-white/10 text-white/80 hover:text-white hover:border-white/20 flex items-center justify-center transition-all"
-              aria-label="Diminuir o tempo"
-            >
-              <Minus className="w-3.5 h-3.5" />
-            </button>
             <span className="font-mono tabular-nums text-sm text-white notranslate" translate="no">
               {metroBpm}
               <span className="text-[11px] text-white/45 ml-1">BPM</span>
             </span>
-            <button
-              type="button"
-              onClick={() => setMetroBpm((v) => clampMetroBpm(v + 1))}
-              className="w-7 h-7 shrink-0 rounded-lg bg-secondary/70 border border-white/10 text-white/80 hover:text-white hover:border-white/20 flex items-center justify-center transition-all"
-              aria-label="Aumentar o tempo"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
             <span className="text-[11px] text-white/40 notranslate ml-1" translate="no">
               {metroTs ?? "4/4"}
             </span>
