@@ -2134,9 +2134,12 @@ export default function AudioLab() {
 }
 
 // ── Mixer com fader ───────────────────────────────────────────────────────────
-// Toca DUAS faixas em sincronia perfeita (Web Audio): a faixa base sempre no
-// volume cheio e a "outra" faixa entrando aos poucos conforme o controle.
+// Toca DUAS faixas em sincronia (streaming): a faixa base sempre no volume cheio
+// e a "outra" faixa entrando aos poucos conforme o controle. Usa dois elementos
+// <audio> (sem baixar/decodificar tudo antes) com correção de sincronia leve.
 // Ex.: na versão "Sem voz", a base é o instrumental e o fader adiciona a voz.
+const SYNC_THRESHOLD = 0.12; // segundos de defasagem antes de re-sincronizar
+
 function StemMixer({
   baseUrl,
   addUrl,
@@ -2150,19 +2153,9 @@ function StemMixer({
   downloadUrl: string;
   downloadName: string;
 }) {
-  const ctxRef = useRef<AudioContext | null>(null);
-  const baseBufRef = useRef<AudioBuffer | null>(null);
-  const addBufRef = useRef<AudioBuffer | null>(null);
-  const baseSrcRef = useRef<AudioBufferSourceNode | null>(null);
-  const addSrcRef = useRef<AudioBufferSourceNode | null>(null);
-  const baseGainRef = useRef<GainNode | null>(null);
-  const addGainRef = useRef<GainNode | null>(null);
-  const startedAtRef = useRef(0);
-  const offsetRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
-  const isPlayingRef = useRef(false);
+  const baseRef = useRef<HTMLAudioElement | null>(null);
+  const addRef = useRef<HTMLAudioElement | null>(null);
   const mixRef = useRef(0);
-  const durationRef = useRef(0);
 
   const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -2170,193 +2163,113 @@ function StemMixer({
   const [position, setPosition] = useState(0);
   const [mix, setMix] = useState(0);
 
-  const stopSources = useCallback(() => {
-    for (const ref of [baseSrcRef, addSrcRef]) {
-      const node = ref.current;
-      if (node) {
-        node.onended = null;
-        try {
-          node.stop();
-        } catch {
-          /* já parado */
-        }
-        try {
-          node.disconnect();
-        } catch {
-          /* ignore */
-        }
-        ref.current = null;
+  // Cria os dois elementos de áudio uma única vez por par de faixas.
+  useEffect(() => {
+    const base = new Audio();
+    base.src = baseUrl;
+    base.preload = "auto";
+    base.volume = 1;
+    const add = new Audio();
+    add.src = addUrl;
+    add.preload = "auto";
+    add.volume = 0;
+    baseRef.current = base;
+    addRef.current = add;
+
+    const onMeta = () => setDuration(base.duration || 0);
+    const onTime = () => {
+      setPosition(base.currentTime);
+      // Correção de sincronia: mantém a faixa adicional alinhada à base.
+      const add2 = addRef.current;
+      if (add2 && !base.paused && Math.abs(add2.currentTime - base.currentTime) > SYNC_THRESHOLD) {
+        add2.currentTime = base.currentTime;
       }
-    }
-    for (const ref of [baseGainRef, addGainRef]) {
-      if (ref.current) {
-        try {
-          ref.current.disconnect();
-        } catch {
-          /* ignore */
-        }
-        ref.current = null;
+    };
+    const onCanPlay = () => setLoadState((s) => (s === "error" ? s : "ready"));
+    const onWaiting = () => setLoadState((s) => (s === "ready" ? "loading" : s));
+    const onPlaying = () => setLoadState("ready");
+    const onEnded = () => {
+      const add2 = addRef.current;
+      base.pause();
+      base.currentTime = 0;
+      if (add2) {
+        add2.pause();
+        add2.currentTime = 0;
       }
+      setIsPlaying(false);
+      setPosition(0);
+    };
+    const onError = () => setLoadState("error");
+
+    base.addEventListener("loadedmetadata", onMeta);
+    base.addEventListener("timeupdate", onTime);
+    base.addEventListener("canplay", onCanPlay);
+    base.addEventListener("waiting", onWaiting);
+    base.addEventListener("playing", onPlaying);
+    base.addEventListener("ended", onEnded);
+    base.addEventListener("error", onError);
+    add.addEventListener("error", onError);
+
+    return () => {
+      base.removeEventListener("loadedmetadata", onMeta);
+      base.removeEventListener("timeupdate", onTime);
+      base.removeEventListener("canplay", onCanPlay);
+      base.removeEventListener("waiting", onWaiting);
+      base.removeEventListener("playing", onPlaying);
+      base.removeEventListener("ended", onEnded);
+      base.removeEventListener("error", onError);
+      add.removeEventListener("error", onError);
+      base.pause();
+      add.pause();
+      base.src = "";
+      add.src = "";
+      base.load();
+      add.load();
+      baseRef.current = null;
+      addRef.current = null;
+    };
+  }, [baseUrl, addUrl]);
+
+  const togglePlay = useCallback(async () => {
+    const base = baseRef.current;
+    const add = addRef.current;
+    if (!base || !add) return;
+    if (!base.paused) {
+      base.pause();
+      add.pause();
+      setIsPlaying(false);
+      return;
     }
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
+    setLoadState((s) => (s === "ready" ? s : "loading"));
+    add.currentTime = base.currentTime;
+    add.volume = mixRef.current;
+    try {
+      await Promise.all([base.play(), add.play()]);
+      setIsPlaying(true);
+    } catch {
+      base.pause();
+      add.pause();
+      setIsPlaying(false);
+      setLoadState("error");
     }
   }, []);
 
-  const ensureLoaded = useCallback(async () => {
-    if (baseBufRef.current && addBufRef.current) return true;
-    setLoadState("loading");
-    try {
-      const Ctx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      const ctx = ctxRef.current ?? new Ctx();
-      ctxRef.current = ctx;
-      const [baseArr, addArr] = await Promise.all([
-        fetch(baseUrl, { credentials: "include" }).then((r) => r.arrayBuffer()),
-        fetch(addUrl, { credentials: "include" }).then((r) => r.arrayBuffer()),
-      ]);
-      const [baseBuf, addBuf] = await Promise.all([
-        ctx.decodeAudioData(baseArr),
-        ctx.decodeAudioData(addArr),
-      ]);
-      baseBufRef.current = baseBuf;
-      addBufRef.current = addBuf;
-      const dur = Math.max(baseBuf.duration, addBuf.duration);
-      durationRef.current = dur;
-      setDuration(dur);
-      setLoadState("ready");
-      return true;
-    } catch {
-      setLoadState("error");
-      return false;
-    }
-  }, [baseUrl, addUrl]);
-
-  const finishPlayback = useCallback(() => {
-    isPlayingRef.current = false;
-    offsetRef.current = 0;
-    stopSources();
-    setIsPlaying(false);
-    setPosition(0);
-  }, [stopSources]);
-
-  const tick = useCallback(() => {
-    const ctx = ctxRef.current;
-    if (!ctx || !isPlayingRef.current) return;
-    const pos = offsetRef.current + (ctx.currentTime - startedAtRef.current);
-    if (pos >= durationRef.current) {
-      finishPlayback();
-      return;
-    }
-    setPosition(Math.max(0, pos));
-    rafRef.current = requestAnimationFrame(tick);
-  }, [finishPlayback]);
-
-  const startPlayback = useCallback(
-    (fromOffset: number) => {
-      const ctx = ctxRef.current;
-      const baseBuf = baseBufRef.current;
-      const addBuf = addBufRef.current;
-      if (!ctx || !baseBuf || !addBuf) return;
-      stopSources();
-
-      const from = Math.max(0, Math.min(fromOffset, durationRef.current));
-
-      const baseGain = ctx.createGain();
-      baseGain.gain.value = 1;
-      baseGain.connect(ctx.destination);
-      baseGainRef.current = baseGain;
-      const addGain = ctx.createGain();
-      addGain.gain.value = mixRef.current;
-      addGain.connect(ctx.destination);
-      addGainRef.current = addGain;
-
-      const baseSrc = ctx.createBufferSource();
-      baseSrc.buffer = baseBuf;
-      baseSrc.connect(baseGain);
-      const addSrc = ctx.createBufferSource();
-      addSrc.buffer = addBuf;
-      addSrc.connect(addGain);
-      baseSrcRef.current = baseSrc;
-      addSrcRef.current = addSrc;
-
-      const startTime = ctx.currentTime + 0.02;
-      baseSrc.start(startTime, from);
-      addSrc.start(startTime, from);
-      startedAtRef.current = startTime;
-      offsetRef.current = from;
-
-      const handleEnded = () => {
-        if (!isPlayingRef.current) return;
-        const ctxNow = ctxRef.current;
-        if (!ctxNow) return;
-        const pos = offsetRef.current + (ctxNow.currentTime - startedAtRef.current);
-        if (pos >= durationRef.current - 0.15) finishPlayback();
-      };
-      baseSrc.onended = handleEnded;
-      addSrc.onended = handleEnded;
-
-      isPlayingRef.current = true;
-      setIsPlaying(true);
-      rafRef.current = requestAnimationFrame(tick);
-    },
-    [stopSources, tick, finishPlayback],
-  );
-
-  const pause = useCallback(() => {
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-    const pos = Math.max(
-      0,
-      Math.min(offsetRef.current + (ctx.currentTime - startedAtRef.current), durationRef.current),
-    );
-    stopSources();
-    offsetRef.current = pos;
-    isPlayingRef.current = false;
-    setIsPlaying(false);
-    setPosition(pos);
-  }, [stopSources]);
-
-  const togglePlay = useCallback(async () => {
-    const ok = await ensureLoaded();
-    if (!ok) return;
-    const ctx = ctxRef.current;
-    if (ctx?.state === "suspended") await ctx.resume();
-    if (isPlayingRef.current) {
-      pause();
-    } else {
-      const from = offsetRef.current >= durationRef.current ? 0 : offsetRef.current;
-      startPlayback(from);
-    }
-  }, [ensureLoaded, pause, startPlayback]);
-
-  const seek = useCallback(
-    (t: number) => {
-      const clamped = Math.max(0, Math.min(t, durationRef.current));
-      offsetRef.current = clamped;
-      setPosition(clamped);
-      if (isPlayingRef.current) startPlayback(clamped);
-    },
-    [startPlayback],
-  );
+  const seek = useCallback((t: number) => {
+    const base = baseRef.current;
+    const add = addRef.current;
+    if (!base || !add) return;
+    const clamped = Math.max(0, Math.min(t, base.duration || t));
+    base.currentTime = clamped;
+    add.currentTime = clamped;
+    setPosition(clamped);
+  }, []);
 
   const changeMix = useCallback((v: number) => {
     mixRef.current = v;
     setMix(v);
-    const g = addGainRef.current;
-    const ctx = ctxRef.current;
-    if (g && ctx) g.gain.setTargetAtTime(v, ctx.currentTime, 0.03);
+    const add = addRef.current;
+    if (add) add.volume = v;
   }, []);
-
-  useEffect(() => {
-    return () => {
-      stopSources();
-      ctxRef.current?.close().catch(() => {});
-      ctxRef.current = null;
-    };
-  }, [stopSources]);
 
   return (
     <div className="space-y-3">
