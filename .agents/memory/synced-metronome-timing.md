@@ -26,6 +26,30 @@ the beats immune to media jitter and JS-timer jank.
 - Schedule ~250ms ahead (SYNCED_SCHEDULE_AHEAD) so a delayed scheduler tick never drops a beat — the clicks are already committed to the AudioContext.
 - Volume changes must ONLY touch the master GainNode (setTargetAtTime); never restart or reset the scheduler.
 
+## Rule: a stable AudioContext anchor is necessary but NOT sufficient — you also need PHASE and a PRECISE (non-integer) BPM
+Anchoring fixed the jitter/jank, but the user still reported "fora do tempo." Two
+remaining causes:
+- **Phase:** beats land at `beatOffsetSec + n·secPerBeat`, not `n·secPerBeat`.
+  Real songs have an intro/pickup, so beat 1 is almost never at song-time 0.
+  Without the offset the clicks sit a constant fraction-of-a-beat off — sounds
+  off-tempo even when the BPM is right.
+- **Drift:** a rounded integer BPM accumulates error. ~0.5 BPM off at 75 BPM
+  drifts ~2s over a 5-min song, so the click slides out of time by the end.
+
+**Fix:** `computeBeatGrid(buffer, bpmHint?, tsHint?)` in `bpm-detector.ts` fits a
+global grid (precise float BPM + phase) to the onsets of the WHOLE instrumental:
+search ±1.2% around the hint × 48 phase positions, score by proximity-weighted
+matched onset strength so the winning BPM is the one that stays aligned to the
+END of the track. Returns `{bpm (float), bpmRounded, beatOffsetSec, timeSignature}`.
+
+**How to apply:**
+- StemMixer ALWAYS analyzes the actual instrumental stem that plays (the stem
+  starts at t=0 same as playback, so the phase maps directly to its currentTime).
+  The upload-analysis BPM is passed only as `bpmHint` to fix the octave/meter.
+- Feed the precise float BPM (not rounded) to the engine; only `Math.round` for
+  display. `useSyncedMetronome` takes `beatOffsetSec` and re-anchors when phase
+  OR bpm changes; `nextBeat = ceil((songPos − offset)/secPerBeat)`.
+
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
 every beat is `playClick(..., "weak")` — no strong downbeat. The standalone

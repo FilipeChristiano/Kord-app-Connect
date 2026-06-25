@@ -655,6 +655,162 @@ function applyMusicalHeuristic(
   return best;
 }
 
+// ── Grade de batidas global (BPM preciso + fase) ──────────────────────────────
+
+export interface BeatGrid {
+  bpm: number; // BPM preciso (não arredondado) — usado pelo metrônomo
+  bpmRounded: number; // BPM arredondado — apenas para exibição
+  beatOffsetSec: number; // posição da batida 0 no tempo da música (s), 0 ≤ offset < duração da batida
+  timeSignature: DetectedTimeSignature | null;
+  confidence: number; // 0..1
+}
+
+/**
+ * Calcula uma grade de batidas para a MÚSICA INTEIRA: um BPM preciso (sem
+ * arredondar) e a fase (posição da 1ª batida). Isso é o que mantém o clique
+ * "colado" na música do começo ao fim:
+ *
+ *  - A fase elimina o erro constante (a batida 1 quase nunca cai em t=0; há
+ *    introdução/levada antes).
+ *  - O BPM preciso (em vez de inteiro) evita o arrasto que se acumula ao longo
+ *    de vários minutos quando o andamento é arredondado.
+ *
+ * A busca casa uma grade (BPM × fase) aos onsets de toda a faixa, premiando o
+ * encaixe apertado — então o melhor BPM é aquele cujo pulso continua alinhado
+ * até o fim, não só nos primeiros segundos.
+ *
+ * `bpmHint`/`tsHint` (quando conhecidos) fixam a oitava do andamento e o
+ * compasso; a busca refina em ±1,2% em torno da dica.
+ */
+export async function computeBeatGrid(
+  buffer: AudioBuffer,
+  bpmHint?: number | null,
+  tsHint?: DetectedTimeSignature | null,
+): Promise<BeatGrid | null> {
+  const sampleRate = buffer.sampleRate;
+  if (buffer.length < sampleRate) return null;
+
+  // 1. Bandas + envelope de onsets — sobre o áudio INTEIRO (não só um trecho)
+  let lowBand: Float32Array;
+  let midBand: Float32Array | null;
+  try {
+    [lowBand, midBand] = await Promise.all([
+      renderBand(buffer, 50, 300),
+      renderBand(buffer, 1000, 4000),
+    ]);
+  } catch {
+    lowBand = downmix(buffer);
+    midBand = null;
+  }
+  const envLow = fluxEnvelope(lowBand, FRAME, HOP);
+  const envMid = midBand ? fluxEnvelope(midBand, FRAME, HOP) : new Float32Array(envLow.length);
+  const n = Math.min(envLow.length, envMid.length);
+  if (n < 32) return null;
+  const rawEnv = new Float32Array(n);
+  for (let i = 0; i < n; i++) rawEnv[i] = envLow[i] + 0.5 * envMid[i];
+  const envRate = sampleRate / HOP;
+
+  // 2. BPM base e compasso: usa as dicas quando válidas; senão detecta.
+  let baseBpm = typeof bpmHint === "number" && bpmHint > 0 ? bpmHint : 0;
+  let ts: DetectedTimeSignature | null = tsHint ?? null;
+  if (baseBpm <= 0 || ts === null) {
+    const seg = selectSegment(rawEnv, envRate);
+    const det = detectTempo(rawEnv.subarray(seg.startFrame, seg.endFrame), envRate);
+    if (det) {
+      if (baseBpm <= 0) baseBpm = det.bpm;
+      if (ts === null) ts = det.timeSignature;
+    }
+  }
+  if (baseBpm <= 0) return null;
+
+  // 3. Onsets sobre a faixa inteira (envelope com média removida + retificada).
+  const env = Float32Array.from(rawEnv);
+  let mean = 0;
+  for (let i = 0; i < n; i++) mean += env[i];
+  mean /= n;
+  for (let i = 0; i < n; i++) env[i] = Math.max(0, env[i] - mean);
+  const onsets = pickOnsets(env);
+
+  if (onsets.length < 4) {
+    // Sem onsets confiáveis: grade só com o BPM informado, fase neutra.
+    return {
+      bpm: baseBpm,
+      bpmRounded: clampBpm(baseBpm),
+      beatOffsetSec: 0,
+      timeSignature: ts,
+      confidence: 0.2,
+    };
+  }
+
+  const idxs = onsets.map((o) => o.idx);
+  const strengths = onsets.map((o) => o.strength);
+  const hi = idxs.length - 1;
+  const nearest = (pos: number): number => {
+    if (pos <= idxs[0]) return 0;
+    if (pos >= idxs[hi]) return hi;
+    let lo = 0;
+    let h = hi;
+    while (lo < h) {
+      const mid = (lo + h) >> 1;
+      if (idxs[mid] < pos) lo = mid + 1;
+      else h = mid;
+    }
+    if (lo > 0 && pos - idxs[lo - 1] <= idxs[lo] - pos) return lo - 1;
+    return lo;
+  };
+
+  const totalFrames = n;
+
+  // Pontuação de uma grade num dado BPM: melhor fase casando os onsets de toda
+  // a faixa, ponderada pela proximidade (encaixe apertado vale mais). Como o
+  // erro de um BPM errado cresce ao longo da música, o BPM certo é o que mantém
+  // a pontuação alta até o fim.
+  const PHASE_STEPS = 48;
+  const scoreForBpm = (bpm: number): { score: number; phaseFrames: number } => {
+    const T = (envRate * 60) / bpm; // quadros por batida
+    if (!(T >= 2) || totalFrames < T * 2) return { score: -1, phaseFrames: 0 };
+    const tol = T * 0.18;
+    let bestPhase = 0;
+    let bestScore = -1;
+    for (let s = 0; s < PHASE_STEPS; s++) {
+      const p = (s * T) / PHASE_STEPS;
+      let sc = 0;
+      for (let g = p; g <= totalFrames - 1; g += T) {
+        const oi = nearest(g);
+        const d = Math.abs(idxs[oi] - g);
+        if (d <= tol) sc += strengths[oi] * (1 - d / tol);
+      }
+      if (sc > bestScore) {
+        bestScore = sc;
+        bestPhase = p;
+      }
+    }
+    return { score: bestScore, phaseFrames: bestPhase };
+  };
+
+  // 4. Busca fina do BPM em ±1,2% em torno da base (preserva a oitava).
+  let best = { bpm: baseBpm, score: -1, phaseFrames: 0 };
+  const span = baseBpm * 0.012;
+  const stepBpm = 0.05;
+  for (let b = baseBpm - span; b <= baseBpm + span + 1e-9; b += stepBpm) {
+    if (b <= 0) continue;
+    const { score, phaseFrames } = scoreForBpm(b);
+    if (score > best.score) best = { bpm: b, score, phaseFrames };
+  }
+
+  const spb = 60 / best.bpm;
+  let offsetSec = best.phaseFrames / envRate;
+  offsetSec = ((offsetSec % spb) + spb) % spb; // 0 ≤ offset < duração da batida
+
+  return {
+    bpm: best.bpm,
+    bpmRounded: clampBpm(best.bpm),
+    beatOffsetSec: offsetSec,
+    timeSignature: ts,
+    confidence: best.score > 0 ? 0.6 : 0.2,
+  };
+}
+
 /**
  * Sugere o compasso comparando a força da acentuação a cada 3 ou 4 tempos.
  * Retorna null quando a diferença é pequena demais para confiar.

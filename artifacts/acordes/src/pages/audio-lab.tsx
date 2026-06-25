@@ -60,7 +60,7 @@ import {
   MonoSourceError,
 } from "@/lib/audio-stems";
 import { LiveStudioPlayer } from "@/lib/audio-live";
-import { analyzeBpm, type DetectedTimeSignature } from "@/lib/bpm-detector";
+import { computeBeatGrid, type DetectedTimeSignature } from "@/lib/bpm-detector";
 import { useSyncedMetronome } from "@/lib/use-metronome";
 import {
   classifyLine,
@@ -2199,10 +2199,6 @@ const METRO_MIN_BPM = 40;
 const METRO_MAX_BPM = 240;
 const METRO_DEFAULT_BPM = 90;
 
-function clampMetroBpm(v: number): number {
-  return Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, Math.round(v)));
-}
-
 function StemMixer({
   vocalsUrl,
   instrumentalUrl,
@@ -2229,17 +2225,21 @@ function StemMixer({
   const [instVol, setInstVol] = useState(1);
 
   // ── Metrônomo embutido: toca junto com o áudio, no tempo da música ──────────
-  const hasInitialBpm = typeof initialBpm === "number" && initialBpm > 0;
-  const [metroBpm, setMetroBpm] = useState(hasInitialBpm ? clampMetroBpm(initialBpm as number) : 0);
+  // metroBpm é o BPM PRECISO (não arredondado) que alimenta o motor — é o que
+  // evita o arrasto ao longo da música. A exibição usa o valor arredondado.
+  // metroOffset é a fase (posição da 1ª batida): mantém o clique colado no tempo.
+  const [metroBpm, setMetroBpm] = useState(0);
+  const [metroOffset, setMetroOffset] = useState(0);
   const [metroTs, setMetroTs] = useState<DetectedTimeSignature | null>(initialTimeSignature ?? null);
   const [metroVol, setMetroVol] = useState(0.5);
-  const [bpmDetecting, setBpmDetecting] = useState(!hasInitialBpm);
+  const [bpmDetecting, setBpmDetecting] = useState(true);
 
   const beatsPerBar = metroTs === "3/4" ? 3 : 4;
   const metro = useSyncedMetronome({
     getPosition: () => instRef.current?.currentTime ?? 0,
     bpm: metroBpm,
     beatsPerBar,
+    beatOffsetSec: metroOffset,
     volume: metroVol,
   });
   // Mantém start/stop do metrônomo acessíveis dentro de efeitos/handlers estáveis.
@@ -2250,17 +2250,12 @@ function StemMixer({
     metroStopRef.current = metro.stop;
   }, [metro.start, metro.stop]);
 
-  // Descobre o tempo da música automaticamente. Se já recebemos o BPM da
-  // análise (envio de arquivo), usamos direto; senão, analisamos o instrumental
-  // separado — que tem a batida limpa, ideal para identificar o tempo.
+  // Descobre a grade de batidas do INSTRUMENTAL separado (batida limpa). Sempre
+  // analisamos o próprio instrumental que vai tocar — assim o BPM preciso e a
+  // FASE (posição da 1ª batida) batem exatamente com o áudio. O BPM da análise
+  // do envio entra apenas como dica, fixando a oitava do andamento e o compasso.
   useEffect(() => {
     let cancelled = false;
-    if (typeof initialBpm === "number" && initialBpm > 0) {
-      setMetroBpm(clampMetroBpm(initialBpm));
-      setMetroTs(initialTimeSignature ?? null);
-      setBpmDetecting(false);
-      return;
-    }
     setBpmDetecting(true);
     (async () => {
       try {
@@ -2268,13 +2263,25 @@ function StemMixer({
         const blob = await resp.blob();
         const file = new File([blob], "instrumental", { type: blob.type || "audio/wav" });
         const buffer = await fileToAudioBuffer(file);
-        const analysis = await analyzeBpm(buffer);
+        const bpmHint = typeof initialBpm === "number" && initialBpm > 0 ? initialBpm : null;
+        const grid = await computeBeatGrid(buffer, bpmHint, initialTimeSignature ?? null);
         if (cancelled) return;
-        const opt = analysis.options[analysis.recommendedIndex];
-        setMetroBpm(clampMetroBpm(opt?.bpm ?? analysis.bpm));
-        setMetroTs(analysis.timeSignature);
+        if (grid) {
+          const bpm = Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, grid.bpm));
+          setMetroBpm(bpm);
+          setMetroOffset(grid.beatOffsetSec);
+          setMetroTs(grid.timeSignature ?? initialTimeSignature ?? null);
+        } else {
+          setMetroBpm(bpmHint ?? METRO_DEFAULT_BPM);
+          setMetroOffset(0);
+          setMetroTs(initialTimeSignature ?? null);
+        }
       } catch {
-        if (!cancelled) setMetroBpm(METRO_DEFAULT_BPM);
+        if (!cancelled) {
+          const fallback = typeof initialBpm === "number" && initialBpm > 0 ? initialBpm : METRO_DEFAULT_BPM;
+          setMetroBpm(fallback);
+          setMetroOffset(0);
+        }
       } finally {
         if (!cancelled) setBpmDetecting(false);
       }
@@ -2467,7 +2474,7 @@ function StemMixer({
         ) : (
           <div className="flex items-center gap-2">
             <span className="font-mono tabular-nums text-sm text-white notranslate" translate="no">
-              {metroBpm}
+              {Math.round(metroBpm)}
               <span className="text-[11px] text-white/45 ml-1">BPM</span>
             </span>
             <span className="text-[11px] text-white/40 notranslate ml-1" translate="no">
