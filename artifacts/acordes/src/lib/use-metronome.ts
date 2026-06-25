@@ -20,6 +20,48 @@ export const ACCENT_CONFIG: Record<
 const SCHEDULE_AHEAD = 0.1; // segundos
 const LOOKAHEAD_MS = 25;
 
+// ── Som do clique (oscilador sintetizado) ────────────────────────────────────
+// Função compartilhada: agenda um clique no `time` (relógio do AudioContext),
+// roteado por `destination` (permite um ganho mestre para controlar o volume).
+function playClick(
+  ctx: AudioContext,
+  destination: AudioNode,
+  time: number,
+  kind: AccentLevel | "subdivision",
+): void {
+  let freq = 600;
+  let peak = 0.16;
+  let duration = 0.025;
+
+  if (kind === "subdivision") {
+    freq = 600;
+    peak = 0.16;
+    duration = 0.025;
+  } else {
+    const cfg = ACCENT_CONFIG[kind];
+    if (cfg.peak <= 0) return; // "Mudo" — não emite som
+    freq = cfg.freq;
+    peak = cfg.peak;
+    duration = cfg.duration;
+  }
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(freq, time);
+
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(peak, time + 0.002);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+  osc.connect(gain);
+  gain.connect(destination);
+
+  osc.start(time);
+  osc.stop(time + duration + 0.02);
+}
+
 export interface MetronomeConfig {
   bpm: number;
   beatsPerBar: number;
@@ -59,44 +101,6 @@ export function useMetronome(config: MetronomeConfig): UseMetronome {
     cfgRef.current = config;
   }, [config]);
 
-  // ── Som do clique (oscilador sintetizado) ──────────────────────────────────
-  const playClick = useCallback((time: number, kind: AccentLevel | "subdivision") => {
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
-
-    let freq = 600;
-    let peak = 0.16;
-    let duration = 0.025;
-
-    if (kind === "subdivision") {
-      freq = 600;
-      peak = 0.16;
-      duration = 0.025;
-    } else {
-      const cfg = ACCENT_CONFIG[kind];
-      if (cfg.peak <= 0) return; // "Mudo" — não emite som
-      freq = cfg.freq;
-      peak = cfg.peak;
-      duration = cfg.duration;
-    }
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(freq, time);
-
-    gain.gain.setValueAtTime(0, time);
-    gain.gain.linearRampToValueAtTime(peak, time + 0.002);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(time);
-    osc.stop(time + duration + 0.02);
-  }, []);
-
   // ── Agendador com lookahead (padrão Chris Wilson) ──────────────────────────
   const scheduler = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -113,10 +117,10 @@ export function useMetronome(config: MetronomeConfig): UseMetronome {
 
       if (isOnBeat) {
         const level = cfg.accents[beatIndex] ?? "weak";
-        playClick(nextNoteTimeRef.current, level);
+        playClick(ctx, ctx.destination, nextNoteTimeRef.current, level);
         beatQueueRef.current.push({ tick: beatIndex, time: nextNoteTimeRef.current });
       } else {
-        playClick(nextNoteTimeRef.current, "subdivision");
+        playClick(ctx, ctx.destination, nextNoteTimeRef.current, "subdivision");
       }
 
       // Avança o tempo: 1 tempo = 60/bpm; cada tick = (60/bpm) / mult
@@ -124,7 +128,7 @@ export function useMetronome(config: MetronomeConfig): UseMetronome {
       nextNoteTimeRef.current += secondsPerTick;
       currentTickRef.current = (tick + 1) % totalTicks;
     }
-  }, [playClick]);
+  }, []);
 
   // ── Loop visual sincronizado com o áudio ───────────────────────────────────
   const visualLoop = useCallback(() => {
@@ -210,4 +214,143 @@ export function useMetronome(config: MetronomeConfig): UseMetronome {
   }, []);
 
   return { isPlaying, currentBeat, start, stop, toggle, resetBeat };
+}
+
+// ── Metrônomo sincronizado a uma fonte externa (ex.: faixa de áudio) ──────────
+// Em vez de um transporte próprio, este motor agenda os cliques alinhados à
+// posição de reprodução de outra faixa (o instrumental, na mesa de mistura).
+// Assim o metrônomo fica "embutido" no áudio: toca junto, no tempo da música,
+// com um ganho mestre próprio para controlar o volume do clique.
+
+export interface SyncedMetronomeConfig {
+  /** Posição atual da faixa-mestre, em segundos. */
+  getPosition: () => number;
+  bpm: number;
+  beatsPerBar: number;
+  /** Volume do clique (0..1). */
+  volume: number;
+}
+
+export interface UseSyncedMetronome {
+  currentBeat: number;
+  start: () => Promise<void>;
+  stop: () => void;
+}
+
+export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetronome {
+  const [currentBeat, setCurrentBeat] = useState(0);
+
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const masterGainRef = useRef<GainNode | null>(null);
+  const schedulerIdRef = useRef<number | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+  const scheduledUntilRef = useRef(0);
+  const beatQueueRef = useRef<{ beat: number; time: number }[]>([]);
+  const runningRef = useRef(false);
+
+  const cfgRef = useRef(config);
+  useEffect(() => {
+    cfgRef.current = config;
+  }, [config]);
+
+  // Volume do clique aplicado ao ganho mestre (transição suave, sem estalos).
+  useEffect(() => {
+    const g = masterGainRef.current;
+    const ctx = audioCtxRef.current;
+    if (g && ctx) g.gain.setTargetAtTime(Math.max(0, config.volume), ctx.currentTime, 0.01);
+  }, [config.volume]);
+
+  const scheduler = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    const master = masterGainRef.current;
+    if (!ctx || !master) return;
+
+    const { getPosition, bpm, beatsPerBar } = cfgRef.current;
+    if (!bpm || bpm <= 0) return;
+
+    const secPerBeat = 60 / bpm;
+    const beats = Math.max(1, beatsPerBar);
+    const pos = getPosition();
+
+    // Detecta saltos de posição (seek / troca de tempo) e re-sincroniza.
+    if (pos < scheduledUntilRef.current - 0.5 || pos > scheduledUntilRef.current + 0.5) {
+      scheduledUntilRef.current = pos;
+    }
+
+    const windowEnd = pos + SCHEDULE_AHEAD;
+    const startTime = Math.max(scheduledUntilRef.current, pos);
+    let n = Math.max(0, Math.ceil(startTime / secPerBeat - 1e-6));
+
+    for (; n * secPerBeat < windowEnd; n++) {
+      const beatSong = n * secPerBeat;
+      const ctxTime = ctx.currentTime + (beatSong - pos);
+      if (ctxTime < ctx.currentTime) continue;
+      const beatInBar = ((n % beats) + beats) % beats;
+      const level: AccentLevel = beatInBar === 0 ? "strong" : "weak";
+      playClick(ctx, master, ctxTime, level);
+      beatQueueRef.current.push({ beat: beatInBar, time: ctxTime });
+    }
+
+    scheduledUntilRef.current = windowEnd;
+  }, []);
+
+  const visualLoop = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (ctx) {
+      const now = ctx.currentTime;
+      while (beatQueueRef.current.length > 0 && beatQueueRef.current[0].time <= now) {
+        const b = beatQueueRef.current.shift()!;
+        setCurrentBeat(b.beat);
+      }
+    }
+    rafIdRef.current = requestAnimationFrame(visualLoop);
+  }, []);
+
+  const stop = useCallback(() => {
+    runningRef.current = false;
+    if (schedulerIdRef.current !== null) {
+      window.clearInterval(schedulerIdRef.current);
+      schedulerIdRef.current = null;
+    }
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    beatQueueRef.current = [];
+    setCurrentBeat(0);
+  }, []);
+
+  const start = useCallback(async () => {
+    if (runningRef.current) return;
+
+    if (!audioCtxRef.current) {
+      const Ctor: typeof AudioContext =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new Ctor();
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(Math.max(0, cfgRef.current.volume), ctx.currentTime);
+      master.connect(ctx.destination);
+      audioCtxRef.current = ctx;
+      masterGainRef.current = master;
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === "suspended") await ctx.resume();
+
+    runningRef.current = true;
+    scheduledUntilRef.current = cfgRef.current.getPosition();
+    beatQueueRef.current = [];
+    schedulerIdRef.current = window.setInterval(scheduler, LOOKAHEAD_MS);
+    rafIdRef.current = requestAnimationFrame(visualLoop);
+  }, [scheduler, visualLoop]);
+
+  useEffect(() => {
+    return () => {
+      if (schedulerIdRef.current !== null) window.clearInterval(schedulerIdRef.current);
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+      if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
+    };
+  }, []);
+
+  return { currentBeat, start, stop };
 }
