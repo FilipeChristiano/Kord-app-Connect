@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { useIsActive } from "@/components/KeepAlive";
 import {
   Play,
   Pause,
@@ -343,6 +344,13 @@ export default function Metronome() {
     if (isPlaying) stop();
     else start();
   }, [isPlaying, start, stop]);
+
+  // Ao sair do módulo (keep-alive o mantém montado), para o metrônomo para não
+  // ficar tocando em segundo plano. O estado/configuração continua preservado.
+  const active = useIsActive();
+  useEffect(() => {
+    if (!active && isRunningRef.current) stop();
+  }, [active, stop]);
 
   useEffect(() => {
     return () => {

@@ -17,6 +17,7 @@ import { publishableKeyFromHost } from "@clerk/react/internal";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/Layout";
+import { KeepAlive } from "@/components/KeepAlive";
 import { useAccess } from "@/hooks/use-access";
 import { clerkAppearance, clerkLocalization } from "@/lib/clerk-appearance";
 
@@ -73,8 +74,13 @@ function LoadingScreen({ message }: { message?: string }) {
   );
 }
 
+// Rota vazia: usada para os módulos "keep-alive" (renderizados fora do Switch).
+// Evita que o Switch caia no NotFound quando o caminho é de um desses módulos.
+const EmptyRoute = () => null;
+
 function ProtectedAppRoutes() {
   const { data, isLoading, isError } = useAccess();
+  const [location] = useLocation();
 
   if (!PREVIEW_MODE) {
     if (isLoading) {
@@ -90,19 +96,40 @@ function ProtectedAppRoutes() {
     }
   }
 
+  // Módulos interativos ficam montados depois da primeira visita (apenas
+  // escondidos quando inativos), para preservar o estado ao trocar de tela
+  // durante o uso do app. As demais páginas (estáticas ou baseadas em dados
+  // já cacheados) continuam no Switch normal.
   return (
     <Layout>
+      <KeepAlive active={location === "/sofisticador"}>
+        <ChordSubstitutor />
+      </KeepAlive>
+      <KeepAlive active={location === "/audio-lab"}>
+        <AudioLab />
+      </KeepAlive>
+      <KeepAlive active={location === "/metronomo"}>
+        <Metronome />
+      </KeepAlive>
+      <KeepAlive active={location === "/pad"}>
+        <PadContinuous />
+      </KeepAlive>
+      <KeepAlive active={location === "/estudo"}>
+        <StudyMode />
+      </KeepAlive>
+
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/dicionario" component={Dictionary} />
         <Route path="/acorde/:id" component={ChordDetail} />
         <Route path="/aplicacoes" component={Applications} />
-        <Route path="/sofisticador" component={ChordSubstitutor} />
-        <Route path="/audio-lab" component={AudioLab} />
-        <Route path="/metronomo" component={Metronome} />
-        <Route path="/pad" component={PadContinuous} />
-        <Route path="/estudo" component={StudyMode} />
         <Route path="/favoritos" component={Favorites} />
+        {/* Módulos keep-alive: renderizados acima; aqui apenas evitam o NotFound. */}
+        <Route path="/sofisticador" component={EmptyRoute} />
+        <Route path="/audio-lab" component={EmptyRoute} />
+        <Route path="/metronomo" component={EmptyRoute} />
+        <Route path="/pad" component={EmptyRoute} />
+        <Route path="/estudo" component={EmptyRoute} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

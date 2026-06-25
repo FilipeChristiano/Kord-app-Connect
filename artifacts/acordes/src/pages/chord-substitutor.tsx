@@ -10,6 +10,7 @@ import {
   SubstitutionResult,
 } from "@/data/substitutions";
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
+import { useIsActive } from "@/components/KeepAlive";
 
 const LEVELS: { key: SophisticationLevel; label: string; description: string; color: string }[] =
   [
@@ -189,7 +190,11 @@ export default function ChordSubstitutor() {
   const [showTituloModal, setShowTituloModal] = useState(false);
 
   // Pré-preenche a cifra vinda do Audio Lab ("Sofisticar cifra"), se houver.
+  // Como o módulo fica montado (keep-alive), checamos sempre que ele fica ativo
+  // — e não só na montagem — para pegar a cifra enviada do Audio Lab a cada vez.
+  const active = useIsActive();
   useEffect(() => {
+    if (!active) return;
     try {
       const prefill = sessionStorage.getItem("harmonic:sofisticador:prefill");
       if (prefill) {
@@ -199,7 +204,7 @@ export default function ChordSubstitutor() {
     } catch {
       // sessionStorage indisponível — ignora
     }
-  }, []);
+  }, [active]);
 
   const result = useMemo(() => {
     if (!inputText.trim()) return null;

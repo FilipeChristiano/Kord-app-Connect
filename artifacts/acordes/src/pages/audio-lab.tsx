@@ -70,6 +70,7 @@ import {
   detectKeyFromChart,
 } from "@/lib/chord-transpose";
 import { cn } from "@/lib/utils";
+import { useIsActive } from "@/components/KeepAlive";
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_DURATION = 12 * 60; // 12 minutos (limita memória/CPU mesmo com arquivos comprimidos)
@@ -1315,6 +1316,9 @@ export default function AudioLab() {
         <p className="text-muted-foreground text-base leading-relaxed">
           Envie a música ou cante um trecho. O Harmonic descobre a música pela letra e
           entrega a cifra pronta — depois é só ajustar e mandar para o Sofisticador.
+          Você também pode separar o áudio: ouça a música <strong className="text-white/80">sem a
+          voz</strong> (só o instrumental) ou deixe a <strong className="text-white/80">voz em
+          destaque</strong> — ótimo para cantar ou tocar por cima.
         </p>
       </div>
 
@@ -1638,7 +1642,7 @@ export default function AudioLab() {
                         <div className="overflow-hidden rounded-2xl border border-white/10 bg-black aspect-video">
                           <iframe
                             key={cifraMeta.youtubeId}
-                            src={`https://www.youtube-nocookie.com/embed/${cifraMeta.youtubeId}`}
+                            src={`https://www.youtube-nocookie.com/embed/${cifraMeta.youtubeId}?enablejsapi=1`}
                             title={`${cifraMeta.title} — ${cifraMeta.artist}`}
                             className="w-full h-full"
                             allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -2271,6 +2275,16 @@ function StemMixer({
       vocalRef.current = null;
     };
   }, [vocalsUrl, instrumentalUrl]);
+
+  // Ao sair do Audio Lab (keep-alive o mantém montado), pausa a reprodução para
+  // não deixar a música tocando em segundo plano. A posição/volume é preservada.
+  const active = useIsActive();
+  useEffect(() => {
+    if (active) return;
+    instRef.current?.pause();
+    vocalRef.current?.pause();
+    setIsPlaying(false);
+  }, [active]);
 
   const togglePlay = useCallback(async () => {
     const inst = instRef.current;

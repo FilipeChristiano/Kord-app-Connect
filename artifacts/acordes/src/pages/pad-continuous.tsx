@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { useIsActive } from "@/components/KeepAlive";
 import {
   Play, Pause, Square, Volume2, Waves, Loader2, Filter,
   FileText, Copy, Check, Wand2, ChevronDown,
@@ -251,6 +252,13 @@ export default function PadContinuous() {
     samplePlayerRef.current?.stop(0.4);
     samplePlayerRef.current = null;
   }, []);
+
+  // Ao sair do módulo (keep-alive o mantém montado), para o pad para não ficar
+  // tocando em segundo plano. As configurações continuam preservadas.
+  const active = useIsActive();
+  useEffect(() => {
+    if (!active && playingRef.current) handleStop();
+  }, [active, handleStop]);
 
   // ---- Crossfade on key change while playing ----
   useEffect(() => {

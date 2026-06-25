@@ -35,6 +35,20 @@ mode change (short `setTargetAtTime` ramp, anti-click). Original mode = 100% dry
 **How to apply:** if you ever route live playback through filters, never assume
 `lp+hp == dry`. Provide a true dry path for the "off" state.
 
+## Two separation tiers (user chose "both, pick per song")
+- **Rápido**: the in-browser DSP above — instant, free, an effect (center extraction).
+- **Máxima qualidade**: real stem separation on the SERVER (Demucs htdemucs),
+  async job (prepare → status → file polling), one inference yields BOTH stems,
+  cached per key as mp3. UI never names AI/Demucs/internet — it's the app's own
+  "máxima qualidade". HQ source reuses the cached YouTube audio download.
+- **Why server-side for HQ:** Demucs needs ~real-time CPU + ~1.5GB RAM (segment 7)
+  and model weights; too heavy for the browser. Keep the fast path as the default
+  so the studio still feels instant; HQ is opt-in with explicit "leva alguns minutos".
+- **YT download speed:** download bestaudio m4a and REMUX (no MP3 re-encode) — the
+  re-encode was the bottleneck. m4a/AAC plays everywhere incl. iOS and keeps stereo
+  (needed for separation). On-disk cache + in-flight dedup on both download and
+  separation so concurrent requests for the same song share one job.
+
 ## Stereo plumbing
 `DspResult.samplesR` carries the optional 2nd channel; `encodeWav` interleaves
 when present (instrumental download is stereo, vocals stays mono). `stem-worker.ts`
