@@ -20,14 +20,34 @@ Flag 6/8 only when the ternary (3×) subdivision is strong AND clearly beats the
   unlikely. Validated: "Gabriela Rocha - Atos 2" → 6/8 (ternary ≫ binary); a 4/4 control →
   ternary strongly negative, binary ≈ 1.0.
 - **How to apply:** for compound, the click grid becomes the **eighth-note pulse (6 per
-  bar)** and `beatsPerBar` maps `6/8 → 6`. Build that grid by **subdividing the felt main
-  pulse into 3 equal eighths** — i.e. `track(main_bpm)` then insert 2 evenly-spaced points
-  between consecutive beats. Do NOT re-run `beat_track(start_bpm=main_bpm×3)`: re-tracking
-  at 3× locks onto a WRONG PHASE (first eighth landed ~0.35 s off the real pulse) and a
-  slightly fast tempo (161.5 vs the true 158.2 = main×3), so the metronome started out of
-  rhythm / rushing. Subdividing keeps the grid phase-locked (first eighth on the real pulse,
-  downbeats on the felt pulse) and the tempo exactly 3×. The double-time halving safety net
-  does NOT run on the compound branch (it is for binary double-time only).
+  bar)** and `beatsPerBar` maps `6/8 → 6`. Build it as a **CLEAN CONSTANT-TEMPO grid**
+  (see "Compound = constant grid" below), NOT from tracked/subdivided beats. The double-time
+  halving safety net does NOT run on the compound branch (it is for binary double-time only).
+
+## Compound = constant onset-phase-locked grid (NOT tracked/subdivided)
+For the slow 6/8 (~53 BPM dotted-quarter) the tracked beats are unusable for the metronome:
+`beat_track` is jumpy at that tempo, and subdividing each gap into 3 eighths AMPLIFIES the
+jitter — the eighth grid swung ±0.4 s (residual std ~0.41 s, >1 whole eighth) around the true
+constant tempo. Using those beats directly made the click sound irregular and read as
+drifting (user: "começou certo, porém depois ficou atrasado"). A constant grid from an
+imprecise interval + single-beat phase failed the other way ("à frente").
+**The fix (compound branch): build a regular grid from a PRECISE constant tempo + an
+ONSET-ENERGY-LOCKED phase, covering t≈0 → end.**
+- **Tempo:** parabolic-interpolate the main-pulse autocorrelation peak (`best_lag`) for
+  sub-frame precision, then `eighth = (lag/frate)/3`. Cross-validated three ways on Atos 2:
+  large-lag slopes (158.14–158.20), autocorr (158.10), robust linear fit — all ≈158.1 BPM
+  (interval ≈0.3795 s). The robust LINEAR fit's by-third residuals were FLAT
+  ([-0.004,-0.105,0.02]) → the song is genuinely constant tempo; the std is pure jitter.
+- **Phase:** scan offset in `[0, eighth)` and pick the one MAXIMIZING summed `onset_env` at
+  grid frames, **restricted to the groove region** (`t ≥ p_start` when there's a pad intro,
+  else whole song). This aggregates all onsets so it is robust to per-beat jitter (vs
+  anchoring to one tracked beat, which sat early or late).
+- **Why constant is correct here:** the user literally wants "um tempo que se sustenta a
+  música inteira"; studio recordings hold tempo. A regular grid from ~0 also clicks from the
+  start with zero drift, so no separate intro extension is needed on the compound branch.
+- **Scope:** this constant-grid rebuild is COMPOUND-ONLY. Simple-meter songs keep their
+  tracked beats (which follow tempo and have no subdivision jitter) — don't force a constant
+  grid on them or you risk regressing variable-tempo/live tracks.
 
 ## The server emits only `"6/8"` or `null` — never `"3/4"`/`"4/4"`
 Simple-meter classification (3/4 vs 4/4) on the server is **fragile and octave/hint
@@ -40,6 +60,7 @@ So the server returns `null` for simple meters and lets the client's upload anal
   already works. `server.meter ?? initialTimeSignature` is the precedence.
 
 ## Non-percussive intro — re-phase the grid to the groove, keep clicking from t≈0
+**(SIMPLE-meter branch only — compound now covers t≈0→end via its constant grid above.)**
 Many songs (worship especially) open with 10-20s of pad/voice and **no percussion**.
 That rubato intro **contaminates the global beat_track fit** (its phase ends up ~0.1s
 off the real groove). The user wants the metronome to click **from the very start** but

@@ -141,6 +141,29 @@ def main() -> int:
             b = np.atleast_1d(b).astype(float)
             return b[b >= 0]
 
+        def percussion_start() -> float:
+            """Instante (s) em que a percussão entra de fato. 0 se já começa com
+            batida (ou se não der para estimar). A separação harmônico/percussiva
+            isola a percussão de pad/voz (que não dão batida regular)."""
+            try:
+                yp = librosa.effects.percussive(y)
+                prms = librosa.feature.rms(y=yp, hop_length=HOP)[0]
+                if prms.size == 0:
+                    return 0.0
+                win = max(1, int(0.5 * frate))
+                sm = np.convolve(prms, np.ones(win) / win, mode="same")
+                p95 = float(np.percentile(sm, 95))
+                if p95 <= 0:
+                    return 0.0
+                above = sm > (PERC_REL_THRESH * p95)
+                need = max(1, int(PERC_SUSTAIN * frate))
+                for i in range(max(1, above.size - need)):
+                    if above[i] and float(above[i:i + need].mean()) > PERC_FILL:
+                        return float(i / frate)
+                return 0.0
+            except Exception:
+                return 0.0
+
         # ── Análise do compasso: simples (binário) × composto (ternário, 6/8) ──
         # Autocorrelação do envelope (sem média): revela a hierarquia métrica —
         # o pulso principal e suas subdivisões. Numa música 6/8 a subdivisão forte
@@ -180,29 +203,57 @@ def main() -> int:
                     and s3 > s4
                 )
 
+        # ── Onde a percussão entra de fato (intro de pad/voz sem batida) ─────
+        # Usado para (a) no composto, limitar a busca de FASE ao trecho com
+        # batida; (b) no simples, estender o intro sem contaminar o ajuste.
+        p_start = percussion_start()
+        dur = float(y.size / sr)
+
         if compound:
-            # 6/8: a grade vira a COLCHEIA (3× o pulso principal) → 6 por compasso,
+            # 6/8: a grade é a COLCHEIA (3× o pulso principal) → 6 por compasso,
             # como um metrônomo profissional marca um compasso composto. A rede de
             # segurança de "tempo dobrado" NÃO se aplica aqui (ela é p/ binário).
             #
-            # IMPORTANTE: NÃO re-rastreamos as batidas a 3× o tempo. O beat_track a
-            # 3× costuma "travar" numa FASE errada (a 1ª colcheia caía ~0,35 s fora
-            # do pulso real) e num andamento levemente adiantado — o metrônomo
-            # entrava fora do ritmo. Em vez disso, pegamos o PULSO PRINCIPAL (que é
-            # a periodicidade mais forte e de fase confiável) e o subdividimos em 3
-            # colcheias iguais. Assim a grade fica colada ao pulso sentido, a 1ª
-            # colcheia cai exatamente no 1º pulso e o andamento é exatamente 3×.
-            main_beats = track(main_bpm)
-            if main_beats.size >= 2:
-                eighths = []
-                for i in range(main_beats.size - 1):
-                    a = float(main_beats[i])
-                    step = (float(main_beats[i + 1]) - a) / 3.0
-                    eighths.append(a)
-                    eighths.append(a + step)
-                    eighths.append(a + 2.0 * step)
-                eighths.append(float(main_beats[-1]))
-                beats = np.asarray(eighths, dtype=float)
+            # ANDAMENTO CONSTANTE de precisão. Uma gravação tem andamento estável;
+            # o que o usuário pede é "um tempo que se sustenta a música inteira".
+            # Por isso NÃO usamos as batidas rastreadas e subdivididas: nesse pulso
+            # lento (~53 BPM) o beat_track é instável e a colcheia subdividida
+            # oscilava ±0,4 s (jitter), fazendo o metrônomo soar irregular e
+            # parecer adiantar/atrasar ao longo da música. Em vez disso:
+            #   1) Tempo: refinamos o pico da autocorrelação do pulso principal por
+            #      interpolação parabólica (precisão sub-quadro) e dividimos por 3.
+            #   2) Fase: alinhamos à ENERGIA dos ataques (robusto ao jitter, ao
+            #      contrário de ancorar numa única batida — que deixava a grade
+            #      cedo, como no synthetic, ou tarde, como nas rastreadas).
+            # A grade regular vai do início ao fim → marca desde o começo e segura
+            # exatamente o mesmo tempo a música toda.
+            lag = float(best_lag)
+            if 1 <= best_lag < ac.size - 1:
+                a0 = float(ac[best_lag - 1])
+                b0 = float(ac[best_lag])
+                c0 = float(ac[best_lag + 1])
+                denom = a0 - 2.0 * b0 + c0
+                if denom != 0.0:
+                    lag = best_lag + 0.5 * (a0 - c0) / denom
+            eighth = (lag / frate) / 3.0
+            if eighth > 0:
+                region0 = p_start if p_start > MIN_INTRO else 0.0
+                best_off = 0.0
+                best_score = -1.0
+                steps = 96
+                for s in range(steps):
+                    off = eighth * s / steps
+                    gt = np.arange(off, dur, eighth)
+                    gt = gt[gt >= region0]
+                    if gt.size == 0:
+                        continue
+                    fr = np.clip(np.round(gt * frate).astype(int), 0, len(onset_env) - 1)
+                    score = float(onset_env[fr].sum())
+                    if score > best_score:
+                        best_score = score
+                        best_off = float(off)
+                n = int((dur - best_off) / eighth) + 1
+                beats = best_off + eighth * np.arange(max(n, 1))
             else:
                 beats = track(main_bpm * 3.0)
             meter = "6/8"
@@ -236,50 +287,24 @@ def main() -> int:
             # isso. O servidor só agrega a inteligência NOVA: o composto (6/8).
             meter = None
 
-        # ── Travar o metrônomo no GROOVE, mas marcar desde o início ──────────
-        # Música com intro de pad/voz (sem percussão) tem um começo livre/rubato
-        # que CONTAMINA o ajuste global de tempo/fase. Detectamos onde a PERCUSSÃO
-        # entra de fato, medimos o tempo/fase ali (parte confiável) e ESTENDEMOS a
-        # grade para trás até o início. Assim o metrônomo marca desde o começo, mas
-        # no tempo certo ditado pelas batidas. A separação harmônico/percussiva
-        # isola a percussão de pad/voz (que não dão batida regular).
-        try:
-            yp = librosa.effects.percussive(y)
-            prms = librosa.feature.rms(y=yp, hop_length=HOP)[0]
-            if prms.size and beats.size:
-                win = max(1, int(0.5 * frate))
-                sm = np.convolve(prms, np.ones(win) / win, mode="same")
-                p95 = float(np.percentile(sm, 95))
-                if p95 > 0:
-                    above = sm > (PERC_REL_THRESH * p95)
-                    need = max(1, int(PERC_SUSTAIN * frate))
-                    p_start = 0.0
-                    for i in range(max(1, above.size - need)):
-                        if above[i] and float(above[i:i + need].mean()) > PERC_FILL:
-                            p_start = float(i / frate)
-                            break
-                    if p_start > MIN_INTRO:
-                        groove = beats[beats >= p_start - 1e-3]
-                        if groove.size >= 4:
-                            # CRÍTICO: mantemos as batidas REAIS do groove (rastreadas,
-                            # seguem o andamento da música e NÃO desviam ao longo dela).
-                            # Só o intro — que não tem batida para rastrear — é estendido
-                            # para trás, com o intervalo LOCAL do começo do groove. Uma
-                            # grade 100% sintética (intervalo fixo a partir de 1 ponto)
-                            # acumula erro e "adianta" no fim da música; por isso não.
-                            head = groove[: min(groove.size, 16)]
-                            interval = float(np.median(np.diff(head)))
-                            if interval > 0:
-                                anchor = float(groove[0])  # batida sólida no groove
-                                k = int(np.floor(anchor / interval - 1e-9))
-                                if k > 0:
-                                    back = anchor - interval * np.arange(k, 0, -1)
-                                    back = back[back >= -1e-9]
-                                    beats = np.concatenate([back, groove])
-                                else:
-                                    beats = groove
-        except Exception:
-            pass  # se a separação falhar, mantemos a grade global (sem re-fasar)
+            # Intro de pad/voz sem batida: mantemos as batidas REAIS do groove
+            # (rastreadas, que seguem o andamento) e só ESTENDEMOS o intro para
+            # trás, com o intervalo local do começo do groove — o metrônomo marca
+            # desde o início, no tempo certo ditado pelas batidas.
+            if p_start > MIN_INTRO and beats.size >= 8:
+                groove = beats[beats >= p_start - 1e-3]
+                if groove.size >= 4:
+                    head = groove[: min(groove.size, 16)]
+                    interval = float(np.median(np.diff(head)))
+                    if interval > 0:
+                        anchor = float(groove[0])  # batida sólida no groove
+                        k = int(np.floor(anchor / interval - 1e-9))
+                        if k > 0:
+                            back = anchor - interval * np.arange(k, 0, -1)
+                            back = back[back >= -1e-9]
+                            beats = np.concatenate([back, groove])
+                        else:
+                            beats = groove
 
         bpm = median_bpm(beats)
         times = sorted(round(float(t), 4) for t in beats)
