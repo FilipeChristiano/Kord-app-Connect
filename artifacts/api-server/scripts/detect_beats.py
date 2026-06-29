@@ -28,6 +28,10 @@
 #     cargo da análise do envio no cliente (no servidor ela é frágil/dependente
 #     da oitava). O servidor só agrega o NOVO: o composto (6/8).
 #
+# INTRO SEM BATIDA ("esperar a música"): se a percussão só entra depois de alguns
+# segundos (intro de pad/voz), aparamos as batidas anteriores — o metrônomo não
+# clica no trecho livre/rubato e crava exatamente quando o groove começa.
+#
 # Uso: detect_beats.py <input_wav> [bpm_hint]
 # Saída (stdout): JSON {"ok": true, "bpm": float, "beats": [float, ...], "meter": "6/8"|null}
 #                 ou   {"ok": false, "error": "..."}
@@ -58,6 +62,16 @@ MAIN_MAX_BPM = 160.0
 # música 4/4 (onde a colcheia 2× domina) nunca ser confundida com 6/8.
 TERNARY_MIN = 0.45
 TERNARY_OVER_BINARY = 0.9
+
+# ── Início da percussão (intro sem batida) ───────────────────────────────────
+# Muita música (worship em especial) abre com 10-20 s de intro só de pad/voz, sem
+# percussão. Clicar o metrônomo nesse trecho livre/rubato soa "fora do ritmo".
+# Por isso "esperamos a música": detectamos quando a PERCUSSÃO entra de fato e só
+# marcamos as batidas dali em diante — cravando no início do groove.
+MIN_INTRO = 2.0        # só aparamos se o intro sem batida passar disso (s)
+PERC_REL_THRESH = 0.2  # fração do pico (p95) de energia percussiva p/ contar "tem batida"
+PERC_SUSTAIN = 1.5     # a batida precisa se manter por este tempo (s) p/ valer
+PERC_FILL = 0.6        # fração mínima do trecho sustentado que precisa estar acima do limiar
 
 
 def _fold_to_felt(v: float) -> float:
@@ -220,6 +234,33 @@ def main() -> int:
             # da análise do envio (initialTimeSignature) no cliente, que já fazia
             # isso. O servidor só agrega a inteligência NOVA: o composto (6/8).
             meter = None
+
+        # ── "Esperar a música": não clicar no intro sem batida ───────────────
+        # Detectamos quando a PERCUSSÃO entra de fato (energia percussiva sustentada)
+        # e aparamos as batidas anteriores. Assim o metrônomo fica em silêncio no
+        # intro livre/rubato e crava exatamente no início do groove. A separação
+        # harmônico/percussiva isola a percussão de pad/voz (que não têm batida).
+        try:
+            yp = librosa.effects.percussive(y)
+            prms = librosa.feature.rms(y=yp, hop_length=HOP)[0]
+            if prms.size and beats.size:
+                win = max(1, int(0.5 * frate))
+                sm = np.convolve(prms, np.ones(win) / win, mode="same")
+                p95 = float(np.percentile(sm, 95))
+                if p95 > 0:
+                    above = sm > (PERC_REL_THRESH * p95)
+                    need = max(1, int(PERC_SUSTAIN * frate))
+                    p_start = 0.0
+                    for i in range(max(1, above.size - need)):
+                        if above[i] and float(above[i:i + need].mean()) > PERC_FILL:
+                            p_start = float(i / frate)
+                            break
+                    if p_start > MIN_INTRO:
+                        kept = beats[beats >= p_start - 1e-3]
+                        if kept.size >= 4:  # só apara se sobra grade suficiente
+                            beats = kept
+        except Exception:
+            pass  # se a separação falhar, mantemos a grade completa (sem aparar)
 
         bpm = median_bpm(beats)
         times = sorted(round(float(t), 4) for t in beats)

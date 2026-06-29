@@ -39,6 +39,25 @@ So the server returns `null` for simple meters and lets the client's upload anal
 - **How to apply:** only add NEW capability (compound) at the server; never relabel what
   already works. `server.meter ?? initialTimeSignature` is the precedence.
 
+## Intro-skip — "wait for the music" before clicking
+Many songs (worship especially) open with 10-20s of pad/voice and **no percussion**;
+clicking the metronome through that rubato intro feels "out of rhythm" even when the
+tempo/phase are correct. So `detect_beats.py` detects when percussion actually enters
+and **trims all beats before that point** — the click stays silent through the intro
+and locks in exactly at the groove.
+- **How it's detected:** HPSS percussive component (`librosa.effects.percussive`), then
+  its smoothed RMS; percussion "enters" at the first frame whose ~1.5s sustained window
+  stays above 0.2×(p95 of the RMS). Only trim if that start is >~2s in AND ≥4 beats remain;
+  wrapped in try/except so a separation failure just keeps the full grid.
+- **Why HPSS is required:** the intro still has harmonic/vocal onset energy, so the plain
+  onset envelope can't tell "has a beat" from "no beat" — only the percussive component can.
+  Validated: Atos 2 (drums enter ~18s) → beats start at 18.23s; a solo-piano hymn (attacks
+  from the start) → perc-start 0.9s, no trim. NOTE: piano note attacks read as percussive in
+  HPSS, so this finds *drums/strong rhythm*, not literally "any percussion".
+- **Client side needs nothing:** the metronome anchors phase to the `beats[]` map via binary
+  search and never schedules a click whose time is far in the future, so a grid that starts
+  at 18s simply stays silent until then.
+
 ## Player gating
 Playback is blocked until tempo/meter detection finishes: play button disabled +
 spinner while `bpmDetecting`, plus a `bpmDetectingRef` guard inside `togglePlay`
