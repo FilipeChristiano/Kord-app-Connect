@@ -18,8 +18,18 @@
 #      início. Detectamos essa alternância forte/fraca e cortamos pela metade,
 #      MANTENDO a sub-fase mais forte (as batidas reais) — nunca o contratempo.
 #
+# COMPASSO (simples × composto): além do andamento, identificamos o compasso.
+#   • Compasso COMPOSTO (6/8): cada tempo se divide em 3 (subdivisão ternária).
+#     Detectamos pela AUTOCORRELAÇÃO do envelope: se há uma periodicidade forte a
+#     3× o pulso principal (a colcheia) e fraca a 2× (a divisão binária), a música
+#     é "sentida em 3" → 6/8. Nesse caso a grade vira a COLCHEIA (6 por compasso),
+#     que é como um metrônomo profissional marca 6/8.
+#   • Compasso SIMPLES: devolvemos meter=null e deixamos a distinção 3/4×4/4 a
+#     cargo da análise do envio no cliente (no servidor ela é frágil/dependente
+#     da oitava). O servidor só agrega o NOVO: o composto (6/8).
+#
 # Uso: detect_beats.py <input_wav> [bpm_hint]
-# Saída (stdout): JSON {"ok": true, "bpm": float, "beats": [float, ...]}
+# Saída (stdout): JSON {"ok": true, "bpm": float, "beats": [float, ...], "meter": "6/8"|null}
 #                 ou   {"ok": false, "error": "..."}
 # ─────────────────────────────────────────────────────────────────────────────
 import json
@@ -37,6 +47,17 @@ ALT_RATIO = 1.25
 # Não cortamos abaixo deste andamento (evita transformar um tempo já correto e
 # lento num andamento irreal pela metade).
 HALVE_FLOOR = 55.0
+
+# ── Compasso composto (6/8) ──────────────────────────────────────────────────
+# Faixa de BPM onde procuramos o PULSO PRINCIPAL (a semínima pontuada do 6/8, ou
+# a semínima do compasso simples). Fora dela quase sempre é metade/dobro.
+MAIN_MIN_BPM = 40.0
+MAIN_MAX_BPM = 160.0
+# A subdivisão ternária (3×) precisa ser claramente presente para chamar de 6/8.
+# Limiar absoluto + margem sobre a divisão binária (2×) → conservador, para uma
+# música 4/4 (onde a colcheia 2× domina) nunca ser confundida com 6/8.
+TERNARY_MIN = 0.45
+TERNARY_OVER_BINARY = 0.9
 
 
 def _fold_to_felt(v: float) -> float:
@@ -76,6 +97,7 @@ def main() -> int:
         # Envelope de início: realça os ataques (percussão/acordes) que marcam a
         # batida. É a entrada clássica do rastreador de batidas.
         onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=HOP)
+        frate = sr / HOP  # quadros por segundo (para converter lag ↔ BPM)
 
         def strength_at(times: "np.ndarray") -> float:
             """Força média do envelope de início nos instantes dados."""
@@ -92,47 +114,96 @@ def main() -> int:
             d = d[d > 1e-3]
             return 60.0 / float(np.median(d)) if d.size else 0.0
 
-        # Camada 1: a dica vira start_bpm já na oitava certa. Sem dica, 100 BPM é
-        # um centro neutro que evita o viés do padrão (120) para o tempo dobrado.
-        start_bpm = _fold_to_felt(hint)
+        def track(start_bpm: float) -> "np.ndarray":
+            _tempo, b = librosa.beat.beat_track(
+                onset_envelope=onset_env,
+                sr=sr,
+                hop_length=HOP,
+                start_bpm=start_bpm,
+                trim=False,
+                units="time",
+            )
+            b = np.atleast_1d(b).astype(float)
+            return b[b >= 0]
 
-        # Rastreador por programação dinâmica (Ellis): encontra o andamento e a
-        # sequência de batidas que melhor explica o envelope.
-        _tempo, beats = librosa.beat.beat_track(
-            onset_envelope=onset_env,
-            sr=sr,
-            hop_length=HOP,
-            start_bpm=start_bpm,
-            trim=False,
-            units="time",
-        )
-        beats = np.atleast_1d(beats).astype(float)
-        beats = beats[beats >= 0]
+        # ── Análise do compasso: simples (binário) × composto (ternário, 6/8) ──
+        # Autocorrelação do envelope (sem média): revela a hierarquia métrica —
+        # o pulso principal e suas subdivisões. Numa música 6/8 a subdivisão forte
+        # está a 3× o pulso (a colcheia); numa 4/4, a 2× (a colcheia binária).
+        o = onset_env - float(np.mean(onset_env))
+        ac = librosa.autocorrelate(o, max_size=int(4 * frate))
+        if ac.size > 2:
+            ac[:2] = 0.0
 
-        # Camada 2 (rede de segurança contra o contratempo): se o resultado vier em
-        # tempo dobrado, as batidas alternadas têm forças bem diferentes. Cortamos
-        # pela metade mantendo a sub-fase MAIS FORTE (as batidas reais da música).
-        for _ in range(2):
-            if beats.size < 4:
-                break
-            bpm_now = median_bpm(beats)
-            even = beats[0::2]
-            odd = beats[1::2]
-            s_even = strength_at(even)
-            s_odd = strength_at(odd)
-            hi = max(s_even, s_odd)
-            lo = min(s_even, s_odd)
-            ratio = hi / lo if lo > 0 else 999.0
-            # Só cortamos quando o andamento está na zona propensa a dobrar e a
-            # alternância forte/fraca é clara — e o resultado segue musical.
-            if bpm_now > 125.0 and ratio >= ALT_RATIO and bpm_now / 2.0 >= HALVE_FLOOR:
-                beats = even if s_even >= s_odd else odd
-            else:
-                break
+        def ac_at(lag: float) -> float:
+            li = int(round(lag))
+            return float(ac[li]) if 0 < li < len(ac) else 0.0
+
+        compound = False
+        main_bpm = 0.0
+        if ac.size > 4:
+            lmin = max(2, int(round(60.0 * frate / MAIN_MAX_BPM)))
+            lmax = min(len(ac) - 1, int(round(60.0 * frate / MAIN_MIN_BPM)))
+            best_lag = 0
+            best_val = 0.0
+            for lag in range(lmin, lmax):
+                v = ac[lag]
+                if v > ac[lag - 1] and v >= ac[lag + 1] and v > best_val:
+                    best_val = v
+                    best_lag = lag
+            if best_lag > 0 and best_val > 0:
+                main_bpm = 60.0 * frate / best_lag
+                # Subdivisões do pulso principal (lag menor = frequência maior):
+                s2 = ac_at(best_lag / 2.0) / best_val  # binária (2×) → colcheia 4/4
+                s3 = ac_at(best_lag / 3.0) / best_val  # ternária (3×) → colcheia 6/8
+                s4 = ac_at(best_lag / 4.0) / best_val  # semicolcheia (4×)
+                # Composto quando a subdivisão ternária é forte E supera a binária
+                # e a semicolcheia — sinal claro de "sentido em 3" (6/8).
+                compound = (
+                    s3 >= TERNARY_MIN
+                    and s3 >= s2 * TERNARY_OVER_BINARY
+                    and s3 > s4
+                )
+
+        if compound:
+            # 6/8: a grade vira a COLCHEIA (3× o pulso principal) → 6 por compasso,
+            # como um metrônomo profissional marca um compasso composto. A rede de
+            # segurança de "tempo dobrado" NÃO se aplica aqui (ela é p/ binário).
+            beats = track(main_bpm * 3.0)
+            meter = "6/8"
+        else:
+            # Camada 1: a dica vira start_bpm já na oitava certa. Sem dica, 100 BPM
+            # é um centro neutro que evita o viés do padrão (120) p/ o tempo dobrado.
+            beats = track(_fold_to_felt(hint))
+
+            # Camada 2 (rede de segurança contra o contratempo): se o resultado vier
+            # em tempo dobrado, as batidas alternadas têm forças bem diferentes.
+            # Cortamos pela metade mantendo a sub-fase MAIS FORTE (batidas reais).
+            for _ in range(2):
+                if beats.size < 4:
+                    break
+                bpm_now = median_bpm(beats)
+                even = beats[0::2]
+                odd = beats[1::2]
+                s_even = strength_at(even)
+                s_odd = strength_at(odd)
+                hi = max(s_even, s_odd)
+                lo = min(s_even, s_odd)
+                ratio = hi / lo if lo > 0 else 999.0
+                if bpm_now > 125.0 and ratio >= ALT_RATIO and bpm_now / 2.0 >= HALVE_FLOOR:
+                    beats = even if s_even >= s_odd else odd
+                else:
+                    break
+
+            # Compasso simples (3/4 × 4/4): NÃO decidimos aqui. A distinção 3/4×4/4
+            # depende muito da oitava/dica e é frágil no servidor — deixamos a cargo
+            # da análise do envio (initialTimeSignature) no cliente, que já fazia
+            # isso. O servidor só agrega a inteligência NOVA: o composto (6/8).
+            meter = None
 
         bpm = median_bpm(beats)
         times = sorted(round(float(t), 4) for t in beats)
-        sys.stdout.write(json.dumps({"ok": True, "bpm": bpm, "beats": times}))
+        sys.stdout.write(json.dumps({"ok": True, "bpm": bpm, "beats": times, "meter": meter}))
         return 0
     except Exception as exc:  # noqa: BLE001
         sys.stdout.write(json.dumps({"ok": False, "error": str(exc)[:300]}))

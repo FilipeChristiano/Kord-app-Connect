@@ -2300,7 +2300,9 @@ function StemMixer({
     }
   }, []);
 
-  const beatsPerBar = metroTs === "3/4" ? 3 : 4;
+  // 6/8 é composto: 6 colcheias por compasso (a grade do servidor já vem na
+  // colcheia). 3/4 → 3 tempos; o resto → 4.
+  const beatsPerBar = metroTs === "6/8" ? 6 : metroTs === "3/4" ? 3 : 4;
   const metro = useSyncedMetronome({
     getPosition: () => instRef.current?.currentTime ?? 0,
     bpm: metroBpm,
@@ -2317,6 +2319,12 @@ function StemMixer({
     metroStartRef.current = metro.start;
     metroStopRef.current = metro.stop;
   }, [metro.start, metro.stop]);
+  // Espelha o estado de detecção num ref para o togglePlay (deps estáveis) poder
+  // BLOQUEAR o play enquanto o tempo/compasso ainda está sendo identificado.
+  const bpmDetectingRef = useRef(bpmDetecting);
+  useEffect(() => {
+    bpmDetectingRef.current = bpmDetecting;
+  }, [bpmDetecting]);
 
   // Descobre a grade de batidas do INSTRUMENTAL separado (batida limpa). Sempre
   // analisamos o próprio instrumental que vai tocar — assim o BPM preciso e a
@@ -2342,7 +2350,9 @@ function StemMixer({
           setMetroBeats(server.beats);
           setMetroBpm(Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, bpm)));
           setMetroOffset(server.beats[0] ?? 0);
-          setMetroTs(initialTimeSignature ?? null);
+          // O compasso vem do próprio rastreamento da música (inclui 6/8 composto);
+          // a análise do envio entra só como reserva.
+          setMetroTs(server.meter ?? initialTimeSignature ?? null);
           setBpmDetecting(false);
           return;
         }
@@ -2490,6 +2500,9 @@ function StemMixer({
       setIsPlaying(false);
       return;
     }
+    // Não liberar a reprodução antes de identificar o tempo/compasso da música —
+    // assim o metrônomo já começa cravado na pulsação certa.
+    if (bpmDetectingRef.current) return;
     setLoadState((s) => (s === "ready" ? s : "loading"));
     vocal.currentTime = inst.currentTime;
     vocal.playbackRate = 1;
@@ -2540,16 +2553,16 @@ function StemMixer({
         <button
           type="button"
           onClick={() => void togglePlay()}
-          disabled={loadState === "loading"}
+          disabled={loadState === "loading" || bpmDetecting}
           className={cn(
             "shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all",
-            loadState === "loading"
+            loadState === "loading" || bpmDetecting
               ? "bg-white/[0.06] text-white/40"
               : "bg-primary text-primary-foreground hover:bg-primary/90",
           )}
-          aria-label={isPlaying ? "Pausar" : "Tocar"}
+          aria-label={bpmDetecting ? "Identificando o tempo…" : isPlaying ? "Pausar" : "Tocar"}
         >
-          {loadState === "loading" ? (
+          {loadState === "loading" || bpmDetecting ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : isPlaying ? (
             <Pause className="w-5 h-5" />

@@ -224,14 +224,16 @@ export function stemsFileUrl(key: string, mode: "vocals" | "instrumental"): stri
 export interface StemBeats {
   bpm: number;
   beats: number[];
+  meter: "3/4" | "4/4" | "6/8" | null;
 }
 
 function parseBeats(data: unknown): StemBeats | null {
-  const d = data as { ok?: boolean; bpm?: number; beats?: unknown };
+  const d = data as { ok?: boolean; bpm?: number; beats?: unknown; meter?: unknown };
   if (!d?.ok || !Array.isArray(d.beats) || d.beats.length < 2) return null;
   const beats = d.beats.filter((t): t is number => typeof t === "number" && Number.isFinite(t));
   if (beats.length < 2) return null;
-  return { bpm: typeof d.bpm === "number" && d.bpm > 0 ? d.bpm : 0, beats };
+  const meter = d.meter === "3/4" || d.meter === "4/4" || d.meter === "6/8" ? d.meter : null;
+  return { bpm: typeof d.bpm === "number" && d.bpm > 0 ? d.bpm : 0, beats, meter };
 }
 
 // Faixa já preparada (máxima qualidade): reaproveita o instrumental do servidor

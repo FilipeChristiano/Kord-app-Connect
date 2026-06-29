@@ -6,6 +6,7 @@
 - [Transcription pipeline (acordes)](transcription-pipeline.md) — never invent lyrics; ElevenLabs Scribe (precise word times) → OpenAI fallback (estimated); always transcode to 16k mono first; whisper-1/TTS blocked on proxy.
 - [Cifra transposition (acordes)](cifra-transpose.md) — shared classifier in chord-transpose.ts; transpose chord lines only, never lyrics; key detection must stay quality-aware; copy/edit/sofisticador use displayChart.
 - [Audio separation DSP (acordes)](audio-separation-dsp.md) — center-extraction soft mask (panBalance×phaseAlign); instrumental keeps stereo (not L−R mono); live needs dry/wet crossfade since lp+hp≠dry.
+- [Meter detection 6/8 (acordes)](meter-detection-68.md) — server detects compound 6/8 via onset-autocorr ternary(3×)>binary(2×); emits 6/8-or-null (never relabels simple meters); 6/8 grid=eighth pulse (6/bar); gate play until detected.
 - [Stem mixer playback (acordes)](stem-mixer-playback.md) — fader mixes stems via two streaming <audio> elements + drift correction; never full Web Audio buffer-decode of both songs (slow/OOM).
 - [Server Demucs stems (acordes)](server-demucs-stems.md) — máxima-qualidade async job; ffmpeg needs -f mp3 on .part names; demucs 4.0.1 has no demucs.api; ~5-6min/song; clean up .src + prune cache.
 - [Synced metronome timing (acordes)](synced-metronome-timing.md) — anchor beats to the AudioContext clock, not live media currentTime, or it drifts/desyncs on fader drags.

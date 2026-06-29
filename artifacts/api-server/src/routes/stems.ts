@@ -162,9 +162,12 @@ function transcodeToWavMono(srcPath: string, wavPath: string): Promise<void> {
 // pode compilar kernels do numba (~min); os seguintes são rápidos (cache numba).
 const BEAT_TIMEOUT_MS = 4 * 60 * 1000;
 
+type Meter = "3/4" | "4/4" | "6/8";
+
 interface BeatResult {
   bpm: number;
   beats: number[];
+  meter?: Meter | null;
 }
 
 function runBeatDetection(wavPath: string, bpmHint: number): Promise<BeatResult> {
@@ -200,9 +203,19 @@ function runBeatDetection(wavPath: string, bpmHint: number): Promise<BeatResult>
       clearTimeout(timer);
       try {
         const last = stdout.trim().split("\n").pop() ?? "{}";
-        const parsed = JSON.parse(last) as { ok?: boolean; bpm?: number; beats?: number[]; error?: string };
+        const parsed = JSON.parse(last) as {
+          ok?: boolean;
+          bpm?: number;
+          beats?: number[];
+          meter?: string;
+          error?: string;
+        };
         if (code === 0 && parsed.ok && Array.isArray(parsed.beats)) {
-          resolvePromise({ bpm: typeof parsed.bpm === "number" ? parsed.bpm : 0, beats: parsed.beats });
+          const meter =
+            parsed.meter === "3/4" || parsed.meter === "4/4" || parsed.meter === "6/8"
+              ? parsed.meter
+              : null;
+          resolvePromise({ bpm: typeof parsed.bpm === "number" ? parsed.bpm : 0, beats: parsed.beats, meter });
           return;
         }
         reject(new Error(parsed.error || stderr.slice(-300) || `exit ${code}`));
@@ -537,7 +550,7 @@ router.get("/stems/beats", async (req: Request, res: Response) => {
       beatsInFlight.set(inFlightKey, p);
     }
     const result = await p;
-    return res.json({ ok: true, bpm: result.bpm, beats: result.beats });
+    return res.json({ ok: true, bpm: result.bpm, beats: result.beats, meter: result.meter ?? null });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[/api/stems/beats] falhou (${key}):`, msg);
@@ -569,7 +582,7 @@ router.post(
       await writeFile(srcPath, body);
       await transcodeToWavMono(srcPath, wavPath);
       const result = await runBeatDetection(wavPath, bpmHint);
-      return res.json({ ok: true, bpm: result.bpm, beats: result.beats });
+      return res.json({ ok: true, bpm: result.bpm, beats: result.beats, meter: result.meter ?? null });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[/api/stems/beats POST] falhou:", msg);

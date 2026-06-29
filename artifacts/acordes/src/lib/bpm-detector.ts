@@ -1,4 +1,4 @@
-export type DetectedTimeSignature = "3/4" | "4/4";
+export type DetectedTimeSignature = "3/4" | "4/4" | "6/8";
 
 export interface AnalyzedSegment {
   start: number; // segundos
