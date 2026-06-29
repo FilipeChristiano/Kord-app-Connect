@@ -20,9 +20,14 @@ Flag 6/8 only when the ternary (3×) subdivision is strong AND clearly beats the
   unlikely. Validated: "Gabriela Rocha - Atos 2" → 6/8 (ternary ≫ binary); a 4/4 control →
   ternary strongly negative, binary ≈ 1.0.
 - **How to apply:** for compound, the click grid becomes the **eighth-note pulse (6 per
-  bar)** — `start_bpm = main_bpm × 3` — because that is how a pro metronome marks 6/8.
-  `beatsPerBar` maps `6/8 → 6`. The double-time halving safety net does NOT run on the
-  compound branch (it is for binary double-time only).
+  bar)** and `beatsPerBar` maps `6/8 → 6`. Build that grid by **subdividing the felt main
+  pulse into 3 equal eighths** — i.e. `track(main_bpm)` then insert 2 evenly-spaced points
+  between consecutive beats. Do NOT re-run `beat_track(start_bpm=main_bpm×3)`: re-tracking
+  at 3× locks onto a WRONG PHASE (first eighth landed ~0.35 s off the real pulse) and a
+  slightly fast tempo (161.5 vs the true 158.2 = main×3), so the metronome started out of
+  rhythm / rushing. Subdividing keeps the grid phase-locked (first eighth on the real pulse,
+  downbeats on the felt pulse) and the tempo exactly 3×. The double-time halving safety net
+  does NOT run on the compound branch (it is for binary double-time only).
 
 ## The server emits only `"6/8"` or `null` — never `"3/4"`/`"4/4"`
 Simple-meter classification (3/4 vs 4/4) on the server is **fragile and octave/hint

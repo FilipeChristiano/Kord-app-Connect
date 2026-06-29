@@ -169,7 +169,27 @@ def main() -> int:
             # 6/8: a grade vira a COLCHEIA (3× o pulso principal) → 6 por compasso,
             # como um metrônomo profissional marca um compasso composto. A rede de
             # segurança de "tempo dobrado" NÃO se aplica aqui (ela é p/ binário).
-            beats = track(main_bpm * 3.0)
+            #
+            # IMPORTANTE: NÃO re-rastreamos as batidas a 3× o tempo. O beat_track a
+            # 3× costuma "travar" numa FASE errada (a 1ª colcheia caía ~0,35 s fora
+            # do pulso real) e num andamento levemente adiantado — o metrônomo
+            # entrava fora do ritmo. Em vez disso, pegamos o PULSO PRINCIPAL (que é
+            # a periodicidade mais forte e de fase confiável) e o subdividimos em 3
+            # colcheias iguais. Assim a grade fica colada ao pulso sentido, a 1ª
+            # colcheia cai exatamente no 1º pulso e o andamento é exatamente 3×.
+            main_beats = track(main_bpm)
+            if main_beats.size >= 2:
+                eighths = []
+                for i in range(main_beats.size - 1):
+                    a = float(main_beats[i])
+                    step = (float(main_beats[i + 1]) - a) / 3.0
+                    eighths.append(a)
+                    eighths.append(a + step)
+                    eighths.append(a + 2.0 * step)
+                eighths.append(float(main_beats[-1]))
+                beats = np.asarray(eighths, dtype=float)
+            else:
+                beats = track(main_bpm * 3.0)
             meter = "6/8"
         else:
             # Camada 1: a dica vira start_bpm já na oitava certa. Sem dica, 100 BPM
