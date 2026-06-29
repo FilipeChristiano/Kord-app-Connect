@@ -51,10 +51,16 @@ So `detect_beats.py` finds where percussion enters, measures tempo+phase **there
   smoothed RMS; percussion "enters" at the first frame whose ~1.5s sustained window stays
   above 0.2×(p95 of the RMS). Only re-phase if that start is >~2s in AND ≥4 groove beats remain;
   wrapped in try/except so a separation failure just keeps the global grid.
-- **Re-phase math:** `interval = median(diff(groove_beats))`, `anchor = groove_beats[0]`,
-  `first = anchor - interval*floor(anchor/interval)` (first beat near 0 on the same phase),
-  then `beats = first + interval*arange(n)` out to the old last beat. The grid passes exactly
-  through `anchor`, so the groove is dead-on and the intro clicks are the backward extension.
+- **DON'T rebuild the whole grid synthetically.** A first attempt replaced every beat with a
+  fixed-interval series `first + interval*arange(n)` from one anchor. It drifted: a sub-ms
+  interval error accumulates over hundreds of beats and the click is audibly "à frente" by
+  ~2-3min in. The tracked `beat_track` beats follow the song's real onsets and DON'T drift —
+  never throw them away. **Keep the real groove beats; only extrapolate the intro.**
+- **Correct extension:** keep `groove = beats[beats>=p_start]` untouched (tracked, drift-free),
+  compute the local interval from the first ~16 groove beats, and PREPEND synthetic beats
+  stepping backward from `groove[0]` to ~0: `back = anchor - interval*arange(k,0,-1)` (k =
+  floor(anchor/interval)), then `beats = concat(back, groove)`. Intro is rubato/no-beat so its
+  fixed interval is fine and only ~18s long; the body stays locked to the tracked beats.
 - **Why HPSS is required:** the intro still has harmonic/vocal onset energy, so the plain
   onset envelope can't tell "has a beat" from "no beat" — only the percussive component can.
   Validated: Atos 2 (drums enter ~18s) → grid starts 0.02s, interval 0.3793 (eighth), passes

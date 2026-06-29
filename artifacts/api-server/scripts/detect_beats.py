@@ -261,15 +261,23 @@ def main() -> int:
                     if p_start > MIN_INTRO:
                         groove = beats[beats >= p_start - 1e-3]
                         if groove.size >= 4:
-                            interval = float(np.median(np.diff(groove)))
+                            # CRÍTICO: mantemos as batidas REAIS do groove (rastreadas,
+                            # seguem o andamento da música e NÃO desviam ao longo dela).
+                            # Só o intro — que não tem batida para rastrear — é estendido
+                            # para trás, com o intervalo LOCAL do começo do groove. Uma
+                            # grade 100% sintética (intervalo fixo a partir de 1 ponto)
+                            # acumula erro e "adianta" no fim da música; por isso não.
+                            head = groove[: min(groove.size, 16)]
+                            interval = float(np.median(np.diff(head)))
                             if interval > 0:
                                 anchor = float(groove[0])  # batida sólida no groove
-                                end = float(beats[-1])
-                                # primeira batida da grade re-fasada, perto do 0
-                                first = anchor - interval * np.floor(anchor / interval)
-                                n = int(round((end - first) / interval)) + 1
-                                if n >= 4:
-                                    beats = first + interval * np.arange(n)
+                                k = int(np.floor(anchor / interval - 1e-9))
+                                if k > 0:
+                                    back = anchor - interval * np.arange(k, 0, -1)
+                                    back = back[back >= -1e-9]
+                                    beats = np.concatenate([back, groove])
+                                else:
+                                    beats = groove
         except Exception:
             pass  # se a separação falhar, mantemos a grade global (sem re-fasar)
 
