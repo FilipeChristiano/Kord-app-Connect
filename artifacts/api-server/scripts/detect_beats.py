@@ -28,9 +28,10 @@
 #     cargo da análise do envio no cliente (no servidor ela é frágil/dependente
 #     da oitava). O servidor só agrega o NOVO: o composto (6/8).
 #
-# INTRO SEM BATIDA ("esperar a música"): se a percussão só entra depois de alguns
-# segundos (intro de pad/voz), aparamos as batidas anteriores — o metrônomo não
-# clica no trecho livre/rubato e crava exatamente quando o groove começa.
+# INTRO SEM BATIDA: se a percussão só entra depois de alguns segundos (intro de
+# pad/voz), o começo livre/rubato contamina o ajuste global de tempo/fase. Medimos
+# o tempo/fase no GROOVE (parte percussiva) e re-fasamos a grade inteira, estendendo
+# até o início — o metrônomo marca desde o começo, mas no tempo certo das batidas.
 #
 # Uso: detect_beats.py <input_wav> [bpm_hint]
 # Saída (stdout): JSON {"ok": true, "bpm": float, "beats": [float, ...], "meter": "6/8"|null}
@@ -235,11 +236,13 @@ def main() -> int:
             # isso. O servidor só agrega a inteligência NOVA: o composto (6/8).
             meter = None
 
-        # ── "Esperar a música": não clicar no intro sem batida ───────────────
-        # Detectamos quando a PERCUSSÃO entra de fato (energia percussiva sustentada)
-        # e aparamos as batidas anteriores. Assim o metrônomo fica em silêncio no
-        # intro livre/rubato e crava exatamente no início do groove. A separação
-        # harmônico/percussiva isola a percussão de pad/voz (que não têm batida).
+        # ── Travar o metrônomo no GROOVE, mas marcar desde o início ──────────
+        # Música com intro de pad/voz (sem percussão) tem um começo livre/rubato
+        # que CONTAMINA o ajuste global de tempo/fase. Detectamos onde a PERCUSSÃO
+        # entra de fato, medimos o tempo/fase ali (parte confiável) e ESTENDEMOS a
+        # grade para trás até o início. Assim o metrônomo marca desde o começo, mas
+        # no tempo certo ditado pelas batidas. A separação harmônico/percussiva
+        # isola a percussão de pad/voz (que não dão batida regular).
         try:
             yp = librosa.effects.percussive(y)
             prms = librosa.feature.rms(y=yp, hop_length=HOP)[0]
@@ -256,11 +259,19 @@ def main() -> int:
                             p_start = float(i / frate)
                             break
                     if p_start > MIN_INTRO:
-                        kept = beats[beats >= p_start - 1e-3]
-                        if kept.size >= 4:  # só apara se sobra grade suficiente
-                            beats = kept
+                        groove = beats[beats >= p_start - 1e-3]
+                        if groove.size >= 4:
+                            interval = float(np.median(np.diff(groove)))
+                            if interval > 0:
+                                anchor = float(groove[0])  # batida sólida no groove
+                                end = float(beats[-1])
+                                # primeira batida da grade re-fasada, perto do 0
+                                first = anchor - interval * np.floor(anchor / interval)
+                                n = int(round((end - first) / interval)) + 1
+                                if n >= 4:
+                                    beats = first + interval * np.arange(n)
         except Exception:
-            pass  # se a separação falhar, mantemos a grade completa (sem aparar)
+            pass  # se a separação falhar, mantemos a grade global (sem re-fasar)
 
         bpm = median_bpm(beats)
         times = sorted(round(float(t), 4) for t in beats)

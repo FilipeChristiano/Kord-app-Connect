@@ -39,24 +39,30 @@ So the server returns `null` for simple meters and lets the client's upload anal
 - **How to apply:** only add NEW capability (compound) at the server; never relabel what
   already works. `server.meter ?? initialTimeSignature` is the precedence.
 
-## Intro-skip — "wait for the music" before clicking
-Many songs (worship especially) open with 10-20s of pad/voice and **no percussion**;
-clicking the metronome through that rubato intro feels "out of rhythm" even when the
-tempo/phase are correct. So `detect_beats.py` detects when percussion actually enters
-and **trims all beats before that point** — the click stays silent through the intro
-and locks in exactly at the groove.
-- **How it's detected:** HPSS percussive component (`librosa.effects.percussive`), then
-  its smoothed RMS; percussion "enters" at the first frame whose ~1.5s sustained window
-  stays above 0.2×(p95 of the RMS). Only trim if that start is >~2s in AND ≥4 beats remain;
-  wrapped in try/except so a separation failure just keeps the full grid.
+## Non-percussive intro — re-phase the grid to the groove, keep clicking from t≈0
+Many songs (worship especially) open with 10-20s of pad/voice and **no percussion**.
+That rubato intro **contaminates the global beat_track fit** (its phase ends up ~0.1s
+off the real groove). The user wants the metronome to click **from the very start** but
+in the tempo/phase dictated by the drums — NOT silent through the intro (we tried the
+silent-intro version first; user explicitly rejected it: "quero que comece desde o início").
+So `detect_beats.py` finds where percussion enters, measures tempo+phase **there**, and
+**rebuilds the whole grid as a regular series extended back to ~0** through a solid groove beat.
+- **How it's detected:** HPSS percussive component (`librosa.effects.percussive`), then its
+  smoothed RMS; percussion "enters" at the first frame whose ~1.5s sustained window stays
+  above 0.2×(p95 of the RMS). Only re-phase if that start is >~2s in AND ≥4 groove beats remain;
+  wrapped in try/except so a separation failure just keeps the global grid.
+- **Re-phase math:** `interval = median(diff(groove_beats))`, `anchor = groove_beats[0]`,
+  `first = anchor - interval*floor(anchor/interval)` (first beat near 0 on the same phase),
+  then `beats = first + interval*arange(n)` out to the old last beat. The grid passes exactly
+  through `anchor`, so the groove is dead-on and the intro clicks are the backward extension.
 - **Why HPSS is required:** the intro still has harmonic/vocal onset energy, so the plain
   onset envelope can't tell "has a beat" from "no beat" — only the percussive component can.
-  Validated: Atos 2 (drums enter ~18s) → beats start at 18.23s; a solo-piano hymn (attacks
-  from the start) → perc-start 0.9s, no trim. NOTE: piano note attacks read as percussive in
-  HPSS, so this finds *drums/strong rhythm*, not literally "any percussion".
-- **Client side needs nothing:** the metronome anchors phase to the `beats[]` map via binary
-  search and never schedules a click whose time is far in the future, so a grid that starts
-  at 18s simply stays silent until then.
+  Validated: Atos 2 (drums enter ~18s) → grid starts 0.02s, interval 0.3793 (eighth), passes
+  through 18.228s; a solo-piano hymn (attacks from start) → perc-start 0.9s, no re-phase.
+  NOTE: piano note attacks read as percussive in HPSS, so this finds *drums/strong rhythm*,
+  not literally "any percussion".
+- **Client side needs nothing:** the metronome anchors to the `beats[]` map; a grid that
+  already starts near 0 just clicks from the start at the groove's tempo/phase.
 
 ## Player gating
 Playback is blocked until tempo/meter detection finishes: play button disabled +
