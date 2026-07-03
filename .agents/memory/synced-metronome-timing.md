@@ -78,37 +78,35 @@ calibrated once per device). This is the standard play-along/karaoke calibration
   buffering pins currentTime at ~0 just after play()), keep re-anchoring and DON'T
   schedule. Scheduling only begins once position truly advances → no premature click.
 
-## Rule: Audio Lab tracks REAL beats client-side (DP beat-map), octave-locked to the confirmed BPM — constant grid is only a fallback
-Evolution of decisions (do not re-litigate a step without new evidence):
-1. Server beat-map (`/stems/beats` → librosa `beat_track`) was tried and REVERTED —
-   it mis-locked (double-time/"contratempo", tempo wander); two engines behaving
-   differently was itself the complaint.
-2. Switched Audio Lab to the Metrônomo's CONSTANT grid (`computeBeatGrid`) — clean
-   pulse, but a constant BPM+phase **drifts on real songs that "breathe"**; user
-   reported it "precisa de ajuste fino para se manter por toda a música."
-3. CURRENT: Audio Lab uses `computeBeatMap(instrumental, bpmHint, tsHint)` — a
-   CLIENT-side dynamic-programming beat tracker (Ellis 2007) over the onset
-   envelope that follows the real, living pulse ("a mesma análise que faço
-   humanamente"). It feeds real beat instants into `useSyncedMetronome` beat-map
-   mode (`metroBeats = beats`). `computeBeatGrid` constant grid is the FALLBACK
-   when tracking is too weak (<2 beats).
+## Rule: Audio Lab metronome uses the SAME client constant-grid engine as the Metrônomo — NOT a variable beat-map
+Two beat-map attempts have now been tried and BOTH REVERTED because the user judged
+them worse than the clean constant pulse:
+1. SERVER beat-map (`/stems/beats` → librosa `beat_track`, variable instants) —
+   mis-locked (double-time/"contratempo", tempo wander).
+2. CLIENT DP beat-map (`computeBeatMap`, Ellis 2007 DP over onsets, seeded/octave-
+   locked to the confirmed BPM) — added to follow songs that "breathe"; user tested
+   and said "Piorou! Volte da forma que estava antes." Reverted; `computeBeatMap`
+   deleted from `bpm-detector.ts`.
 
-**Why the client DP beat-map succeeds where the server one failed:** it is SEEDED
-with `bpmHint` (the user-confirmed octave from the Metrônomo) and its interval
-penalty is centered on that period (search `[0.5T, 2T]`, `TIGHTNESS=100`), so it
-can NEVER double/halve or fall into contratempo — the exact failure of the
-unseeded server tracker. Same client engine as the Metrônomo = trust preserved.
+So Audio Lab's StemMixer uses `computeBeatGrid(instrumental, bpmHint, tsHint)` →
+CONSTANT BPM + phase grid, `metroBeats=null` (constant mode in `useSyncedMetronome`).
+
+**Why:** the user consistently prefers a clean, steady constant pulse locked to the
+confirmed BPM octave over beat-tracking that follows local tempo. Even a
+technically "human-like" tracker felt worse to them. Two engines behaving
+differently was itself an earlier complaint.
 
 **How to apply:**
-- `initialBpm` passed to StemMixer IS the Metrônomo's chosen BPM (from upload
-  `analyzeBpm` / user half/principal/double choice); it seeds the DP octave — never
-  detect the octave from scratch in Audio Lab.
-- In beat-map mode `metroBpm` is DISPLAY-ONLY (click follows `beats[n]`), so show
-  the confirmed `bpmHint`, not the median-of-intervals (avoids a flickering 157/159).
-- Do NOT reintroduce the SERVER `/stems/beats`/`fetchStemBeats` path; the old
-  double-time/octave-fold logic in `detect_beats.py` is dead unless that revives.
-- 6/8 caveat: `computeBeatMap` clicks the quarter/dotted pulse (not the eighth grid
-  the server emitted); fine for 4/4 (the common case) and unaccented mixer clicks.
+- Do NOT reintroduce a variable beat-map (server `/stems/beats` OR a client DP
+  tracker) into Audio Lab. The user has rejected BOTH. Only revisit if they
+  EXPLICITLY ask for beat-tracking again after this.
+- `initialBpm` passed to StemMixer already IS the Metrônomo's chosen BPM (from the
+  upload `analyzeBpm` / user half/principal/double option), so it locks
+  `computeBeatGrid`'s octave; the grid only refines phase over the whole song.
+- If the constant grid drifts for a specific song, prefer improving grid PRECISION
+  (finer BPM/phase search) over switching to beat-tracking.
+- The old server-side double-time/octave-fold logic still lives in `detect_beats.py`
+  but is dead for Audio Lab.
 
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
