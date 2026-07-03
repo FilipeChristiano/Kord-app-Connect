@@ -62,3 +62,15 @@ keeps memory low.
 **How to apply:** any multi-stem playback in this app — prefer streaming media
 elements over full buffer decode. Reserve Web Audio buffers for short clips or
 when sample-accurate scheduling is truly required.
+
+## Rule: octave/BPM options in Audio Lab mirror the Metronome, default stays upload-locked
+The Audio Lab StemMixer exposes the same 3 tempo options as the standalone Metronome
+(metade/principal/dobro from `analyzeBpm`). Selecting an option recomputes the beat grid
+(`computeBeatGrid`) for that octave and re-syncs the click.
+**Why:** users need to override a wrong auto-picked octave, but the octave must still
+default to the tempo confirmed at upload (`initialBpm`) so nothing regresses silently.
+**How to apply:** default the selected option to the octave nearest the upload BPM
+(fallback `recommendedIndex`); on user selection REUSE the cached decoded AudioBuffer —
+never re-run `analyzeBpm` per tap. Guard every grid recompute with an incrementing
+`gridTokenRef` and bump the token in the detection effect's cleanup, so recomputes
+in flight after unmount / song change are dropped (no setState-after-unmount).

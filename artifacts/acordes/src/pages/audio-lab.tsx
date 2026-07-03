@@ -60,7 +60,13 @@ import {
   MonoSourceError,
 } from "@/lib/audio-stems";
 import { LiveStudioPlayer } from "@/lib/audio-live";
-import { analyzeBpm, computeBeatGrid, type DetectedTimeSignature } from "@/lib/bpm-detector";
+import {
+  analyzeBpm,
+  computeBeatGrid,
+  type BpmOption,
+  type BpmRelation,
+  type DetectedTimeSignature,
+} from "@/lib/bpm-detector";
 import { useSyncedMetronome } from "@/lib/use-metronome";
 import {
   classifyLine,
@@ -2228,6 +2234,13 @@ const METRO_SYNC_MIN = -0.3;
 const METRO_SYNC_MAX = 0.4;
 const METRO_SYNC_STEP = 0.02;
 
+// Rótulos das 3 opções de tempo (idênticas ao módulo "Metrônomo").
+const RELATION_LABEL: Record<BpmRelation, string> = {
+  metade: "Metade",
+  principal: "Principal",
+  dobro: "Dobro",
+};
+
 function StemMixer({
   vocalsUrl,
   instrumentalUrl,
@@ -2278,6 +2291,19 @@ function StemMixer({
   const [metroTs, setMetroTs] = useState<DetectedTimeSignature | null>(initialTimeSignature ?? null);
   const [metroVol, setMetroVol] = useState(0.5);
   const [bpmDetecting, setBpmDetecting] = useState(true);
+  // 3 opções de tempo (metade / principal / dobro) — a MESMA inteligência do
+  // módulo "Metrônomo". O usuário escolhe qual oitava usar; ao trocar, a grade
+  // de batidas é recalculada e o clique re-sincroniza com a música.
+  const [bpmOptions, setBpmOptions] = useState<BpmOption[]>([]);
+  const [bpmChoice, setBpmChoice] = useState(-1);
+  const [bpmRecommended, setBpmRecommended] = useState(-1);
+  const [bpmRecomputing, setBpmRecomputing] = useState(false);
+  // Buffer + compasso guardados para recalcular a grade quando o usuário troca de
+  // opção — sem re-mapear a faixa inteira (evita reprocessar o áudio à toa).
+  const analysisBufferRef = useRef<AudioBuffer | null>(null);
+  const analysisTsRef = useRef<DetectedTimeSignature | null>(null);
+  // Token para descartar recálculos de grade obsoletos (troca rápida de opção).
+  const gridTokenRef = useRef(0);
   // Calibração de sincronia (s): o áudio em streaming tem uma latência um pouco
   // maior que o clique do Web Audio, então o clique soa levemente À FRENTE. Um
   // valor positivo atrasa o clique para colá-lo na música. É por DISPOSITIVO
@@ -2341,10 +2367,56 @@ function StemMixer({
   // opção metade/principal/dobro mais próxima), então `computeBeatGrid` refina o
   // BPM preciso + a FASE (posição da 1ª batida) sobre a faixa toda — é isso que
   // mantém o clique colado do começo ao fim, sem lista de instantes.
+  // Refina o BPM PRECISO + fase (grade constante) para uma dada oitava e aplica
+  // no motor do clique. Usada tanto na detecção inicial quanto na troca de opção.
+  const computeAndApplyGrid = useCallback(
+    async (buffer: AudioBuffer, bpm: number | null, ts: DetectedTimeSignature | null, token: number) => {
+      const grid = await computeBeatGrid(buffer, bpm, ts);
+      if (token !== gridTokenRef.current) return;
+      setMetroBeats(null);
+      if (grid) {
+        const clamped = Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, grid.bpm));
+        setMetroBpm(clamped);
+        setMetroOffset(grid.beatOffsetSec);
+        setMetroTs(grid.timeSignature ?? ts);
+      } else {
+        setMetroBpm(bpm ?? METRO_DEFAULT_BPM);
+        setMetroOffset(0);
+        setMetroTs(ts);
+      }
+    },
+    [],
+  );
+
+  // Troca a oitava do clique para a opção escolhida (metade/principal/dobro) e
+  // recalcula a fase sobre a faixa toda — sem re-mapear o áudio.
+  const applyBpmOption = useCallback(
+    async (index: number) => {
+      const buffer = analysisBufferRef.current;
+      const opt = bpmOptions[index];
+      if (!buffer || !opt || opt.bpm <= 0) return;
+      setBpmChoice(index);
+      setBpmRecomputing(true);
+      const token = ++gridTokenRef.current;
+      try {
+        await computeAndApplyGrid(buffer, opt.bpm, analysisTsRef.current, token);
+      } finally {
+        if (token === gridTokenRef.current) setBpmRecomputing(false);
+      }
+    },
+    [bpmOptions, computeAndApplyGrid],
+  );
+
   useEffect(() => {
     let cancelled = false;
+    const token = ++gridTokenRef.current;
     setBpmDetecting(true);
+    setBpmRecomputing(false);
     setMetroBeats(null);
+    setBpmOptions([]);
+    setBpmChoice(-1);
+    setBpmRecommended(-1);
+    analysisBufferRef.current = null;
     (async () => {
       const bpmHint = typeof initialBpm === "number" && initialBpm > 0 ? initialBpm : null;
       try {
@@ -2352,49 +2424,49 @@ function StemMixer({
         const blob = await resp.blob();
         const file = new File([blob], "instrumental", { type: blob.type || "audio/wav" });
         const buffer = await fileToAudioBuffer(file);
+        if (cancelled) return;
+        analysisBufferRef.current = buffer;
 
-        // 1) Mapeia o instrumental inteiro com o detector do Metrônomo e escolhe a
-        //    oitava confirmada no envio (a opção mais próxima do BPM já validado).
+        // 1) Mapeia o instrumental inteiro com o detector do Metrônomo, gerando as
+        //    3 opções (metade/principal/dobro). O padrão selecionado é a oitava
+        //    mais próxima do BPM já confirmado no envio; o usuário pode trocar.
         let gridBpm = bpmHint;
         let gridTs: DetectedTimeSignature | null = initialTimeSignature ?? null;
+        let chosenIndex = -1;
         try {
           const analysis = await analyzeBpm(buffer);
           if (!cancelled && analysis.options.length > 0) {
-            let chosen = analysis.options[analysis.recommendedIndex] ?? analysis.options[0];
+            chosenIndex =
+              analysis.recommendedIndex >= 0 && analysis.recommendedIndex < analysis.options.length
+                ? analysis.recommendedIndex
+                : 0;
             if (bpmHint && bpmHint > 0) {
               let bestDelta = Infinity;
-              for (const opt of analysis.options) {
+              analysis.options.forEach((opt, i) => {
                 const d = Math.abs(opt.bpm - bpmHint);
                 if (d < bestDelta) {
                   bestDelta = d;
-                  chosen = opt;
+                  chosenIndex = i;
                 }
-              }
+              });
             }
+            const chosen = analysis.options[chosenIndex];
             if (chosen && chosen.bpm > 0) gridBpm = chosen.bpm;
             if (analysis.timeSignature) gridTs = analysis.timeSignature;
+            setBpmOptions(analysis.options);
+            setBpmChoice(chosenIndex);
+            setBpmRecommended(analysis.recommendedIndex);
           }
         } catch {
           // Mantém a dica do envio se o mapeamento falhar.
         }
         if (cancelled) return;
+        analysisTsRef.current = gridTs;
 
         // 2) Refina o BPM preciso + fase sobre a faixa toda (grade constante).
-        const grid = await computeBeatGrid(buffer, gridBpm, gridTs);
-        if (cancelled) return;
-        setMetroBeats(null);
-        if (grid) {
-          const bpm = Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, grid.bpm));
-          setMetroBpm(bpm);
-          setMetroOffset(grid.beatOffsetSec);
-          setMetroTs(grid.timeSignature ?? gridTs);
-        } else {
-          setMetroBpm(gridBpm ?? METRO_DEFAULT_BPM);
-          setMetroOffset(0);
-          setMetroTs(gridTs);
-        }
+        await computeAndApplyGrid(buffer, gridBpm, gridTs, token);
       } catch {
-        if (!cancelled) {
+        if (!cancelled && token === gridTokenRef.current) {
           setMetroBeats(null);
           setMetroBpm(bpmHint ?? METRO_DEFAULT_BPM);
           setMetroOffset(0);
@@ -2406,8 +2478,11 @@ function StemMixer({
     })();
     return () => {
       cancelled = true;
+      // Invalida qualquer recálculo de grade em voo (inclusive troca de opção),
+      // para não aplicar estado após desmontar/trocar de música.
+      gridTokenRef.current++;
     };
-  }, [instrumentalUrl, initialBpm, initialTimeSignature]);
+  }, [instrumentalUrl, initialBpm, initialTimeSignature, computeAndApplyGrid]);
 
   // Cria os dois elementos de áudio uma única vez por par de faixas.
   useEffect(() => {
@@ -2673,25 +2748,73 @@ function StemMixer({
         </span>
       </div>
 
-      {/* Tempo da música (BPM) — cravado no tempo da música, sem edição */}
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-        <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
-          <Gauge className="w-3.5 h-3.5 text-primary" /> Tempo da música
-        </span>
-        {bpmDetecting || metroBpm <= 0 ? (
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-white/50">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Identificando o tempo…
+      {/* Tempo da música (BPM) — 3 opções (metade/principal/dobro), a MESMA
+          inteligência do módulo "Metrônomo". O usuário escolhe a oitava certa e
+          o clique re-sincroniza com a música. */}
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
+            <Gauge className="w-3.5 h-3.5 text-primary" /> Tempo da música
           </span>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="font-mono tabular-nums text-sm text-white notranslate" translate="no">
-              {Math.round(metroBpm)}
-              <span className="text-[11px] text-white/45 ml-1">BPM</span>
+          {bpmDetecting || metroBpm <= 0 ? (
+            <span className="inline-flex items-center gap-1.5 text-[12px] text-white/50">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Identificando o tempo…
             </span>
-            <span className="text-[11px] text-white/40 notranslate ml-1" translate="no">
-              {metroTs ?? "4/4"}
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-white/40">
+              {bpmRecomputing && <Loader2 className="w-3 h-3 animate-spin" />}
+              <span className="notranslate" translate="no">
+                {Math.round(metroBpm)} BPM · {metroTs ?? "4/4"}
+              </span>
             </span>
-          </div>
+          )}
+        </div>
+
+        {!bpmDetecting && metroBpm > 0 && bpmOptions.length > 0 && (
+          <>
+            <div className="grid grid-cols-3 gap-1.5 mt-2.5">
+              {bpmOptions.map((opt, idx) => {
+                const active = bpmChoice === idx;
+                return (
+                  <button
+                    key={opt.relation}
+                    type="button"
+                    onClick={() => applyBpmOption(idx)}
+                    disabled={bpmRecomputing}
+                    className={cn(
+                      "relative rounded-xl border px-2 py-2 flex flex-col items-center transition-all disabled:opacity-60 disabled:cursor-not-allowed",
+                      active
+                        ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
+                        : "border-white/10 bg-white/[0.03] hover:border-white/25",
+                    )}
+                  >
+                    {bpmRecommended === idx && (
+                      <span className="absolute -top-1.5 right-1 text-[7px] font-bold uppercase tracking-wide text-primary bg-primary/15 border border-primary/25 rounded-full px-1 py-px">
+                        Sugerido
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "text-[9px] font-semibold uppercase tracking-wide",
+                        active ? "text-primary" : "text-white/45",
+                      )}
+                    >
+                      {RELATION_LABEL[opt.relation]}
+                    </span>
+                    <span
+                      className="font-mono tabular-nums text-lg text-white leading-none mt-1 notranslate"
+                      translate="no"
+                    >
+                      {opt.bpm}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-white/35 mt-1.5 leading-snug">
+              Toque numa opção para o clique seguir esse tempo.
+            </p>
+          </>
         )}
       </div>
 
