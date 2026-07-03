@@ -169,6 +169,18 @@ the common teardown for ALL paths (reset, search, file load). Don't scatter it p
 **How to apply:** for any media child, put the imperative stop in the single shared
 teardown function, not in each entry point and not in unmount cleanup alone.
 
+## Rule: disambiguate the downbeat with the LOW band or the click locks to contratempo
+`computeBeatGrid`'s phase search scores a quarter-note grid by overall onset-strength
+alignment. Songs with a strong backbeat/syncopation (reported on Forrest "Good Day")
+make the offbeats out-sum the onbeats, so the grid locks half a beat off → the click
+plays on the contratempo.
+**Fix:** after choosing the phase, compare grid low-band (kick/bass) energy at `phase`
+vs `phase + T/2` and shift by half a beat only if the alt is clearly stronger (~1.12×
+margin). The kick/bass reliably lands ON the beat, so the low band breaks the tie the
+full-spectrum onset match gets wrong. **How to apply:** keep the margin (hysteresis) so
+already-correct songs don't flip; this is a PHASE fix only — do NOT turn it into
+variable beat-tracking (still rejected).
+
 ## HMR caveat
 Adding/removing a hook in StemMixer/useSyncedMetronome throws "Rendered more/fewer
 hooks than during the previous render" on hot-update — it's HMR-only; a full

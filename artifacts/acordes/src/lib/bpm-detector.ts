@@ -798,8 +798,42 @@ export async function computeBeatGrid(
     if (score > best.score) best = { bpm: b, score, phaseFrames };
   }
 
+  // 5. Desambiguação de contratempo: o casamento por onsets pode travar a grade
+  // no "e" (contratempo) quando os offbeats somam mais energia (backbeat forte,
+  // levada sincopada). O bumbo/baixo, porém, cai NA batida. Entre a fase achada e
+  // ela deslocada meia batida, escolhe a de maior energia GRAVE nos pontos da
+  // grade — assim o clique volta para o tempo forte.
+  const Tbest = (envRate * 60) / best.bpm;
+  let phaseFrames = best.phaseFrames;
+  if (Tbest >= 4 && n > Tbest * 2) {
+    let lowMean = 0;
+    for (let i = 0; i < n; i++) lowMean += envLow[i];
+    lowMean /= n;
+    const lowRect = new Float32Array(n);
+    for (let i = 0; i < n; i++) lowRect[i] = Math.max(0, envLow[i] - lowMean);
+    const win = Math.max(1, Math.round(Tbest * 0.12));
+    const gridLowEnergy = (phase: number): number => {
+      let sum = 0;
+      for (let g = phase; g <= n - 1; g += Tbest) {
+        const c = Math.round(g);
+        let peak = 0;
+        for (let k = c - win; k <= c + win; k++) {
+          if (k >= 0 && k < n && lowRect[k] > peak) peak = lowRect[k];
+        }
+        sum += peak;
+      }
+      return sum;
+    };
+    const half = Tbest / 2;
+    const eBase = gridLowEnergy(phaseFrames);
+    const eAlt = gridLowEnergy(phaseFrames + half);
+    // Só desloca com evidência clara (margem) para não virar a fase de músicas
+    // que já estavam corretas.
+    if (eAlt > eBase * 1.12) phaseFrames += half;
+  }
+
   const spb = 60 / best.bpm;
-  let offsetSec = best.phaseFrames / envRate;
+  let offsetSec = phaseFrames / envRate;
   offsetSec = ((offsetSec % spb) + spb) % spb; // 0 ≤ offset < duração da batida
 
   return {
