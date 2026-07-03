@@ -60,7 +60,7 @@ import {
   MonoSourceError,
 } from "@/lib/audio-stems";
 import { LiveStudioPlayer } from "@/lib/audio-live";
-import { computeBeatGrid, type DetectedTimeSignature } from "@/lib/bpm-detector";
+import { computeBeatGrid, computeBeatMap, type DetectedTimeSignature } from "@/lib/bpm-detector";
 import { useSyncedMetronome } from "@/lib/use-metronome";
 import {
   classifyLine,
@@ -2303,43 +2303,61 @@ function StemMixer({
     bpmDetectingRef.current = bpmDetecting;
   }, [bpmDetecting]);
 
-  // Descobre a grade de batidas do INSTRUMENTAL separado usando A MESMA
-  // identificação do Metrônomo inteligente: analisamos o próprio instrumental
-  // que vai tocar e montamos uma grade de andamento CONSTANTE — BPM preciso
-  // (não arredondado) + FASE (posição da 1ª batida). É o que mantém o clique
-  // colado na música do começo ao fim. O BPM da análise do envio entra como
-  // dica, fixando a oitava do andamento e o compasso; a fase é refinada sobre a
-  // faixa inteira. Sem lista de instantes: o pulso é o mesmo do Metrônomo.
+  // Identificação das batidas do INSTRUMENTAL separado — a MESMA análise que um
+  // músico faz batendo o pé. Rastreamos as batidas REAIS da faixa inteira
+  // (`computeBeatMap`, programação dinâmica): o clique cai em cima de cada
+  // batida e SEGUE a pulsação viva da música (que respira/varia um pouquinho),
+  // sem arrasto acumulado — então se mantém colado do começo ao fim, sem ajuste
+  // manual. O BPM confirmado no detector entra como dica, travando a oitava
+  // (nunca dobra nem cai no contratempo). Se o rastreamento não vingar (faixa
+  // sem batida marcada), caímos para a grade de andamento CONSTANTE.
   useEffect(() => {
     let cancelled = false;
     setBpmDetecting(true);
     setMetroBeats(null);
     (async () => {
       const bpmHint = typeof initialBpm === "number" && initialBpm > 0 ? initialBpm : null;
+      const tsHint = initialTimeSignature ?? null;
       try {
         const resp = await fetch(instrumentalUrl);
         const blob = await resp.blob();
         const file = new File([blob], "instrumental", { type: blob.type || "audio/wav" });
         const buffer = await fileToAudioBuffer(file);
-        const grid = await computeBeatGrid(buffer, bpmHint, initialTimeSignature ?? null);
+
+        // 1) Rastreamento das batidas reais (segue a música, como um humano).
+        const map = await computeBeatMap(buffer, bpmHint, tsHint);
+        if (cancelled) return;
+        if (map && map.beats.length >= 2) {
+          setMetroBeats(map.beats);
+          // O clique segue os instantes reais (map.beats); o BPM é só exibição —
+          // mostramos o andamento confirmado no detector p/ um número estável.
+          setMetroBpm(Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, bpmHint ?? map.bpm)));
+          setMetroOffset(map.beats[0] ?? 0);
+          setMetroTs(map.timeSignature ?? tsHint);
+          setBpmDetecting(false);
+          return;
+        }
+
+        // 2) Reserva: grade de andamento constante (BPM preciso + fase).
+        const grid = await computeBeatGrid(buffer, bpmHint, tsHint);
         if (cancelled) return;
         setMetroBeats(null);
         if (grid) {
           const bpm = Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, grid.bpm));
           setMetroBpm(bpm);
           setMetroOffset(grid.beatOffsetSec);
-          setMetroTs(grid.timeSignature ?? initialTimeSignature ?? null);
+          setMetroTs(grid.timeSignature ?? tsHint);
         } else {
           setMetroBpm(bpmHint ?? METRO_DEFAULT_BPM);
           setMetroOffset(0);
-          setMetroTs(initialTimeSignature ?? null);
+          setMetroTs(tsHint);
         }
       } catch {
         if (!cancelled) {
           setMetroBeats(null);
           setMetroBpm(bpmHint ?? METRO_DEFAULT_BPM);
           setMetroOffset(0);
-          setMetroTs(initialTimeSignature ?? null);
+          setMetroTs(tsHint);
         }
       } finally {
         if (!cancelled) setBpmDetecting(false);

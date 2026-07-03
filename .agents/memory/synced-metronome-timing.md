@@ -78,28 +78,37 @@ calibrated once per device). This is the standard play-along/karaoke calibration
   buffering pins currentTime at ~0 just after play()), keep re-anchoring and DON'T
   schedule. Scheduling only begins once position truly advances → no premature click.
 
-## Rule: Audio Lab metronome uses the SAME client constant-grid engine as the Metrônomo — NOT the server beat-map
-The server beat-map path (`/stems/beats` → librosa `beat_track`, variable per-beat
-instants) was tried as the Audio Lab default and REVERTED. The user's verdict:
-the standalone **Metrônomo** module (client `analyzeBpm`/`computeBeatGrid`, a
-CONSTANT BPM + phase grid) "funciona perfeitamente," while the server beat-map in
-Audio Lab did not. So Audio Lab's StemMixer now reuses the Metrônomo's engine:
-`computeBeatGrid(instrumental, bpmHint, tsHint)` → constant grid, `metroBeats=null`
-(constant mode in `useSyncedMetronome`).
+## Rule: Audio Lab tracks REAL beats client-side (DP beat-map), octave-locked to the confirmed BPM — constant grid is only a fallback
+Evolution of decisions (do not re-litigate a step without new evidence):
+1. Server beat-map (`/stems/beats` → librosa `beat_track`) was tried and REVERTED —
+   it mis-locked (double-time/"contratempo", tempo wander); two engines behaving
+   differently was itself the complaint.
+2. Switched Audio Lab to the Metrônomo's CONSTANT grid (`computeBeatGrid`) — clean
+   pulse, but a constant BPM+phase **drifts on real songs that "breathe"**; user
+   reported it "precisa de ajuste fino para se manter por toda a música."
+3. CURRENT: Audio Lab uses `computeBeatMap(instrumental, bpmHint, tsHint)` — a
+   CLIENT-side dynamic-programming beat tracker (Ellis 2007) over the onset
+   envelope that follows the real, living pulse ("a mesma análise que faço
+   humanamente"). It feeds real beat instants into `useSyncedMetronome` beat-map
+   mode (`metroBeats = beats`). `computeBeatGrid` constant grid is the FALLBACK
+   when tracking is too weak (<2 beats).
 
-**Why:** consistency the user can trust beats theoretical accuracy on paper. The server's
-variable beat-map kept mis-locking (double-time/"contratempo", tempo wander) and
-felt worse to the user than a clean constant pulse locked to the confirmed BPM
-octave. Two engines behaving differently was itself the complaint.
+**Why the client DP beat-map succeeds where the server one failed:** it is SEEDED
+with `bpmHint` (the user-confirmed octave from the Metrônomo) and its interval
+penalty is centered on that period (search `[0.5T, 2T]`, `TIGHTNESS=100`), so it
+can NEVER double/halve or fall into contratempo — the exact failure of the
+unseeded server tracker. Same client engine as the Metrônomo = trust preserved.
 
 **How to apply:**
-- Do NOT reintroduce `fetchStemBeats`/`analyzeBeatsBlob`/server `/stems/beats` into
-  Audio Lab unless the user explicitly asks for variable-tempo tracking again.
-- `initialBpm` passed to StemMixer already IS the Metrônomo's chosen BPM (from the
-  upload `analyzeBpm` result / user-selected half/principal/double option), so it
-  locks `computeBeatGrid`'s octave; the grid only refines phase over the whole song.
-- The old server-side double-time/octave-fold logic still lives in `detect_beats.py`
-  and remains relevant ONLY if the beat-map path is ever revived.
+- `initialBpm` passed to StemMixer IS the Metrônomo's chosen BPM (from upload
+  `analyzeBpm` / user half/principal/double choice); it seeds the DP octave — never
+  detect the octave from scratch in Audio Lab.
+- In beat-map mode `metroBpm` is DISPLAY-ONLY (click follows `beats[n]`), so show
+  the confirmed `bpmHint`, not the median-of-intervals (avoids a flickering 157/159).
+- Do NOT reintroduce the SERVER `/stems/beats`/`fetchStemBeats` path; the old
+  double-time/octave-fold logic in `detect_beats.py` is dead unless that revives.
+- 6/8 caveat: `computeBeatMap` clicks the quarter/dotted pulse (not the eighth grid
+  the server emitted); fine for 4/4 (the common case) and unaccented mixer clicks.
 
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
