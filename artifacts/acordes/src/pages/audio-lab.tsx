@@ -60,7 +60,7 @@ import {
   MonoSourceError,
 } from "@/lib/audio-stems";
 import { LiveStudioPlayer } from "@/lib/audio-live";
-import { computeBeatGrid, type DetectedTimeSignature } from "@/lib/bpm-detector";
+import { analyzeBpm, computeBeatGrid, type DetectedTimeSignature } from "@/lib/bpm-detector";
 import { useSyncedMetronome } from "@/lib/use-metronome";
 import {
   classifyLine,
@@ -2303,13 +2303,14 @@ function StemMixer({
     bpmDetectingRef.current = bpmDetecting;
   }, [bpmDetecting]);
 
-  // Descobre a grade de batidas do INSTRUMENTAL separado usando A MESMA
-  // identificação do Metrônomo inteligente: analisamos o próprio instrumental
-  // que vai tocar e montamos uma grade de andamento CONSTANTE — BPM preciso
-  // (não arredondado) + FASE (posição da 1ª batida). É o que mantém o clique
-  // colado na música do começo ao fim. O BPM da análise do envio entra como
-  // dica, fixando a oitava do andamento e o compasso; a fase é refinada sobre a
-  // faixa inteira. Sem lista de instantes: o pulso é o mesmo do Metrônomo.
+  // Identifica o andamento do INSTRUMENTAL separado do MESMO jeito que o módulo
+  // "Metrônomo": primeiro MAPEIA o instrumental inteiro com o detector oficial
+  // (`analyzeBpm` — bandas de frequência, envelope de onsets, consenso por
+  // autocorrelação + tempograma e validação por oitava) e SÓ ENTÃO define o
+  // tempo do clique. A oitava é travada no BPM já confirmado no envio (escolhe a
+  // opção metade/principal/dobro mais próxima), então `computeBeatGrid` refina o
+  // BPM preciso + a FASE (posição da 1ª batida) sobre a faixa toda — é isso que
+  // mantém o clique colado do começo ao fim, sem lista de instantes.
   useEffect(() => {
     let cancelled = false;
     setBpmDetecting(true);
@@ -2321,18 +2322,46 @@ function StemMixer({
         const blob = await resp.blob();
         const file = new File([blob], "instrumental", { type: blob.type || "audio/wav" });
         const buffer = await fileToAudioBuffer(file);
-        const grid = await computeBeatGrid(buffer, bpmHint, initialTimeSignature ?? null);
+
+        // 1) Mapeia o instrumental inteiro com o detector do Metrônomo e escolhe a
+        //    oitava confirmada no envio (a opção mais próxima do BPM já validado).
+        let gridBpm = bpmHint;
+        let gridTs: DetectedTimeSignature | null = initialTimeSignature ?? null;
+        try {
+          const analysis = await analyzeBpm(buffer);
+          if (!cancelled && analysis.options.length > 0) {
+            let chosen = analysis.options[analysis.recommendedIndex] ?? analysis.options[0];
+            if (bpmHint && bpmHint > 0) {
+              let bestDelta = Infinity;
+              for (const opt of analysis.options) {
+                const d = Math.abs(opt.bpm - bpmHint);
+                if (d < bestDelta) {
+                  bestDelta = d;
+                  chosen = opt;
+                }
+              }
+            }
+            if (chosen && chosen.bpm > 0) gridBpm = chosen.bpm;
+            if (analysis.timeSignature) gridTs = analysis.timeSignature;
+          }
+        } catch {
+          // Mantém a dica do envio se o mapeamento falhar.
+        }
+        if (cancelled) return;
+
+        // 2) Refina o BPM preciso + fase sobre a faixa toda (grade constante).
+        const grid = await computeBeatGrid(buffer, gridBpm, gridTs);
         if (cancelled) return;
         setMetroBeats(null);
         if (grid) {
           const bpm = Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, grid.bpm));
           setMetroBpm(bpm);
           setMetroOffset(grid.beatOffsetSec);
-          setMetroTs(grid.timeSignature ?? initialTimeSignature ?? null);
+          setMetroTs(grid.timeSignature ?? gridTs);
         } else {
-          setMetroBpm(bpmHint ?? METRO_DEFAULT_BPM);
+          setMetroBpm(gridBpm ?? METRO_DEFAULT_BPM);
           setMetroOffset(0);
-          setMetroTs(initialTimeSignature ?? null);
+          setMetroTs(gridTs);
         }
       } catch {
         if (!cancelled) {

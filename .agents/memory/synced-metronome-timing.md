@@ -100,13 +100,30 @@ differently was itself an earlier complaint.
 - Do NOT reintroduce a variable beat-map (server `/stems/beats` OR a client DP
   tracker) into Audio Lab. The user has rejected BOTH. Only revisit if they
   EXPLICITLY ask for beat-tracking again after this.
-- `initialBpm` passed to StemMixer already IS the Metrônomo's chosen BPM (from the
-  upload `analyzeBpm` / user half/principal/double option), so it locks
-  `computeBeatGrid`'s octave; the grid only refines phase over the whole song.
-- If the constant grid drifts for a specific song, prefer improving grid PRECISION
-  (finer BPM/phase search) over switching to beat-tracking.
+- If the constant grid feels imprecise, prefer improving tempo IDENTIFICATION /
+  grid precision over switching to beat-tracking.
 - The old server-side double-time/octave-fold logic still lives in `detect_beats.py`
   but is dead for Audio Lab.
+
+### Sub-rule: identify the tempo by mapping the INSTRUMENTAL with `analyzeBpm` first, then fit the grid
+Passing only the upload's `initialBpm` as the `computeBeatGrid` hint was imprecise:
+the grid just searches ±1.2% around a BPM detected from the ORIGINAL MIX (vocals +
+everything), which can be off by more than that window on the clean instrumental.
+The user asked for "a identificação mapeie a música toda antes de definir o tempo
+do click, da mesma forma que acontece no módulo Metrônomo."
+
+**Fix (current):** StemMixer runs the SAME detector the Metrônomo uses,
+`analyzeBpm(instrumentalBuffer)`, to identify the tempo from the actual instrumental,
+picks the octave option (metade/principal/dobro) CLOSEST to the confirmed
+`initialBpm` (so the user's octave choice is respected, never re-guessed), and feeds
+THAT bpm + its time signature into `computeBeatGrid` for the precise float BPM +
+phase over the whole track.
+
+**Why:** the instrumental (no vocals) gives a cleaner onset envelope than the mix,
+so its own `analyzeBpm` reading is more accurate; centering the grid's ±1.2% window
+on that value fixes the drift instead of locking to a possibly-wrong mix hint.
+**How to apply:** keep the octave locked to `initialBpm` (nearest option), fall back
+to the plain `initialBpm` hint if `analyzeBpm` returns no options.
 
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
