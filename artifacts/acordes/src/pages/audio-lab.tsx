@@ -49,8 +49,6 @@ import {
   prepareStemsUpload,
   pollStemsStatus,
   stemsFileUrl,
-  fetchStemBeats,
-  analyzeBeatsBlob,
   type FetchedCifra,
   type CifraCandidate,
 } from "@/lib/cifra-remote";
@@ -2007,7 +2005,6 @@ export default function AudioLab() {
                           key={`mixer-${hqKey}`}
                           vocalsUrl={stemsFileUrl(hqKey, "vocals")}
                           instrumentalUrl={stemsFileUrl(hqKey, "instrumental")}
-                          stemKey={hqKey}
                           initialBpm={result ? bpmOpt?.bpm ?? result.bpm.bpm : undefined}
                           initialTimeSignature={result?.bpm.timeSignature}
                         />
@@ -2219,35 +2216,15 @@ const METRO_SYNC_MIN = -0.3;
 const METRO_SYNC_MAX = 0.4;
 const METRO_SYNC_STEP = 0.02;
 
-// BPM (mediana) a partir dos instantes das batidas — só para EXIBIÇÃO, caso o
-// servidor não devolva o andamento. O clique usa os instantes, não este valor.
-function beatsToMedianBpm(beats: number[]): number {
-  if (beats.length < 2) return METRO_DEFAULT_BPM;
-  const gaps: number[] = [];
-  for (let i = 1; i < beats.length; i++) {
-    const g = beats[i] - beats[i - 1];
-    if (g > 0.05) gaps.push(g);
-  }
-  if (gaps.length === 0) return METRO_DEFAULT_BPM;
-  gaps.sort((a, b) => a - b);
-  const med = gaps[Math.floor(gaps.length / 2)];
-  return med > 0 ? 60 / med : METRO_DEFAULT_BPM;
-}
-
 function StemMixer({
   vocalsUrl,
   instrumentalUrl,
-  stemKey,
   downloadExt = "mp3",
   initialBpm,
   initialTimeSignature,
 }: {
   vocalsUrl: string;
   instrumentalUrl: string;
-  /** Chave da faixa preparada no servidor (máxima qualidade). Quando presente,
-   *  as batidas são rastreadas reaproveitando o instrumental do servidor; sem
-   *  ela (modo rápido), enviamos os bytes do instrumental do navegador. */
-  stemKey?: string;
   downloadExt?: "mp3" | "wav";
   initialBpm?: number | null;
   initialTimeSignature?: DetectedTimeSignature | null;
@@ -2326,42 +2303,19 @@ function StemMixer({
     bpmDetectingRef.current = bpmDetecting;
   }, [bpmDetecting]);
 
-  // Descobre a grade de batidas do INSTRUMENTAL separado (batida limpa). Sempre
-  // analisamos o próprio instrumental que vai tocar — assim o BPM preciso e a
-  // FASE (posição da 1ª batida) batem exatamente com o áudio. O BPM da análise
-  // do envio entra apenas como dica, fixando a oitava do andamento e o compasso.
+  // Descobre a grade de batidas do INSTRUMENTAL separado usando A MESMA
+  // identificação do Metrônomo inteligente: analisamos o próprio instrumental
+  // que vai tocar e montamos uma grade de andamento CONSTANTE — BPM preciso
+  // (não arredondado) + FASE (posição da 1ª batida). É o que mantém o clique
+  // colado na música do começo ao fim. O BPM da análise do envio entra como
+  // dica, fixando a oitava do andamento e o compasso; a fase é refinada sobre a
+  // faixa inteira. Sem lista de instantes: o pulso é o mesmo do Metrônomo.
   useEffect(() => {
     let cancelled = false;
     setBpmDetecting(true);
     setMetroBeats(null);
     (async () => {
       const bpmHint = typeof initialBpm === "number" && initialBpm > 0 ? initialBpm : null;
-
-      // 1) Rastreamento de batidas no servidor (estilo profissional): devolve os
-      //    INSTANTES reais de cada batida. O clique cai exatamente em cima delas
-      //    — acompanhando a pulsação real da música, inclusive variações sutis.
-      try {
-        const server = stemKey
-          ? await fetchStemBeats(stemKey, bpmHint)
-          : await analyzeBeatsBlob(await (await fetch(instrumentalUrl)).blob(), bpmHint);
-        if (cancelled) return;
-        if (server && server.beats.length >= 2) {
-          const bpm = server.bpm > 0 ? server.bpm : beatsToMedianBpm(server.beats);
-          setMetroBeats(server.beats);
-          setMetroBpm(Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, bpm)));
-          setMetroOffset(server.beats[0] ?? 0);
-          // O compasso vem do próprio rastreamento da música (inclui 6/8 composto);
-          // a análise do envio entra só como reserva.
-          setMetroTs(server.meter ?? initialTimeSignature ?? null);
-          setBpmDetecting(false);
-          return;
-        }
-      } catch {
-        /* indisponível: cai para a análise local */
-      }
-      if (cancelled) return;
-
-      // 2) Fallback local (grade por BPM): análise dentro do navegador.
       try {
         const resp = await fetch(instrumentalUrl);
         const blob = await resp.blob();
@@ -2385,6 +2339,7 @@ function StemMixer({
           setMetroBeats(null);
           setMetroBpm(bpmHint ?? METRO_DEFAULT_BPM);
           setMetroOffset(0);
+          setMetroTs(initialTimeSignature ?? null);
         }
       } finally {
         if (!cancelled) setBpmDetecting(false);
@@ -2393,7 +2348,7 @@ function StemMixer({
     return () => {
       cancelled = true;
     };
-  }, [instrumentalUrl, stemKey, initialBpm, initialTimeSignature]);
+  }, [instrumentalUrl, initialBpm, initialTimeSignature]);
 
   // Cria os dois elementos de áudio uma única vez por par de faixas.
   useEffect(() => {

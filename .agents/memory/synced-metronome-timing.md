@@ -78,45 +78,28 @@ calibrated once per device). This is the standard play-along/karaoke calibration
   buffering pins currentTime at ~0 just after play()), keep re-anchoring and DON'T
   schedule. Scheduling only begins once position truly advances → no premature click.
 
-## Rule: prefer real beat TIMES (server beat-tracking) over any client BPM grid
-A fitted grid (precise BPM + phase) still drifts on songs with tempo variation or
-imperfect detection — the user kept reporting "muito fora do tempo." The fix that
-finally held is "beat-map mode": click on the ACTUAL detected beat instants, not a
-synthesized grid.
+## Rule: Audio Lab metronome uses the SAME client constant-grid engine as the Metrônomo — NOT the server beat-map
+The server beat-map path (`/stems/beats` → librosa `beat_track`, variable per-beat
+instants) was tried as the Audio Lab default and REVERTED. The user's verdict:
+the standalone **Metrônomo** module (client `analyzeBpm`/`computeBeatGrid`, a
+CONSTANT BPM + phase grid) "funciona perfeitamente," while the server beat-map in
+Audio Lab did not. So Audio Lab's StemMixer now reuses the Metrônomo's engine:
+`computeBeatGrid(instrumental, bpmHint, tsHint)` → constant grid, `metroBeats=null`
+(constant mode in `useSyncedMetronome`).
 
-**Why:** professional tools (Moises) track every beat instant; a single global
-BPM can never follow a human-played song that breathes. Clicking on `beats[n]`
-removes accumulated drift entirely because each click is independently placed.
+**Why:** consistency the user can trust beats theoretical accuracy on paper. The server's
+variable beat-map kept mis-locking (double-time/"contratempo", tempo wander) and
+felt worse to the user than a clean constant pulse locked to the confirmed BPM
+octave. Two engines behaving differently was itself the complaint.
 
 **How to apply:**
-- Server (librosa `beat_track(units="time")`) returns `{bpm, beats:[]}`. Client
-  passes `beatTimes` into `useSyncedMetronome`; scheduler clicks at `map[n]` and
-  only falls back to the BPM grid when the map is absent or `< 2` entries.
-- The fitted-grid path stays as the fallback (browser-only / server unavailable).
-- BPM hint feeds librosa's `start_bpm`, so it changes the resulting grid — the
-  server beats cache key MUST include the hint (or changing the BPM option serves
-  a stale, possibly half/double-time map for that song key).
-
-## Rule: beat-map "contratempo" = double-time lock; fix the octave inside detect_beats, don't trust the BPM hint
-User reported the click on the offbeat ("contratempo"). Cause: server beat tracking
-locked onto DOUBLE the felt tempo (e.g. 143 BPM on a ~72 BPM ballad) — so every
-other detected beat is an offbeat. The app's own BPM hint is unreliable here: both
-`chord_analyze` (`librosa.beat.tempo`) and the client `bpm-detector` keep the doubled
-value inside their [70,150] window, and passing it as `start_bpm` forces librosa into
-the wrong octave.
-
-**Why:** `start_bpm` strongly biases the DP tracker's octave; a doubled hint → doubled grid.
-
-**How to apply (both layers live in `detect_beats.py`):**
-- Fold the hint into the felt range before using it as `start_bpm` (e.g. 143→~71.5);
-  default to a neutral ~100 when there's no hint (avoid librosa's 120 double-bias).
-- Safety net: real beats have much stronger onset strength than the in-between ones.
-  If the result is still double-time (fast tempo + strong/weak sub-phase asymmetry),
-  halve by KEEPING the stronger sub-phase (the real beats) — never the offbeat.
-- Validate octave changes against onset strength at beat times, not by range alone
-  (143 BPM is "in range" yet wrong) — the half-fold sub-phase test picks the true phase.
-- `.py` script edits need no api-server restart (spawned fresh per request), but DELETE
-  cached `beats*.json` under `/tmp/harmonic-stems/<key>/` so maps recompute.
+- Do NOT reintroduce `fetchStemBeats`/`analyzeBeatsBlob`/server `/stems/beats` into
+  Audio Lab unless the user explicitly asks for variable-tempo tracking again.
+- `initialBpm` passed to StemMixer already IS the Metrônomo's chosen BPM (from the
+  upload `analyzeBpm` result / user-selected half/principal/double option), so it
+  locks `computeBeatGrid`'s octave; the grid only refines phase over the whole song.
+- The old server-side double-time/octave-fold logic still lives in `detect_beats.py`
+  and remains relevant ONLY if the beat-map path is ever revived.
 
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
