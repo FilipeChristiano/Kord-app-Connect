@@ -2207,11 +2207,13 @@ const METRO_MIN_BPM = 40;
 const METRO_MAX_BPM = 240;
 const METRO_DEFAULT_BPM = 90;
 
-// Calibração de sincronia do clique (compensação de latência), em segundos.
-// Padrão positivo: o áudio em streaming costuma soar um pouco atrás do clique do
-// Web Audio, então adiantamos a música atrasando levemente o clique para colá-lo.
-const METRO_SYNC_KEY = "harmonic.metroSync";
-const METRO_SYNC_DEFAULT = 0.08;
+// Ajuste fino de sincronia do clique (em segundos). O clique agora toca no MESMO
+// AudioContext da música (mesmo relógio de saída), então não há mais a latência
+// do <audio> em streaming para compensar — o padrão é 0. O controle continua
+// disponível como micro-ajuste por gosto/aparelho. A chave v2 ignora os valores
+// +0,08 salvos pelo esquema antigo (ficariam errados no novo caminho).
+const METRO_SYNC_KEY = "harmonic.metroSync2";
+const METRO_SYNC_DEFAULT = 0;
 const METRO_SYNC_MIN = -0.3;
 const METRO_SYNC_MAX = 0.4;
 const METRO_SYNC_STEP = 0.02;
@@ -2233,6 +2235,16 @@ function StemMixer({
   const vocalRef = useRef<HTMLAudioElement | null>(null);
   const vocalVolRef = useRef(1);
   const instVolRef = useRef(1);
+  // ── Grafo Web Audio compartilhado (mesa + metrônomo no MESMO relógio) ───────
+  // Os dois stems entram no MESMO AudioContext (via MediaElementSource) que o
+  // metrônomo usa para agendar o clique. Assim música e clique saem pelo mesmo
+  // caminho de áudio — sem a diferença de latência do <audio> em streaming que
+  // deixava o clique adiantado. É como o módulo "Metrônomo" fica preciso.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const instSrcRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const vocalSrcRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const instGainRef = useRef<GainNode | null>(null);
+  const vocalGainRef = useRef<GainNode | null>(null);
 
   const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -2288,6 +2300,12 @@ function StemMixer({
     syncOffsetSec: metroSync,
     beatTimes: metroBeats ?? undefined,
     volume: metroVol,
+    // Clique no MESMO AudioContext em que a música toca: mesmo relógio de saída,
+    // sem diferença de latência (exatamente como o módulo "Metrônomo").
+    getAudioGraph: () => {
+      const ctx = audioCtxRef.current;
+      return ctx ? { ctx, destination: ctx.destination } : null;
+    },
   });
   // Mantém start/stop do metrônomo acessíveis dentro de efeitos/handlers estáveis.
   const metroStartRef = useRef(metro.start);
@@ -2450,6 +2468,7 @@ function StemMixer({
       inst.removeEventListener("ended", onEnded);
       inst.removeEventListener("error", onError);
       vocal.removeEventListener("error", onError);
+      metroStopRef.current();
       inst.pause();
       vocal.pause();
       inst.src = "";
@@ -2458,6 +2477,15 @@ function StemMixer({
       vocal.load();
       instRef.current = null;
       vocalRef.current = null;
+      // Descarta o grafo Web Audio: cada faixa precisa dos próprios
+      // MediaElementSource (só podem ser criados uma vez por elemento). O
+      // metrônomo re-vincula ao novo ctx no próximo play.
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
+      instSrcRef.current = null;
+      vocalSrcRef.current = null;
+      instGainRef.current = null;
+      vocalGainRef.current = null;
     };
   }, [vocalsUrl, instrumentalUrl]);
 
@@ -2471,6 +2499,42 @@ function StemMixer({
     metroStopRef.current();
     setIsPlaying(false);
   }, [active]);
+
+  // Monta (uma vez) o grafo Web Audio: ambos os stems entram no MESMO ctx que o
+  // metrônomo, cada um com seu ganho (os faders). O MediaElementSource só pode
+  // ser criado UMA vez por elemento <audio>, então guardamos os nós. Chamado
+  // dentro do gesto do usuário (togglePlay) para o AudioContext poder iniciar.
+  const ensureAudioGraph = useCallback((): AudioContext | null => {
+    const inst = instRef.current;
+    const vocal = vocalRef.current;
+    if (!inst || !vocal) return null;
+    let ctx = audioCtxRef.current;
+    if (!ctx) {
+      const Ctor: typeof AudioContext =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      ctx = new Ctor();
+      audioCtxRef.current = ctx;
+      const instGain = ctx.createGain();
+      instGain.gain.value = instVolRef.current;
+      const vocalGain = ctx.createGain();
+      vocalGain.gain.value = vocalVolRef.current;
+      const instSrc = ctx.createMediaElementSource(inst);
+      const vocalSrc = ctx.createMediaElementSource(vocal);
+      instSrc.connect(instGain);
+      instGain.connect(ctx.destination);
+      vocalSrc.connect(vocalGain);
+      vocalGain.connect(ctx.destination);
+      instSrcRef.current = instSrc;
+      vocalSrcRef.current = vocalSrc;
+      instGainRef.current = instGain;
+      vocalGainRef.current = vocalGain;
+      // Os ganhos assumem o volume; os elementos ficam neutros (sem dupla atenuação).
+      inst.volume = 1;
+      vocal.volume = 1;
+    }
+    return ctx;
+  }, []);
 
   const togglePlay = useCallback(async () => {
     const inst = instRef.current;
@@ -2490,8 +2554,14 @@ function StemMixer({
     setLoadState((s) => (s === "ready" ? s : "loading"));
     vocal.currentTime = inst.currentTime;
     vocal.playbackRate = 1;
-    inst.volume = instVolRef.current;
-    vocal.volume = vocalVolRef.current;
+    // Grafo Web Audio (música + clique no mesmo relógio). Criado aqui, dentro do
+    // gesto do usuário, então o AudioContext pode iniciar sem bloqueio.
+    const ctx = ensureAudioGraph();
+    if (ctx && ctx.state === "suspended") await ctx.resume();
+    if (ctx) {
+      instGainRef.current?.gain.setTargetAtTime(instVolRef.current, ctx.currentTime, 0.01);
+      vocalGainRef.current?.gain.setTargetAtTime(vocalVolRef.current, ctx.currentTime, 0.01);
+    }
     try {
       await Promise.all([inst.play(), vocal.play()]);
       // Metrônomo embutido: inicia junto com o áudio (dentro do gesto do usuário).
@@ -2504,7 +2574,7 @@ function StemMixer({
       setIsPlaying(false);
       setLoadState("error");
     }
-  }, []);
+  }, [ensureAudioGraph]);
 
   const seek = useCallback((t: number) => {
     const inst = instRef.current;
@@ -2520,15 +2590,21 @@ function StemMixer({
   const changeVocal = useCallback((v: number) => {
     vocalVolRef.current = v;
     setVocalVol(v);
-    const el = vocalRef.current;
-    if (el) el.volume = v;
+    // Depois do grafo montado, o volume é o ganho do nó (transição suave). Antes
+    // disso (nada tocou ainda), guarda no elemento — o grafo assume ao iniciar.
+    const g = vocalGainRef.current;
+    const ctx = audioCtxRef.current;
+    if (g && ctx) g.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
+    else if (vocalRef.current) vocalRef.current.volume = v;
   }, []);
 
   const changeInst = useCallback((v: number) => {
     instVolRef.current = v;
     setInstVol(v);
-    const el = instRef.current;
-    if (el) el.volume = v;
+    const g = instGainRef.current;
+    const ctx = audioCtxRef.current;
+    if (g && ctx) g.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
+    else if (instRef.current) instRef.current.volume = v;
   }, []);
 
   return (

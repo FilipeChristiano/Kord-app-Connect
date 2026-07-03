@@ -58,18 +58,13 @@ latency than the Web Audio click; anchoring `audio.currentTime ↔ ctx.currentTi
 assumes both = "now", so the ctx-scheduled clicks land ahead of the heard music
 by `L_media − L_ctx`.
 
-**Why not route the music through the AudioContext (the "proper" fix):** the HQ
-stems are served by the **api-server (different origin)**. `createMediaElementSource`
-on a cross-origin element without CORS outputs **silence** — it would break HQ
-playback entirely. So the music must stay on the plain `<audio>` path.
+**Superseded fix (kept as a fallback micro-adjust):** `syncOffsetSec` in
+`SyncedMetronomeConfig` — positive value delays the click (`ctxTime += syncOffset`).
+Still exposed as a persisted "Ajuste fino do clique" −/+/Padrão control, but the
+DEFAULT is now **0** and the localStorage key was bumped to `harmonic.metroSync2`
+(old `+0.08` values would be wrong on the new path — see next rule).
 
-**Fix:** `syncOffsetSec` in `SyncedMetronomeConfig` — positive value delays the
-click (`ctxTime += syncOffset`). Exposed as a persisted (localStorage,
-`harmonic.metroSync`) "Ajuste fino do clique" −/+/Padrão control in StemMixer
-(default +0.08s; latency is device-specific so it can't be computed, only
-calibrated once per device). This is the standard play-along/karaoke calibration.
-
-**How to apply:**
+**How to apply (general to the synced engine):**
 - Treat any re-anchor (BPM/phase/sync change OR seek) as needing a one-lookahead
   **hold**: set `holdUntil = ctxNow + SYNCED_SCHEDULE_AHEAD` and skip scheduling
   new beats before it. Already-scheduled oscillators in the 250ms window can't be
@@ -77,6 +72,38 @@ calibrated once per device). This is the standard play-along/karaoke calibration
 - Startup blip ("first click then a gap"): while `getPosition() <= 0.01` (media
   buffering pins currentTime at ~0 just after play()), keep re-anchoring and DON'T
   schedule. Scheduling only begins once position truly advances → no premature click.
+
+## Rule: replicate the Metrônomo's precision by putting music AND clicks on ONE AudioContext (same clock)
+The user pointed out the standalone Metrônomo's "Ouvir" preview is dead-on with no
+calibration, and asked to replicate its play exactly. **Why it's precise:**
+`startMetronomePlayback` (bpm-detector.tsx) plays the analyzed segment via a Web
+Audio `BufferSource` and schedules the click oscillators on the SAME AudioContext —
+so audio and click share one output path/clock and there is NO `L_media − L_ctx`
+latency to compensate.
+
+**The old "different origin → createMediaElementSource is silent" worry was WRONG
+here:** stems are served same-origin via the `/api` proxy (`stemsFileUrl` returns
+`/api/stems/file?...`), and `LiveStudioPlayer` (audio-live.ts) already routes a
+streaming HQ `<audio>` through `createMediaElementSource` with no crossOrigin and no
+silence. So routing the mixer through Web Audio is safe.
+
+**Fix (current):** StemMixer builds ONE `AudioContext` lazily inside the play gesture
+(`ensureAudioGraph`): each stem `<audio>` → `createMediaElementSource` → its own
+`GainNode` (the faders; elements set to `.volume=1`) → destination. That same ctx is
+handed to `useSyncedMetronome` via `getAudioGraph()`; the hook binds its click master
+gain to it instead of creating its own ctx. Now the click rides the exact clock as
+the music → default `syncOffsetSec = 0`, no per-device calibration needed.
+
+**How to apply / gotchas:**
+- `createMediaElementSource` can be created only ONCE per `<audio>`; on track change
+  (`instrumentalUrl` effect cleanup) close the ctx and null the source/gain refs so a
+  fresh graph is built. `useSyncedMetronome.start` re-binds when the shared ctx changes.
+- The hook must NOT close a shared ctx (track it with `ownsCtxRef`); only the mixer
+  (its creator) closes it.
+- Faders drive the `GainNode.gain` (setTargetAtTime) once the graph exists; before
+  first play they fall back to `el.volume`. Do NOT keep both — double attenuation.
+- Do NOT go back to buffer-decoding both stems (see stem-mixer-playback.md — OOM).
+  MediaElementSource keeps streaming; only the routing changed.
 
 ## Rule: Audio Lab metronome uses the SAME client constant-grid engine as the Metrônomo — NOT a variable beat-map
 Two beat-map attempts have now been tried and BOTH REVERTED because the user judged

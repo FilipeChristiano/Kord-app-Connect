@@ -252,6 +252,17 @@ export interface SyncedMetronomeConfig {
   beatTimes?: number[];
   /** Volume do clique (0..1). */
   volume: number;
+  /**
+   * Grafo de áudio compartilhado (opcional). Quando presente, os cliques são
+   * agendados no MESMO AudioContext em que a música toca (a música entra no
+   * grafo via MediaElementSource). Assim o clique e o áudio compartilham o
+   * MESMO relógio de saída — some a diferença de latência entre o <audio> em
+   * streaming e o Web Audio que sempre deixava o clique levemente adiantado.
+   * É exatamente como o módulo "Metrônomo" fica preciso: ele toca o trecho por
+   * BufferSource e agenda o clique no mesmo ctx. Sem isso, o motor cria o
+   * próprio AudioContext (comportamento antigo, com a calibração de latência).
+   */
+  getAudioGraph?: () => { ctx: AudioContext; destination: AudioNode } | null;
 }
 
 export interface UseSyncedMetronome {
@@ -274,6 +285,10 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
   const [currentBeat, setCurrentBeat] = useState(0);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
+  // Se `true`, o AudioContext foi criado por este motor e deve ser fechado ao
+  // desmontar. Quando o grafo é COMPARTILHADO (mesa de mistura), quem o criou é
+  // dono dele — aqui só nos conectamos, sem fechar.
+  const ownsCtxRef = useRef(true);
   const masterGainRef = useRef<GainNode | null>(null);
   const schedulerIdRef = useRef<number | null>(null);
   const rafIdRef = useRef<number | null>(null);
@@ -457,7 +472,21 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
   const start = useCallback(async () => {
     if (runningRef.current) return;
 
-    if (!audioCtxRef.current) {
+    const shared = cfgRef.current.getAudioGraph?.() ?? null;
+    if (shared && audioCtxRef.current !== shared.ctx) {
+      // Grafo compartilhado (mesa de mistura): agenda no MESMO ctx da música.
+      // Se antes usávamos um ctx próprio, descarta-o; se o ctx compartilhado
+      // mudou (nova faixa recriou o grafo), re-vincula o ganho mestre.
+      if (ownsCtxRef.current && audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+      }
+      const master = shared.ctx.createGain();
+      master.gain.setValueAtTime(Math.max(0, cfgRef.current.volume), shared.ctx.currentTime);
+      master.connect(shared.destination);
+      audioCtxRef.current = shared.ctx;
+      masterGainRef.current = master;
+      ownsCtxRef.current = false;
+    } else if (!audioCtxRef.current) {
       const Ctor: typeof AudioContext =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -467,8 +496,9 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
       master.connect(ctx.destination);
       audioCtxRef.current = ctx;
       masterGainRef.current = master;
+      ownsCtxRef.current = true;
     }
-    const ctx = audioCtxRef.current;
+    const ctx = audioCtxRef.current!;
     if (ctx.state === "suspended") await ctx.resume();
 
     const bpm = cfgRef.current.bpm;
@@ -497,7 +527,9 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
     return () => {
       if (schedulerIdRef.current !== null) window.clearInterval(schedulerIdRef.current);
       if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
-      if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
+      // Só fecha o ctx se for NOSSO. O grafo compartilhado é fechado por quem o
+      // criou (a mesa de mistura), ao trocar de faixa/desmontar.
+      if (ownsCtxRef.current && audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
     };
   }, []);
 
