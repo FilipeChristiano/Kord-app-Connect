@@ -385,6 +385,10 @@ export default function AudioLab() {
 
   // Limpa qualquer resultado do estúdio de áudio (ao recomeçar/enviar outro áudio).
   const clearStems = useCallback(() => {
+    // Para o áudio da mesa AGORA (síncrono): em uso rápido, trocar/pesquisar antes
+    // do React desmontar o StemMixer deixava a música anterior tocando. Não dá para
+    // esperar a limpeza de desmontagem.
+    stemStopRef.current?.();
     stemRunIdRef.current++;
     fastRunIdRef.current++;
     hqRunIdRef.current++;
@@ -454,7 +458,6 @@ export default function AudioLab() {
     pipelineRunIdRef.current++;
     chartClaimRef.current++;
     busyRef.current = false;
-    stemStopRef.current?.();
     stopStream();
     setPhase("idle");
     setInputMode(null);

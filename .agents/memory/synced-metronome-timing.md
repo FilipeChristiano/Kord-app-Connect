@@ -157,15 +157,17 @@ In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) an
 every beat is `playClick(..., "weak")` — no strong downbeat. The standalone
 Metrônomo page uses the separate `useMetronome` engine and KEEPS its accents.
 
-## Rule: stop a media child imperatively when it unmounts through an exit-animated AnimatePresence
-A child that pauses its `<audio>` only in its unmount cleanup will keep playing when the
-parent hides it via `<AnimatePresence mode="wait">` — the unmount (and the pause) is
-DEFERRED until the exit animation finishes. This is what left the old song audible after
-"Nova música" (parent `reset()`).
-**Why:** unmount cleanup is not synchronous with the state change when an exit animation
-gates it. **How to apply:** give the parent an imperative stop handle (a ref the child
-registers a pause fn into and nulls on unmount) and call it at the state change — don't
-rely on unmount cleanup for "stop now" semantics.
+## Rule: stop a media child imperatively at every teardown, not via its unmount cleanup
+A child (StemMixer) that pauses its `<audio>` only in its unmount cleanup keeps playing
+when the parent tears it down, because the pause is not synchronous with the parent state
+change. Two ways this bit us: (1) `<AnimatePresence mode="wait">` defers the unmount until
+the exit animation finishes ("Nova música" → `reset()`); (2) under fast usage, a new
+search/file setting `fastMixUrls=null` unmounts it a render later, so the old song bled on.
+**Fix:** parent owns `stemStopRef` (ref the child registers a pause fn into, nulls on
+unmount) and calls `stemStopRef.current?.()` synchronously at the TOP of `clearStems` —
+the common teardown for ALL paths (reset, search, file load). Don't scatter it per-caller.
+**How to apply:** for any media child, put the imperative stop in the single shared
+teardown function, not in each entry point and not in unmount cleanup alone.
 
 ## HMR caveat
 Adding/removing a hook in StemMixer/useSyncedMetronome throws "Rendered more/fewer
