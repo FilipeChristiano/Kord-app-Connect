@@ -328,6 +328,10 @@ export default function AudioLab() {
   const pipelineRunIdRef = useRef(0); // transcrição + identificação
   const chartClaimRef = useRef(0); // última escrita em `chart` vence
   const busyRef = useRef(false);
+  // Para parar a mesa de mistura na hora (o StemMixer registra aqui sua função de
+  // parada). Ao trocar de música, a animação de saída atrasa o desmontar do
+  // componente — então paramos o áudio imediatamente, sem esperar o desmontar.
+  const stemStopRef = useRef<(() => void) | null>(null);
 
   // Gravação
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -450,6 +454,7 @@ export default function AudioLab() {
     pipelineRunIdRef.current++;
     chartClaimRef.current++;
     busyRef.current = false;
+    stemStopRef.current?.();
     stopStream();
     setPhase("idle");
     setInputMode(null);
@@ -1935,6 +1940,7 @@ export default function AudioLab() {
                         downloadExt="wav"
                         initialBpm={result ? bpmOpt?.bpm ?? result.bpm.bpm : undefined}
                         initialTimeSignature={result?.bpm.timeSignature}
+                        stopRef={stemStopRef}
                       />
                     </div>
                   )}
@@ -2007,6 +2013,7 @@ export default function AudioLab() {
                           instrumentalUrl={stemsFileUrl(hqKey, "instrumental")}
                           initialBpm={result ? bpmOpt?.bpm ?? result.bpm.bpm : undefined}
                           initialTimeSignature={result?.bpm.timeSignature}
+                          stopRef={stemStopRef}
                         />
                       </div>
                     </div>
@@ -2224,12 +2231,14 @@ function StemMixer({
   downloadExt = "mp3",
   initialBpm,
   initialTimeSignature,
+  stopRef,
 }: {
   vocalsUrl: string;
   instrumentalUrl: string;
   downloadExt?: "mp3" | "wav";
   initialBpm?: number | null;
   initialTimeSignature?: DetectedTimeSignature | null;
+  stopRef?: React.MutableRefObject<(() => void) | null>;
 }) {
   const instRef = useRef<HTMLAudioElement | null>(null);
   const vocalRef = useRef<HTMLAudioElement | null>(null);
@@ -2499,6 +2508,21 @@ function StemMixer({
     metroStopRef.current();
     setIsPlaying(false);
   }, [active]);
+
+  // Parada imediata (ex.: "Nova música"): a animação de saída atrasa o desmontar
+  // do componente, então o pai chama esta função para parar o áudio na hora.
+  useEffect(() => {
+    if (!stopRef) return;
+    stopRef.current = () => {
+      instRef.current?.pause();
+      vocalRef.current?.pause();
+      metroStopRef.current();
+      setIsPlaying(false);
+    };
+    return () => {
+      stopRef.current = null;
+    };
+  }, [stopRef]);
 
   // Monta (uma vez) o grafo Web Audio: ambos os stems entram no MESMO ctx que o
   // metrônomo, cada um com seu ganho (os faders). O MediaElementSource só pode

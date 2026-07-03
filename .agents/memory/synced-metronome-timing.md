@@ -157,6 +157,16 @@ In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) an
 every beat is `playClick(..., "weak")` — no strong downbeat. The standalone
 Metrônomo page uses the separate `useMetronome` engine and KEEPS its accents.
 
+## Rule: stop a media child imperatively when it unmounts through an exit-animated AnimatePresence
+A child that pauses its `<audio>` only in its unmount cleanup will keep playing when the
+parent hides it via `<AnimatePresence mode="wait">` — the unmount (and the pause) is
+DEFERRED until the exit animation finishes. This is what left the old song audible after
+"Nova música" (parent `reset()`).
+**Why:** unmount cleanup is not synchronous with the state change when an exit animation
+gates it. **How to apply:** give the parent an imperative stop handle (a ref the child
+registers a pause fn into and nulls on unmount) and call it at the state change — don't
+rely on unmount cleanup for "stop now" semantics.
+
 ## HMR caveat
 Adding/removing a hook in StemMixer/useSyncedMetronome throws "Rendered more/fewer
 hooks than during the previous render" on hot-update — it's HMR-only; a full
