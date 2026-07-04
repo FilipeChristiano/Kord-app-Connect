@@ -402,8 +402,19 @@ export function useSyncedMetronome(config: SyncedMetronomeConfig): UseSyncedMetr
         anchorAt(actualSong, ctxNow, secPerBeat, offset, map);
         beatQueueRef.current = [];
         holdUntilRef.current = ctxNow + SYNCED_SCHEDULE_AHEAD;
-      } else if (Math.abs(diff) > DRIFT_CORRECTION) {
-        // Desvio pequeno: recola o mapeamento à posição real, mantendo a contagem.
+      } else if (ownsCtxRef.current && Math.abs(diff) > DRIFT_CORRECTION) {
+        // Desvio pequeno: só corrigimos quando o clique roda num AudioContext
+        // SEPARADO da música (sem grafo compartilhado) — aí é preciso perseguir
+        // a posição do <audio> para colar na música.
+        //
+        // COM o grafo compartilhado (mesa de mistura), o clique divide o MESMO
+        // relógio de saída da música — exatamente como o módulo "Metrônomo", que
+        // roda LIVRE no relógio do AudioContext. O `currentTime` do <audio> é
+        // atualizado em blocos e desliza um pouco desse relógio real de saída;
+        // persegui-lo aqui só ARRASTA o clique (deixa "atrasando"). Então, no
+        // grafo compartilhado, deixamos a grade correr livre no ctx e só
+        // reancoramos em saltos grandes (seek/pausa), no ramo acima — é isso que
+        // dá a MESMA precisão do módulo Metrônomo.
         anchorSongRef.current = actualSong;
         anchorCtxRef.current = ctxNow;
       }

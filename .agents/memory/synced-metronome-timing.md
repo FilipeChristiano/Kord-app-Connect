@@ -21,10 +21,27 @@ fader drags, so each click's scheduled time shifted — audibly off-tempo and
 the beats immune to media jitter and JS-timer jank.
 
 **How to apply:**
-- Re-anchor gently (keep beat counter, just realign mapping) when |actual − predicted| > ~45ms.
+- Re-anchor gently (keep beat counter, just realign mapping) when |actual − predicted| > ~45ms — **ONLY when the click owns its own ctx (`ownsCtxRef`), i.e. NO shared audio graph.** See the "SHARED AudioContext" rule below.
 - Hard re-anchor (recompute nextBeat from new position) on jumps > ~0.4s (seek/pause-resume) and on BPM change.
 - Schedule ~250ms ahead (SYNCED_SCHEDULE_AHEAD) so a delayed scheduler tick never drops a beat — the clicks are already committed to the AudioContext.
 - Volume changes must ONLY touch the master GainNode (setTargetAtTime); never restart or reset the scheduler.
+
+## Rule: with a SHARED AudioContext, free-run on the ctx clock like the Metrônomo — do NOT chase the `<audio>` currentTime for small drifts
+When the click shares the music's ctx (StemMixer `getAudioGraph` → MediaElementSource),
+the AUDIBLE music is clocked by the ctx output. `HTMLMediaElement.currentTime`
+(`getPosition`) updates in blocks and slides off that real output clock, so the small
+DRIFT_CORRECTION re-anchor (45ms) that pins the grid to `currentTime` progressively
+DRAGS the click late — user reported "o metrônomo está atrasando facilmente." The
+standalone Metrônomo (`useMetronome`) is dead-on precisely because it FREE-RUNS a
+constant grid on `ctx.currentTime` and chases nothing.
+**Fix:** gate the small-drift re-anchor behind `ownsCtxRef.current` (own ctx only). With
+a shared graph, anchor ONCE when playback starts, then free-run on the ctx clock; only
+re-anchor on large jumps (SEEK_JUMP ~0.4s = seek/pause). This gives the StemMixer the
+SAME sync as the Metrônomo module.
+**Why:** own-ctx mode has a real click-ctx-vs-media-output latency to track (chasing
+needed); shared-ctx mode does not (same clock) — chasing there only injects media-clock
+jitter/lag. **How to apply:** free-run needs an ACCURATE bpm+phase (no net to cap drift),
+which is why the constant grid is seeded from the server tracker (see sub-rule above).
 
 ## Rule: a stable AudioContext anchor is necessary but NOT sufficient — you also need PHASE and a PRECISE (non-integer) BPM
 Anchoring fixed the jitter/jank, but the user still reported "fora do tempo." Two
