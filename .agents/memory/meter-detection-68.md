@@ -91,6 +91,32 @@ So `detect_beats.py` finds where percussion enters, measures tempo+phase **there
 - **Client side needs nothing:** the metronome anchors to the `beats[]` map; a grid that
   already starts near 0 just clicks from the start at the groove's tempo/phase.
 
+## Client-side meter detection (`bpm-detector.ts`) — beat-synchronous accent folding
+The CLIENT detector (used by the standalone Metronome's upload/record analysis AND the
+Audio Lab's local `computeBeatGrid`, separate from the server path above) identifies
+**2/4, 3/4, 4/4, 6/8** via `detectMeter(env, beatLag, beatConfidence)` — NOT raw
+autocorrelation. Build a per-beat accent profile (peak of the mean-removed rectified onset
+envelope in a ±12%·T window at the best beat phase), then for each period N ∈ {2,3,4} "fold"
+the profile: measure `ratio` (downbeat class mean ÷ offbeat mean) at the best downbeat phase,
+plus the **even/odd alternation inside the downbeat class** (`altRatio`) and whether the
+weaker of the two still sits above offbeats (`loOverOff`).
+- **Key discriminator:** an internal strong–medium alternation (S,M,S,M) inside the period-N
+  downbeat class means the *true* period is 2N. So 4/4 = period-2 fold that alternates
+  (the beat-3 "medium"); 2/4 = period-2 fold that's homogeneous. 6/8 = period-3 fold that
+  alternates (mid-bar medium); 3/4 = period-3 fold that's homogeneous. This is octave-consistent.
+- **Critical rule — the triple family NEVER resolves to 4/4:** if the period-3 fold dominates,
+  return 3/4 (or 6/8), never a duple. This is exactly what fixes waltzes (e.g. Alcione "Rio
+  Antigo") that previously returned null → defaulted to 4/4 and drifted across bars.
+- **Why folding, not autocorrelation:** raw ACF at 2×/3×/4× the beat lag can't separate a
+  fundamental period from its multiples, and can't tell 6/8 from 3/4 or 4/4 from 2/4. The
+  even/odd-within-class test does, using the phase we already know.
+- **Gates:** needs ≥12 beats and `n ≥ 12·T`; `CONF=1.15` min downbeat prominence; compound/
+  quaternary requires `altRatio ∈ [1.35, 3.5]` AND `loOverOff ≥ 1.25`. Below CONF → null → app
+  assumes 4/4 (safe default). Called in `detectTempo` (segment) and again in `computeBeatGrid`
+  over the FULL track (`meterFull ?? tsHint`) since full-track + known phase is most reliable.
+- **Consumers:** widen anything that maps meter→beatsPerBar when adding a value: `audio-lab`
+  `beatsPerBar` (2/4→2) and `metronome.tsx` `handleDetectedBpm` ts param + `getBeatsPerBar`.
+
 ## Player gating
 Playback is blocked until tempo/meter detection finishes: play button disabled +
 spinner while `bpmDetecting`, plus a `bpmDetectingRef` guard inside `togglePlay`

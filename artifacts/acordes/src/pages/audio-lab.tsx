@@ -2329,7 +2329,8 @@ function StemMixer({
 
   // 6/8 é composto: 6 colcheias por compasso (a grade do servidor já vem na
   // colcheia). 3/4 → 3 tempos; o resto → 4.
-  const beatsPerBar = metroTs === "6/8" ? 6 : metroTs === "3/4" ? 3 : 4;
+  const beatsPerBar =
+    metroTs === "6/8" ? 6 : metroTs === "3/4" ? 3 : metroTs === "2/4" ? 2 : 4;
   const metro = useSyncedMetronome({
     getPosition: () => instRef.current?.currentTime ?? 0,
     bpm: metroBpm,

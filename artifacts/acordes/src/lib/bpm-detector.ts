@@ -1,4 +1,4 @@
-export type DetectedTimeSignature = "3/4" | "4/4" | "6/8";
+export type DetectedTimeSignature = "2/4" | "3/4" | "4/4" | "6/8";
 
 export interface AnalyzedSegment {
   start: number; // segundos
@@ -398,7 +398,7 @@ function detectTempo(envSlice: Float32Array, envRate: number): TempoResult | nul
     }
   }
 
-  const timeSignature = guessMeter(rInterp, finalLag, confidence);
+  const timeSignature = detectMeter(env, finalLag, confidence);
 
   return { bpm, confidence, timeSignature, env };
 }
@@ -836,35 +836,148 @@ export async function computeBeatGrid(
   let offsetSec = phaseFrames / envRate;
   offsetSec = ((offsetSec % spb) + spb) % spb; // 0 ≤ offset < duração da batida
 
+  // Compasso: detecta sobre a faixa INTEIRA (mais confiável que a dica do
+  // trecho). Só sobrepõe a dica quando a acentuação é clara; senão mantém `ts`.
+  const meterFull = detectMeter(env, Tbest, 0.6);
+  const timeSignature = meterFull ?? ts;
+
   return {
     bpm: best.bpm,
     bpmRounded: clampBpm(best.bpm),
     beatOffsetSec: offsetSec,
-    timeSignature: ts,
+    timeSignature,
     confidence: best.score > 0 ? 0.6 : 0.2,
   };
 }
 
 /**
- * Sugere o compasso comparando a força da acentuação a cada 3 ou 4 tempos.
- * Retorna null quando a diferença é pequena demais para confiar.
+ * Identifica o compasso — simples (2/4, 3/4, 4/4) ou composto (6/8) — dobrando
+ * o perfil de acento por batida sobre si mesmo.
+ *
+ * Em vez de olhar só a autocorrelação, monta a força de cada batida (pico da
+ * envelope ao redor dela) e mede, para cada período N, quanto o TEMPO FORTE se
+ * destaca dos tempos fracos. A alternância interna forte–médio separa 4/4 de
+ * 2/4 e 6/8 de 3/4 (em 4/4 e 6/8 há um acento intermediário no meio do
+ * compasso; em 2/4 e 3/4 não).
+ *
+ * A família ternária nunca vira 4/4: é o que garante que uma valsa (3/4) "flua"
+ * em vez de cair no 4/4 padrão. Retorna null quando a acentuação é fraca ou
+ * ambígua demais (aí o app assume 4/4).
  */
-function guessMeter(
-  rInterp: (lag: number) => number,
+function detectMeter(
+  env: Float32Array,
   beatLag: number,
   beatConfidence: number,
 ): DetectedTimeSignature | null {
   if (beatConfidence < 0.2) return null;
+  const T = beatLag;
+  const n = env.length;
+  if (!(T >= 2) || n < T * 12) return null;
 
-  const s2 = rInterp(beatLag * 2);
-  const s3 = rInterp(beatLag * 3);
-  const s4 = rInterp(beatLag * 4);
-  if (s3 <= 0 && s4 <= 0) return null;
+  const numBeats = Math.floor((n - 1) / T);
+  if (numBeats < 12) return null;
 
-  const four = Math.max(s4, s2 * 0.9);
-  const three = s3;
+  // Força de cada batida = pico da envelope numa janelinha em torno dela.
+  const win = Math.max(1, Math.round(T * 0.12));
+  const sampleBeat = (phase: number, k: number): number => {
+    const c = Math.round(phase + k * T);
+    let peak = 0;
+    for (let j = c - win; j <= c + win; j++) {
+      if (j >= 0 && j < n && env[j] > peak) peak = env[j];
+    }
+    return peak;
+  };
 
-  if (four >= three * 1.12) return "4/4";
-  if (three >= four * 1.12) return "3/4";
-  return null;
+  // Melhor fase da batida (maximiza a energia somada sobre as batidas).
+  let bestPhase = 0;
+  let bestSum = -Infinity;
+  const pStep = Math.max(1, Math.round(T / 24));
+  for (let p = 0; p < T; p += pStep) {
+    let s = 0;
+    for (let k = 0; k < numBeats; k++) s += sampleBeat(p, k);
+    if (s > bestSum) {
+      bestSum = s;
+      bestPhase = p;
+    }
+  }
+
+  const accents = new Float32Array(numBeats);
+  for (let k = 0; k < numBeats; k++) accents[k] = sampleBeat(bestPhase, k);
+
+  interface Fold {
+    ratio: number; // destaque do tempo forte sobre os fracos
+    altRatio: number; // forte–médio DENTRO da classe do tempo forte
+    loOverOff: number; // o "médio" ainda está acima dos fracos?
+  }
+  // Para o período N, acha a fase de tempo forte que mais o destaca e mede a
+  // alternância entre as ocorrências pares/ímpares dessa classe (padrão
+  // forte–médio revela que o período real é o dobro de N).
+  const fold = (N: number): Fold => {
+    let best: Fold = { ratio: 0, altRatio: 1, loOverOff: 1 };
+    for (let ph = 0; ph < N; ph++) {
+      let dSum = 0;
+      let dCnt = 0;
+      let oSum = 0;
+      let oCnt = 0;
+      let evenSum = 0;
+      let evenCnt = 0;
+      let oddSum = 0;
+      let oddCnt = 0;
+      let occ = 0;
+      for (let k = 0; k < numBeats; k++) {
+        if ((((k - ph) % N) + N) % N === 0) {
+          dSum += accents[k];
+          dCnt++;
+          if (occ % 2 === 0) {
+            evenSum += accents[k];
+            evenCnt++;
+          } else {
+            oddSum += accents[k];
+            oddCnt++;
+          }
+          occ++;
+        } else {
+          oSum += accents[k];
+          oCnt++;
+        }
+      }
+      if (dCnt < 3 || oCnt === 0) continue;
+      const dMean = dSum / dCnt;
+      const oMean = oSum / oCnt;
+      const ratio = dMean / Math.max(1e-9, oMean);
+      const evenMean = evenCnt ? evenSum / evenCnt : 0;
+      const oddMean = oddCnt ? oddSum / oddCnt : 0;
+      const hi = Math.max(evenMean, oddMean);
+      const lo = Math.min(evenMean, oddMean);
+      const altRatio = lo > 1e-9 ? hi / lo : hi > 0 ? Infinity : 1;
+      const loOverOff = lo / Math.max(1e-9, oMean);
+      if (ratio > best.ratio) best = { ratio, altRatio, loOverOff };
+    }
+    return best;
+  };
+
+  const f2 = fold(2);
+  const f3 = fold(3);
+  const f4 = fold(4);
+
+  const CONF = 1.15; // destaque mínimo do tempo forte p/ afirmar um compasso
+  const ALT_LO = 1.35; // alternância clara forte–médio → período é o dobro
+  const ALT_HI = 3.5; // acima disso o "médio" some → não é composto/quaternário
+  const MED_OVER_OFF = 1.25; // o "médio" precisa ficar acima dos tempos fracos
+
+  const isCompoundLike = (f: Fold): boolean =>
+    f.altRatio >= ALT_LO && f.altRatio <= ALT_HI && f.loOverOff >= MED_OVER_OFF;
+
+  // Família ternária (3 batidas) domina? Nunca cai em 4/4.
+  if (f3.ratio >= CONF && f3.ratio >= f2.ratio * 1.05 && f3.ratio >= f4.ratio * 1.05) {
+    return isCompoundLike(f3) ? "6/8" : "3/4";
+  }
+
+  // Família binária/quaternária.
+  const dupleConf = Math.max(f2.ratio, f4.ratio);
+  if (dupleConf < CONF) return null;
+  // 4/4: o período 2 alterna forte–médio (o tempo 3 do compasso) → período 4.
+  if (isCompoundLike(f2)) return "4/4";
+  if (f4.ratio >= f2.ratio * 1.05) return "4/4";
+  return "2/4";
 }

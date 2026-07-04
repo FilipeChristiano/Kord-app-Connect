@@ -335,7 +335,7 @@ export default function Metronome() {
   };
 
   // Aplica o BPM (e compasso, se detectado) vindo do detector de BPM
-  const handleDetectedBpm = (detectedBpm: number, ts: "3/4" | "4/4" | null) => {
+  const handleDetectedBpm = (detectedBpm: number, ts: TimeSignature | null) => {
     setActivePresetId(null);
     setBpmClamped(detectedBpm);
     if (ts && ts !== timeSignature) {
