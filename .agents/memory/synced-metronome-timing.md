@@ -152,6 +152,26 @@ on that value fixes the drift instead of locking to a possibly-wrong mix hint.
 **How to apply:** keep the octave locked to `initialBpm` (nearest option), fall back
 to the plain `initialBpm` hint if `analyzeBpm` returns no options.
 
+### Sub-rule: it's OK to SEED the constant grid from the server tracker's bpm+phase — that is NOT a variable beat-map
+When the client's `computeBeatGrid` still picks a biased BPM/octave or contratempo
+phase for a song (reported on samba "Rio Antigo" - Alcione: "começa fora do tempo"
++ "atrasa no meio"), refine the CONSTANT grid using the server tracker as ground
+truth — WITHOUT switching to `metroBeats = [instants]` (still rejected, see below).
+Flow: after the immediate `computeAndApplyGrid` fallback, fetch the tracked beats
+(`fetchStemBeats(key)` for máxima-qualidade, else `analyzeBeatsBlob(instrumentalBlob)`),
+then keep constant mode (`metroBeats = null`) but set `metroBpm = tracked.bpm` (the
+precise MEDIAN average → kills progressive drift) and `metroOffset =
+constantPhaseFromBeats(tracked.beats, tracked.bpm)` (circular mean of `t mod T` →
+locks phase onto the real strong/low beat → kills contratempo). Guard with the same
+`gridToken`/`cancelled` checks; on failure the earlier grid stays.
+**Why:** the server `detect_beats.py` is now accurate (verified numerically: right
+octave, low-band energy higher ON the beat, autocorr peak at the true BPM). Using it
+to seed a STEADY pulse gives the "clean constant click at the correct tempo/phase"
+the user wants, which is different from following variable per-beat instants.
+**How to apply:** distinguish clearly — using `/stems/beats` to derive ONE bpm + ONE
+phase for a constant grid is allowed and preferred over shipping a wrong client grid;
+feeding the raw `beats[]` into `metroBeats` (variable tracking) is what was rejected.
+
 ## Mixer metronome is locked + unaccented (product decision)
 In StemMixer the BPM is display-only (cravado to detected tempo, no -/+ edit) and
 every beat is `playClick(..., "weak")` — no strong downbeat. The standalone

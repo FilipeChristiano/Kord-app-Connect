@@ -49,6 +49,8 @@ import {
   prepareStemsUpload,
   pollStemsStatus,
   stemsFileUrl,
+  fetchStemBeats,
+  analyzeBeatsBlob,
   type FetchedCifra,
   type CifraCandidate,
 } from "@/lib/cifra-remote";
@@ -2223,6 +2225,28 @@ const METRO_MIN_BPM = 40;
 const METRO_MAX_BPM = 240;
 const METRO_DEFAULT_BPM = 90;
 
+// Deriva a FASE (deslocamento em segundos) de uma grade CONSTANTE a partir dos
+// instantes reais rastreados. Usa a média circular de (t mod T): o único
+// deslocamento que melhor alinha o pulso constante às batidas reais do começo ao
+// fim — travando o clique na batida forte/grave sem virar uma grade variável.
+function constantPhaseFromBeats(beats: number[], bpm: number): number | null {
+  if (bpm <= 0 || beats.length < 4) return null;
+  const T = 60 / bpm;
+  let sx = 0;
+  let sy = 0;
+  for (const t of beats) {
+    const frac = (((t % T) + T) % T) / T; // [0, 1)
+    const ang = 2 * Math.PI * frac;
+    sx += Math.cos(ang);
+    sy += Math.sin(ang);
+  }
+  if (sx === 0 && sy === 0) return null;
+  let ang = Math.atan2(sy, sx);
+  if (ang < 0) ang += 2 * Math.PI;
+  const phase = (ang / (2 * Math.PI)) * T;
+  return ((phase % T) + T) % T;
+}
+
 // Ajuste fino de sincronia do clique (em segundos). O clique agora toca no MESMO
 // AudioContext da música (mesmo relógio de saída), então não há mais a latência
 // do <audio> em streaming para compensar — o padrão é 0. O controle continua
@@ -2464,8 +2488,43 @@ function StemMixer({
         if (cancelled) return;
         analysisTsRef.current = gridTs;
 
-        // 2) Refina o BPM preciso + fase sobre a faixa toda (grade constante).
+        // 2) Grade constante (BPM + fase) como RESERVA imediata: o clique já
+        //    funciona enquanto o rastreamento fino não chega.
         await computeAndApplyGrid(buffer, gridBpm, gridTs, token);
+
+        // 3) Refina a grade CONSTANTE com a leitura precisa do rastreador do
+        //    estúdio (que mede a batida grave/forte — bumbo/contrabaixo). NÃO
+        //    trocamos por uma lista de instantes variável (o usuário já rejeitou
+        //    isso duas vezes — soa pior): mantemos o pulso constante, mas com o
+        //    ANDAMENTO MÉDIO exato e a FASE travada na batida real. Isso corrige
+        //    o "começa fora do tempo" (fase) e o "atrasa no meio" (andamento
+        //    enviesado que ia acumulando erro). Se falhar, fica a grade anterior.
+        if (!cancelled && token === gridTokenRef.current) {
+          let key = "";
+          try {
+            key = new URL(instrumentalUrl, window.location.origin).searchParams.get("key") ?? "";
+          } catch {
+            key = "";
+          }
+          const tracked = key
+            ? await fetchStemBeats(key, gridBpm)
+            : await analyzeBeatsBlob(blob, gridBpm);
+          if (
+            !cancelled &&
+            token === gridTokenRef.current &&
+            tracked &&
+            tracked.bpm > 0 &&
+            tracked.beats.length >= 8
+          ) {
+            const phase = constantPhaseFromBeats(tracked.beats, tracked.bpm);
+            if (phase !== null) {
+              setMetroBeats(null);
+              setMetroBpm(Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, tracked.bpm)));
+              setMetroOffset(phase);
+              if (tracked.meter) setMetroTs(tracked.meter);
+            }
+          }
+        }
       } catch {
         if (!cancelled && token === gridTokenRef.current) {
           setMetroBeats(null);
