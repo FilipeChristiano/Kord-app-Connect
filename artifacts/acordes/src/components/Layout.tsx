@@ -58,9 +58,12 @@ export function Layout({ children }: { children: ReactNode }) {
                 className="h-8 sm:h-9 w-auto select-none"
                 draggable={false}
               />
-              <span className="font-brand font-bold text-2xl sm:text-[1.6rem] tracking-tight text-foreground group-hover:opacity-90 transition-opacity select-none">
-                Kordi
-              </span>
+              <img
+                src={`${basePath}/wordmark.svg`}
+                alt="Kordi"
+                className="h-[1.35rem] sm:h-6 w-auto select-none group-hover:opacity-90 transition-opacity"
+                draggable={false}
+              />
             </Link>
 
             {/* Desktop Nav */}

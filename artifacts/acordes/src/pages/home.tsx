@@ -52,9 +52,12 @@ export default function Home() {
                   className="h-16 sm:h-20 md:h-24 w-auto select-none"
                   draggable={false}
                 />
-                <span className="font-brand font-bold tracking-tight text-foreground text-6xl sm:text-7xl md:text-8xl">
-                  Kordi
-                </span>
+                <img
+                  src={`${import.meta.env.BASE_URL}wordmark.svg`}
+                  alt=""
+                  className="h-12 sm:h-16 md:h-[4.75rem] w-auto select-none"
+                  draggable={false}
+                />
               </div>
               <p aria-hidden="true" className="font-display font-bold text-h2 sm:text-h1 text-foreground/95 text-balance">
                 O próximo nível do seu teclado

@@ -12,7 +12,12 @@ export default function SignUpPage() {
           className="h-10 w-auto"
           draggable={false}
         />
-        <span className="font-brand font-bold text-3xl tracking-tight text-foreground">Kordi</span>
+        <img
+          src={`${import.meta.env.BASE_URL}wordmark.svg`}
+          alt="Kordi"
+          className="h-7 w-auto select-none"
+          draggable={false}
+        />
       </div>
       <SignUp
         routing="path"
