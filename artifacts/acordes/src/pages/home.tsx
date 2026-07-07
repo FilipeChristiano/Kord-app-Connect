@@ -45,17 +45,17 @@ export default function Home() {
               <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/25 bg-primary/10 text-primary text-small font-semibold backdrop-blur-sm">
                 Para tecladistas e pianistas
               </span>
-              <div className="flex items-center gap-4 sm:gap-5 select-none drop-shadow-2xl" aria-hidden="true">
+              <div className="flex flex-col items-center gap-5 sm:gap-6 select-none drop-shadow-2xl" aria-hidden="true">
                 <img
                   src={`${import.meta.env.BASE_URL}logo.svg`}
                   alt=""
-                  className="h-16 sm:h-20 md:h-24 w-auto select-none"
+                  className="h-28 sm:h-36 md:h-44 w-auto select-none"
                   draggable={false}
                 />
                 <img
                   src={`${import.meta.env.BASE_URL}wordmark.svg`}
                   alt=""
-                  className="h-12 sm:h-16 md:h-[4.75rem] w-auto select-none"
+                  className="h-10 sm:h-12 md:h-14 w-auto select-none"
                   draggable={false}
                 />
               </div>

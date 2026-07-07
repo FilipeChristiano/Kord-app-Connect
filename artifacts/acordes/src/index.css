@@ -4,8 +4,8 @@
 
 @theme inline {
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-brand: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-brand: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
 
   /* Escala tipográfica Kordi — tamanho / altura de linha */
   --text-display: 3rem;          /* 48px */
