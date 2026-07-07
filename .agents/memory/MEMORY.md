@@ -11,5 +11,5 @@
 - [Server Demucs stems (acordes)](server-demucs-stems.md) — máxima-qualidade async job; ffmpeg needs -f mp3 on .part names; demucs 4.0.1 has no demucs.api; ~5-6min/song; clean up .src + prune cache.
 - [Synced metronome timing (acordes)](synced-metronome-timing.md) — anchor beats to the AudioContext clock, not live media currentTime, or it drifts/desyncs on fader drags.
 - [Kordi brand palette](kordi-brand-palette.md) — marca é violeta #C24BF7→#4B45E8; laranja restante é semântico (avisos/dificuldade), nunca bulk-replace.
-- [Cifra em fundo claro](cifra-light-paper.md) — toda superfície de leitura de cifra usa papel claro #fdfcf9 + texto escuro; nunca renderizar cifra em fundo escuro.
+- [Sofisticador claro](cifra-light-paper.md) — módulo inteiro em tema claro premium, acento único violeta; nunca cifra em fundo escuro nem múltiplas cores de acorde.
 - [Real piano playback (acordes)](piano-playback.md) — chord audio must reuse the diagram's placeNotes voicing (octave 0 = C3/MIDI 48) via playChordVoicing; samples cover C3..C6, shift ≤1 tone.
