@@ -62,10 +62,12 @@ export default function Home() {
                 Acordes sofisticados, cifras inteligentes, pads contínuos e metrônomo profissional.
               </motion.p>
               <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <Link href="/dicionario" className="px-7 py-4 rounded-xl font-display font-semibold bg-primary text-white hover:brightness-110 transition-all duration-200 flex items-center justify-center gap-2">
+                <Link href="/dicionario" className="group relative px-7 py-4 rounded-xl font-display font-semibold text-white bg-gradient-to-b from-[#A855F7] via-[#8B5CF6] to-[#6D28D9] shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_28px_-8px_rgba(139,92,246,0.5)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_0_34px_-8px_rgba(139,92,246,0.65)] transition-all duration-200 flex items-center justify-center gap-2">
                   Explorar ferramentas
+                  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
-                <Link href="/aplicacoes" className="px-7 py-4 rounded-xl font-display font-semibold bg-white/5 text-foreground border border-white/10 backdrop-blur-md hover:border-primary/40 hover:bg-white/10 transition-all duration-200 flex items-center justify-center gap-2">
+                <Link href="/aplicacoes" className="px-7 py-4 rounded-xl font-display font-semibold bg-white/5 text-foreground border border-[rgba(255,255,255,0.12)] backdrop-blur-md hover:border-primary/50 hover:bg-white/[0.09] transition-all duration-200 flex items-center justify-center gap-2">
+                  <CirclePlay className="w-4 h-4 opacity-90" />
                   Ver demonstração
                 </Link>
               </motion.div>
@@ -80,13 +82,13 @@ export default function Home() {
               <img
                 src={`${import.meta.env.BASE_URL}logo.svg`}
                 alt=""
-                className="h-28 sm:h-36 lg:h-44 w-auto select-none"
+                className="h-[100px] sm:h-[130px] lg:h-[158px] w-auto select-none"
                 draggable={false}
               />
               <img
                 src={`${import.meta.env.BASE_URL}wordmark.svg`}
                 alt=""
-                className="h-8 sm:h-10 lg:h-11 w-auto select-none"
+                className="h-7 sm:h-9 lg:h-10 w-auto select-none"
                 draggable={false}
               />
             </motion.div>
@@ -143,25 +145,21 @@ type Accent = "orange" | "purple" | "blue";
 
 const ACCENTS: Record<Accent, {
   iconBox: string;
-  cta: string;
   hoverBorder: string;
   hoverShadow: string;
 }> = {
   orange: {
     iconBox: "text-[#fb923c]",
-    cta: "text-[#fb923c]",
     hoverBorder: "hover:border-[#f97316]/30",
     hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(249,115,22,0.15)]",
   },
   purple: {
     iconBox: "text-[#a5b4fc]",
-    cta: "text-[#a5b4fc]",
     hoverBorder: "hover:border-[#4f46e5]/30",
     hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(79,70,229,0.15)]",
   },
   blue: {
     iconBox: "text-[#7dd3fc]",
-    cta: "text-[#7dd3fc]",
     hoverBorder: "hover:border-[#38bdf8]/30",
     hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(56,189,248,0.15)]",
   },
@@ -186,20 +184,23 @@ function HeroCard({
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.5, ease: EASE }}
       whileHover={{ y: -4, transition: { duration: 0.2, ease: EASE } }}
-      className={`group relative overflow-hidden rounded-2xl bg-[#111827] border border-white/[0.05] transition-colors duration-200 ${a.hoverBorder} ${a.hoverShadow} h-full`}
+      className={`group relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#141c2e] to-[#0f1624] border border-white/[0.05] transition-colors duration-200 ${a.hoverBorder} ${a.hoverShadow} h-full`}
     >
       <Link href={href} className="relative flex flex-col gap-4 p-7 h-full">
         <div className="flex items-start justify-between gap-4 min-h-[64px]">
-          <span className={`w-10 h-10 shrink-0 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5 transition-transform duration-200 group-hover:scale-110 ${a.iconBox}`}>
+          <span className={`w-10 h-10 shrink-0 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5 transition-all duration-200 group-hover:scale-110 group-hover:brightness-125 ${a.iconBox}`}>
             {icon}
           </span>
-          <div className="flex-1 min-w-0 flex justify-end opacity-80 group-hover:opacity-100 transition-opacity">{visual}</div>
+          <div className="relative flex-1 min-w-0 flex justify-end opacity-80 group-hover:opacity-100 transition-opacity">
+            <span aria-hidden="true" className="absolute -top-3 right-4 w-24 h-12 rounded-full bg-primary/[0.08] blur-2xl pointer-events-none" />
+            {visual}
+          </div>
         </div>
         <h3 className="text-[22px] font-display font-semibold text-foreground text-balance mt-auto pt-4 leading-[1.2]">{title}</h3>
         <p className="text-[15px] font-sans text-muted-foreground leading-[1.55]">{desc}</p>
-        <span className={`inline-flex items-center gap-1.5 text-[13px] font-display font-semibold opacity-80 group-hover:opacity-100 transition-opacity ${a.cta}`}>
+        <span className="inline-flex items-center gap-1.5 text-[13px] font-display font-semibold text-[#A78BFA] group-hover:text-white transition-colors duration-200">
           {cta}
-          <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+          <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
         </span>
       </Link>
     </motion.div>
