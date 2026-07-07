@@ -103,14 +103,14 @@ function ChordToken({
       title={changed ? `${sub.original} → ${sub.substituted}` : sub.original}
       className={[
         "group relative cursor-pointer font-bold",
-        changed ? "text-primary" : "text-amber-200/80 hover:text-amber-200",
-        changed && chip ? "bg-primary/15 rounded-md px-1.5 py-0.5" : "",
-        changed && !chip ? "bg-primary/15 rounded-[3px]" : "",
+        changed ? "text-violet-700 hover:text-violet-800" : "text-orange-600 hover:text-orange-700",
+        changed && chip ? "bg-violet-100 rounded-md px-1.5 py-0.5" : "",
+        changed && !chip ? "bg-violet-100 rounded-[3px]" : "",
       ].join(" ")}
     >
       {sub.substituted}
       {changed && (
-        <span className="absolute -top-5 left-0 text-[10px] text-white/60 whitespace-nowrap hidden group-hover:block bg-black/85 rounded px-1.5 py-0.5 pointer-events-none z-10">
+        <span className="absolute -top-5 left-0 text-[10px] text-white/90 whitespace-nowrap hidden group-hover:block bg-zinc-800 rounded px-1.5 py-0.5 pointer-events-none z-10 shadow-md">
           era: {sub.original}
         </span>
       )}
@@ -137,7 +137,7 @@ function RenderedLine({
   if (SECTION_RE.test(trimmed)) {
     return (
       <div className="mt-6 mb-1 first:mt-0">
-        <span className="inline-block font-sans text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1">
+        <span className="inline-block font-sans text-[11px] font-semibold uppercase tracking-wider text-violet-700 bg-violet-100 border border-violet-200 rounded-md px-2.5 py-1">
           {trimmed.replace(/^\[|\]$/g, "")}
         </span>
       </div>
@@ -168,7 +168,7 @@ function RenderedLine({
           );
         }
         return (
-          <span key={i} className="text-white/85">
+          <span key={i} className="text-zinc-800">
             {token.value}
           </span>
         );
@@ -369,7 +369,7 @@ export default function ChordSubstitutor() {
             value={inputText}
             onChange={(e) => { setInputText(e.target.value); setSalvoId(null); }}
             placeholder={`Cole a cifra aqui...\n\nExemplo:\nC  G  Am  F\nC  G  F  C`}
-            className="flex-1 min-h-[280px] w-full bg-secondary/40 border border-white/10 rounded-xl px-5 py-4 text-white font-mono text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none leading-loose"
+            className="flex-1 min-h-[280px] w-full bg-[#fdfcf9] border border-white/10 rounded-xl px-5 py-4 text-zinc-800 font-mono text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none leading-loose"
           />
         </div>
 
@@ -432,11 +432,11 @@ export default function ChordSubstitutor() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[280px] bg-primary/5 border border-primary/20 rounded-2xl px-5 py-5 sm:px-6 overflow-auto">
+          <div className="flex-1 min-h-[280px] bg-[#fdfcf9] border border-primary/25 rounded-2xl px-5 py-5 sm:px-6 overflow-auto">
             {processed.length === 0 ? (
               <div className="h-full flex items-center justify-center">
-                <div className="text-center text-muted-foreground/40">
-                  <Wand2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <div className="text-center text-zinc-400">
+                  <Wand2 className="w-10 h-10 mx-auto mb-3 opacity-40" />
                   <p className="text-sm">Cole uma cifra ao lado para ver a mágica</p>
                 </div>
               </div>

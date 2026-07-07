@@ -94,7 +94,7 @@ function CifraModal({
               {copied === "sofisticada" ? "Copiado!" : "Copiar cifra"}
             </button>
           </div>
-          <div className="bg-primary/5 border border-primary/20 rounded-xl px-5 py-5 font-mono text-sm text-white/90 leading-loose whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+          <div className="bg-[#fdfcf9] border border-primary/25 rounded-xl px-5 py-5 font-mono text-sm text-zinc-800 leading-loose whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
             {cifra.textoSofisticado}
           </div>
         </div>
@@ -220,12 +220,12 @@ function CifraCard({
       </div>
 
       {/* Preview da cifra sofisticada */}
-      <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 font-mono text-xs text-white/70 leading-loose overflow-hidden max-h-[90px]">
+      <div className="bg-[#fdfcf9] border border-primary/15 rounded-xl px-4 py-3 font-mono text-xs text-zinc-700 leading-loose overflow-hidden max-h-[90px]">
         {linhas.slice(0, 3).map((linha, i) => (
           <span key={i} className="block whitespace-pre-wrap">{linha || "\u00A0"}</span>
         ))}
         {linhas.length > 3 && (
-          <span className="text-white/30">+ {linhas.length - 3} linhas...</span>
+          <span className="text-zinc-400">+ {linhas.length - 3} linhas...</span>
         )}
       </div>
 
