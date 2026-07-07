@@ -96,8 +96,8 @@ function ChordToken({
       onClick={() => sub.chordId && onChordClick(sub.chordId)}
       title={changed ? `${sub.original} → ${sub.substituted}` : sub.original}
       className={[
-        "group relative cursor-pointer font-bold text-violet-700 hover:text-violet-900",
-        changed ? "underline decoration-dotted decoration-violet-400 underline-offset-4" : "",
+        "group relative cursor-pointer font-bold text-[#7C3AED] hover:text-[#6D28D9]",
+        changed ? "underline decoration-dotted decoration-[#C24BF7] underline-offset-4" : "",
       ].join(" ")}
     >
       {sub.substituted}
@@ -280,17 +280,16 @@ export default function ChordSubstitutor() {
   const levelAtual = LEVELS.find((l) => l.key === level);
 
   return (
-    <div className="bg-[#faf8f4] min-h-[calc(100vh-5rem)]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center shadow-md shadow-violet-300/40">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center shadow-lg shadow-violet-500/30">
             <Wand2 className="w-5 h-5 text-white" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-zinc-900">Sofisticador de Cifra</h1>
+          <h1 className="font-display text-3xl font-bold text-white">Sofisticador de Cifra</h1>
         </div>
-        <p className="text-zinc-500 text-base leading-relaxed">
+        <p className="text-muted-foreground text-base leading-relaxed">
           Cole a cifra de uma música e o app substitui automaticamente os acordes por versões
           mais sofisticadas, de acordo com o nível escolhido.
         </p>
@@ -298,7 +297,7 @@ export default function ChordSubstitutor() {
 
       {/* Level selector */}
       <div className="mb-6">
-        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
           Nível de sofisticação
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -308,12 +307,12 @@ export default function ChordSubstitutor() {
               onClick={() => { setLevel(l.key); setSalvoId(null); }}
               className={`flex flex-col items-start gap-1 p-4 rounded-xl border transition-all text-left ${
                 level === l.key
-                  ? "border-violet-400 bg-white text-violet-800 shadow-md shadow-violet-200/60 ring-1 ring-violet-300"
-                  : "border-zinc-200 bg-white/60 text-zinc-500 hover:border-zinc-300 hover:bg-white hover:shadow-sm"
+                  ? "border-[#C24BF7] bg-[#C24BF7]/10 text-white shadow-lg shadow-violet-500/20"
+                  : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:bg-white/[0.04]"
               }`}
             >
-              <span className="font-bold text-sm">{l.label}</span>
-              <span className={`text-xs leading-snug ${level === l.key ? "text-violet-600" : "text-zinc-400"}`}>
+              <span className={`font-bold text-sm ${level === l.key ? "text-[#D97AFF]" : ""}`}>{l.label}</span>
+              <span className={`text-xs leading-snug ${level === l.key ? "text-white/70" : "opacity-50"}`}>
                 {l.description}
               </span>
             </button>
@@ -323,7 +322,7 @@ export default function ChordSubstitutor() {
 
       {/* Examples */}
       <div className="mb-4">
-        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
           Exemplos rápidos
         </p>
         <div className="flex flex-wrap gap-2">
@@ -331,7 +330,7 @@ export default function ChordSubstitutor() {
             <button
               key={ex.label}
               onClick={() => { setInputText(ex.text); setSalvoId(null); }}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:border-violet-300 hover:text-violet-700 hover:shadow-sm transition-all"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:border-[#C24BF7]/50 hover:text-[#D97AFF] transition-all"
             >
               {ex.label}
             </button>
@@ -344,13 +343,13 @@ export default function ChordSubstitutor() {
         {/* Input */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+            <p className="text-xs font-bold text-white/50 uppercase tracking-widest">
               Cifra original
             </p>
             {inputText && (
               <button
                 onClick={() => { setInputText(""); setSalvoId(null); }}
-                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+                className="flex items-center gap-1 text-xs text-white/30 hover:text-white/60 transition-colors"
               >
                 <RotateCcw className="w-3 h-3" /> Limpar
               </button>
@@ -360,7 +359,7 @@ export default function ChordSubstitutor() {
             value={inputText}
             onChange={(e) => { setInputText(e.target.value); setSalvoId(null); }}
             placeholder={`Cole a cifra aqui...\n\nExemplo:\nC  G  Am  F\nC  G  F  C`}
-            className="flex-1 min-h-[280px] w-full bg-white border border-zinc-200 rounded-2xl px-5 py-4 text-zinc-800 font-mono text-sm placeholder:text-zinc-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all resize-none leading-loose"
+            className="flex-1 min-h-[280px] w-full bg-[#fdfcf9] border border-white/10 rounded-2xl px-5 py-4 text-zinc-800 font-mono text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#C24BF7] focus:border-transparent transition-all resize-none leading-loose"
           />
         </div>
 
@@ -368,7 +367,7 @@ export default function ChordSubstitutor() {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <p className="text-xs font-bold text-violet-700 uppercase tracking-widest">
+              <p className="text-xs font-bold text-[#D97AFF] uppercase tracking-widest">
                 Cifra sofisticada
               </p>
               {detectedTonality && (
@@ -376,7 +375,7 @@ export default function ChordSubstitutor() {
                   key={detectedTonality.keyName}
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-violet-50 border-violet-200 text-violet-700"
+                  className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-[#C24BF7]/15 border-[#C24BF7]/40 text-[#D97AFF]"
                 >
                   <Music2 className="w-2.5 h-2.5" />
                   Tom: {detectedTonality.keyName} {detectedTonality.isMinor ? "menor" : "maior"}
@@ -390,16 +389,16 @@ export default function ChordSubstitutor() {
                 onClick={salvoId ? undefined : handleAbrirModal}
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                   !outputText
-                    ? "border-zinc-200 text-zinc-300 cursor-not-allowed"
+                    ? "border-white/10 text-white/20 cursor-not-allowed"
                     : salvoId
-                    ? "bg-violet-50 border-violet-200 text-violet-700 cursor-default"
-                    : "bg-white border-zinc-200 text-zinc-600 hover:border-violet-300 hover:text-violet-700 hover:shadow-sm cursor-pointer"
+                    ? "bg-[#C24BF7]/15 border-[#C24BF7]/40 text-[#D97AFF] cursor-default"
+                    : "bg-white/5 border-white/15 text-white/70 hover:border-[#C24BF7]/50 hover:text-[#D97AFF] cursor-pointer"
                 }`}
               >
                 {salvoId ? (
                   <><BookmarkCheck className="w-3 h-3" /> Salva!</>
                 ) : (
-                  <><Heart className={`w-3 h-3 ${outputText ? "fill-violet-600 text-violet-600" : ""}`} /> Salvar cifra</>
+                  <><Heart className={`w-3 h-3 ${outputText ? "fill-[#D97AFF] text-[#D97AFF]" : ""}`} /> Salvar cifra</>
                 )}
               </button>
 
@@ -409,8 +408,8 @@ export default function ChordSubstitutor() {
                 onClick={handleCopy}
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                   !outputText
-                    ? "border-zinc-200 text-zinc-300 cursor-not-allowed"
-                    : "bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] border-transparent text-white shadow-sm hover:opacity-90 cursor-pointer"
+                    ? "border-white/10 text-white/20 cursor-not-allowed"
+                    : "bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] border-transparent text-white shadow-lg shadow-violet-500/30 hover:opacity-90 cursor-pointer"
                 }`}
               >
                 {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -419,7 +418,7 @@ export default function ChordSubstitutor() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[280px] bg-white border border-zinc-200 rounded-2xl px-5 py-5 sm:px-6 shadow-sm overflow-auto">
+          <div className="flex-1 min-h-[280px] bg-[#fdfcf9] border border-[#C24BF7]/30 rounded-2xl px-5 py-5 sm:px-6 overflow-auto">
             {processed.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center text-zinc-400">
@@ -453,8 +452,8 @@ export default function ChordSubstitutor() {
             className="mt-6"
           >
             <div className="flex items-center gap-2 mb-3">
-              <Info className="w-4 h-4 text-violet-600" />
-              <p className="text-xs font-bold text-violet-700 uppercase tracking-widest">
+              <Info className="w-4 h-4 text-[#D97AFF]" />
+              <p className="text-xs font-bold text-[#D97AFF] uppercase tracking-widest">
                 Substituições realizadas ({chordsChanged.length})
               </p>
             </div>
@@ -465,10 +464,10 @@ export default function ChordSubstitutor() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-3 py-2 shadow-sm"
+                  className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2"
                 >
-                  <span className="text-zinc-400 font-mono text-xs">{change.original}</span>
-                  <ArrowRight className="w-3 h-3 text-zinc-300" />
+                  <span className="text-white/50 font-mono text-xs">{change.original}</span>
+                  <ArrowRight className="w-3 h-3 text-white/30" />
                   <button
                     onClick={() => {
                       const ch = chordsChanged[i];
@@ -486,19 +485,19 @@ export default function ChordSubstitutor() {
                         }
                       }
                     }}
-                    className="text-violet-700 font-mono text-xs font-bold hover:underline"
+                    className="text-[#D97AFF] font-mono text-xs font-bold hover:underline"
                   >
                     {change.substituted}
                   </button>
                   {change.harmonicFunction ? (
-                    <span className="text-[10px] text-zinc-400 italic">{change.harmonicFunction}</span>
+                    <span className="text-[10px] text-white/40 italic">{change.harmonicFunction}</span>
                   ) : (
-                    <span className="text-[10px] text-zinc-400">({change.category})</span>
+                    <span className="text-[10px] text-white/30">({change.category})</span>
                   )}
                 </motion.div>
               ))}
             </div>
-            <p className="text-xs text-zinc-400 mt-3">
+            <p className="text-xs text-white/30 mt-3">
               Clique em qualquer acorde na cifra ou nas substituições acima para ver os detalhes.
             </p>
           </motion.div>
@@ -519,19 +518,19 @@ export default function ChordSubstitutor() {
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
-              className="bg-white border border-zinc-200 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
             >
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center">
                   <Heart className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-display font-bold text-zinc-900 text-lg">Salvar cifra sofisticada</h2>
-                  <p className="text-xs text-zinc-400">Nível: {levelAtual?.label}</p>
+                  <h2 className="font-display font-bold text-white text-lg">Salvar cifra sofisticada</h2>
+                  <p className="text-xs text-muted-foreground">Nível: {levelAtual?.label}</p>
                 </div>
               </div>
 
-              <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
                 Nome da cifra
               </label>
               <input
@@ -541,13 +540,13 @@ export default function ChordSubstitutor() {
                 onChange={(e) => setTituloInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleConfirmarSalvar(); }}
                 placeholder="Ex: Louvor em C — Gospel Intermediário"
-                className="w-full bg-white border border-zinc-200 rounded-xl px-4 py-3 text-zinc-800 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent mb-5"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#C24BF7] focus:border-transparent mb-5"
               />
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowTituloModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-zinc-200 text-zinc-500 text-sm font-medium hover:bg-zinc-50 transition-all"
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm font-medium hover:bg-white/5 transition-all"
                 >
                   Cancelar
                 </button>
@@ -562,7 +561,6 @@ export default function ChordSubstitutor() {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 }

@@ -1,11 +1,13 @@
 ---
-name: Sofisticador claro (papel premium)
-description: O módulo Sofisticador de Cifra e superfícies de leitura de cifra usam tema claro com acento único violeta.
+name: Sofisticador — papel claro em shell escuro
+description: Regra final de tema do Sofisticador de Cifra: página escura, só as áreas de cifra em papel claro, violeta vibrante como acento único.
 ---
-Regra: o módulo Sofisticador de Cifra inteiro usa tema claro "papel premium" (wrapper #faf8f4, cards brancos borda zinc-200 + sombra suave, texto zinc-900/500/400), mesmo com o shell do app escuro. Superfícies de leitura de cifra em outras páginas (favoritos) também são claras.
+Regra final (após 3 iterações com o usuário, 07/2026):
+- O shell/página do Sofisticador fica no tema ESCURO do app (página inteira clara foi rejeitada).
+- Apenas as superfícies de leitura de cifra são claras: papel #fdfcf9, letra zinc-800.
+- Acordes sobre o papel: violeta vibrante #7C3AED, negrito; sofisticados ganham sublinhado pontilhado (tooltip escuro mostra o original). Uma única cor de acorde — nunca laranja/rosa/verde ou chips coloridos.
+- Acentos violeta sobre fundo escuro usam tom claro #D97AFF (legível no preto); CTAs usam o gradiente da marca #C24BF7→#4B45E8.
 
-Acento único: violeta da marca (gradiente #C24BF7→#4B45E8 em CTAs, violet-700 em acordes). Proibido: laranja, rosa, verde ou chips coloridos nesse módulo. Acordes sofisticados = violeta + sublinhado pontilhado (tooltip escuro mostra o original). Letra = zinc-800; seções [Intro] = negrito escuro sem etiqueta.
+**Why:** usuário reclamou de cifra escura desconfortável, depois de excesso de cores, depois rejeitou a página toda clara ("o app todo com fundo claro não ficou legal") e pediu roxo com mais destaque.
 
-**Why:** o usuário reclamou duas vezes (07/2026) de excesso de cores e de cifra escura desconfortável; pediu fundo claro com visual premium (referência Cifra Club, sem copiar).
-
-**How to apply:** qualquer nova superfície que renderize cifra (novos módulos, exports, modais) segue esse padrão claro monocromático com acento violeta — nunca cifra em fundo escuro nem múltiplas cores de acorde.
+**How to apply:** novas superfícies que renderizem cifra seguem papel claro + #7C3AED; o restante da UI permanece no tema escuro com acentos #D97AFF/gradiente.
