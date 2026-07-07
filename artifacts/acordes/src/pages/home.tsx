@@ -1,6 +1,9 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
+  playAcordesHover, playSofisticadorHover, playPadHover, playMetronomoHover,
+} from "@/lib/hover-sounds";
+import {
   ArrowRight, Layers, Wand2, Waves, Timer,
   Music3, Users, Globe, CirclePlay,
 } from "lucide-react";
@@ -104,6 +107,7 @@ export default function Home() {
               cta="Explorar acordes"
               href="/dicionario"
               visual={<AcordesMini />}
+              onHoverSound={playAcordesHover}
             />
             <HeroCard
               accent="fuchsia"
@@ -113,6 +117,7 @@ export default function Home() {
               cta="Sofisticar agora"
               href="/sofisticador"
               visual={<SofisticadorMini />}
+              onHoverSound={playSofisticadorHover}
             />
             <HeroCard
               accent="blue"
@@ -122,6 +127,7 @@ export default function Home() {
               cta="Abrir pad"
               href="/pad"
               visual={<PadMini />}
+              onHoverSound={playPadHover}
             />
             <HeroCard
               accent="orange"
@@ -131,6 +137,7 @@ export default function Home() {
               cta="Abrir metrônomo"
               href="/metronomo"
               visual={<MetronomeGauge size={80} bpmClass="text-lg" labelClass="text-[7px]" meter="4/4" />}
+              onHoverSound={playMetronomoHover}
             />
           </div>
         </div>
@@ -181,7 +188,7 @@ const ACCENTS: Record<Accent, {
 };
 
 function HeroCard({
-  icon, title, desc, cta, href, accent, visual,
+  icon, title, desc, cta, href, accent, visual, onHoverSound,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -190,6 +197,7 @@ function HeroCard({
   href: string;
   accent: Accent;
   visual: React.ReactNode;
+  onHoverSound?: () => void;
 }) {
   const a = ACCENTS[accent];
   return (
@@ -199,6 +207,7 @@ function HeroCard({
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.5, ease: EASE }}
       whileHover={{ y: -4, transition: { duration: 0.2, ease: EASE } }}
+      onHoverStart={() => onHoverSound?.()}
       className={`group relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#141c2e] to-[#0f1624] border border-white/[0.05] transition-colors duration-200 ${a.hoverBorder} ${a.hoverShadow} h-full`}
     >
       <span aria-hidden="true" className={`absolute top-0 inset-x-6 h-px bg-gradient-to-r from-transparent to-transparent ${a.topLine}`} />
@@ -248,14 +257,14 @@ function AcordesMini() {
 function SofisticadorMini() {
   return (
     <div className="flex flex-col items-end gap-1 w-full max-w-[150px]">
-      <div className="flex gap-1">
+      <div className="flex gap-1 transition-all duration-500 group-hover:opacity-30 group-hover:scale-95 origin-right">
         {["C", "G", "Am", "F"].map((c) => (
           <span key={c} className="min-w-[24px] text-center px-1.5 py-0.5 rounded bg-white/[0.05] font-mono text-[9px] text-muted-foreground">
             {c}
           </span>
         ))}
       </div>
-      <div className="flex gap-1">
+      <div className="flex gap-1 transition-all duration-500 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(217,70,239,0.45)] origin-right">
         {["C9", "G/B", "Am11"].map((c, i) => (
           <motion.span
             key={c}
