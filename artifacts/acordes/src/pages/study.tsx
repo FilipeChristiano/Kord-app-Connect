@@ -47,7 +47,7 @@ export default function StudyMode() {
       
       <div className="text-center mb-8">
         <h1 className="font-display text-3xl font-bold text-white mb-3 flex items-center justify-center gap-3">
-          <RefreshCw className="w-8 h-8 text-primary" /> Modo Estudo
+          <RefreshCw className="w-8 h-8 text-primary" /> Modo <span className="text-gradient-primary">Estudo</span>
         </h1>
         <p className="text-muted-foreground">Teste sua memória com flashcards interativos.</p>
       </div>

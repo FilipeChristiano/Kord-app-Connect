@@ -219,7 +219,7 @@
   box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 10px 32px -10px hsl(var(--primary) / 0.45);
 }
 .text-gradient-primary {
-  background: linear-gradient(135deg, hsl(var(--primary-400)), hsl(var(--primary-600)));
+  background: linear-gradient(135deg, #A78BFF 0%, #5E7BFF 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

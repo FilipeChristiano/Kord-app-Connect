@@ -56,7 +56,7 @@ export default function Home() {
                 variants={itemVariants}
                 className="font-display font-bold text-[clamp(2.1rem,4.6vw,4rem)] tracking-[-0.04em] leading-[1.05] text-foreground mt-6 mb-5 text-balance"
               >
-                Tudo o que faltava para <span className="text-primary">elevar o nível</span> do seu teclado.
+                Tudo o que faltava para <span className="text-gradient-primary">elevar o nível</span> do seu teclado.
               </motion.h1>
               <motion.p
                 variants={itemVariants}

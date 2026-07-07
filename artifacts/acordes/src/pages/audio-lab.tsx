@@ -1329,7 +1329,7 @@ export default function AudioLab() {
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <AudioWaveform className="w-5 h-5 text-primary" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-white">Audio Lab</h1>
+          <h1 className="font-display text-3xl font-bold text-white">Audio <span className="text-gradient-primary">Lab</span></h1>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
           Envie a música ou cante um trecho. O Kordi descobre a música pela letra e

@@ -369,7 +369,7 @@ export default function Metronome() {
           <Music2 className="w-3.5 h-3.5" /> Ferramenta de Estudo
         </div>
         <h1 className="font-display text-4xl md:text-5xl font-bold text-white mb-3">
-          Metrônomo Inteligente
+          Metrônomo <span className="text-gradient-primary">Inteligente</span>
         </h1>
         <p className="text-muted-foreground max-w-2xl lg:mx-0 mx-auto">
           Pratique no tempo certo com presets pensados para worship, gospel e estudo de teclado.

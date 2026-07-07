@@ -287,7 +287,7 @@ export default function ChordSubstitutor() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center shadow-lg shadow-violet-500/30">
             <Wand2 className="w-5 h-5 text-white" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-white">Sofisticador de Cifra</h1>
+          <h1 className="font-display text-3xl font-bold text-white">Sofisticador de <span className="text-gradient-primary">Cifra</span></h1>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
           Cole a cifra de uma música e o app substitui automaticamente os acordes por versões

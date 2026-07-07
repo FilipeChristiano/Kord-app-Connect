@@ -523,7 +523,7 @@ export default function PadContinuous() {
           Pad Continuous
         </div>
         <h1 className="font-display text-3xl md:text-5xl font-bold text-white mb-3">
-          Pad <span className="text-primary">Worship</span> Contínuo
+          Pad <span className="text-gradient-primary">Worship</span> Contínuo
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
           Pads worship reais, gravados em todos os 12 tons, tocando em loop infinito com transição

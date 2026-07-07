@@ -311,7 +311,7 @@ export default function Favorites() {
         <div>
           <h1 className="font-display text-4xl font-bold text-white mb-2 flex items-center gap-3">
             <Heart className="w-8 h-8 text-primary fill-primary" />
-            Meus Favoritos
+            Meus <span className="text-gradient-primary">Favoritos</span>
           </h1>
           <p className="text-muted-foreground">Sua coleção pessoal de acordes e cifras sofisticadas.</p>
         </div>

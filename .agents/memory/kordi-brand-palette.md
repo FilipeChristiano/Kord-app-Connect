@@ -21,3 +21,4 @@ Em julho/2026 o usuário trocou a logo laranja pela versão violeta. A marca ago
 - `--primary` = violeta-azulado luminoso **#A78BFF** (hsl 252 100% 76%); pressed #7C5CFF. Bordas/rings/realces em fundo escuro: #8B5CF6 com opacidade — não usar #C24BF7 sólido como acento.
 - #C24BF7 (magenta) só aparece dentro dos gradientes da marca: `.bg-gradient-cta`/CTAs (2 tons #C24BF7 → #4B45E8) e `.bg-gradient-kordi`/`.text-gradient-kordi` (3-stop da logo, exceção intencional).
 - Nunca usar `text-primary` claro sobre superfícies de papel claro (contraste baixo); nelas usar o violeta escuro #7C3AED (padrão do Sofisticador/Favoritos).
+- Degradê de texto aprovado (jul/2026): `.text-gradient-primary` = #A78BFF → #5E7BFF (violeta→azul, ecoa a logo); aplicado na palavra-chave dos H1 de cada módulo e no destaque do hero. Usuário associa o tom azul a "mais profissional".
