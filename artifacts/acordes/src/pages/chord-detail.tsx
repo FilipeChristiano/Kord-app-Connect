@@ -32,12 +32,12 @@ function ColorLegend() {
         <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
         <span className="text-red-400 font-medium">Mão Esquerda</span>
       </div>
-      <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2">
-        <span className="w-3 h-3 rounded-full bg-orange-400 flex-shrink-0" />
-        <span className="text-orange-400 font-medium">MD — branca</span>
+      <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
+        <span className="w-3 h-3 rounded-full bg-purple-400 flex-shrink-0" />
+        <span className="text-purple-400 font-medium">MD — branca</span>
       </div>
       <div className="flex items-center gap-2 bg-zinc-700/50 border border-zinc-600/30 rounded-lg px-3 py-2">
-        <span className="w-3 h-3 rounded-full bg-zinc-900 border border-orange-400 flex-shrink-0" />
+        <span className="w-3 h-3 rounded-full bg-zinc-900 border border-purple-400 flex-shrink-0" />
         <span className="text-zinc-300 font-medium">MD — preta</span>
       </div>
     </div>
@@ -135,10 +135,10 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
               <p className="text-sm text-white/80 font-mono notranslate" translate="no">{meLabel}</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
-            <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 ring-2 ring-orange-400/30" />
+          <div className="flex items-start gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3">
+            <span className="mt-0.5 w-3 h-3 rounded-full bg-purple-400 flex-shrink-0 ring-2 ring-purple-400/30" />
             <div>
-              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
+              <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
               <p className="text-sm text-white/80 font-mono notranslate" translate="no">
                 {isLeftOnly
                   ? <span className="italic text-white/50" translate="yes">Livre para melodia ou extensões</span>
@@ -219,10 +219,10 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
               <p className="text-sm text-white/80 font-mono notranslate" translate="no">{v.leftHand.join(" — ")}</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
-            <span className="mt-0.5 w-3 h-3 rounded-full bg-orange-400 flex-shrink-0 ring-2 ring-orange-400/30" />
+          <div className="flex items-start gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3">
+            <span className="mt-0.5 w-3 h-3 rounded-full bg-purple-400 flex-shrink-0 ring-2 ring-purple-400/30" />
             <div>
-              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
+              <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
               <p className="text-sm text-white/80 font-mono notranslate" translate="no">{v.rightHand.join(" — ")}</p>
             </div>
           </div>
@@ -369,7 +369,7 @@ export default function ChordDetail() {
               className={cn(
                 "flex items-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg",
                 favorite
-                  ? "bg-primary text-primary-foreground shadow-primary/20 hover:bg-orange-400"
+                  ? "bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary-hover"
                   : "bg-secondary text-white hover:bg-secondary/80 border border-white/10"
               )}
             >
@@ -422,7 +422,7 @@ export default function ChordDetail() {
                     >
                       {note}
                     </div>
-                    <span className="mt-1 text-xs font-semibold text-orange-400">{i + 1}ª</span>
+                    <span className="mt-1 text-xs font-semibold text-purple-400">{i + 1}ª</span>
                   </div>
                 ))}
               </div>

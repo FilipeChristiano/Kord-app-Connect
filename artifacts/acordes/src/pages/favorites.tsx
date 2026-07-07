@@ -385,7 +385,7 @@ export default function Favorites() {
                 </p>
                 <Link
                   href="/dicionario"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-orange-400 transition-colors shadow-lg shadow-primary/20"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20"
                 >
                   <Search className="w-5 h-5" /> Explorar Dicionário
                 </Link>

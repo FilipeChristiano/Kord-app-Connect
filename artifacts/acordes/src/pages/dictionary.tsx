@@ -90,7 +90,7 @@ export default function Dictionary() {
           <p className="text-muted-foreground">Tente buscar por outro nome ou limpe os filtros.</p>
           <button 
             onClick={() => { setQuery(""); setActiveCategory("Todos"); }}
-            className="mt-6 text-primary hover:text-orange-400 font-medium hover:underline"
+            className="mt-6 text-primary hover:text-primary-hover font-medium hover:underline"
           >
             Limpar filtros
           </button>

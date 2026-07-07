@@ -28,7 +28,7 @@ export default function NoAccessPage() {
   return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 py-12">
       <div className="max-w-lg w-full bg-card/60 border border-white/10 rounded-2xl p-8 shadow-2xl shadow-black/40 backdrop-blur">
-        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center shadow-lg shadow-primary/20 mb-6">
+        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-700 flex items-center justify-center shadow-lg shadow-primary/20 mb-6">
           <ShoppingCart className="w-7 h-7 text-primary-foreground" />
         </div>
 
@@ -64,7 +64,7 @@ export default function NoAccessPage() {
             type="button"
             onClick={handleRecheck}
             disabled={checking}
-            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-br from-primary to-orange-700 text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:brightness-110 transition-all disabled:opacity-70"
+            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-700 text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:brightness-110 transition-all disabled:opacity-70"
           >
             <RefreshCw
               className={`w-4 h-4 ${checking ? "animate-spin" : ""}`}

@@ -182,11 +182,11 @@ const ACCENTS: Record<Accent, {
     hoverShadow: "hover:shadow-[0_18px_44px_-18px_hsl(var(--primary)/0.4)]",
   },
   purple: {
-    glow: "bg-[#7c3aed]",
-    iconBox: "bg-[#7c3aed]/15 text-[#c4b5fd] ring-1 ring-[#7c3aed]/25",
-    cta: "text-[#c4b5fd]",
-    hoverBorder: "hover:border-[#7c3aed]/40",
-    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(124,58,237,0.45)]",
+    glow: "bg-[#4f46e5]",
+    iconBox: "bg-[#4f46e5]/15 text-[#a5b4fc] ring-1 ring-[#4f46e5]/25",
+    cta: "text-[#a5b4fc]",
+    hoverBorder: "hover:border-[#4f46e5]/40",
+    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(79,70,229,0.45)]",
   },
   teal: {
     glow: "bg-[#14b8a6]",
@@ -277,7 +277,7 @@ function SofisticadorVisual() {
   const depois = ["C9", "G/B", "Am11", "F7M(9)"];
   return (
     <div className="w-full flex flex-col gap-2">
-      <div className="rounded-xl border border-[#7c3aed]/15 bg-[#7c3aed]/[0.05] px-3 py-2.5">
+      <div className="rounded-xl border border-[#4f46e5]/15 bg-[#4f46e5]/[0.05] px-3 py-2.5">
         <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">Antes</p>
         <div className="flex flex-wrap gap-1.5">
           {antes.map((a) => (
@@ -285,16 +285,16 @@ function SofisticadorVisual() {
           ))}
         </div>
       </div>
-      <div className="flex justify-center text-[#c4b5fd]">
+      <div className="flex justify-center text-[#a5b4fc]">
         <motion.span animate={{ y: [0, 3, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
           <ArrowDown className="w-4 h-4" />
         </motion.span>
       </div>
-      <div className="rounded-xl border border-[#7c3aed]/25 bg-[#7c3aed]/[0.08] px-3 py-2.5">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#c4b5fd] mb-1.5">Depois</p>
+      <div className="rounded-xl border border-[#4f46e5]/25 bg-[#4f46e5]/[0.08] px-3 py-2.5">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#a5b4fc] mb-1.5">Depois</p>
         <div className="flex flex-wrap gap-1.5">
           {depois.map((d) => (
-            <span key={d} className="px-2 py-1 rounded-md bg-[#7c3aed]/15 border border-[#7c3aed]/30 font-mono text-xs text-[#c4b5fd] font-semibold">{d}</span>
+            <span key={d} className="px-2 py-1 rounded-md bg-[#4f46e5]/15 border border-[#4f46e5]/30 font-mono text-xs text-[#a5b4fc] font-semibold">{d}</span>
           ))}
         </div>
       </div>
@@ -381,7 +381,7 @@ function MetronomeGauge() {
   const r = 60;
   const startA = 125;       // ponto inferior esquerdo
   const sweep = 290;        // deixa uma folga de 70° embaixo
-  const frac = 0.26;        // quanto do arco fica em laranja
+  const frac = 0.26;        // quanto do arco fica em violeta
   const endA = startA + sweep;
   const progA = startA + sweep * frac;
   const polar = (deg: number) => {
@@ -400,7 +400,7 @@ function MetronomeGauge() {
       <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full" aria-hidden="true">
         <path d={arc(startA, endA)} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={4} strokeLinecap="round" />
         <path d={arc(startA, progA)} fill="none" className="stroke-[hsl(var(--primary))]" strokeWidth={4} strokeLinecap="round" />
-        <circle cx={knob.x} cy={knob.y} r={9} fill="#1c1410" stroke="hsl(var(--primary))" strokeWidth={2} strokeOpacity={0.5} />
+        <circle cx={knob.x} cy={knob.y} r={9} fill="#14101c" stroke="hsl(var(--primary))" strokeWidth={2} strokeOpacity={0.5} />
         <circle cx={knob.x} cy={knob.y} r={5} className="fill-[hsl(var(--primary))]" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

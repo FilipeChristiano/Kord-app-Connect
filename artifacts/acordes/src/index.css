@@ -49,7 +49,7 @@
   --color-surface-elevated: hsl(var(--surface-elevated));
   --color-modal: hsl(var(--modal));
 
-  /* Escala laranja Kordi derivada de #FF6B00 */
+  /* Escala violeta Kordi derivada da logo (#C24BF7↔#4B45E8) */
   --color-primary-50: hsl(var(--primary-50));
   --color-primary-100: hsl(var(--primary-100));
   --color-primary-200: hsl(var(--primary-200));
@@ -63,7 +63,7 @@
   --color-primary-hover: hsl(var(--primary-hover));
   --color-primary-pressed: hsl(var(--primary-pressed));
 
-  /* Escala roxa Kordi derivada de #7C3AED */
+  /* Escala índigo Kordi derivada de #4B45E8 */
   --color-brand-purple-100: hsl(var(--brand-purple-100));
   --color-brand-purple-300: hsl(var(--brand-purple-300));
   --color-brand-purple-500: hsl(var(--brand-purple-500));
@@ -93,30 +93,30 @@
   --modal: 222 29% 18%;              /* #20283A */
   --foreground: 216 33% 97%;         /* #F5F7FA */
 
-  /* Escala laranja — base #FF6B00 = hsl(25 100% 50%) */
-  --primary-50: 30 100% 96%;
-  --primary-100: 29 100% 90%;
-  --primary-200: 28 100% 82%;
-  --primary-300: 27 100% 72%;
-  --primary-400: 26 100% 61%;
-  --primary-500: 25 100% 50%;
-  --primary-600: 23 96% 45%;
-  --primary-700: 21 92% 38%;
-  --primary-800: 19 88% 31%;
-  --primary-900: 17 84% 25%;
+  /* Escala violeta — topo da logo #C24BF7 = hsl(281 91% 63%) */
+  --primary-50: 282 100% 97%;
+  --primary-100: 281 96% 92%;
+  --primary-200: 279 94% 85%;
+  --primary-300: 276 93% 77%;
+  --primary-400: 272 91% 70%;
+  --primary-500: 268 88% 62%;
+  --primary-600: 263 80% 54%;
+  --primary-700: 258 72% 45%;
+  --primary-800: 253 68% 36%;
+  --primary-900: 248 64% 27%;
 
-  /* Ação primária + estados — laranja luminoso da logo (#FF8A1F↔#FF6B00) */
-  --primary: 26 100% 53%;
+  /* Ação primária + estados — violeta luminoso da logo (#C24BF7↔#8B5CF6) */
+  --primary: 270 88% 64%;
   --primary-foreground: 222 30% 8%;
-  --primary-hover: 27 100% 58%;
-  --primary-pressed: 24 100% 47%;
+  --primary-hover: 273 92% 69%;
+  --primary-pressed: 265 82% 56%;
 
-  /* Roxo Kordi — base #7C3AED (recursos inteligentes, detalhes premium) */
-  --brand-purple-100: 251 91% 95%;   /* #EDE9FE */
-  --brand-purple-300: 253 95% 85%;   /* #C4B5FD */
-  --brand-purple-500: 263 83% 58%;   /* #7C3AED */
-  --brand-purple-700: 263 69% 42%;   /* #5B21B6 */
-  --brand-purple-900: 261 73% 23%;   /* #2E1065 */
+  /* Índigo Kordi — base da ponta azul da logo #4B45E8 (recursos inteligentes, detalhes premium) */
+  --brand-purple-100: 240 91% 95%;   /* #E7E7FC */
+  --brand-purple-300: 240 90% 84%;   /* #B1B1F8 */
+  --brand-purple-500: 242 78% 59%;   /* #4B45E8 */
+  --brand-purple-700: 243 64% 45%;   /* #3630BC */
+  --brand-purple-900: 245 62% 25%;   /* #1F1C67 */
 
   /* Secundária */
   --secondary: 220 16% 18%;
@@ -131,7 +131,7 @@
   --accent-foreground: 216 33% 97%;
 
   --border: 220 15% 20%;
-  --ring: 25 100% 50%;
+  --ring: 270 88% 64%;
 
   --destructive: 0 75% 58%;
   --destructive-foreground: 210 40% 98%;
@@ -171,7 +171,7 @@
   background: hsl(var(--primary) / 0.5);
 }
 
-/* Seleção de texto com identidade laranja */
+/* Seleção de texto com identidade violeta */
 ::selection {
   background: hsl(var(--primary) / 0.28);
   color: hsl(var(--foreground));
@@ -213,7 +213,7 @@
   background: hsl(var(--surface-elevated));
 }
 
-/* Identidade laranja — glow + gradiente */
+/* Identidade violeta — glow + gradiente */
 .glow-primary {
   box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 10px 32px -10px hsl(var(--primary) / 0.45);
 }
@@ -229,13 +229,13 @@
 
 /* ===== Gradientes oficiais Kordi ===== */
 .bg-gradient-kordi {
-  background: linear-gradient(135deg, #FF6B00 0%, #FF8A1F 45%, #7C3AED 100%);
+  background: linear-gradient(135deg, #C24BF7 0%, #8B5CF6 45%, #4B45E8 100%);
 }
 .bg-gradient-cta {
-  background: linear-gradient(135deg, #FF9633 0%, #FF7A0E 55%, #F45D00 100%);
+  background: linear-gradient(135deg, #C24BF7 0%, #9B4DF3 55%, #6D3EE0 100%);
 }
 .text-gradient-kordi {
-  background: linear-gradient(135deg, #FF6B00 0%, #FF8A1F 45%, #7C3AED 100%);
+  background: linear-gradient(135deg, #C24BF7 0%, #8B5CF6 45%, #4B45E8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -244,10 +244,10 @@
   background: linear-gradient(180deg, #0D111A 0%, #080B12 100%);
 }
 .bg-glow-orange {
-  background: radial-gradient(circle, rgba(255, 107, 0, 0.22) 0%, rgba(255, 107, 0, 0) 70%);
+  background: radial-gradient(circle, rgba(194, 75, 247, 0.2) 0%, rgba(194, 75, 247, 0) 70%);
 }
 .bg-glow-purple {
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, rgba(124, 58, 237, 0) 70%);
+  background: radial-gradient(circle, rgba(75, 69, 232, 0.18) 0%, rgba(75, 69, 232, 0) 70%);
 }
 .glow-purple {
   box-shadow: 0 0 0 1px hsl(var(--brand-purple-500) / 0.25), 0 10px 32px -10px hsl(var(--brand-purple-500) / 0.45);

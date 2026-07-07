@@ -388,7 +388,7 @@ export default function Metronome() {
                 <span className="text-xs uppercase tracking-widest text-primary/70 font-semibold">Estilo ativo</span>
                 <span className="text-sm font-bold text-white">{activePreset.name}</span>
                 {presetAdjusted && (
-                  <span className="text-[10px] uppercase tracking-wider bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/30">
+                  <span className="text-[10px] uppercase tracking-wider bg-fuchsia-500/20 text-fuchsia-300 px-2 py-0.5 rounded-full border border-fuchsia-500/30">
                     ajustado
                   </span>
                 )}
@@ -435,7 +435,7 @@ export default function Metronome() {
                   strokeWidth={6}
                   strokeLinecap="round"
                 />
-                {/* Progresso (laranja) */}
+                {/* Progresso (violeta) */}
                 {bpmFraction > 0.001 && (
                   <path
                     d={dialArc(DIAL_RADIUS, GAUGE_START, GAUGE_START + bpmFraction * GAUGE_SWEEP)}
@@ -574,7 +574,7 @@ export default function Metronome() {
                 "flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-3 px-3 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-sm sm:text-lg transition-all duration-300 shadow-lg",
                 isPlaying
                   ? "bg-white text-background hover:bg-white/90 shadow-white/20"
-                  : "bg-primary text-primary-foreground hover:bg-orange-400 shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5",
+                  : "bg-primary text-primary-foreground hover:bg-primary-hover shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5",
               )}
               aria-label={isPlaying ? "Pausar" : "Tocar"}
             >

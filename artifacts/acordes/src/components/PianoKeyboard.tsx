@@ -10,7 +10,7 @@
  *
  * Cor das bolinhas:
  *   🔴 Vermelho = Mão Esquerda
- *   🟠 Laranja  = Mão Direita tecla branca
+ *   🟣 Roxo     = Mão Direita tecla branca
  *   ⚫ Preta    = Mão Direita tecla preta
  */
 
@@ -85,12 +85,12 @@ function placeNotes(notes: string[], baseOctave: number): PlacedNote[] {
 
 function dotFill(hand: Hand, isBlack: boolean): string {
   if (hand === "left")  return "#ef4444";
-  if (hand === "right") return isBlack ? "#1c1917" : "#f97316";
+  if (hand === "right") return isBlack ? "#1c1917" : "#a855f7";
   return "none";
 }
 function dotStroke(hand: Hand, isBlack: boolean): string {
   if (hand === "left")  return "#b91c1c";
-  if (hand === "right") return isBlack ? "#f97316" : "#ea6a00";
+  if (hand === "right") return isBlack ? "#a855f7" : "#9333ea";
   return "none";
 }
 
@@ -209,7 +209,7 @@ export function PianoKeyboard({
         )}
         {rightLabel && (
           <text x={hasLeft ? SVG_W * 2 / 3 : SVG_W / 2} y={SVG_H - 6}
-            textAnchor="middle" fontSize={9} fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="600" fill="#f97316">
+            textAnchor="middle" fontSize={9} fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="600" fill="#a855f7">
             {rightLabel}
           </text>
         )}

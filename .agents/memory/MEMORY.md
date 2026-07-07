@@ -10,3 +10,4 @@
 - [Stem mixer playback (acordes)](stem-mixer-playback.md) — fader mixes stems via two streaming <audio> elements + drift correction; never full Web Audio buffer-decode of both songs (slow/OOM).
 - [Server Demucs stems (acordes)](server-demucs-stems.md) — máxima-qualidade async job; ffmpeg needs -f mp3 on .part names; demucs 4.0.1 has no demucs.api; ~5-6min/song; clean up .src + prune cache.
 - [Synced metronome timing (acordes)](synced-metronome-timing.md) — anchor beats to the AudioContext clock, not live media currentTime, or it drifts/desyncs on fader drags.
+- [Kordi brand palette](kordi-brand-palette.md) — marca é violeta #C24BF7→#4B45E8; laranja restante é semântico (avisos/dificuldade), nunca bulk-replace.
