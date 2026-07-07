@@ -55,13 +55,13 @@ export function Layout({ children }: { children: ReactNode }) {
                 src={`${basePath}/logo.svg`}
                 alt=""
                 aria-hidden="true"
-                className="h-8 sm:h-9 w-auto select-none"
+                className="h-6 sm:h-7 w-auto select-none"
                 draggable={false}
               />
               <img
                 src={`${basePath}/wordmark.svg`}
                 alt="Kordi"
-                className="h-[1.35rem] sm:h-6 w-auto select-none group-hover:opacity-90 transition-opacity"
+                className="h-4 sm:h-[1.15rem] w-auto select-none group-hover:opacity-90 transition-opacity"
                 draggable={false}
               />
             </Link>

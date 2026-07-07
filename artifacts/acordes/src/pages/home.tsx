@@ -42,9 +42,6 @@ export default function Home() {
           >
             <motion.div variants={itemVariants} className="flex flex-col items-center gap-5 sm:gap-6 mb-6">
               <h1 className="sr-only">Kordi — Ferramentas inteligentes para transformar o seu som</h1>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/25 bg-primary/10 text-primary text-small font-semibold backdrop-blur-sm">
-                Para tecladistas e pianistas
-              </span>
               <div className="flex flex-col items-center gap-5 sm:gap-6 select-none drop-shadow-2xl" aria-hidden="true">
                 <img
                   src={`${import.meta.env.BASE_URL}logo.svg`}
@@ -59,6 +56,9 @@ export default function Home() {
                   draggable={false}
                 />
               </div>
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/25 bg-primary/10 text-primary text-small font-semibold backdrop-blur-sm">
+                Para tecladistas e pianistas
+              </span>
               <p aria-hidden="true" className="font-display font-bold text-h2 sm:text-h1 text-foreground/95 text-balance">
                 O próximo nível do seu teclado
               </p>
