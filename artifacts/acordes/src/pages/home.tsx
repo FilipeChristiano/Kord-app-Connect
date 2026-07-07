@@ -72,7 +72,7 @@ export default function Home() {
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <Link href="/dicionario" className="px-8 py-4 rounded-2xl font-bold bg-primary text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
+              <Link href="/dicionario" className="px-8 py-4 rounded-2xl font-bold bg-gradient-cta text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
                 Explorar ferramentas <ArrowRight className="w-5 h-5" />
               </Link>
               <a href="#recursos" className="px-8 py-4 rounded-2xl font-bold bg-surface-elevated/80 text-foreground border border-white/10 shadow-[0_4px_16px_-8px_rgba(0,0,0,0.6)] hover:border-primary/30 hover:bg-surface-elevated hover:-translate-y-0.5 hover:shadow-[0_6px_22px_-8px_hsl(var(--primary)/0.3)] transition-all duration-200 flex items-center justify-center gap-2">

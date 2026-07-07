@@ -105,11 +105,11 @@
   --primary-800: 19 88% 31%;
   --primary-900: 17 84% 25%;
 
-  /* Ação primária + estados */
-  --primary: 25 100% 50%;
+  /* Ação primária + estados — laranja luminoso da logo (#FF8A1F↔#FF6B00) */
+  --primary: 26 100% 53%;
   --primary-foreground: 222 30% 8%;
-  --primary-hover: 26 100% 56%;
-  --primary-pressed: 23 96% 45%;
+  --primary-hover: 27 100% 58%;
+  --primary-pressed: 24 100% 47%;
 
   /* Roxo Kordi — base #7C3AED (recursos inteligentes, detalhes premium) */
   --brand-purple-100: 251 91% 95%;   /* #EDE9FE */
@@ -230,6 +230,9 @@
 /* ===== Gradientes oficiais Kordi ===== */
 .bg-gradient-kordi {
   background: linear-gradient(135deg, #FF6B00 0%, #FF8A1F 45%, #7C3AED 100%);
+}
+.bg-gradient-cta {
+  background: linear-gradient(135deg, #FF9633 0%, #FF7A0E 55%, #F45D00 100%);
 }
 .text-gradient-kordi {
   background: linear-gradient(135deg, #FF6B00 0%, #FF8A1F 45%, #7C3AED 100%);
