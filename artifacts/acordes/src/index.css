@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
 @layer theme, base, clerk, components, utilities;
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-display: 'Quicksand', 'Outfit', system-ui, sans-serif;
-  --font-brand: 'Quicksand', 'Outfit', system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Sora', 'Inter', system-ui, sans-serif;
+  --font-brand: 'Sora', 'Inter', system-ui, sans-serif;
 
   /* Escala tipográfica Kordi — tamanho / altura de linha */
   --text-display: 3rem;          /* 48px */

@@ -50,7 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-[4.5rem]">
-            <Link href="/" className="flex items-center gap-2.5 group outline-none">
+            <Link href="/" className="flex items-center gap-2.5 shrink-0 mr-6 group outline-none">
               <img
                 src={`${basePath}/logo.svg`}
                 alt=""
@@ -73,7 +73,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   key={item.href} 
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 outline-none",
+                    "flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 outline-none",
                     location === item.href 
                       ? "bg-primary/15 text-primary shadow-[0_0_0_1px_hsl(var(--primary)/0.2),0_4px_14px_-6px_hsl(var(--primary)/0.4)]" 
                       : "text-muted-foreground hover:bg-white/5 hover:text-white"
