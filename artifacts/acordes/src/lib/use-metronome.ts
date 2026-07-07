@@ -23,7 +23,7 @@ const LOOKAHEAD_MS = 25;
 // ── Som do clique (oscilador sintetizado) ────────────────────────────────────
 // Função compartilhada: agenda um clique no `time` (relógio do AudioContext),
 // roteado por `destination` (permite um ganho mestre para controlar o volume).
-function playClick(
+export function playClick(
   ctx: AudioContext,
   destination: AudioNode,
   time: number,
