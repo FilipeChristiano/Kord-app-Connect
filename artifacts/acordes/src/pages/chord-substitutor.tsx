@@ -89,11 +89,9 @@ function isInstrumentalChordLine(lines: ProcessedLine[], i: number): boolean {
 
 function ChordToken({
   sub,
-  chip,
   onChordClick,
 }: {
   sub: SubstitutionResult;
-  chip: boolean;
   onChordClick: (id: string) => void;
 }) {
   const changed = sub.original !== sub.substituted;
@@ -102,10 +100,8 @@ function ChordToken({
       onClick={() => sub.chordId && onChordClick(sub.chordId)}
       title={changed ? `${sub.original} → ${sub.substituted}` : sub.original}
       className={[
-        "group relative cursor-pointer font-bold",
-        changed ? "text-violet-700 hover:text-violet-800" : "text-orange-600 hover:text-orange-700",
-        changed && chip ? "bg-violet-100 rounded-md px-1.5 py-0.5" : "",
-        changed && !chip ? "bg-violet-100 rounded-[3px]" : "",
+        "group relative cursor-pointer font-bold text-violet-700 hover:text-violet-900",
+        changed ? "underline decoration-dotted decoration-violet-400 underline-offset-4" : "",
       ].join(" ")}
     >
       {sub.substituted}
@@ -137,9 +133,7 @@ function RenderedLine({
   if (SECTION_RE.test(trimmed)) {
     return (
       <div className="mt-6 mb-1 first:mt-0">
-        <span className="inline-block font-sans text-[11px] font-semibold uppercase tracking-wider text-violet-700 bg-violet-100 border border-violet-200 rounded-md px-2.5 py-1">
-          {trimmed.replace(/^\[|\]$/g, "")}
-        </span>
+        <span className="font-bold text-zinc-900">{trimmed}</span>
       </div>
     );
   }
@@ -151,7 +145,7 @@ function RenderedLine({
     return (
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 leading-[2.05]">
         {chords.map((t, i) => (
-          <ChordToken key={i} sub={t.substitution!} chip onChordClick={onChordClick} />
+          <ChordToken key={i} sub={t.substitution!} onChordClick={onChordClick} />
         ))}
       </div>
     );
@@ -164,7 +158,7 @@ function RenderedLine({
       {line.tokens.map((token, i) => {
         if (token.type === "chord" && token.substitution) {
           return (
-            <ChordToken key={i} sub={token.substitution} chip={false} onChordClick={onChordClick} />
+            <ChordToken key={i} sub={token.substitution} onChordClick={onChordClick} />
           );
         }
         return (
