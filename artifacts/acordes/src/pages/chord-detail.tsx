@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { ArrowLeft, Heart, Tag, Info, Lightbulb, Music, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Heart, Tag, Info, Lightbulb, Music, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { getChordById, CHORDS } from "@/data/chords";
 import { getChordVariationImages, getChordOverviewImage } from "@/data/chord-images";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
+import { splitHands } from "@/lib/notes";
+import { playChordVoicing } from "@/lib/piano";
 import NotFound from "./not-found";
 
 // Busca um acorde pelo ID ou pelo nome (para links de variações)
@@ -14,14 +16,11 @@ function findRelatedChord(variation: string) {
   return CHORDS.find((c) => c.id === variation || c.name === variation);
 }
 
-// ── Separação padrão de mãos ───────────────────────────────────────────────────
-function splitHands(notes: string[], category: string) {
-  if (category.startsWith("Mão Esquerda")) {
-    return { leftHand: notes, rightHand: [] as string[] };
-  }
-  const leftHand = notes.length >= 3 ? [notes[0], notes[2]] : [notes[0]];
-  const rightHand = [...notes];
-  return { leftHand, rightHand };
+// ── Toca o voicing padrão do acorde no piano real ─────────────────────────────
+function playDefaultVoicing(notes: string[], category: string) {
+  const { leftHand, rightHand } = splitHands(notes, category);
+  const isFechado = category === "Mão Esquerda — Fechado";
+  playChordVoicing(leftHand, rightHand, { leftBaseOctave: isFechado ? 1 : 0 });
 }
 
 // ── Legenda de cores ───────────────────────────────────────────────────────────
@@ -122,6 +121,15 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
   return (
     <div>
       <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
+        <div className="flex justify-center mb-3">
+          <button
+            onClick={() => playChordVoicing(leftHand, rightHand, { leftBaseOctave: leftHandBaseOctave })}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/15 text-primary border border-primary/25 hover:bg-primary/25 transition-colors active:scale-95"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            Ouvir
+          </button>
+        </div>
         <PianoKeyboard
           leftHandNotes={leftHand}
           rightHandNotes={rightHand}
@@ -206,7 +214,16 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
       </div>
 
       <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
-        <p className="text-center text-xs text-muted-foreground mb-3 font-medium">{v.label}</p>
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <p className="text-center text-xs text-muted-foreground font-medium">{v.label}</p>
+          <button
+            onClick={() => playChordVoicing(v.leftHand, v.rightHand)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/15 text-primary border border-primary/25 hover:bg-primary/25 transition-colors active:scale-95"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            Ouvir
+          </button>
+        </div>
         <PianoKeyboard
           leftHandNotes={v.leftHand}
           rightHandNotes={v.rightHand}
@@ -364,18 +381,27 @@ export default function ChordDetail() {
                 {chord.name}
               </h1>
             </div>
-            <button
-              onClick={() => toggleFavorite(chord.id)}
-              className={cn(
-                "flex items-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg",
-                favorite
-                  ? "bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary-hover"
-                  : "bg-secondary text-white hover:bg-secondary/80 border border-white/10"
-              )}
-            >
-              <Heart className={cn("w-5 h-5", favorite ? "fill-current" : "")} />
-              {favorite ? "Salvo nos Favoritos" : "Favoritar Acorde"}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => playDefaultVoicing(chord.notes, chord.category)}
+                className="flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary-hover active:scale-95"
+              >
+                <Play className="w-5 h-5 fill-current" />
+                Ouvir Acorde
+              </button>
+              <button
+                onClick={() => toggleFavorite(chord.id)}
+                className={cn(
+                  "flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg",
+                  favorite
+                    ? "bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary-hover"
+                    : "bg-secondary text-white hover:bg-secondary/80 border border-white/10"
+                )}
+              >
+                <Heart className={cn("w-5 h-5", favorite ? "fill-current" : "")} />
+                {favorite ? "Salvo nos Favoritos" : "Favoritar Acorde"}
+              </button>
+            </div>
           </div>
         </div>
 

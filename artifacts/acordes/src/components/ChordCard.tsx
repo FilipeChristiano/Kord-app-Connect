@@ -1,9 +1,11 @@
 import { Link } from "wouter";
-import { Heart } from "lucide-react";
+import { Heart, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Chord } from "@/data/chords";
 import { useFavorites } from "@/hooks/use-favorites";
+import { splitHands } from "@/lib/notes";
+import { playChordVoicing } from "@/lib/piano";
 import { CategoryBadge } from "./CategoryBadge";
 
 interface ChordCardProps {
@@ -26,18 +28,32 @@ export function ChordCard({ chord, index = 0 }: ChordCardProps) {
         <div className="glass-card h-full rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/25 flex flex-col">
           <div className="flex justify-between items-start mb-4">
             <CategoryBadge category={chord.category} />
-            <button
-              onClick={(e) => {
-                e.preventDefault(); // Prevent navigating
-                toggleFavorite(chord.id);
-              }}
-              className="p-2 -m-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-              aria-label={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-            >
-              <Heart 
-                className={cn("w-5 h-5 transition-all duration-300", favorite ? "fill-primary text-primary scale-110" : "")} 
-              />
-            </button>
+            <div className="flex items-center gap-1 -m-2">
+              <button
+                onClick={(e) => {
+                  e.preventDefault(); // Prevent navigating
+                  const { leftHand, rightHand } = splitHands(chord.notes, chord.category);
+                  const isFechado = chord.category === "Mão Esquerda — Fechado";
+                  playChordVoicing(leftHand, rightHand, { leftBaseOctave: isFechado ? 1 : 0 });
+                }}
+                className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors active:scale-90"
+                aria-label={`Ouvir o acorde ${chord.name}`}
+              >
+                <Play className="w-5 h-5 fill-current" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault(); // Prevent navigating
+                  toggleFavorite(chord.id);
+                }}
+                className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                aria-label={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+              >
+                <Heart 
+                  className={cn("w-5 h-5 transition-all duration-300", favorite ? "fill-primary text-primary scale-110" : "")} 
+                />
+              </button>
+            </div>
           </div>
           
           <h3 className="font-display text-3xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors notranslate" translate="no">
