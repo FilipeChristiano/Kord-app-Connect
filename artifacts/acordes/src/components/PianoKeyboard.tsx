@@ -4,7 +4,7 @@
  * Voicings de Mão Esquerda (isLeftOnly = sem mão direita):
  *   Aberto  → baseOctave=0: Raiz+Quinta na região grave (oitava 0)
  *   Fechado → baseOctave=1: Terça+Quinta na região média (oitava 1)
- *   Misto   → baseOctave=0: Raiz+Terça+Quinta na região grave (oitava 0)
+ *   Misto   → baseOctave=0: Tônica+Quinta+Tônica na região grave (oitava 0)
  *
  * Acordes normais (ME + MD): ME em oitava 0, MD em oitava 1. Oitava 2 vazia.
  *

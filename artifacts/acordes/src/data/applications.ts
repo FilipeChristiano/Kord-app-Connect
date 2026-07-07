@@ -683,9 +683,9 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
     category: "Mão Esquerda — Misto",
     icon: "🤲",
     summary:
-      "O voicing misto combina a profundidade do aberto com a completude do fechado. A fundamental fica grave, a quinta no meio e a terça mais acima, criando o voicing mais rico e equilibrado.",
+      "O voicing misto usa tônica, quinta e tônica oitavada (1-5-8) na região grave. A fundamental fica grave, a quinta no meio e a tônica repetida uma oitava acima, criando uma base ampla, firme e estável.",
     contexts: [
-      "Acompanhamentos sofisticados onde se quer tudo: profundidade + completude",
+      "Acompanhamentos sofisticados onde se quer profundidade + estabilidade",
       "Piano solo onde não há baixista",
       "Músicas de nível intermediário a avançado",
       "Gospel e adoração com piano como instrumento principal",
@@ -693,9 +693,9 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
     ],
     tips: [
       {
-        title: "Posição spread: 1 → 5 → 3 (oitava acima)",
+        title: "Posição: 1 → 5 → 8 (tônica oitavada)",
         description:
-          "Ex.: C no grave, G no meio, E mais acima. A terça fica acima da quinta, criando um voicing espaçado e muito bonito sonoramente.",
+          "Ex.: C no grave, G no meio, C mais acima. Sem a terça, o voicing fica aberto e estável — a cor do acorde fica por conta da mão direita.",
       },
       {
         title: "É o voicing padrão do pianista de gospel",
@@ -705,7 +705,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "Adicione a 7ª ao voicing misto",
         description:
-          "Com a ME fazendo 1-5-3, acrescente a 7M no topo da mão esquerda. O resultado é um voicing de 4 notas rico, profundo e sofisticadíssimo.",
+          "Com a ME fazendo 1-5-8, troque a tônica de cima pela 7M. O resultado é um voicing profundo e sofisticadíssimo, muito usado no gospel.",
       },
     ],
     progressions: [
