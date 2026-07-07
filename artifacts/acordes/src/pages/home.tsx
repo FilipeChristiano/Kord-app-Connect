@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
   ArrowRight, ArrowDown, ChevronDown, Layers, Wand2, Waves, Timer,
+  Music3, Users, Globe, CirclePlay,
 } from "lucide-react";
 
 const EASE = [0.4, 0, 0.2, 1] as const;
@@ -20,85 +21,138 @@ export default function Home() {
   return (
     <div className="w-full">
       {/* ── Hero ──────────────────────────────────────────────── */}
-      <section className="relative pt-14 pb-14 lg:pt-20 lg:pb-20 overflow-hidden">
-        <div className="absolute inset-x-0 bottom-0 -top-24 z-0">
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
           <img
             src={`${import.meta.env.BASE_URL}images/hero-keyboard-v5.png`}
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover opacity-[0.5] brightness-90 object-center"
+            className="w-full h-full object-cover opacity-60 brightness-90 object-[70%_center]"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/45 to-background" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_70%_at_50%_40%,transparent_30%,hsl(var(--background)/0.85)_100%)] pointer-events-none" />
-          <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,hsl(var(--primary)/0.18),transparent_70%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/25" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/45 via-transparent to-background" />
+          <div className="absolute inset-x-0 top-0 h-[460px] bg-[radial-gradient(ellipse_55%_65%_at_68%_-5%,hsl(var(--primary)/0.22),transparent_70%)] pointer-events-none" />
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-10 lg:pt-14 pb-10">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="max-w-3xl mx-auto flex flex-col items-center"
+            className="grid lg:grid-cols-2 gap-10 lg:gap-8 items-center"
           >
-            <motion.div variants={itemVariants} className="flex flex-col items-center gap-5 sm:gap-6 mb-6">
-              <h1 className="sr-only">Kordi — Ferramentas inteligentes para transformar o seu som</h1>
-              <div className="flex flex-col items-center gap-5 sm:gap-6 select-none drop-shadow-2xl" aria-hidden="true">
-                <img
-                  src={`${import.meta.env.BASE_URL}logo.svg`}
-                  alt=""
-                  className="h-28 sm:h-36 md:h-44 w-auto select-none"
-                  draggable={false}
-                />
-                <img
-                  src={`${import.meta.env.BASE_URL}wordmark.svg`}
-                  alt=""
-                  className="h-10 sm:h-12 md:h-14 w-auto select-none"
-                  draggable={false}
-                />
-              </div>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/25 bg-primary/10 text-primary text-small font-semibold backdrop-blur-sm">
+            {/* Texto */}
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left order-2 lg:order-1">
+              <motion.span
+                variants={itemVariants}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-background/60 text-foreground/90 text-small font-semibold backdrop-blur-sm"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                 Para tecladistas e pianistas
-              </span>
-              <p aria-hidden="true" className="font-display font-bold text-h2 sm:text-h1 text-foreground/95 text-balance">
-                O próximo nível do seu teclado
-              </p>
-            </motion.div>
+              </motion.span>
+              <motion.h1
+                variants={itemVariants}
+                className="font-display font-bold text-[clamp(2.1rem,4.6vw,3.4rem)] leading-[1.12] text-foreground mt-5 mb-4 text-balance"
+              >
+                Tudo o que faltava para <span className="text-gradient-primary">elevar o nível</span> do seu teclado.
+              </motion.h1>
+              <motion.p
+                variants={itemVariants}
+                className="text-body-lg text-muted-foreground text-balance max-w-md mb-8"
+              >
+                Acordes sofisticados, cifras inteligentes, pads contínuos e metrônomo profissional.
+              </motion.p>
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3.5 w-full sm:w-auto">
+                <Link href="/dicionario" className="px-6 py-3.5 rounded-xl font-bold bg-gradient-cta text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
+                  Explorar ferramentas <ArrowRight className="w-5 h-5" />
+                </Link>
+                <a href="#recursos" className="px-6 py-3.5 rounded-xl font-semibold bg-background/60 text-foreground border border-white/15 backdrop-blur-sm hover:border-primary/35 hover:bg-surface-elevated/80 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
+                  <CirclePlay className="w-5 h-5" /> Ver demonstração
+                </a>
+              </motion.div>
+              <motion.div
+                variants={itemVariants}
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-4 mt-9"
+              >
+                <HeroStat icon={<Music3 />} top="+50 MIL" bottom="Acordes" />
+                <HeroStat icon={<Users />} top="+10 MIL" bottom="Músicos" />
+                <HeroStat icon={<Globe />} top="Em constante" bottom="evolução" />
+              </motion.div>
+            </div>
 
-            <motion.p
+            {/* Lockup da marca */}
+            <motion.div
               variants={itemVariants}
-              className="text-body-lg text-muted-foreground text-center text-balance mb-10 sm:mb-12 max-w-xl"
+              className="order-1 lg:order-2 flex flex-col items-center gap-5 sm:gap-6 select-none drop-shadow-2xl py-2 lg:py-8"
+              aria-hidden="true"
             >
-              Ferramentas inteligentes para transformar o seu som em um só lugar.
-            </motion.p>
-
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <Link href="/dicionario" className="px-8 py-4 rounded-2xl font-bold bg-gradient-cta text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
-                Explorar ferramentas <ArrowRight className="w-5 h-5" />
-              </Link>
-              <a href="#recursos" className="px-8 py-4 rounded-2xl font-bold bg-surface-elevated/80 text-foreground border border-white/10 shadow-[0_4px_16px_-8px_rgba(0,0,0,0.6)] hover:border-primary/30 hover:bg-surface-elevated hover:-translate-y-0.5 hover:shadow-[0_6px_22px_-8px_hsl(var(--primary)/0.3)] transition-all duration-200 flex items-center justify-center gap-2">
-                Conhecer recursos
-              </a>
+              <img
+                src={`${import.meta.env.BASE_URL}logo.svg`}
+                alt=""
+                className="h-32 sm:h-40 lg:h-48 w-auto select-none"
+                draggable={false}
+              />
+              <img
+                src={`${import.meta.env.BASE_URL}wordmark.svg`}
+                alt=""
+                className="h-9 sm:h-11 lg:h-12 w-auto select-none"
+                draggable={false}
+              />
             </motion.div>
           </motion.div>
-        </div>
-      </section>
 
-      {/* ── Slogan strip ──────────────────────────────────────── */}
-      <section className="relative border-y border-white/5">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_center,_hsl(var(--primary)/0.07),_transparent_70%)] pointer-events-none" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-7 relative">
-          <h2 className="font-display font-semibold leading-tight text-center whitespace-nowrap text-[clamp(1rem,3.8vw,2.5rem)] text-foreground/90">
-            Tudo o que faltava para <span className="text-gradient-primary">elevar o nível</span> do seu teclado.
-          </h2>
+          {/* Cards de ferramentas */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12 lg:mt-14">
+            <HeroCard
+              accent="orange"
+              icon={<Layers />}
+              title="Acordes Sofisticados"
+              desc="Centenas de acordes sofisticados prontos para usar."
+              cta="Explorar acordes"
+              href="/dicionario"
+              visual={<AcordesMini />}
+            />
+            <HeroCard
+              accent="purple"
+              icon={<Wand2 />}
+              title="Sofisticador de Cifras"
+              desc="Transforme cifras simples em versões sofisticadas."
+              cta="Sofisticar agora"
+              href="/sofisticador"
+              visual={<SofisticadorMini />}
+            />
+            <HeroCard
+              accent="blue"
+              icon={<Waves />}
+              title="Pad Continuous"
+              desc="Ambientes sonoros contínuos para sustentar sua música."
+              cta="Abrir pad"
+              href="/pad"
+              visual={<PadMini />}
+            />
+            <HeroCard
+              accent="orange"
+              icon={<Timer />}
+              title="Metrônomo Inteligente"
+              desc="Precisão, variações e recursos para seu estudo e performance."
+              cta="Abrir metrônomo"
+              href="/metronomo"
+              visual={<MetronomeGauge size={88} bpmClass="text-lg" labelClass="text-[7px]" meter="4/4" />}
+            />
+          </div>
+
+          <div className="flex justify-center mt-10">
+            <motion.a
+              href="#recursos"
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              className="flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-background/80 text-primary shadow-lg"
+              aria-label="Ver recursos"
+            >
+              <ChevronDown className="w-5 h-5" />
+            </motion.a>
+          </div>
         </div>
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute left-1/2 -ml-5 bottom-[-20px] z-20 flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-background text-primary shadow-lg"
-          aria-hidden="true"
-        >
-          <ChevronDown className="w-5 h-5" />
-        </motion.div>
       </section>
 
       {/* ── Recursos principais ───────────────────────────────── */}
@@ -136,7 +190,7 @@ export default function Home() {
             </ToolCard>
 
             <ToolCard
-              accent="teal"
+              accent="blue"
               icon={<Waves />}
               title="Pad Continuous"
               desc="Crie uma atmosfera contínua para tocar, ministrar e acompanhar."
@@ -165,7 +219,7 @@ export default function Home() {
 
 /* ─── Card base ───────────────────────────────────────────────── */
 
-type Accent = "orange" | "purple" | "teal";
+type Accent = "orange" | "purple" | "blue";
 
 const ACCENTS: Record<Accent, {
   glow: string;
@@ -175,11 +229,11 @@ const ACCENTS: Record<Accent, {
   hoverShadow: string;
 }> = {
   orange: {
-    glow: "bg-[hsl(var(--primary))]",
-    iconBox: "bg-primary/15 text-primary ring-1 ring-primary/20",
-    cta: "text-primary",
-    hoverBorder: "hover:border-primary/30",
-    hoverShadow: "hover:shadow-[0_18px_44px_-18px_hsl(var(--primary)/0.4)]",
+    glow: "bg-[#f97316]",
+    iconBox: "bg-[#f97316]/15 text-[#fb923c] ring-1 ring-[#f97316]/25",
+    cta: "text-[#fb923c]",
+    hoverBorder: "hover:border-[#f97316]/40",
+    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(249,115,22,0.45)]",
   },
   purple: {
     glow: "bg-[#4f46e5]",
@@ -188,14 +242,114 @@ const ACCENTS: Record<Accent, {
     hoverBorder: "hover:border-[#4f46e5]/40",
     hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(79,70,229,0.45)]",
   },
-  teal: {
-    glow: "bg-[#14b8a6]",
-    iconBox: "bg-[#14b8a6]/15 text-[#2dd4bf] ring-1 ring-[#14b8a6]/25",
-    cta: "text-[#2dd4bf]",
-    hoverBorder: "hover:border-[#14b8a6]/40",
-    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(20,184,166,0.45)]",
+  blue: {
+    glow: "bg-[#38bdf8]",
+    iconBox: "bg-[#38bdf8]/15 text-[#7dd3fc] ring-1 ring-[#38bdf8]/25",
+    cta: "text-[#7dd3fc]",
+    hoverBorder: "hover:border-[#38bdf8]/40",
+    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(56,189,248,0.45)]",
   },
 };
+
+function HeroStat({ icon, top, bottom }: { icon: React.ReactNode; top: string; bottom: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/12 text-primary ring-1 ring-primary/20 [&_svg]:w-5 [&_svg]:h-5">
+        {icon}
+      </span>
+      <div className="text-left leading-tight">
+        <p className="text-sm font-bold text-foreground">{top}</p>
+        <p className="text-[12px] text-muted-foreground">{bottom}</p>
+      </div>
+    </div>
+  );
+}
+
+function HeroCard({
+  icon, title, desc, cta, href, accent, visual,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  cta: string;
+  href: string;
+  accent: Accent;
+  visual: React.ReactNode;
+}) {
+  const a = ACCENTS[accent];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.5, ease: EASE }}
+      whileHover={{ y: -4, transition: { duration: 0.2, ease: EASE } }}
+      className={`group relative overflow-hidden rounded-2xl bg-card/85 backdrop-blur-sm border border-white/[0.07] shadow-lg shadow-black/25 transition-colors duration-200 ${a.hoverBorder} ${a.hoverShadow}`}
+    >
+      <div className={`pointer-events-none absolute -top-16 -left-14 w-48 h-48 rounded-full blur-[70px] opacity-[0.16] ${a.glow}`} />
+      <Link href={href} className="relative flex flex-col gap-3 p-5 h-full">
+        <div className="flex items-start justify-between gap-3 min-h-[64px]">
+          <span className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5 transition-transform duration-200 group-hover:scale-110 ${a.iconBox}`}>
+            {icon}
+          </span>
+          <div className="flex-1 min-w-0 flex justify-end">{visual}</div>
+        </div>
+        <h3 className="text-base font-semibold text-foreground text-balance">{title}</h3>
+        <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">{desc}</p>
+        <span className={`inline-flex items-center gap-1.5 text-[13px] font-semibold ${a.cta}`}>
+          {cta}
+          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
+        </span>
+      </Link>
+    </motion.div>
+  );
+}
+
+/* ─── Mini-visuais do hero ────────────────────────────────────── */
+
+function AcordesMini() {
+  return (
+    <div className="flex flex-col items-end gap-1.5 w-full max-w-[130px]">
+      <div className="flex gap-1">
+        {["Cmaj9", "G13", "Am11"].map((c) => (
+          <span key={c} className="px-1.5 py-0.5 rounded bg-[#f97316]/15 border border-[#f97316]/30 font-mono text-[9px] text-[#fb923c] font-semibold">
+            {c}
+          </span>
+        ))}
+      </div>
+      <ChordKeyboard className="w-full h-8" />
+    </div>
+  );
+}
+
+function SofisticadorMini() {
+  return (
+    <div className="flex flex-col items-end gap-1 w-full max-w-[150px]">
+      <div className="flex gap-1">
+        {["C", "G", "Am", "F"].map((c) => (
+          <span key={c} className="min-w-[24px] text-center px-1.5 py-0.5 rounded bg-white/[0.05] font-mono text-[9px] text-muted-foreground">
+            {c}
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        {["C9", "G/B", "Am11"].map((c) => (
+          <span key={c} className="px-1.5 py-0.5 rounded bg-[#4f46e5]/15 border border-[#4f46e5]/30 font-mono text-[9px] text-[#a5b4fc] font-semibold">
+            {c}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PadMini() {
+  return (
+    <div className="w-full max-w-[150px]">
+      <PadWaves className="h-12" />
+    </div>
+  );
+}
 
 function ToolCard({
   icon, title, desc, cta, href, accent, children,
@@ -251,7 +405,7 @@ function AcordesVisual() {
             key={c}
             className={`px-2 py-1 rounded-lg font-mono text-[11px] transition-colors ${
               i === 0
-                ? "bg-primary/15 border border-primary/30 text-primary font-semibold"
+                ? "bg-[#f97316]/15 border border-[#f97316]/30 text-[#fb923c] font-semibold"
                 : "bg-white/[0.04] border border-white/[0.07] text-foreground/75"
             }`}
           >
@@ -262,9 +416,9 @@ function AcordesVisual() {
       <ChordKeyboard className="w-full h-14" />
       <div className="rounded-xl border border-white/[0.06] bg-background/50 px-3 py-2.5 flex items-center justify-between gap-3">
         <div className="text-[11px] space-y-1 leading-tight">
-          <p className="font-mono text-primary font-semibold text-xs">Cmaj9</p>
+          <p className="font-mono text-[#fb923c] font-semibold text-xs">Cmaj9</p>
           <p className="text-muted-foreground">Notas: <span className="font-mono text-foreground/80">C E G B D</span></p>
-          <p className="text-muted-foreground">Tensão: <span className="font-mono text-primary">9ª · 13ª</span></p>
+          <p className="text-muted-foreground">Tensão: <span className="font-mono text-[#fb923c]">9ª · 13ª</span></p>
         </div>
         <ChordKeyboard className="w-24 h-9 shrink-0" />
       </div>
@@ -302,22 +456,22 @@ function SofisticadorVisual() {
   );
 }
 
-function PadWaves() {
+function PadWaves({ className = "h-20" }: { className?: string }) {
   return (
-    <div className="relative w-full h-20 overflow-hidden rounded-xl border border-[#14b8a6]/15 bg-[#0c1f1d]/40">
+    <div className={`relative w-full overflow-hidden rounded-xl border border-[#38bdf8]/15 bg-[#0c1a26]/40 ${className}`}>
       <svg viewBox="0 0 400 100" className="w-full h-full" preserveAspectRatio="none" aria-hidden="true">
         <defs>
-          <linearGradient id="padTeal" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#0d9488" stopOpacity="0.04" />
+          <linearGradient id="padBlue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#0284c7" stopOpacity="0.04" />
           </linearGradient>
         </defs>
         <motion.g animate={{ x: [0, -60, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}>
-          <path d="M-80 62 Q 30 32 130 56 T 330 52 T 540 60 V100 H-80 Z" fill="url(#padTeal)" />
-          <path d="M-80 70 Q 50 46 150 66 T 350 60 T 560 68" fill="none" stroke="#2dd4bf" strokeWidth="2" strokeOpacity="0.55" />
+          <path d="M-80 62 Q 30 32 130 56 T 330 52 T 540 60 V100 H-80 Z" fill="url(#padBlue)" />
+          <path d="M-80 70 Q 50 46 150 66 T 350 60 T 560 68" fill="none" stroke="#38bdf8" strokeWidth="2" strokeOpacity="0.55" />
         </motion.g>
         <motion.g animate={{ x: [0, 55, 0] }} transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}>
-          <path d="M-80 54 Q 40 76 140 58 T 340 64 T 560 56" fill="none" stroke="#5eead4" strokeWidth="1.5" strokeOpacity="0.35" />
+          <path d="M-80 54 Q 40 76 140 58 T 340 64 T 560 56" fill="none" stroke="#7dd3fc" strokeWidth="1.5" strokeOpacity="0.35" />
         </motion.g>
       </svg>
     </div>
@@ -340,9 +494,9 @@ function PadVisual() {
             <p className="text-xs font-semibold text-foreground truncate">{s.value}</p>
           </div>
         ))}
-        <div className="rounded-lg border border-[#14b8a6]/25 bg-[#14b8a6]/[0.08] px-2 py-1.5 text-center">
-          <p className="text-[9px] uppercase tracking-wide text-[#2dd4bf]/80 truncate">Fade</p>
-          <p className="text-xs font-semibold text-[#2dd4bf] truncate">2.5s</p>
+        <div className="rounded-lg border border-[#38bdf8]/25 bg-[#38bdf8]/[0.08] px-2 py-1.5 text-center">
+          <p className="text-[9px] uppercase tracking-wide text-[#7dd3fc]/80 truncate">Fade</p>
+          <p className="text-xs font-semibold text-[#7dd3fc] truncate">2.5s</p>
         </div>
       </div>
     </div>
@@ -361,7 +515,7 @@ function MetronomoVisual() {
           <motion.span
             key={n}
             className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold ${
-              n === 1 ? "bg-primary text-primary-foreground" : "bg-white/[0.06] text-muted-foreground border border-white/[0.06]"
+              n === 1 ? "bg-[#f97316] text-primary-foreground" : "bg-white/[0.06] text-muted-foreground border border-white/[0.06]"
             }`}
             animate={n === 1 ? { scale: [1, 1.12, 1] } : undefined}
             transition={n === 1 ? { duration: 0.83, repeat: Infinity, ease: "easeInOut" } : undefined}
@@ -374,14 +528,23 @@ function MetronomoVisual() {
   );
 }
 
-function MetronomeGauge() {
-  const size = 150;
+function MetronomeGauge({
+  size = 150,
+  bpmClass = "text-4xl",
+  labelClass = "text-[10px]",
+  meter,
+}: {
+  size?: number;
+  bpmClass?: string;
+  labelClass?: string;
+  meter?: string;
+}) {
   const cx = size / 2;
   const cy = size / 2;
-  const r = 60;
+  const r = size * 0.4;
   const startA = 125;       // ponto inferior esquerdo
   const sweep = 290;        // deixa uma folga de 70° embaixo
-  const frac = 0.26;        // quanto do arco fica em violeta
+  const frac = 0.26;        // quanto do arco fica em laranja
   const endA = startA + sweep;
   const progA = startA + sweep * frac;
   const polar = (deg: number) => {
@@ -395,17 +558,19 @@ function MetronomeGauge() {
     return `M ${p0.x} ${p0.y} A ${r} ${r} 0 ${large} 1 ${p1.x} ${p1.y}`;
   };
   const knob = polar(progA);
+  const strokeW = size >= 120 ? 4 : 3;
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full" aria-hidden="true">
-        <path d={arc(startA, endA)} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={4} strokeLinecap="round" />
-        <path d={arc(startA, progA)} fill="none" className="stroke-[hsl(var(--primary))]" strokeWidth={4} strokeLinecap="round" />
-        <circle cx={knob.x} cy={knob.y} r={9} fill="#14101c" stroke="hsl(var(--primary))" strokeWidth={2} strokeOpacity={0.5} />
-        <circle cx={knob.x} cy={knob.y} r={5} className="fill-[hsl(var(--primary))]" />
+        <path d={arc(startA, endA)} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={strokeW} strokeLinecap="round" />
+        <path d={arc(startA, progA)} fill="none" stroke="#fb923c" strokeWidth={strokeW} strokeLinecap="round" />
+        <circle cx={knob.x} cy={knob.y} r={size * 0.06} fill="#1c1410" stroke="#fb923c" strokeWidth={2} strokeOpacity={0.5} />
+        <circle cx={knob.x} cy={knob.y} r={size * 0.033} fill="#fb923c" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground mb-0.5">BPM</span>
-        <span className="font-display text-4xl font-bold text-foreground leading-none tabular-nums">72</span>
+        <span className={`font-semibold tracking-[0.2em] text-muted-foreground mb-0.5 ${labelClass}`}>BPM</span>
+        <span className={`font-display font-bold text-foreground leading-none tabular-nums ${bpmClass}`}>72</span>
+        {meter && <span className="text-[9px] text-muted-foreground mt-0.5 font-mono">{meter}</span>}
       </div>
     </div>
   );
@@ -437,7 +602,7 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
           width={w - 1}
           height={h}
           rx={2.5}
-          className={hlWhite.has(i) ? "fill-[hsl(var(--primary))]" : ""}
+          className={hlWhite.has(i) ? "fill-[#f97316]" : ""}
           fill={hlWhite.has(i) ? undefined : "#f4f4f5"}
           stroke="rgba(0,0,0,0.35)"
           strokeWidth={0.8}
@@ -451,7 +616,7 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
           width={w * 0.7}
           height={h * 0.62}
           rx={2}
-          className={hlBlack.has(i) ? "fill-[hsl(var(--primary))]" : ""}
+          className={hlBlack.has(i) ? "fill-[#f97316]" : ""}
           fill={hlBlack.has(i) ? undefined : "rgba(8,8,12,0.88)"}
           stroke="rgba(255,255,255,0.06)"
           strokeWidth={0.6}
