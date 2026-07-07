@@ -65,7 +65,7 @@ export default function Home() {
                 Acordes sofisticados, cifras inteligentes, pads contínuos e metrônomo profissional.
               </motion.p>
               <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <Link href="/dicionario" className="group relative px-7 py-4 rounded-xl font-display font-semibold text-white bg-gradient-to-b from-[#A855F7] via-[#8B5CF6] to-[#6D28D9] shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_28px_-8px_rgba(139,92,246,0.5)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_0_34px_-8px_rgba(139,92,246,0.65)] transition-all duration-200 flex items-center justify-center gap-2">
+                <Link href="/dicionario" className="group relative px-7 py-4 rounded-xl font-display font-semibold text-white bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_28px_-8px_rgba(194,75,247,0.5)] hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_0_34px_-8px_rgba(194,75,247,0.65)] transition-all duration-200 flex items-center justify-center gap-2">
                   Explorar ferramentas
                   <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
@@ -165,11 +165,11 @@ const ACCENTS: Record<Accent, {
     hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(249,115,22,0.2)]",
   },
   violet: {
-    iconBox: "text-[#a78bfa] bg-[#8b5cf6]/10",
-    topLine: "via-[#8b5cf6]/40",
-    glow: "bg-[#8b5cf6]/[0.09]",
-    hoverBorder: "hover:border-[#8b5cf6]/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(139,92,246,0.2)]",
+    iconBox: "text-[#D97AFF] bg-[#C24BF7]/10",
+    topLine: "via-[#C24BF7]/40",
+    glow: "bg-[#C24BF7]/[0.09]",
+    hoverBorder: "hover:border-[#C24BF7]/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(194,75,247,0.2)]",
   },
   fuchsia: {
     iconBox: "text-[#e879f9] bg-[#d946ef]/10",
@@ -223,7 +223,7 @@ function HeroCard({
         </div>
         <h3 className="text-[22px] font-display font-semibold text-foreground text-balance mt-auto pt-4 leading-[1.2]">{title}</h3>
         <p className="text-[15px] font-sans text-muted-foreground leading-[1.55]">{desc}</p>
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-display font-semibold text-[#A78BFA] group-hover:text-white transition-colors duration-200">
+        <span className="inline-flex items-center gap-1.5 text-[13px] font-display font-semibold text-primary group-hover:text-white transition-colors duration-200">
           {cta}
           <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
         </span>
@@ -243,7 +243,7 @@ function AcordesMini() {
             key={c}
             animate={{ opacity: [0.55, 1, 0.55] }}
             transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut", delay: i * 1.2 }}
-            className="px-1.5 py-0.5 rounded bg-[#8b5cf6]/15 border border-[#8b5cf6]/30 font-mono text-[9px] text-[#a78bfa] font-semibold"
+            className="px-1.5 py-0.5 rounded bg-[#C24BF7]/15 border border-[#C24BF7]/30 font-mono text-[9px] text-[#D97AFF] font-semibold"
           >
             {c}
           </motion.span>
@@ -396,7 +396,7 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
             width={w - 1}
             height={h}
             rx={2.5}
-            className="fill-[#8b5cf6]"
+            className="fill-[#C24BF7]"
             stroke="rgba(0,0,0,0.35)"
             strokeWidth={0.8}
             animate={{ opacity: [0.55, 1, 0.55] }}
@@ -424,7 +424,7 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
           width={w * 0.7}
           height={h * 0.62}
           rx={2}
-          className={hlBlack.has(i) ? "fill-[#8b5cf6]" : ""}
+          className={hlBlack.has(i) ? "fill-[#C24BF7]" : ""}
           fill={hlBlack.has(i) ? undefined : "rgba(8,8,12,0.88)"}
           stroke="rgba(255,255,255,0.06)"
           strokeWidth={0.6}

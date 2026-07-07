@@ -106,11 +106,11 @@
   --primary-800: 253 68% 36%;
   --primary-900: 248 64% 27%;
 
-  /* Ação primária + estados — violeta luminoso da marca */
-  --primary: 258 90% 66%;           /* #8B5CF6 */
+  /* Ação primária + estados — lilás luminoso Kordi (destaca no fundo escuro) */
+  --primary: 283 100% 74%;          /* #D97AFF */
   --primary-foreground: 222 30% 8%;
-  --primary-hover: 255 92% 76%;     /* #A78BFA */
-  --primary-pressed: 263 69% 50%;   /* #6D28D9 */
+  --primary-hover: 283 100% 80%;    /* lilás mais claro */
+  --primary-pressed: 281 91% 63%;   /* #C24BF7 */
 
   /* Índigo Kordi — base da ponta azul da logo #4B45E8 (recursos inteligentes, detalhes premium) */
   --brand-purple-100: 240 91% 95%;   /* #E7E7FC */
@@ -132,7 +132,7 @@
   --accent-foreground: 210 40% 98%;
 
   --border: 224 29% 13%;
-  --ring: 258 90% 66%;
+  --ring: 283 100% 74%;
 
   --destructive: 0 75% 58%;
   --destructive-foreground: 210 40% 98%;
@@ -225,7 +225,7 @@
   -webkit-text-fill-color: transparent;
 }
 .bg-gradient-primary {
-  background: linear-gradient(135deg, hsl(var(--primary-500)), hsl(var(--primary-700)));
+  background: linear-gradient(135deg, #C24BF7, #4B45E8);
 }
 
 /* ===== Gradientes oficiais Kordi ===== */
@@ -233,7 +233,7 @@
   background: linear-gradient(135deg, #C24BF7 0%, #8B5CF6 45%, #4B45E8 100%);
 }
 .bg-gradient-cta {
-  background: linear-gradient(135deg, #C24BF7 0%, #9B4DF3 55%, #6D3EE0 100%);
+  background: linear-gradient(135deg, #C24BF7 0%, #4B45E8 100%);
 }
 .text-gradient-kordi {
   background: linear-gradient(135deg, #C24BF7 0%, #8B5CF6 45%, #4B45E8 100%);
