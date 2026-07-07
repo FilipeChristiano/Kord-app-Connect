@@ -72,7 +72,7 @@ export const clerkLocalization = {
   formButtonPrimary: "Continuar",
   signIn: {
     start: {
-      title: "Entrar no Harmonic",
+      title: "Entrar no Kordi",
       subtitle: "Use o e-mail e senha que você cadastrou",
       actionText: "É seu primeiro acesso?",
       actionLink: "Criar conta",

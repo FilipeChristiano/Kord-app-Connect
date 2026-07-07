@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Dicionário de Acordes Sofisticados"
+title = "Kordi"
 version = "1.0.0"
 id = "artifacts/acordes"
 router = "path"

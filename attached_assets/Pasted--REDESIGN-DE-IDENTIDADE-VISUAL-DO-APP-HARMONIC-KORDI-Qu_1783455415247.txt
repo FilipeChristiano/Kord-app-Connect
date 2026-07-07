@@ -1,0 +1,598 @@
+# REDESIGN DE IDENTIDADE VISUAL DO APP: HARMONIC → KORDI
+
+Quero alterar a identidade visual do aplicativo de **Harmonic** para **Kordi**.
+
+Não altere funcionalidades, lógica, banco de dados, rotas, autenticação ou APIs.
+
+A alteração deve ser apenas de:
+
+* identidade visual
+* nome do app
+* logo
+* cores
+* branding
+* textos institucionais
+* assets visuais
+* favicon/app icon
+* pequenos ajustes de UI para combinar com a nova marca
+
+---
+
+# 1. NOVO NOME
+
+Substituir todas as ocorrências visuais de:
+
+Harmonic
+
+por:
+
+Kordi
+
+Atenção:
+Não alterar nomes técnicos internos se isso puder quebrar o sistema.
+Se existirem variáveis, tabelas, rotas ou arquivos com “harmonic”, só alterar se for seguro.
+Prioridade agora é alterar a marca visível para o usuário.
+
+---
+
+# 2. CONCEITO DA MARCA
+
+Kordi é um aplicativo para tecladistas e pianistas.
+
+Não é uma escola.
+Não é apenas uma plataforma de estudo.
+É uma central de ferramentas inteligentes para transformar o som do músico.
+
+A marca deve comunicar:
+
+* musicalidade
+* harmonia
+* sofisticação
+* tecnologia
+* praticidade
+* som profissional
+* teclado/piano
+* ferramentas prontas
+* transformação sonora
+
+Frase central da marca:
+
+**Ferramentas inteligentes para transformar o seu som.**
+
+---
+
+# 3. LOGO
+
+Usar como referência a nova logo aprovada:
+
+* letra K como símbolo principal
+* elementos visuais inspirados em teclas de piano/teclado
+* aparência moderna, geométrica e premium
+* gradiente laranja para roxo/azul
+* visual limpo, forte e reconhecível
+* compatível com app icon
+
+A logo deve funcionar em:
+
+* navbar
+* hero
+* favicon
+* app icon
+* loading screen
+* página de login
+* cards institucionais
+
+Criar variações:
+
+1. Logo completa:
+   Kordi + símbolo
+
+2. Símbolo isolado:
+   K
+
+3. App icon:
+   K em fundo escuro arredondado
+
+4. Versão clara:
+   para fundos escuros
+
+5. Versão monocromática:
+   para situações específicas
+
+---
+
+# 4. CORES PRINCIPAIS
+
+Manter a base dark premium, mas atualizar a paleta para combinar com a logo Kordi.
+
+## Cor principal
+
+Laranja Kordi:
+
+#FF6B00
+
+Usar para:
+
+* CTAs principais
+* highlights
+* ícones ativos
+* hover importante
+* botões principais
+* detalhes de marca
+
+## Cor secundária
+
+Roxo Kordi:
+
+#7C3AED
+
+Usar com moderação para:
+
+* gradientes
+* recursos inteligentes
+* efeitos visuais
+* destaque do Sofisticador
+* detalhes premium
+
+## Azul profundo
+
+#1E3A8A
+
+Usar apenas como profundidade em gradientes, fundos e detalhes sutis.
+
+---
+
+# 5. PALETA COMPLETA
+
+Criar tokens de cores:
+
+## Background
+
+--background-main: #080B12
+--background-soft: #0D111A
+--surface: #121722
+--surface-elevated: #181E2B
+--surface-card: #1A2030
+--surface-hover: #20283A
+
+## Texto
+
+--text-primary: #F5F7FA
+--text-secondary: #B7C0D0
+--text-muted: #7D8798
+--text-disabled: #4B5565
+
+## Kordi Orange
+
+--kordi-orange-50: #FFF3E8
+--kordi-orange-100: #FFD8B5
+--kordi-orange-200: #FFB980
+--kordi-orange-300: #FF944D
+--kordi-orange-400: #FF7A1F
+--kordi-orange-500: #FF6B00
+--kordi-orange-600: #E85D00
+--kordi-orange-700: #BF4700
+--kordi-orange-800: #8F3500
+--kordi-orange-900: #5C2200
+
+## Kordi Purple
+
+--kordi-purple-100: #EDE9FE
+--kordi-purple-300: #C4B5FD
+--kordi-purple-500: #7C3AED
+--kordi-purple-700: #5B21B6
+--kordi-purple-900: #2E1065
+
+## Gradientes
+
+Criar gradientes oficiais:
+
+Primary Gradient:
+linear-gradient(135deg, #FF6B00 0%, #FF8A1F 45%, #7C3AED 100%)
+
+Dark Premium Gradient:
+linear-gradient(180deg, #0D111A 0%, #080B12 100%)
+
+Orange Glow:
+radial-gradient(circle, rgba(255,107,0,0.22) 0%, rgba(255,107,0,0) 70%)
+
+Purple Glow:
+radial-gradient(circle, rgba(124,58,237,0.18) 0%, rgba(124,58,237,0) 70%)
+
+---
+
+# 6. TIPOGRAFIA
+
+Manter a fonte:
+
+**Plus Jakarta Sans**
+
+Usar em todo o aplicativo.
+
+Pesos permitidos:
+
+* 500
+* 600
+* 700
+
+Hierarquia:
+
+Display:
+48px / 56px / 700
+
+Heading 1:
+36px / 44px / 700
+
+Heading 2:
+30px / 38px / 700
+
+Heading 3:
+24px / 32px / 600
+
+Heading 4:
+20px / 28px / 600
+
+Body:
+16px / 24px / 500
+
+Small:
+14px / 20px / 500
+
+Caption:
+12px / 16px / 500
+
+---
+
+# 7. ESTILO VISUAL
+
+A interface do Kordi deve parecer:
+
+* premium
+* musical
+* escura
+* limpa
+* tecnológica
+* moderna
+* prática
+* profissional
+* inspirada em apps como Spotify, Linear e Raycast
+
+Mas não deve parecer:
+
+* gamer
+* infantil
+* colorida demais
+* template genérico
+* landing page barata
+* app de curso
+
+---
+
+# 8. HERO DA HOME
+
+Atualizar a Hero para Kordi.
+
+Manter a estrutura que já está boa:
+
+* fundo escuro com teclado/piano
+* logo grande centralizada
+* badge superior
+* headline
+* subheadline
+* dois botões
+* visual cinematográfico
+
+Trocar textos:
+
+Badge:
+**Para tecladistas e pianistas**
+
+Headline:
+**O próximo nível do seu teclado**
+
+Subheadline:
+**Ferramentas inteligentes para transformar o seu som em um só lugar.**
+
+Botão principal:
+**Explorar ferramentas**
+
+Botão secundário:
+**Conhecer recursos**
+
+Logo:
+substituir logo Harmonic pela logo Kordi.
+
+---
+
+# 9. NAVBAR
+
+Atualizar a navbar:
+
+* trocar logo Harmonic por Kordi
+* usar símbolo K + wordmark Kordi
+* manter navegação atual
+* manter visual escuro premium
+* usar laranja Kordi em estados ativos/hover
+* não deixar a navbar pesada
+
+Itens:
+
+* Dicionário
+* Aplicações
+* Sofisticador
+* Metrônomo
+* Pad
+* Modo Estudo
+* Favoritos
+* Audio Lab, se já existir
+* Sair
+
+---
+
+# 10. CARDS DE RECURSOS
+
+Atualizar seção de recursos para combinar com Kordi.
+
+Título da seção:
+
+**Recursos principais**
+
+Headline:
+
+**Tudo que você precisa para transformar seu som.**
+
+Subheadline:
+
+**Ferramentas inteligentes, resultados profissionais.**
+
+Cards principais:
+
+1. Acordes Sofisticados
+2. Sofisticador de Cifras
+3. Pad Continuous
+4. Metrônomo Inteligente
+
+Todos os cards devem ter:
+
+* mesmo tamanho
+* visual premium
+* elemento visual interno
+* fundo escuro
+* laranja como cor principal
+* roxo apenas em detalhes do Sofisticador
+* hover suave
+* CTA curto
+
+---
+
+# 11. PERSONALIDADE POR RECURSO
+
+## Acordes Sofisticados
+
+Cor dominante:
+Laranja
+
+Visual:
+mini teclado, chips de acordes, notas em destaque
+
+Exemplos:
+Cmaj9, F7M(9), G13, Am11
+
+CTA:
+Explorar acordes
+
+---
+
+## Sofisticador de Cifras
+
+Cor dominante:
+Roxo + laranja
+
+Visual:
+antes/depois
+
+Antes:
+C  G  Am  F
+
+Depois:
+C9  G/B  Am11  F7M(9)
+
+CTA:
+Sofisticar cifra
+
+---
+
+## Pad Continuous
+
+Cor dominante:
+Azul/teal discreto + laranja
+
+Visual:
+ondas sonoras, modo worship, tom G, pad ativo
+
+CTA:
+Abrir pad
+
+---
+
+## Metrônomo Inteligente
+
+Cor dominante:
+Laranja
+
+Visual:
+72 BPM, 4/4, pulso circular
+
+CTA:
+Abrir metrônomo
+
+---
+
+# 12. BOTÕES
+
+## Botão primário
+
+Fundo:
+#FF6B00
+
+Hover:
+#FF7A1F
+
+Texto:
+#0B0F17 ou branco, dependendo do contraste
+
+Radius:
+999px ou 16px, conforme padrão atual
+
+Efeito:
+glow laranja discreto
+
+## Botão secundário
+
+Fundo:
+surface elevated
+
+Borda:
+rgba(255,255,255,0.10)
+
+Texto:
+text-primary
+
+Hover:
+leve iluminação com laranja
+
+---
+
+# 13. ÍCONES
+
+Manter ícones lineares, simples e consistentes.
+
+Os ícones devem parecer:
+
+* modernos
+* musicais
+* claros
+* finos, mas legíveis
+
+Usar laranja Kordi para:
+
+* ícones ativos
+* highlights
+* ícones dentro dos cards
+
+Evitar misturar muitos estilos de ícone.
+
+---
+
+# 14. APP ICON / FAVICON
+
+Criar/atualizar:
+
+* favicon
+* app icon
+* ícone PWA, se existir
+* imagem da aba do navegador
+* loading icon, se existir
+
+Direção:
+
+Fundo escuro:
+#080B12
+
+Símbolo:
+K em gradiente laranja → roxo
+
+Formato:
+quadrado com cantos arredondados
+
+Deve funcionar em tamanho pequeno.
+
+---
+
+# 15. TEXTOS DO APP
+
+Atualizar textos que mencionem Harmonic para Kordi.
+
+Slogan principal:
+
+**Ferramentas inteligentes para transformar o seu som.**
+
+Possíveis frases auxiliares:
+
+* “Acordes sofisticados, cifras inteligentes, pad continuous e metrônomo profissional em um só lugar.”
+* “Tudo o que faltava para elevar o nível do seu teclado.”
+* “Toque melhor com ferramentas prontas, rápidas e musicais.”
+
+Evitar frases que posicionem o app como curso ou escola.
+
+Não usar “estude teclado” como promessa principal.
+
+---
+
+# 16. DESIGN TOKENS
+
+Criar ou atualizar tokens:
+
+* brandName: Kordi
+* primaryColor: #FF6B00
+* secondaryColor: #7C3AED
+* backgroundMain
+* surface
+* surfaceElevated
+* textPrimary
+* textSecondary
+* radius
+* shadow
+* glow
+* gradient
+
+Evitar valores fixos espalhados.
+
+Centralizar a identidade visual em arquivos de tema/tokens.
+
+---
+
+# 17. O QUE NÃO ALTERAR
+
+Não alterar:
+
+* lógica do app
+* funções existentes
+* banco de dados
+* APIs
+* autenticação
+* rotas principais
+* regras de negócio
+* funcionamento das ferramentas
+* componentes internos que não precisam de branding
+
+---
+
+# 18. ANTES DE ALTERAR
+
+Antes de modificar arquivos:
+
+1. Localize todas as ocorrências visuais de “Harmonic”.
+2. Identifique onde ficam logo, favicon e assets.
+3. Identifique onde ficam tokens de cor e tema.
+4. Identifique onde está a Home.
+5. Identifique onde estão os cards de recursos.
+6. Explique o plano de alteração.
+7. Depois implemente.
+
+---
+
+# 19. AO FINALIZAR
+
+Liste:
+
+* arquivos alterados
+* assets criados/substituídos
+* textos atualizados
+* tokens criados/alterados
+* onde a nova logo foi aplicada
+* onde ainda ficou algum nome técnico “harmonic”, se houver
+* confirmação de que nenhuma funcionalidade foi alterada
+
+Resumo:
+Transformar a marca visual do app de Harmonic para Kordi, usando a nova logo com K inspirada em teclas de piano, mantendo a base dark premium, laranja como cor principal e roxo como cor secundária. O app deve continuar parecendo sofisticado, musical e tecnológico.

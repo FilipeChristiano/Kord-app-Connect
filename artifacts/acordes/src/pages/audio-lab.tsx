@@ -1332,7 +1332,7 @@ export default function AudioLab() {
           <h1 className="font-display text-3xl font-bold text-white">Audio Lab</h1>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
-          Envie a música ou cante um trecho. O Harmonic descobre a música pela letra e
+          Envie a música ou cante um trecho. O Kordi descobre a música pela letra e
           entrega a cifra pronta — depois é só ajustar e mandar para o Sofisticador.
           Você também pode separar o áudio: ouça a música <strong className="text-white/80">sem a
           voz</strong> (só o instrumental) ou deixe a <strong className="text-white/80">voz em
@@ -1366,7 +1366,7 @@ export default function AudioLab() {
                   </h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Já sabe a música? Digite o nome e o Harmonic abre o player para você ouvir e
+                  Já sabe a música? Digite o nome e o Kordi abre o player para você ouvir e
                   entrega a cifra pronta.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -1428,7 +1428,7 @@ export default function AudioLab() {
                     Enviar o áudio da música
                   </h2>
                   <p className="text-sm text-muted-foreground mb-5">
-                    O Harmonic detecta o tom, descobre a música pela letra e entrega a cifra.
+                    O Kordi detecta o tom, descobre a música pela letra e entrega a cifra.
                     Arraste o arquivo ou clique para escolher.
                   </p>
                   <span className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-white bg-primary hover:bg-primary/90 transition-all">
@@ -1449,7 +1449,7 @@ export default function AudioLab() {
                     Cantar a música
                   </h2>
                   <p className="text-sm text-muted-foreground mb-5">
-                    Cante um trecho e o Harmonic identifica a música pela letra e entrega a
+                    Cante um trecho e o Kordi identifica a música pela letra e entrega a
                     cifra. Funciona melhor com voz clara e pouca música ao fundo.
                   </p>
                   <button
@@ -1695,7 +1695,7 @@ export default function AudioLab() {
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-4 h-4 text-primary" />
                     <p className="text-sm font-semibold text-white/90">
-                      Versões que o Harmonic detectou
+                      Versões que o Kordi detectou
                     </p>
                   </div>
                   <div className="grid gap-2.5">

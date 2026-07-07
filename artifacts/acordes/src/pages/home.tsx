@@ -40,28 +40,32 @@ export default function Home() {
             variants={containerVariants}
             className="max-w-3xl mx-auto flex flex-col items-center"
           >
-            <motion.div variants={itemVariants} className="flex flex-col items-center gap-3 sm:gap-5 mb-1">
-              <h1 className="sr-only">Harmonic — As ferramentas que faltavam para transformar o seu som</h1>
-              <img
-                src={`${import.meta.env.BASE_URL}images/hero-icon.png`}
-                alt=""
-                aria-hidden="true"
-                className="w-full max-w-[360px] sm:max-w-[440px] md:max-w-[510px] h-auto select-none drop-shadow-2xl"
-                draggable={false}
-              />
-              <img
-                src={`${import.meta.env.BASE_URL}images/hero-word.png`}
-                alt="Harmonic"
-                className="w-full max-w-[360px] sm:max-w-[440px] md:max-w-[510px] h-auto select-none drop-shadow-2xl"
-                draggable={false}
-              />
+            <motion.div variants={itemVariants} className="flex flex-col items-center gap-5 sm:gap-6 mb-6">
+              <h1 className="sr-only">Kordi — Ferramentas inteligentes para transformar o seu som</h1>
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/25 bg-primary/10 text-primary text-small font-semibold backdrop-blur-sm">
+                Para tecladistas e pianistas
+              </span>
+              <div className="flex items-center gap-4 sm:gap-5 select-none drop-shadow-2xl" aria-hidden="true">
+                <img
+                  src={`${import.meta.env.BASE_URL}logo.svg`}
+                  alt=""
+                  className="h-16 sm:h-20 md:h-24 w-auto select-none"
+                  draggable={false}
+                />
+                <span className="font-brand font-bold tracking-tight text-foreground text-6xl sm:text-7xl md:text-8xl">
+                  Kordi
+                </span>
+              </div>
+              <p aria-hidden="true" className="font-display font-bold text-h2 sm:text-h1 text-foreground/95 text-balance">
+                O próximo nível do seu teclado
+              </p>
             </motion.div>
 
             <motion.p
               variants={itemVariants}
-              className="text-body-lg text-muted-foreground text-center text-balance -mt-10 sm:-mt-14 mb-[3.75rem] sm:mb-[4.5rem]"
+              className="text-body-lg text-muted-foreground text-center text-balance mb-10 sm:mb-12 max-w-xl"
             >
-              O app do tecladista inteligente
+              Ferramentas inteligentes para transformar o seu som em um só lugar.
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -81,7 +85,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_center,_hsl(var(--primary)/0.07),_transparent_70%)] pointer-events-none" />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-7 relative">
           <h2 className="font-display font-semibold leading-tight text-center whitespace-nowrap text-[clamp(1rem,3.8vw,2.5rem)] text-foreground/90">
-            O <span className="text-gradient-primary">próximo nível</span> do seu teclado.
+            Tudo o que faltava para <span className="text-gradient-primary">elevar o nível</span> do seu teclado.
           </h2>
         </div>
         <motion.div
@@ -175,11 +179,11 @@ const ACCENTS: Record<Accent, {
     hoverShadow: "hover:shadow-[0_18px_44px_-18px_hsl(var(--primary)/0.4)]",
   },
   purple: {
-    glow: "bg-[#8b5cf6]",
-    iconBox: "bg-[#8b5cf6]/15 text-[#a78bfa] ring-1 ring-[#8b5cf6]/25",
-    cta: "text-[#a78bfa]",
-    hoverBorder: "hover:border-[#8b5cf6]/40",
-    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(139,92,246,0.45)]",
+    glow: "bg-[#7c3aed]",
+    iconBox: "bg-[#7c3aed]/15 text-[#c4b5fd] ring-1 ring-[#7c3aed]/25",
+    cta: "text-[#c4b5fd]",
+    hoverBorder: "hover:border-[#7c3aed]/40",
+    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(124,58,237,0.45)]",
   },
   teal: {
     glow: "bg-[#14b8a6]",
@@ -270,7 +274,7 @@ function SofisticadorVisual() {
   const depois = ["C9", "G/B", "Am11", "F7M(9)"];
   return (
     <div className="w-full flex flex-col gap-2">
-      <div className="rounded-xl border border-[#8b5cf6]/15 bg-[#8b5cf6]/[0.05] px-3 py-2.5">
+      <div className="rounded-xl border border-[#7c3aed]/15 bg-[#7c3aed]/[0.05] px-3 py-2.5">
         <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">Antes</p>
         <div className="flex flex-wrap gap-1.5">
           {antes.map((a) => (
@@ -278,16 +282,16 @@ function SofisticadorVisual() {
           ))}
         </div>
       </div>
-      <div className="flex justify-center text-[#a78bfa]">
+      <div className="flex justify-center text-[#c4b5fd]">
         <motion.span animate={{ y: [0, 3, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
           <ArrowDown className="w-4 h-4" />
         </motion.span>
       </div>
-      <div className="rounded-xl border border-[#8b5cf6]/25 bg-[#8b5cf6]/[0.08] px-3 py-2.5">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#a78bfa] mb-1.5">Depois</p>
+      <div className="rounded-xl border border-[#7c3aed]/25 bg-[#7c3aed]/[0.08] px-3 py-2.5">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#c4b5fd] mb-1.5">Depois</p>
         <div className="flex flex-wrap gap-1.5">
           {depois.map((d) => (
-            <span key={d} className="px-2 py-1 rounded-md bg-[#8b5cf6]/15 border border-[#8b5cf6]/30 font-mono text-xs text-[#c4b5fd] font-semibold">{d}</span>
+            <span key={d} className="px-2 py-1 rounded-md bg-[#7c3aed]/15 border border-[#7c3aed]/30 font-mono text-xs text-[#c4b5fd] font-semibold">{d}</span>
           ))}
         </div>
       </div>

@@ -7,7 +7,7 @@
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-brand: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  /* Escala tipográfica Harmonic — tamanho / altura de linha */
+  /* Escala tipográfica Kordi — tamanho / altura de linha */
   --text-display: 3rem;          /* 48px */
   --text-display--line-height: 3.5rem;   /* 56px */
   --text-h1: 2.25rem;            /* 36px */
@@ -49,7 +49,7 @@
   --color-surface-elevated: hsl(var(--surface-elevated));
   --color-modal: hsl(var(--modal));
 
-  /* Escala laranja Harmonic derivada de #FF6B00 */
+  /* Escala laranja Kordi derivada de #FF6B00 */
   --color-primary-50: hsl(var(--primary-50));
   --color-primary-100: hsl(var(--primary-100));
   --color-primary-200: hsl(var(--primary-200));
@@ -63,6 +63,13 @@
   --color-primary-hover: hsl(var(--primary-hover));
   --color-primary-pressed: hsl(var(--primary-pressed));
 
+  /* Escala roxa Kordi derivada de #7C3AED */
+  --color-brand-purple-100: hsl(var(--brand-purple-100));
+  --color-brand-purple-300: hsl(var(--brand-purple-300));
+  --color-brand-purple-500: hsl(var(--brand-purple-500));
+  --color-brand-purple-700: hsl(var(--brand-purple-700));
+  --color-brand-purple-900: hsl(var(--brand-purple-900));
+
   /* Tokens de raio */
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
@@ -75,16 +82,16 @@
 }
 
 :root {
-  /* ===== Harmonic Design System ===== */
+  /* ===== Kordi Design System ===== */
 
   /* Superfícies profundas em camadas — nunca preto puro */
-  --background: 222 24% 9%;
-  --surface: 222 20% 12%;
-  --surface-elevated: 221 18% 15%;
-  --card: 222 19% 13%;
-  --card-foreground: 40 20% 98%;
-  --modal: 221 18% 16%;
-  --foreground: 40 20% 98%;
+  --background: 221 38% 5%;          /* #080B12 */
+  --surface: 221 31% 10%;            /* #121722 */
+  --surface-elevated: 221 28% 13%;   /* #181E2B */
+  --card: 224 30% 15%;               /* #1A2030 */
+  --card-foreground: 216 33% 97%;
+  --modal: 222 29% 18%;              /* #20283A */
+  --foreground: 216 33% 97%;         /* #F5F7FA */
 
   /* Escala laranja — base #FF6B00 = hsl(25 100% 50%) */
   --primary-50: 30 100% 96%;
@@ -104,17 +111,24 @@
   --primary-hover: 26 100% 56%;
   --primary-pressed: 23 96% 45%;
 
+  /* Roxo Kordi — base #7C3AED (recursos inteligentes, detalhes premium) */
+  --brand-purple-100: 251 91% 95%;   /* #EDE9FE */
+  --brand-purple-300: 253 95% 85%;   /* #C4B5FD */
+  --brand-purple-500: 263 83% 58%;   /* #7C3AED */
+  --brand-purple-700: 263 69% 42%;   /* #5B21B6 */
+  --brand-purple-900: 261 73% 23%;   /* #2E1065 */
+
   /* Secundária */
   --secondary: 220 16% 18%;
-  --secondary-foreground: 40 20% 98%;
+  --secondary-foreground: 216 33% 97%;
 
   /* Muted / metadados */
   --muted: 220 14% 20%;
-  --muted-foreground: 218 16% 78%;
+  --muted-foreground: 218 21% 77%;   /* #B7C0D0 */
 
   /* Accent (destaque elevado sutil) */
   --accent: 221 16% 17%;
-  --accent-foreground: 40 20% 98%;
+  --accent-foreground: 216 33% 97%;
 
   --border: 220 15% 20%;
   --ring: 25 100% 50%;
@@ -211,4 +225,27 @@
 }
 .bg-gradient-primary {
   background: linear-gradient(135deg, hsl(var(--primary-500)), hsl(var(--primary-700)));
+}
+
+/* ===== Gradientes oficiais Kordi ===== */
+.bg-gradient-kordi {
+  background: linear-gradient(135deg, #FF6B00 0%, #FF8A1F 45%, #7C3AED 100%);
+}
+.text-gradient-kordi {
+  background: linear-gradient(135deg, #FF6B00 0%, #FF8A1F 45%, #7C3AED 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.bg-gradient-dark-premium {
+  background: linear-gradient(180deg, #0D111A 0%, #080B12 100%);
+}
+.bg-glow-orange {
+  background: radial-gradient(circle, rgba(255, 107, 0, 0.22) 0%, rgba(255, 107, 0, 0) 70%);
+}
+.bg-glow-purple {
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, rgba(124, 58, 237, 0) 70%);
+}
+.glow-purple {
+  box-shadow: 0 0 0 1px hsl(var(--brand-purple-500) / 0.25), 0 10px 32px -10px hsl(var(--brand-purple-500) / 0.45);
 }

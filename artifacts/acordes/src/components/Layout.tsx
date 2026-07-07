@@ -49,14 +49,18 @@ export function Layout({ children }: { children: ReactNode }) {
           : "bg-background/40 backdrop-blur-md border-b border-transparent py-2"
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-24">
-            <Link href="/" className="flex items-center group outline-none">
+          <div className="flex items-center justify-between h-16 sm:h-[4.5rem]">
+            <Link href="/" className="flex items-center gap-2.5 group outline-none">
               <img
-                src={`${basePath}/harmonic-logo-horizontal.png`}
-                alt="Harmonic"
-                className="h-16 sm:h-20 w-auto select-none group-hover:opacity-90 transition-opacity"
+                src={`${basePath}/logo.svg`}
+                alt=""
+                aria-hidden="true"
+                className="h-8 sm:h-9 w-auto select-none"
                 draggable={false}
               />
+              <span className="font-brand font-bold text-2xl sm:text-[1.6rem] tracking-tight text-foreground group-hover:opacity-90 transition-opacity select-none">
+                Kordi
+              </span>
             </Link>
 
             {/* Desktop Nav */}
@@ -110,7 +114,7 @@ export function Layout({ children }: { children: ReactNode }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden fixed top-[72px] inset-x-0 z-40 glass border-b border-white/10"
+            className="md:hidden fixed top-20 inset-x-0 z-40 glass border-b border-white/10"
           >
             <div className="px-4 py-6 space-y-2 flex flex-col">
               {navItems.map((item) => (
@@ -155,10 +159,10 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 text-center text-muted-foreground text-sm flex flex-col items-center gap-4">
           <img
             src={`${basePath}/logo.png`}
-            alt="Harmonic"
+            alt="Kordi"
             className="w-8 h-8 rounded-lg opacity-70"
           />
-          <p>© {new Date().getFullYear()} Harmonic. Uma ferramenta para tecladistas.</p>
+          <p>© {new Date().getFullYear()} Kordi. Ferramentas inteligentes para transformar o seu som.</p>
         </div>
       </footer>
     </div>

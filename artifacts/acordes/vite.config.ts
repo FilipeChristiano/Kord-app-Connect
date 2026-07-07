@@ -24,12 +24,12 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
-        name: "Harmonic",
-        short_name: "Harmonic",
+        name: "Kordi",
+        short_name: "Kordi",
         description:
-          "Dicionário interativo de acordes sofisticados para teclado e piano, com sofisticador de cifra gospel/worship.",
-        theme_color: "#0d121e",
-        background_color: "#0d121e",
+          "Ferramentas inteligentes para tecladistas e pianistas: acordes sofisticados, sofisticador de cifras, pad continuous e metrônomo profissional.",
+        theme_color: "#080B12",
+        background_color: "#080B12",
         display: "standalone",
         orientation: "portrait",
         lang: "pt-BR",
