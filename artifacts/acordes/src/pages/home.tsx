@@ -22,19 +22,18 @@ export default function Home() {
     <div className="w-full">
       {/* ── Hero ──────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 bg-background">
           <img
             src={`${import.meta.env.BASE_URL}images/hero-keyboard-v5.png`}
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover opacity-60 brightness-90 object-[70%_center]"
+            className="w-full h-full object-cover opacity-20 blur-[2px] brightness-75 object-[70%_center] mix-blend-luminosity"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/25" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/45 via-transparent to-background" />
-          <div className="absolute inset-x-0 top-0 h-[460px] bg-[radial-gradient(ellipse_55%_65%_at_68%_-5%,hsl(var(--primary)/0.22),transparent_70%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-10 lg:pt-14 pb-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-16 lg:pt-24 pb-20">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -45,66 +44,58 @@ export default function Home() {
             <div className="flex flex-col items-center lg:items-start text-center lg:text-left order-2 lg:order-1">
               <motion.span
                 variants={itemVariants}
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-background/60 text-foreground/90 text-small font-semibold backdrop-blur-sm"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/20 bg-background/80 text-foreground/90 text-[13px] font-sans font-medium backdrop-blur-md"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                 Para tecladistas e pianistas
               </motion.span>
               <motion.h1
                 variants={itemVariants}
-                className="font-display font-bold text-[clamp(2.1rem,4.6vw,3.4rem)] leading-[1.12] text-foreground mt-5 mb-4 text-balance"
+                className="font-display font-bold text-[clamp(2.1rem,4.6vw,4rem)] tracking-[-0.04em] leading-[1.05] text-foreground mt-6 mb-5 text-balance"
               >
-                Tudo o que faltava para <span className="text-gradient-primary">elevar o nível</span> do seu teclado.
+                Tudo o que faltava para <span className="text-primary">elevar o nível</span> do seu teclado.
               </motion.h1>
               <motion.p
                 variants={itemVariants}
-                className="text-body-lg text-muted-foreground text-balance max-w-md mb-8"
+                className="text-body-lg text-muted-foreground font-sans font-medium text-balance max-w-[420px] mb-10 leading-[1.55]"
               >
                 Acordes sofisticados, cifras inteligentes, pads contínuos e metrônomo profissional.
               </motion.p>
-              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3.5 w-full sm:w-auto">
-                <Link href="/dicionario" className="px-6 py-3.5 rounded-xl font-bold bg-gradient-cta text-primary-foreground glow-primary hover:brightness-105 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
-                  Explorar ferramentas <ArrowRight className="w-5 h-5" />
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <Link href="/dicionario" className="px-7 py-4 rounded-xl font-display font-semibold bg-primary text-white hover:brightness-110 transition-all duration-200 flex items-center justify-center gap-2">
+                  Explorar ferramentas
                 </Link>
-                <Link href="/aplicacoes" className="px-6 py-3.5 rounded-xl font-semibold bg-background/60 text-foreground border border-white/15 backdrop-blur-sm hover:border-primary/35 hover:bg-surface-elevated/80 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
-                  <CirclePlay className="w-5 h-5" /> Ver demonstração
+                <Link href="/aplicacoes" className="px-7 py-4 rounded-xl font-display font-semibold bg-white/5 text-foreground border border-white/10 backdrop-blur-md hover:border-primary/40 hover:bg-white/10 transition-all duration-200 flex items-center justify-center gap-2">
+                  Ver demonstração
                 </Link>
-              </motion.div>
-              <motion.div
-                variants={itemVariants}
-                className="flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-4 mt-9"
-              >
-                <HeroStat icon={<Music3 />} top="+50 MIL" bottom="Acordes" />
-                <HeroStat icon={<Users />} top="+10 MIL" bottom="Músicos" />
-                <HeroStat icon={<Globe />} top="Em constante" bottom="evolução" />
               </motion.div>
             </div>
 
             {/* Lockup da marca */}
             <motion.div
               variants={itemVariants}
-              className="order-1 lg:order-2 flex flex-col items-center gap-5 sm:gap-6 select-none drop-shadow-2xl py-2 lg:py-8"
+              className="order-1 lg:order-2 flex flex-col items-center gap-5 sm:gap-6 select-none py-2 lg:py-8 opacity-80"
               aria-hidden="true"
             >
               <img
                 src={`${import.meta.env.BASE_URL}logo.svg`}
                 alt=""
-                className="h-32 sm:h-40 lg:h-48 w-auto select-none"
+                className="h-28 sm:h-36 lg:h-44 w-auto select-none"
                 draggable={false}
               />
               <img
                 src={`${import.meta.env.BASE_URL}wordmark.svg`}
                 alt=""
-                className="h-9 sm:h-11 lg:h-12 w-auto select-none"
+                className="h-8 sm:h-10 lg:h-11 w-auto select-none"
                 draggable={false}
               />
             </motion.div>
           </motion.div>
 
           {/* Cards de ferramentas */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12 lg:mt-14">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-16 lg:mt-20 auto-rows-fr">
             <HeroCard
-              accent="orange"
+              accent="purple"
               icon={<Layers />}
               title="Acordes Sofisticados"
               desc="Centenas de acordes sofisticados prontos para usar."
@@ -125,7 +116,7 @@ export default function Home() {
               accent="blue"
               icon={<Waves />}
               title="Pad Continuous"
-              desc="Som de fundo contínuo que preenche e acompanha você enquanto toca."
+              desc="Som de fundo contínuo que preenche e acompanha você."
               cta="Abrir pad"
               href="/pad"
               visual={<PadMini />}
@@ -134,10 +125,10 @@ export default function Home() {
               accent="orange"
               icon={<Timer />}
               title="Metrônomo Inteligente"
-              desc="Marca o tempo da música para você treinar e tocar sem correr nem atrasar."
+              desc="Marca o tempo da música para você treinar com precisão."
               cta="Abrir metrônomo"
               href="/metronomo"
-              visual={<MetronomeGauge size={88} bpmClass="text-lg" labelClass="text-[7px]" meter="4/4" />}
+              visual={<MetronomeGauge size={80} bpmClass="text-lg" labelClass="text-[7px]" meter="4/4" />}
             />
           </div>
         </div>
@@ -151,48 +142,30 @@ export default function Home() {
 type Accent = "orange" | "purple" | "blue";
 
 const ACCENTS: Record<Accent, {
-  glow: string;
   iconBox: string;
   cta: string;
   hoverBorder: string;
   hoverShadow: string;
 }> = {
   orange: {
-    glow: "bg-[#f97316]",
-    iconBox: "bg-[#f97316]/15 text-[#fb923c] ring-1 ring-[#f97316]/25",
+    iconBox: "text-[#fb923c]",
     cta: "text-[#fb923c]",
-    hoverBorder: "hover:border-[#f97316]/40",
-    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(249,115,22,0.45)]",
+    hoverBorder: "hover:border-[#f97316]/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(249,115,22,0.15)]",
   },
   purple: {
-    glow: "bg-[#4f46e5]",
-    iconBox: "bg-[#4f46e5]/15 text-[#a5b4fc] ring-1 ring-[#4f46e5]/25",
+    iconBox: "text-[#a5b4fc]",
     cta: "text-[#a5b4fc]",
-    hoverBorder: "hover:border-[#4f46e5]/40",
-    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(79,70,229,0.45)]",
+    hoverBorder: "hover:border-[#4f46e5]/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(79,70,229,0.15)]",
   },
   blue: {
-    glow: "bg-[#38bdf8]",
-    iconBox: "bg-[#38bdf8]/15 text-[#7dd3fc] ring-1 ring-[#38bdf8]/25",
+    iconBox: "text-[#7dd3fc]",
     cta: "text-[#7dd3fc]",
-    hoverBorder: "hover:border-[#38bdf8]/40",
-    hoverShadow: "hover:shadow-[0_18px_44px_-18px_rgba(56,189,248,0.45)]",
+    hoverBorder: "hover:border-[#38bdf8]/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(56,189,248,0.15)]",
   },
 };
-
-function HeroStat({ icon, top, bottom }: { icon: React.ReactNode; top: string; bottom: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/12 text-primary ring-1 ring-primary/20 [&_svg]:w-5 [&_svg]:h-5">
-        {icon}
-      </span>
-      <div className="text-left leading-tight">
-        <p className="text-sm font-bold text-foreground">{top}</p>
-        <p className="text-[12px] text-muted-foreground">{bottom}</p>
-      </div>
-    </div>
-  );
-}
 
 function HeroCard({
   icon, title, desc, cta, href, accent, visual,
@@ -213,21 +186,20 @@ function HeroCard({
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.5, ease: EASE }}
       whileHover={{ y: -4, transition: { duration: 0.2, ease: EASE } }}
-      className={`group relative overflow-hidden rounded-2xl bg-card/85 backdrop-blur-sm border border-white/[0.07] shadow-lg shadow-black/25 transition-colors duration-200 ${a.hoverBorder} ${a.hoverShadow}`}
+      className={`group relative overflow-hidden rounded-2xl bg-[#111827] border border-white/[0.05] transition-colors duration-200 ${a.hoverBorder} ${a.hoverShadow} h-full`}
     >
-      <div className={`pointer-events-none absolute -top-16 -left-14 w-48 h-48 rounded-full blur-[70px] opacity-[0.16] ${a.glow}`} />
-      <Link href={href} className="relative flex flex-col gap-3 p-5 h-full">
-        <div className="flex items-start justify-between gap-3 min-h-[64px]">
-          <span className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5 transition-transform duration-200 group-hover:scale-110 ${a.iconBox}`}>
+      <Link href={href} className="relative flex flex-col gap-4 p-7 h-full">
+        <div className="flex items-start justify-between gap-4 min-h-[64px]">
+          <span className={`w-10 h-10 shrink-0 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5 transition-transform duration-200 group-hover:scale-110 ${a.iconBox}`}>
             {icon}
           </span>
-          <div className="flex-1 min-w-0 flex justify-end">{visual}</div>
+          <div className="flex-1 min-w-0 flex justify-end opacity-80 group-hover:opacity-100 transition-opacity">{visual}</div>
         </div>
-        <h3 className="text-base font-semibold text-foreground text-balance">{title}</h3>
-        <p className="text-[13px] text-muted-foreground leading-relaxed flex-1">{desc}</p>
-        <span className={`inline-flex items-center gap-1.5 text-[13px] font-semibold ${a.cta}`}>
+        <h3 className="text-[22px] font-display font-semibold text-foreground text-balance mt-auto pt-4 leading-[1.2]">{title}</h3>
+        <p className="text-[15px] font-sans text-muted-foreground leading-[1.55]">{desc}</p>
+        <span className={`inline-flex items-center gap-1.5 text-[13px] font-display font-semibold opacity-80 group-hover:opacity-100 transition-opacity ${a.cta}`}>
           {cta}
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
+          <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
         </span>
       </Link>
     </motion.div>

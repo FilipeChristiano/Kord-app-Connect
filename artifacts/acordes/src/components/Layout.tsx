@@ -45,12 +45,12 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-300",
         isScrolled
-          ? "glass shadow-lg border-b border-white/5"
+          ? "bg-surface/80 backdrop-blur-xl border-b border-white/5 shadow-sm"
           : "bg-background/40 backdrop-blur-md border-b border-transparent py-2"
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-[4.5rem]">
-            <Link href="/" className="flex items-center gap-2.5 shrink-0 mr-6 group outline-none">
+            <Link href="/" className="flex items-center gap-2.5 shrink-0 mr-8 group outline-none opacity-90 hover:opacity-100 transition-opacity">
               <img
                 src={`${basePath}/logo.svg`}
                 alt=""
@@ -61,47 +61,48 @@ export function Layout({ children }: { children: ReactNode }) {
               <img
                 src={`${basePath}/wordmark.svg`}
                 alt="Kordi"
-                className="h-4 sm:h-[1.15rem] w-auto select-none group-hover:opacity-90 transition-opacity"
+                className="h-4 sm:h-[1.15rem] w-auto select-none"
                 draggable={false}
               />
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1.5">
+            <nav className="hidden lg:flex items-center gap-1">
               {navItems.map((item) => (
                 <Link 
                   key={item.href} 
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 outline-none",
+                    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-sans font-medium whitespace-nowrap transition-all duration-200 outline-none",
                     location === item.href 
-                      ? "bg-primary/15 text-primary shadow-[0_0_0_1px_hsl(var(--primary)/0.2),0_4px_14px_-6px_hsl(var(--primary)/0.4)]" 
-                      : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                      ? "text-primary bg-primary/10" 
+                      : "text-muted-foreground hover:text-primary hover:bg-primary/5"
                   )}
                 >
-                  <item.icon className="w-4 h-4" />
+                  <item.icon className="w-4 h-4 opacity-70" />
                   {item.label}
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className="ml-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <span className="ml-1.5 bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
                       {item.badge}
                     </span>
                   )}
                 </Link>
               ))}
+              <div className="w-px h-4 bg-white/10 mx-2" />
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="ml-2 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-white transition-all"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-sans font-medium whitespace-nowrap text-muted-foreground hover:text-white hover:bg-white/5 transition-all"
                 title="Sair"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4 opacity-70" />
                 Sair
               </button>
             </nav>
 
             {/* Mobile Menu Toggle */}
             <button 
-              className="md:hidden p-2 rounded-lg text-muted-foreground hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="lg:hidden p-2 rounded-lg text-muted-foreground hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -117,7 +118,7 @@ export function Layout({ children }: { children: ReactNode }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden fixed top-20 inset-x-0 z-40 glass border-b border-white/10"
+            className="lg:hidden fixed top-20 inset-x-0 z-40 glass border-b border-white/10"
           >
             <div className="px-4 py-6 space-y-2 flex flex-col">
               {navItems.map((item) => (

@@ -1,0 +1,437 @@
+# REFINAMENTO PROFISSIONAL DE UX/UI E TIPOGRAFIA DO KORDI
+
+Quero que você atue como um designer sênior de produto digital, com olhar refinado de UX, direção de arte, tipografia, hierarquia visual e design system premium.
+
+Use uma abordagem visual inspirada em design minimalista, tecnológico, musical e sofisticado, com atenção especial a proporção, respiro, contraste, legibilidade e consistência.
+
+Não altere funcionalidades, rotas, banco de dados, autenticação ou APIs.
+Faça apenas ajustes visuais, tipográficos e de UX na Home e nos componentes visuais relacionados.
+
+---
+
+# DIAGNÓSTICO DO DESIGN ATUAL
+
+O design atual melhorou, mas ainda tem problemas:
+
+1. A logo Kordi tem uma linguagem futurista, geométrica e tecnológica.
+2. A tipografia dos textos não está combinando totalmente com a logo.
+3. O layout está com muita informação na primeira dobra.
+4. Os cards estão visualmente pesados.
+5. Existem muitos elementos competindo por atenção: headline, logo, números, botões, cards e fundo.
+6. A interface ainda parece um híbrido entre landing page e dashboard.
+7. A hierarquia visual precisa ficar mais clara.
+8. O roxo está bom como identidade, mas precisa ser usado com mais controle.
+9. Os elementos laranja nos cards ainda parecem herdados do Harmonic antigo e devem ser melhor integrados ou reduzidos.
+10. A Home precisa parecer mais premium, menos template.
+
+---
+
+# OBJETIVO
+
+Refinar a Home do Kordi para parecer um aplicativo premium para tecladistas e pianistas.
+
+A experiência deve transmitir:
+
+* tecnologia
+* música
+* sofisticação
+* clareza
+* ferramenta profissional
+* confiança
+* modernidade
+* praticidade
+
+Não deve parecer:
+
+* landing page genérica
+* produto gamer
+* app infantil
+* template SaaS comum
+* página poluída
+* curso online
+
+---
+
+# TIPOGRAFIA
+
+Trocar a tipografia atual por uma combinação mais compatível com a logo Kordi.
+
+## Fonte para títulos e CTAs
+
+Usar:
+
+**Sora**
+
+Pesos:
+
+* 600
+* 700
+
+Aplicar em:
+
+* headline principal
+* títulos das seções
+* títulos dos cards
+* botões
+* números importantes
+* frases de impacto
+
+Motivo:
+A Sora é geométrica, moderna, tecnológica e combina melhor com o wordmark futurista da logo Kordi.
+
+## Fonte para textos de apoio e interface
+
+Usar:
+
+**Inter**
+
+Pesos:
+
+* 400
+* 500
+* 600
+
+Aplicar em:
+
+* descrição
+* menu
+* textos pequenos
+* legendas
+* subtítulos
+* navegação
+* textos dos cards
+
+Motivo:
+A Inter mantém legibilidade excelente e deixa a interface mais limpa.
+
+## Não usar
+
+Evitar fontes muito arredondadas, infantis ou com excesso de personalidade.
+
+Não usar Poppins.
+
+Se Plus Jakarta Sans estiver aplicada globalmente, substituir cuidadosamente por Sora + Inter.
+
+---
+
+# ESCALA TIPOGRÁFICA
+
+Criar escala mais refinada:
+
+Hero Title:
+64px desktop / 44px tablet / 34px mobile
+font-family: Sora
+font-weight: 700
+line-height: 1.05
+letter-spacing: -0.04em
+
+Section Title:
+36px desktop / 30px tablet / 26px mobile
+font-family: Sora
+font-weight: 700
+line-height: 1.12
+letter-spacing: -0.03em
+
+Card Title:
+22px desktop / 20px mobile
+font-family: Sora
+font-weight: 600
+line-height: 1.2
+
+Body:
+16px
+font-family: Inter
+font-weight: 400 ou 500
+line-height: 1.55
+
+Navigation:
+14px ou 15px
+font-family: Inter
+font-weight: 500
+
+Button:
+15px ou 16px
+font-family: Sora
+font-weight: 600
+
+---
+
+# HERO
+
+A Hero está com boa estrutura, mas precisa ficar menos carregada.
+
+Ajustes:
+
+1. Reduzir a quantidade de informação visual na primeira dobra.
+2. Manter a logo grande no lado direito, mas reduzir levemente sua dominância.
+3. A headline deve ser o elemento principal, não a logo.
+4. Remover ou reduzir os números “+50 mil acordes”, “+10 mil músicos”, “em constante evolução”, pois estão poluindo a primeira dobra.
+5. Se esses números forem mantidos, deixá-los menores, mais discretos e abaixo dos botões com menos contraste.
+6. Melhorar espaçamento entre badge, headline, subtítulo e botões.
+7. Reduzir um pouco o glow roxo do botão principal.
+8. Melhorar o contraste da imagem de fundo para ela funcionar como textura, não como elemento concorrente.
+
+---
+
+# HEADLINE
+
+Manter a ideia:
+
+“Tudo o que faltava para elevar o nível do seu teclado.”
+
+Mas ajustar visualmente:
+
+* destacar apenas “elevar o nível”
+* não usar roxo em palavras demais
+* manter o restante em branco
+* garantir quebra de linha elegante
+
+A headline deve ficar mais premium e menos agressiva.
+
+---
+
+# SUBHEADLINE
+
+Texto atual:
+
+“Acordes sofisticados, cifras inteligentes, pads contínuos e metrônomo profissional.”
+
+Esse texto está bom.
+Apenas ajustar espaçamento, peso e largura máxima.
+
+Usar no máximo 2 linhas.
+
+---
+
+# BOTÕES
+
+Botão principal:
+
+Texto:
+“Explorar ferramentas”
+
+Cor:
+roxo/violeta da marca
+
+Mas usar um roxo mais refinado:
+
+#8B5CF6 ou #7C3AED
+
+Hover:
+leve brilho, sem glow exagerado.
+
+Botão secundário:
+
+Texto:
+“Ver demonstração”
+
+Fundo:
+escuro translúcido
+
+Borda:
+rgba(255,255,255,0.12)
+
+Hover:
+leve contorno violeta
+
+Os botões devem parecer premium, não chamativos demais.
+
+---
+
+# CORES
+
+A identidade principal agora é roxo/violeta.
+
+Usar:
+
+Primary:
+#8B5CF6
+
+Primary Dark:
+#6D28D9
+
+Primary Light:
+#A78BFA
+
+Background:
+#070A12
+
+Surface:
+#111827
+
+Surface Elevated:
+#171C2A
+
+Text Primary:
+#F8FAFC
+
+Text Secondary:
+#CBD5E1
+
+Text Muted:
+#94A3B8
+
+Accent Orange:
+#FF7A1A
+
+Regra:
+O roxo é a cor principal da marca.
+O laranja deve ser usado com MUITA moderação, apenas em pequenos detalhes musicais ou nos cards de metrônomo/acordes, se fizer sentido.
+
+Não misturar roxo, laranja e azul com a mesma intensidade.
+
+---
+
+# CARDS DE RECURSOS
+
+Os cards estão bons em conceito, mas pesados visualmente.
+
+Ajustes:
+
+1. Todos os cards devem ter mesma altura.
+2. Reduzir a quantidade de informação interna.
+3. Aumentar respiro interno.
+4. Melhorar alinhamento entre ícone, título, descrição e CTA.
+5. Usar fundos mais escuros e menos coloridos.
+6. Usar cor apenas nos detalhes visuais.
+7. Padronizar os CTAs.
+8. Evitar que cada card pareça de um produto diferente.
+
+## Card Acordes Sofisticados
+
+Cor de detalhe:
+violeta com leve laranja apenas nas teclas ou chips.
+
+## Card Sofisticador de Cifras
+
+Cor de detalhe:
+violeta principal.
+
+## Card Pad Continuous
+
+Cor de detalhe:
+azul/teal bem discreto, sem competir com roxo.
+
+## Card Metrônomo Inteligente
+
+Cor de detalhe:
+laranja controlado, apenas no círculo de BPM.
+
+---
+
+# NAVBAR
+
+A navbar está funcional, mas precisa ficar mais refinada.
+
+Ajustes:
+
+1. Reduzir um pouco a força visual da logo na navbar.
+2. Melhorar espaçamento entre itens.
+3. Criar estado ativo claro, mas discreto.
+4. Itens do menu devem usar Inter 500.
+5. Hover com roxo discreto.
+6. Evitar excesso de branco nos ícones.
+7. Deixar a navbar com aparência de app premium, não menu de landing page.
+
+---
+
+# FUNDO
+
+O fundo do teclado deve continuar, mas precisa ser mais controlado.
+
+Ajustes:
+
+* mais blur sutil
+* overlay escuro
+* reduzir brilho nas teclas claras
+* reduzir áreas laranja no topo direito
+* adicionar leve gradiente escuro da esquerda para a direita
+* a imagem deve apoiar o conteúdo, não competir com ele
+
+---
+
+# HIERARQUIA VISUAL
+
+A ordem de atenção deve ser:
+
+1. Headline
+2. Subheadline
+3. Botão principal
+4. Logo/visual Kordi
+5. Cards principais
+
+Atualmente a logo e os elementos visuais competem demais com o texto.
+
+Corrigir isso.
+
+---
+
+# REMOVER OU REDUZIR
+
+Remover ou reduzir:
+
+* excesso de estatísticas na primeira dobra
+* excesso de glows
+* excesso de cores diferentes
+* excesso de contraste nos cards
+* informações repetidas
+* elementos decorativos sem função
+
+---
+
+# RESULTADO ESPERADO
+
+A Home deve parecer:
+
+* mais limpa
+* mais premium
+* mais focada
+* mais musical
+* mais tecnológica
+* menos poluída
+* mais coerente com a logo Kordi
+* mais app e menos landing page genérica
+
+---
+
+# CUIDADOS
+
+Não alterar funcionalidades.
+
+Não alterar rotas.
+
+Não alterar banco.
+
+Não alterar APIs.
+
+Não quebrar navegação.
+
+Não recriar tudo do zero.
+
+Fazer refinamento sobre a estrutura atual.
+
+---
+
+# ANTES DE ALTERAR
+
+Antes de implementar:
+
+1. Identifique onde está definida a tipografia global.
+2. Identifique onde estão tokens de cores.
+3. Identifique o componente da Home.
+4. Identifique os cards de recursos.
+5. Explique o plano de alteração.
+6. Depois implemente.
+
+---
+
+# AO FINAL
+
+Liste:
+
+* arquivos alterados
+* fontes aplicadas
+* tokens ajustados
+* componentes refinados
+* seções removidas ou reduzidas
+* confirmação de que nenhuma funcionalidade foi alterada

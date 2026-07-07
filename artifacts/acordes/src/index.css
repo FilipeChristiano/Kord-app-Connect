@@ -7,24 +7,26 @@
   --font-brand: 'Sora', 'Inter', system-ui, sans-serif;
 
   /* Escala tipográfica Kordi — tamanho / altura de linha */
-  --text-display: 3rem;          /* 48px */
-  --text-display--line-height: 3.5rem;   /* 56px */
-  --text-h1: 2.25rem;            /* 36px */
-  --text-h1--line-height: 2.75rem;       /* 44px */
+  --text-display: clamp(2.125rem, 4.6vw, 4rem);          /* 34px to 64px */
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.04em;
+  --text-h1: clamp(1.625rem, 3.5vw, 2.25rem);            /* 26px to 36px */
+  --text-h1--line-height: 1.12;
+  --text-h1--letter-spacing: -0.03em;
   --text-h2: 1.875rem;           /* 30px */
-  --text-h2--line-height: 2.375rem;      /* 38px */
-  --text-h3: 1.5rem;             /* 24px */
-  --text-h3--line-height: 2rem;          /* 32px */
-  --text-h4: 1.25rem;            /* 20px */
-  --text-h4--line-height: 1.75rem;       /* 28px */
+  --text-h2--line-height: 1.2;
+  --text-h3: clamp(1.25rem, 2vw, 1.375rem);             /* 20px to 22px */
+  --text-h3--line-height: 1.2;
+  --text-h4: 1.125rem;            /* 18px */
+  --text-h4--line-height: 1.5;
   --text-body-lg: 1.125rem;      /* 18px */
-  --text-body-lg--line-height: 1.75rem;  /* 28px */
+  --text-body-lg--line-height: 1.55;
   --text-body: 1rem;             /* 16px */
-  --text-body--line-height: 1.5rem;      /* 24px */
+  --text-body--line-height: 1.55;
   --text-small: 0.875rem;        /* 14px */
-  --text-small--line-height: 1.25rem;    /* 20px */
+  --text-small--line-height: 1.5;
   --text-caption: 0.75rem;       /* 12px */
-  --text-caption--line-height: 1rem;     /* 16px */
+  --text-caption--line-height: 1.5;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -84,13 +86,13 @@
   /* ===== Kordi Design System ===== */
 
   /* Superfícies profundas em camadas — nunca preto puro */
-  --background: 221 38% 5%;          /* #080B12 */
-  --surface: 221 31% 10%;            /* #121722 */
-  --surface-elevated: 221 28% 13%;   /* #181E2B */
-  --card: 224 30% 15%;               /* #1A2030 */
-  --card-foreground: 216 33% 97%;
-  --modal: 222 29% 18%;              /* #20283A */
-  --foreground: 216 33% 97%;         /* #F5F7FA */
+  --background: 224 44% 5%;          /* #070A12 */
+  --surface: 221 39% 11%;            /* #111827 */
+  --surface-elevated: 224 29% 13%;   /* #171C2A */
+  --card: 221 39% 11%;               /* #111827 */
+  --card-foreground: 210 40% 98%;
+  --modal: 224 29% 13%;              /* #171C2A */
+  --foreground: 210 40% 98%;         /* #F8FAFC */
 
   /* Escala violeta — topo da logo #C24BF7 = hsl(281 91% 63%) */
   --primary-50: 282 100% 97%;
@@ -104,11 +106,11 @@
   --primary-800: 253 68% 36%;
   --primary-900: 248 64% 27%;
 
-  /* Ação primária + estados — violeta luminoso da logo (#C24BF7↔#8B5CF6) */
-  --primary: 270 88% 64%;
+  /* Ação primária + estados — violeta luminoso da marca */
+  --primary: 258 90% 66%;           /* #8B5CF6 */
   --primary-foreground: 222 30% 8%;
-  --primary-hover: 273 92% 69%;
-  --primary-pressed: 265 82% 56%;
+  --primary-hover: 255 92% 76%;     /* #A78BFA */
+  --primary-pressed: 263 69% 50%;   /* #6D28D9 */
 
   /* Índigo Kordi — base da ponta azul da logo #4B45E8 (recursos inteligentes, detalhes premium) */
   --brand-purple-100: 240 91% 95%;   /* #E7E7FC */
@@ -118,19 +120,19 @@
   --brand-purple-900: 245 62% 25%;   /* #1F1C67 */
 
   /* Secundária */
-  --secondary: 220 16% 18%;
-  --secondary-foreground: 216 33% 97%;
+  --secondary: 224 29% 13%;
+  --secondary-foreground: 214 32% 84%;
 
   /* Muted / metadados */
-  --muted: 220 14% 20%;
-  --muted-foreground: 218 21% 77%;   /* #B7C0D0 */
+  --muted: 224 29% 13%;
+  --muted-foreground: 215 25% 65%;   /* #94A3B8 */
 
   /* Accent (destaque elevado sutil) */
-  --accent: 221 16% 17%;
-  --accent-foreground: 216 33% 97%;
+  --accent: 25 100% 55%;            /* #FF7A1A */
+  --accent-foreground: 210 40% 98%;
 
-  --border: 220 15% 20%;
-  --ring: 270 88% 64%;
+  --border: 224 29% 13%;
+  --ring: 258 90% 66%;
 
   --destructive: 0 75% 58%;
   --destructive-foreground: 210 40% 98%;
