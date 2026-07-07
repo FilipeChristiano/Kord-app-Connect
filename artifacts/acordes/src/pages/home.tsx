@@ -97,7 +97,7 @@ export default function Home() {
           {/* Cards de ferramentas */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-16 lg:mt-20 auto-rows-fr">
             <HeroCard
-              accent="purple"
+              accent="violet"
               icon={<Layers />}
               title="Acordes Sofisticados"
               desc="Centenas de acordes sofisticados prontos para usar."
@@ -106,7 +106,7 @@ export default function Home() {
               visual={<AcordesMini />}
             />
             <HeroCard
-              accent="purple"
+              accent="fuchsia"
               icon={<Wand2 />}
               title="Sofisticador de Cifras"
               desc="Transforme cifras simples em versões sofisticadas."
@@ -141,27 +141,42 @@ export default function Home() {
 
 /* ─── Card base ───────────────────────────────────────────────── */
 
-type Accent = "orange" | "purple" | "blue";
+type Accent = "orange" | "violet" | "fuchsia" | "blue";
 
 const ACCENTS: Record<Accent, {
   iconBox: string;
+  topLine: string;
+  glow: string;
   hoverBorder: string;
   hoverShadow: string;
 }> = {
   orange: {
-    iconBox: "text-[#fb923c]",
+    iconBox: "text-[#fb923c] bg-[#f97316]/10",
+    topLine: "via-[#f97316]/40",
+    glow: "bg-[#f97316]/[0.09]",
     hoverBorder: "hover:border-[#f97316]/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(249,115,22,0.15)]",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(249,115,22,0.2)]",
   },
-  purple: {
-    iconBox: "text-[#a5b4fc]",
-    hoverBorder: "hover:border-[#4f46e5]/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(79,70,229,0.15)]",
+  violet: {
+    iconBox: "text-[#a78bfa] bg-[#8b5cf6]/10",
+    topLine: "via-[#8b5cf6]/40",
+    glow: "bg-[#8b5cf6]/[0.09]",
+    hoverBorder: "hover:border-[#8b5cf6]/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(139,92,246,0.2)]",
+  },
+  fuchsia: {
+    iconBox: "text-[#e879f9] bg-[#d946ef]/10",
+    topLine: "via-[#d946ef]/40",
+    glow: "bg-[#d946ef]/[0.08]",
+    hoverBorder: "hover:border-[#d946ef]/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(217,70,239,0.18)]",
   },
   blue: {
-    iconBox: "text-[#7dd3fc]",
+    iconBox: "text-[#7dd3fc] bg-[#38bdf8]/10",
+    topLine: "via-[#38bdf8]/40",
+    glow: "bg-[#38bdf8]/[0.09]",
     hoverBorder: "hover:border-[#38bdf8]/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(56,189,248,0.15)]",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(56,189,248,0.2)]",
   },
 };
 
@@ -186,13 +201,14 @@ function HeroCard({
       whileHover={{ y: -4, transition: { duration: 0.2, ease: EASE } }}
       className={`group relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#141c2e] to-[#0f1624] border border-white/[0.05] transition-colors duration-200 ${a.hoverBorder} ${a.hoverShadow} h-full`}
     >
+      <span aria-hidden="true" className={`absolute top-0 inset-x-6 h-px bg-gradient-to-r from-transparent to-transparent ${a.topLine}`} />
       <Link href={href} className="relative flex flex-col gap-4 p-7 h-full">
         <div className="flex items-start justify-between gap-4 min-h-[64px]">
-          <span className={`w-10 h-10 shrink-0 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5 transition-all duration-200 group-hover:scale-110 group-hover:brightness-125 ${a.iconBox}`}>
+          <span className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-xl [&_svg]:w-5 [&_svg]:h-5 transition-all duration-200 group-hover:scale-110 group-hover:brightness-125 ${a.iconBox}`}>
             {icon}
           </span>
           <div className="relative flex-1 min-w-0 flex justify-end opacity-80 group-hover:opacity-100 transition-opacity">
-            <span aria-hidden="true" className="absolute -top-3 right-4 w-24 h-12 rounded-full bg-primary/[0.08] blur-2xl pointer-events-none" />
+            <span aria-hidden="true" className={`absolute -top-3 right-4 w-24 h-12 rounded-full blur-2xl pointer-events-none ${a.glow}`} />
             {visual}
           </div>
         </div>
@@ -213,10 +229,15 @@ function AcordesMini() {
   return (
     <div className="flex flex-col items-end gap-1.5 w-full max-w-[130px]">
       <div className="flex gap-1">
-        {["Cmaj9", "G13", "Am11"].map((c) => (
-          <span key={c} className="px-1.5 py-0.5 rounded bg-[#f97316]/15 border border-[#f97316]/30 font-mono text-[9px] text-[#fb923c] font-semibold">
+        {["Cmaj9", "G13", "Am11"].map((c, i) => (
+          <motion.span
+            key={c}
+            animate={{ opacity: [0.55, 1, 0.55] }}
+            transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut", delay: i * 1.2 }}
+            className="px-1.5 py-0.5 rounded bg-[#8b5cf6]/15 border border-[#8b5cf6]/30 font-mono text-[9px] text-[#a78bfa] font-semibold"
+          >
             {c}
-          </span>
+          </motion.span>
         ))}
       </div>
       <ChordKeyboard className="w-full h-8" />
@@ -235,10 +256,15 @@ function SofisticadorMini() {
         ))}
       </div>
       <div className="flex gap-1">
-        {["C9", "G/B", "Am11"].map((c) => (
-          <span key={c} className="px-1.5 py-0.5 rounded bg-[#4f46e5]/15 border border-[#4f46e5]/30 font-mono text-[9px] text-[#a5b4fc] font-semibold">
+        {["C9", "G/B", "Am11"].map((c, i) => (
+          <motion.span
+            key={c}
+            animate={{ opacity: [0.5, 1, 1, 0.5] }}
+            transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
+            className="px-1.5 py-0.5 rounded bg-[#d946ef]/15 border border-[#d946ef]/30 font-mono text-[9px] text-[#e879f9] font-semibold"
+          >
             {c}
-          </span>
+          </motion.span>
         ))}
       </div>
     </div>
@@ -311,6 +337,17 @@ function MetronomeGauge({
       <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full" aria-hidden="true">
         <path d={arc(startA, endA)} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={strokeW} strokeLinecap="round" />
         <path d={arc(startA, progA)} fill="none" stroke="#fb923c" strokeWidth={strokeW} strokeLinecap="round" />
+        <motion.circle
+          cx={knob.x}
+          cy={knob.y}
+          r={size * 0.06}
+          fill="none"
+          stroke="#fb923c"
+          strokeWidth={1.5}
+          initial={{ r: size * 0.06, opacity: 0.5 }}
+          animate={{ r: [size * 0.06, size * 0.115], opacity: [0.5, 0] }}
+          transition={{ duration: 0.833, repeat: Infinity, ease: "easeOut" }}
+        />
         <circle cx={knob.x} cy={knob.y} r={size * 0.06} fill="#1c1410" stroke="#fb923c" strokeWidth={2} strokeOpacity={0.5} />
         <circle cx={knob.x} cy={knob.y} r={size * 0.033} fill="#fb923c" />
       </svg>
@@ -341,20 +378,35 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
   const hlBlack = new Set<number>();
   return (
     <svg viewBox={`0 0 ${whiteCount * w} ${h}`} className={className} aria-hidden="true" preserveAspectRatio="xMidYMid meet">
-      {whites.map((i) => (
-        <rect
-          key={`w${i}`}
-          x={i * w}
-          y={0}
-          width={w - 1}
-          height={h}
-          rx={2.5}
-          className={hlWhite.has(i) ? "fill-[#f97316]" : ""}
-          fill={hlWhite.has(i) ? undefined : "#f4f4f5"}
-          stroke="rgba(0,0,0,0.35)"
-          strokeWidth={0.8}
-        />
-      ))}
+      {whites.map((i) =>
+        hlWhite.has(i) ? (
+          <motion.rect
+            key={`w${i}`}
+            x={i * w}
+            y={0}
+            width={w - 1}
+            height={h}
+            rx={2.5}
+            className="fill-[#8b5cf6]"
+            stroke="rgba(0,0,0,0.35)"
+            strokeWidth={0.8}
+            animate={{ opacity: [0.55, 1, 0.55] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: (i / 2) * 0.35 }}
+          />
+        ) : (
+          <rect
+            key={`w${i}`}
+            x={i * w}
+            y={0}
+            width={w - 1}
+            height={h}
+            rx={2.5}
+            fill="#f4f4f5"
+            stroke="rgba(0,0,0,0.35)"
+            strokeWidth={0.8}
+          />
+        )
+      )}
       {blacks.map((i) => (
         <rect
           key={`b${i}`}
@@ -363,7 +415,7 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
           width={w * 0.7}
           height={h * 0.62}
           rx={2}
-          className={hlBlack.has(i) ? "fill-[#f97316]" : ""}
+          className={hlBlack.has(i) ? "fill-[#8b5cf6]" : ""}
           fill={hlBlack.has(i) ? undefined : "rgba(8,8,12,0.88)"}
           stroke="rgba(255,255,255,0.06)"
           strokeWidth={0.6}
