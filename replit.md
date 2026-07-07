@@ -102,6 +102,8 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 Vite React app. Dev command: `pnpm --filter @workspace/acordes run dev`
 
+Créditos de áudio: os samples de piano em `public/piano/` são do Salamander Grand Piano V3 (Alexander Holm, licença CC-BY 3.0), obtidos via tonejs.github.io/audio/salamander.
+
 ### `artifacts/api-server` (`@workspace/api-server`)
 
 Express 5 API server. Currently not used by acordes (frontend-only with localStorage).
