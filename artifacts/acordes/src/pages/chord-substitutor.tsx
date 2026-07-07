@@ -311,7 +311,7 @@ export default function ChordSubstitutor() {
                   : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:bg-white/[0.04]"
               }`}
             >
-              <span className={`font-bold text-sm ${level === l.key ? "text-[#A78BFF]" : ""}`}>{l.label}</span>
+              <span className={`font-bold text-sm ${level === l.key ? "text-[#9673FF]" : ""}`}>{l.label}</span>
               <span className={`text-xs leading-snug ${level === l.key ? "text-white/70" : "opacity-50"}`}>
                 {l.description}
               </span>
@@ -330,7 +330,7 @@ export default function ChordSubstitutor() {
             <button
               key={ex.label}
               onClick={() => { setInputText(ex.text); setSalvoId(null); }}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:border-[#8B5CF6]/50 hover:text-[#A78BFF] transition-all"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:border-[#8B5CF6]/50 hover:text-[#9673FF] transition-all"
             >
               {ex.label}
             </button>
@@ -367,7 +367,7 @@ export default function ChordSubstitutor() {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <p className="text-xs font-bold text-[#A78BFF] uppercase tracking-widest">
+              <p className="text-xs font-bold text-[#9673FF] uppercase tracking-widest">
                 Cifra sofisticada
               </p>
               {detectedTonality && (
@@ -375,7 +375,7 @@ export default function ChordSubstitutor() {
                   key={detectedTonality.keyName}
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-[#8B5CF6]/15 border-[#8B5CF6]/40 text-[#A78BFF]"
+                  className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-[#8B5CF6]/15 border-[#8B5CF6]/40 text-[#9673FF]"
                 >
                   <Music2 className="w-2.5 h-2.5" />
                   Tom: {detectedTonality.keyName} {detectedTonality.isMinor ? "menor" : "maior"}
@@ -391,14 +391,14 @@ export default function ChordSubstitutor() {
                   !outputText
                     ? "border-white/10 text-white/20 cursor-not-allowed"
                     : salvoId
-                    ? "bg-[#8B5CF6]/15 border-[#8B5CF6]/40 text-[#A78BFF] cursor-default"
-                    : "bg-white/5 border-white/15 text-white/70 hover:border-[#8B5CF6]/50 hover:text-[#A78BFF] cursor-pointer"
+                    ? "bg-[#8B5CF6]/15 border-[#8B5CF6]/40 text-[#9673FF] cursor-default"
+                    : "bg-white/5 border-white/15 text-white/70 hover:border-[#8B5CF6]/50 hover:text-[#9673FF] cursor-pointer"
                 }`}
               >
                 {salvoId ? (
                   <><BookmarkCheck className="w-3 h-3" /> Salva!</>
                 ) : (
-                  <><Heart className={`w-3 h-3 ${outputText ? "fill-[#A78BFF] text-[#A78BFF]" : ""}`} /> Salvar cifra</>
+                  <><Heart className={`w-3 h-3 ${outputText ? "fill-[#9673FF] text-[#9673FF]" : ""}`} /> Salvar cifra</>
                 )}
               </button>
 
@@ -452,8 +452,8 @@ export default function ChordSubstitutor() {
             className="mt-6"
           >
             <div className="flex items-center gap-2 mb-3">
-              <Info className="w-4 h-4 text-[#A78BFF]" />
-              <p className="text-xs font-bold text-[#A78BFF] uppercase tracking-widest">
+              <Info className="w-4 h-4 text-[#9673FF]" />
+              <p className="text-xs font-bold text-[#9673FF] uppercase tracking-widest">
                 Substituições realizadas ({chordsChanged.length})
               </p>
             </div>
@@ -485,7 +485,7 @@ export default function ChordSubstitutor() {
                         }
                       }
                     }}
-                    className="text-[#A78BFF] font-mono text-xs font-bold hover:underline"
+                    className="text-[#9673FF] font-mono text-xs font-bold hover:underline"
                   >
                     {change.substituted}
                   </button>

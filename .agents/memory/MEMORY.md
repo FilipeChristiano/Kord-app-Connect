@@ -10,6 +10,6 @@
 - [Stem mixer playback (acordes)](stem-mixer-playback.md) — fader mixes stems via two streaming <audio> elements + drift correction; never full Web Audio buffer-decode of both songs (slow/OOM).
 - [Server Demucs stems (acordes)](server-demucs-stems.md) — máxima-qualidade async job; ffmpeg needs -f mp3 on .part names; demucs 4.0.1 has no demucs.api; ~5-6min/song; clean up .src + prune cache.
 - [Synced metronome timing (acordes)](synced-metronome-timing.md) — anchor beats to the AudioContext clock, not live media currentTime, or it drifts/desyncs on fader drags.
-- [Kordi brand palette](kordi-brand-palette.md) — acento unissex #A78BFF (nunca lilás rosado); #C24BF7 só em gradientes da marca; laranja restante é semântico, nunca bulk-replace.
+- [Kordi brand palette](kordi-brand-palette.md) — acento unissex #9673FF (nunca lilás rosado); #C24BF7 só em gradientes da marca; laranja restante é semântico, nunca bulk-replace.
 - [Papel de cifra claro](cifra-light-paper.md) — shell escuro; só superfícies de cifra em papel claro com acorde #7C3AED; nunca text-primary lilás sobre papel claro.
 - [Real piano playback (acordes)](piano-playback.md) — chord audio must reuse the diagram's placeNotes voicing (octave 0 = C3/MIDI 48) via playChordVoicing; samples cover C3..C6, shift ≤1 tone.

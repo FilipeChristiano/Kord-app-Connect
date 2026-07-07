@@ -165,7 +165,7 @@ const ACCENTS: Record<Accent, {
     hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(249,115,22,0.2)]",
   },
   violet: {
-    iconBox: "text-[#A78BFF] bg-[#8B5CF6]/10",
+    iconBox: "text-[#9673FF] bg-[#8B5CF6]/10",
     topLine: "via-[#8B5CF6]/40",
     glow: "bg-[#8B5CF6]/[0.09]",
     hoverBorder: "hover:border-[#8B5CF6]/30",
@@ -243,7 +243,7 @@ function AcordesMini() {
             key={c}
             animate={{ opacity: [0.55, 1, 0.55] }}
             transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut", delay: i * 1.2 }}
-            className="px-1.5 py-0.5 rounded bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 font-mono text-[9px] text-[#A78BFF] font-semibold"
+            className="px-1.5 py-0.5 rounded bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 font-mono text-[9px] text-[#9673FF] font-semibold"
           >
             {c}
           </motion.span>

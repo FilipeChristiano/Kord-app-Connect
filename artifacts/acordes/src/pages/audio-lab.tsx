@@ -1431,7 +1431,7 @@ export default function AudioLab() {
                     O Kordi detecta o tom, descobre a música pela letra e entrega a cifra.
                     Arraste o arquivo ou clique para escolher.
                   </p>
-                  <span className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-white bg-primary hover:bg-primary/90 transition-all">
+                  <span className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-all">
                     <FileAudio className="w-5 h-5" />
                     Escolher áudio
                   </span>
@@ -1454,7 +1454,7 @@ export default function AudioLab() {
                   </p>
                   <button
                     onClick={startRecording}
-                    className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-white bg-primary hover:bg-primary/90 transition-all"
+                    className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-all"
                   >
                     <Mic className="w-5 h-5" />
                     Gravar canto
@@ -2986,7 +2986,7 @@ function RecordingPanel({
       <div className="flex flex-wrap gap-3 justify-center">
         <button
           onClick={onStop}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-white bg-primary hover:bg-primary/90 transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-all"
         >
           <Square className="w-4 h-4" /> Parar e identificar
         </button>

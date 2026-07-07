@@ -106,11 +106,11 @@
   --primary-800: 253 68% 36%;
   --primary-900: 248 64% 27%;
 
-  /* Ação primária + estados — violeta-azulado luminoso (sóbrio, destaca no fundo escuro) */
-  --primary: 252 100% 76%;          /* #A78BFF */
+  /* Ação primária + estados — violeta-azulado (sóbrio, destaca no fundo escuro) */
+  --primary: 252 100% 70%;          /* #9673FF */
   --primary-foreground: 222 30% 8%;
-  --primary-hover: 252 100% 82%;    /* mais claro */
-  --primary-pressed: 252 95% 66%;   /* #7C5CFF */
+  --primary-hover: 252 100% 78%;    /* mais claro */
+  --primary-pressed: 252 90% 60%;   /* #6E43F5 */
 
   /* Índigo Kordi — base da ponta azul da logo #4B45E8 (recursos inteligentes, detalhes premium) */
   --brand-purple-100: 240 91% 95%;   /* #E7E7FC */
@@ -132,7 +132,7 @@
   --accent-foreground: 210 40% 98%;
 
   --border: 224 29% 13%;
-  --ring: 252 100% 76%;
+  --ring: 252 100% 70%;
 
   --destructive: 0 75% 58%;
   --destructive-foreground: 210 40% 98%;
@@ -219,7 +219,7 @@
   box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 10px 32px -10px hsl(var(--primary) / 0.45);
 }
 .text-gradient-primary {
-  background: linear-gradient(135deg, #A78BFF 0%, #5E7BFF 100%);
+  background: linear-gradient(135deg, #9673FF 0%, #5570FF 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
