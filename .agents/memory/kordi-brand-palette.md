@@ -14,3 +14,4 @@ Em julho/2026 o usuário trocou a logo laranja pela versão violeta. A marca ago
 - Laranja/âmbar restante é **semântico e intencional** (avisos no bpm-detector; escalas de dificuldade verde→laranja→vermelho em favorites, pad-continuous, chord-substitutor; estabilidade verde/amarelo/laranja). NÃO fazer bulk-replace nessas ocorrências.
 - Mão direita do piano = roxo (#a855f7/#9333ea) em PianoKeyboard e chord-detail.
 - Assets (logo.svg, wordmark.svg, favicon, ícones PWA) são PNGs base64 embutidos em SVG, extraídos da folha de marca com sharp + remoção de fundo; recompor sobre #080B12 se regenerar.
+- Tipografia: o wordmark da logo é geométrico arredondado → `--font-display`/`--font-brand` = **Quicksand** (títulos/h1-h6, aprovação jul/2026); corpo continua Outfit (`--font-sans`). Quicksand só vai até weight 700 — não usar font-extrabold em headings.
