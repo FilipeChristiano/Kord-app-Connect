@@ -165,11 +165,11 @@ const ACCENTS: Record<Accent, {
     hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(249,115,22,0.2)]",
   },
   violet: {
-    iconBox: "text-[#D97AFF] bg-[#C24BF7]/10",
-    topLine: "via-[#C24BF7]/40",
-    glow: "bg-[#C24BF7]/[0.09]",
-    hoverBorder: "hover:border-[#C24BF7]/30",
-    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(194,75,247,0.2)]",
+    iconBox: "text-[#A78BFF] bg-[#8B5CF6]/10",
+    topLine: "via-[#8B5CF6]/40",
+    glow: "bg-[#8B5CF6]/[0.09]",
+    hoverBorder: "hover:border-[#8B5CF6]/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_-12px_rgba(139,92,246,0.2)]",
   },
   fuchsia: {
     iconBox: "text-[#e879f9] bg-[#d946ef]/10",
@@ -243,7 +243,7 @@ function AcordesMini() {
             key={c}
             animate={{ opacity: [0.55, 1, 0.55] }}
             transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut", delay: i * 1.2 }}
-            className="px-1.5 py-0.5 rounded bg-[#C24BF7]/15 border border-[#C24BF7]/30 font-mono text-[9px] text-[#D97AFF] font-semibold"
+            className="px-1.5 py-0.5 rounded bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 font-mono text-[9px] text-[#A78BFF] font-semibold"
           >
             {c}
           </motion.span>
@@ -396,7 +396,7 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
             width={w - 1}
             height={h}
             rx={2.5}
-            className="fill-[#C24BF7]"
+            className="fill-[#8B5CF6]"
             stroke="rgba(0,0,0,0.35)"
             strokeWidth={0.8}
             animate={{ opacity: [0.55, 1, 0.55] }}
@@ -424,7 +424,7 @@ function ChordKeyboard({ className = "w-full h-12" }: { className?: string }) {
           width={w * 0.7}
           height={h * 0.62}
           rx={2}
-          className={hlBlack.has(i) ? "fill-[#C24BF7]" : ""}
+          className={hlBlack.has(i) ? "fill-[#8B5CF6]" : ""}
           fill={hlBlack.has(i) ? undefined : "rgba(8,8,12,0.88)"}
           stroke="rgba(255,255,255,0.06)"
           strokeWidth={0.6}

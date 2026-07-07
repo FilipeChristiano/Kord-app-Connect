@@ -106,11 +106,11 @@
   --primary-800: 253 68% 36%;
   --primary-900: 248 64% 27%;
 
-  /* Ação primária + estados — lilás luminoso Kordi (destaca no fundo escuro) */
-  --primary: 283 100% 74%;          /* #D97AFF */
+  /* Ação primária + estados — violeta-azulado luminoso (sóbrio, destaca no fundo escuro) */
+  --primary: 252 100% 76%;          /* #A78BFF */
   --primary-foreground: 222 30% 8%;
-  --primary-hover: 283 100% 80%;    /* lilás mais claro */
-  --primary-pressed: 281 91% 63%;   /* #C24BF7 */
+  --primary-hover: 252 100% 82%;    /* mais claro */
+  --primary-pressed: 252 95% 66%;   /* #7C5CFF */
 
   /* Índigo Kordi — base da ponta azul da logo #4B45E8 (recursos inteligentes, detalhes premium) */
   --brand-purple-100: 240 91% 95%;   /* #E7E7FC */
@@ -132,7 +132,7 @@
   --accent-foreground: 210 40% 98%;
 
   --border: 224 29% 13%;
-  --ring: 283 100% 74%;
+  --ring: 252 100% 76%;
 
   --destructive: 0 75% 58%;
   --destructive-foreground: 210 40% 98%;
