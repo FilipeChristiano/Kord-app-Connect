@@ -501,6 +501,14 @@ function extractAllParsed(text: string): Array<{ root: string; quality: string }
   return allParsed;
 }
 
+// ID no dicionário para um acorde escrito como está (sem substituição) — usado
+// pela visualização "Original" do Sofisticador, para o popup abrir o acorde certo.
+export function chordIdForToken(token: string): string | undefined {
+  const parsed = parseChordToken(token);
+  if (!parsed) return undefined;
+  return CHORD_ID_MAP[normalizeRoot(parsed.root)]?.[parsed.quality];
+}
+
 export function processChordChart(text: string, level: SophisticationLevel): ProcessedLine[] {
   const allParsed = extractAllParsed(text);
   const tonality  = detectTonality(allParsed, text);

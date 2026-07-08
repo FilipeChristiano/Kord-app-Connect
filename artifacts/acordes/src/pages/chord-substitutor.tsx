@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Wand2, Copy, Check, RotateCcw, Heart, BookmarkCheck, Music2, Maximize2 } from "lucide-react";
 import {
   processChordChartFull,
+  chordIdForToken,
   SophisticationLevel,
   ProcessedLine,
   DetectedTonality,
@@ -13,7 +14,10 @@ import { useIsActive } from "@/components/KeepAlive";
 import { CifraFullscreen } from "@/components/CifraFullscreen";
 import { ChordPopup } from "@/components/ChordPopup";
 
-const LEVELS: { key: SophisticationLevel; label: string }[] = [
+type ViewLevel = SophisticationLevel | "original";
+
+const LEVELS: { key: ViewLevel; label: string }[] = [
+  { key: "original", label: "Original" },
   { key: "suave", label: "Suave" },
   { key: "intermediario", label: "Intermediário" },
   { key: "avancado", label: "Avançado" },
@@ -151,7 +155,7 @@ function RenderedLine({
 
 export default function ChordSubstitutor() {
   const [inputText, setInputText] = useState("");
-  const [level, setLevel] = useState<SophisticationLevel>("intermediario");
+  const [level, setLevel] = useState<ViewLevel>("intermediario");
   const [copied, setCopied] = useState(false);
   const { salvarCifra } = useCifrasFavoritas();
 
@@ -181,6 +185,29 @@ export default function ChordSubstitutor() {
 
   const result = useMemo(() => {
     if (!inputText.trim()) return null;
+    if (level === "original") {
+      // Visualização "Original": mesma formatação bonita (tom detectado, acordes
+      // clicáveis), mas sem nenhuma substituição — cada acorde permanece como está.
+      const full = processChordChartFull(inputText, "suave");
+      return {
+        ...full,
+        lines: full.lines.map((line) => ({
+          ...line,
+          tokens: line.tokens.map((t) =>
+            t.type === "chord" && t.substitution
+              ? {
+                  ...t,
+                  substitution: {
+                    ...t.substitution,
+                    substituted: t.substitution.original,
+                    chordId: chordIdForToken(t.substitution.original),
+                  },
+                }
+              : t,
+          ),
+        })),
+      };
+    }
     return processChordChartFull(inputText, level);
   }, [inputText, level]);
 
@@ -285,7 +312,7 @@ export default function ChordSubstitutor() {
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
           Nível de sofisticação
         </p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {LEVELS.map((l) => (
             <button
               key={l.key}
@@ -334,7 +361,7 @@ export default function ChordSubstitutor() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <p className="text-xs font-bold text-[#9673FF] uppercase tracking-widest">
-                Cifra sofisticada
+                {level === "original" ? "Cifra original" : "Cifra sofisticada"}
               </p>
               {detectedTonality && (
                 <motion.span
@@ -430,7 +457,9 @@ export default function ChordSubstitutor() {
           <CifraFullscreen
             title={
               detectedTonality
-                ? `Cifra sofisticada — Tom: ${detectedTonality.keyName} ${detectedTonality.isMinor ? "menor" : "maior"}`
+                ? `${level === "original" ? "Cifra original" : "Cifra sofisticada"} — Tom: ${detectedTonality.keyName} ${detectedTonality.isMinor ? "menor" : "maior"}`
+                : level === "original"
+                ? "Cifra original"
                 : "Cifra sofisticada"
             }
             onClose={() => { setFullscreenAberto(false); setPopupChordId(null); }}
@@ -482,8 +511,12 @@ export default function ChordSubstitutor() {
                   <Heart className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-display font-bold text-white text-lg">Salvar cifra sofisticada</h2>
-                  <p className="text-xs text-muted-foreground">Nível: {levelAtual?.label}</p>
+                  <h2 className="font-display font-bold text-white text-lg">
+                    {level === "original" ? "Salvar cifra original" : "Salvar cifra sofisticada"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {level === "original" ? "Versão: Original" : `Nível: ${levelAtual?.label}`}
+                  </p>
                 </div>
               </div>
 
