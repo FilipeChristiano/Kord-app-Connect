@@ -63,6 +63,18 @@ keeps memory low.
 elements over full buffer decode. Reserve Web Audio buffers for short clips or
 when sample-accurate scheduling is truly required.
 
+## Rule: tempo identification must run on the ORIGINAL full mix, never on a separated stem
+The mixer's BPM/phase detection (analyzeBpm + computeBeatGrid + server beat tracking)
+must analyze the original uploaded song (`sourceFile` prop), not the separated
+instrumental. Separated stem is only a fallback when the original is unavailable.
+**Why:** separation (center-extraction DSP and even Demucs mp3) attenuates/alters
+kick and bass, so detection on the stem picked wrong BPM and locked the click on
+the offbeat ("contratempo"), while the standalone Metronome — which analyzes the
+full mix — was perfect on the same song.
+**How to apply:** any tempo/beat analysis in the stem mixer should decode ONE
+buffer (the original mix — same cost as decoding one stem) and feed the same
+detector chain the Metronome module uses; playback stays streaming.
+
 ## Rule: octave/BPM options in Audio Lab mirror the Metronome, default stays upload-locked
 The Audio Lab StemMixer exposes the same 3 tempo options as the standalone Metronome
 (metade/principal/dobro from `analyzeBpm`). Selecting an option recomputes the beat grid

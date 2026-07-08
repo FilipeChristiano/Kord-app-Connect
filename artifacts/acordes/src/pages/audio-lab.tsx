@@ -1951,6 +1951,7 @@ export default function AudioLab() {
                         downloadExt="wav"
                         initialBpm={result ? bpmOpt?.bpm ?? result.bpm.bpm : undefined}
                         initialTimeSignature={result?.bpm.timeSignature}
+                        sourceFile={audioFileRef.current}
                         stopRef={stemStopRef}
                       />
                     </div>
@@ -2024,6 +2025,7 @@ export default function AudioLab() {
                           instrumentalUrl={stemsFileUrl(hqKey, "instrumental")}
                           initialBpm={result ? bpmOpt?.bpm ?? result.bpm.bpm : undefined}
                           initialTimeSignature={result?.bpm.timeSignature}
+                          sourceFile={audioFileRef.current}
                           stopRef={stemStopRef}
                         />
                       </div>
@@ -2271,6 +2273,7 @@ function StemMixer({
   downloadExt = "mp3",
   initialBpm,
   initialTimeSignature,
+  sourceFile,
   stopRef,
 }: {
   vocalsUrl: string;
@@ -2278,6 +2281,13 @@ function StemMixer({
   downloadExt?: "mp3" | "wav";
   initialBpm?: number | null;
   initialTimeSignature?: DetectedTimeSignature | null;
+  /**
+   * Áudio ORIGINAL da música (mistura completa). Quando presente, a identificação
+   * do tempo roda sobre ELE — exatamente como o módulo "Metrônomo" — em vez do
+   * instrumental separado, cuja separação atenua bumbo/baixo e distorce a
+   * detecção (BPM errado e clique no contratempo).
+   */
+  sourceFile?: File | null;
   stopRef?: React.MutableRefObject<(() => void) | null>;
 }) {
   const instRef = useRef<HTMLAudioElement | null>(null);
@@ -2445,16 +2455,27 @@ function StemMixer({
     (async () => {
       const bpmHint = typeof initialBpm === "number" && initialBpm > 0 ? initialBpm : null;
       try {
-        const resp = await fetch(instrumentalUrl);
-        const blob = await resp.blob();
-        const file = new File([blob], "instrumental", { type: blob.type || "audio/wav" });
+        // Identifica no áudio ORIGINAL (mistura completa) quando disponível —
+        // é o MESMO material que o módulo "Metrônomo" analisa. O instrumental
+        // separado fica só como reserva: a separação atenua bumbo/baixo e faz a
+        // detecção errar o BPM e cair no contratempo.
+        let blob: Blob;
+        if (sourceFile) {
+          blob = sourceFile;
+        } else {
+          const resp = await fetch(instrumentalUrl);
+          blob = await resp.blob();
+        }
+        const file =
+          sourceFile ?? new File([blob], "instrumental", { type: blob.type || "audio/wav" });
         const buffer = await fileToAudioBuffer(file);
         if (cancelled) return;
         analysisBufferRef.current = buffer;
 
-        // 1) Mapeia o instrumental inteiro com o detector do Metrônomo, gerando as
-        //    3 opções (metade/principal/dobro). O padrão selecionado é a oitava
-        //    mais próxima do BPM já confirmado no envio; o usuário pode trocar.
+        // 1) Mapeia o áudio (original quando disponível) com o detector do
+        //    Metrônomo, gerando as 3 opções (metade/principal/dobro). O padrão
+        //    selecionado é a oitava mais próxima do BPM já confirmado no envio
+        //    (mesmo detector, mesmo áudio — consistente); o usuário pode trocar.
         let gridBpm = bpmHint;
         let gridTs: DetectedTimeSignature | null = initialTimeSignature ?? null;
         let chosenIndex = -1;
@@ -2506,9 +2527,13 @@ function StemMixer({
           } catch {
             key = "";
           }
-          const tracked = key
-            ? await fetchStemBeats(key, gridBpm)
-            : await analyzeBeatsBlob(blob, gridBpm);
+          // Com o áudio original em mãos, o rastreador do estúdio mede a batida
+          // na MISTURA COMPLETA (bumbo/baixo intactos) — não no stem separado.
+          const tracked = sourceFile
+            ? await analyzeBeatsBlob(sourceFile, gridBpm)
+            : key
+              ? await fetchStemBeats(key, gridBpm)
+              : await analyzeBeatsBlob(blob, gridBpm);
           if (
             !cancelled &&
             token === gridTokenRef.current &&
@@ -2542,7 +2567,7 @@ function StemMixer({
       // para não aplicar estado após desmontar/trocar de música.
       gridTokenRef.current++;
     };
-  }, [instrumentalUrl, initialBpm, initialTimeSignature, computeAndApplyGrid]);
+  }, [instrumentalUrl, initialBpm, initialTimeSignature, sourceFile, computeAndApplyGrid]);
 
   // Cria os dois elementos de áudio uma única vez por par de faixas.
   useEffect(() => {
