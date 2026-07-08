@@ -1,5 +1,6 @@
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient";
+import { ensurePlan } from "./plan";
 import app from "./app";
 
 /**
@@ -28,6 +29,10 @@ async function initStripe() {
       "[stripe] webhook configured:",
       JSON.stringify(webhookResult?.url || "setup complete"),
     );
+
+    // Garante que o produto/preço da assinatura existem na conta conectada
+    // (idempotente — em produção cria o plano na conta live no 1º start)
+    await ensurePlan();
 
     stripeSync
       .syncBackfill({ object: "all" })

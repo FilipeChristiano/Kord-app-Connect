@@ -2,10 +2,9 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { pool } from "../db";
 import { getUncachableStripeClient } from "../stripeClient";
+import { PRODUCT_NAME } from "../plan";
 
 const router: IRouter = Router();
-
-const PRODUCT_NAME = "Kordi — Assinatura Mensal";
 
 /**
  * Resolve o e-mail do usuário logado (Clerk). Em desenvolvimento, aceita um

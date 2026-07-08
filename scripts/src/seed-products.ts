@@ -6,8 +6,11 @@ import { getUncachableStripeClient } from "./stripeClient";
  * Idempotente: se o produto já existir, não cria de novo.
  * Rodar com: pnpm --filter @workspace/scripts exec tsx src/seed-products.ts
  */
+// NOTA: o servidor (artifacts/api-server/src/plan.ts) já garante o
+// produto/preço na inicialização. Este script é só um utilitário manual.
+// Mantenha o valor abaixo em sincronia com MONTHLY_AMOUNT_CENTS em plan.ts.
 const PRODUCT_NAME = "Kordi — Assinatura Mensal";
-const MONTHLY_AMOUNT_CENTS = 2990; // R$ 29,90
+const MONTHLY_AMOUNT_CENTS = 4990; // R$ 49,90
 
 async function createProducts() {
   try {

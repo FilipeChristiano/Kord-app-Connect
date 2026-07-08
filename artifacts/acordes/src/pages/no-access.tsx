@@ -130,7 +130,7 @@ export default function NoAccessPage() {
         <div className="bg-white/5 border border-primary/25 rounded-xl p-5 mb-5">
           <div className="flex items-baseline gap-2 mb-4">
             <span className="font-display text-4xl font-bold text-white">
-              {plan ? formatPrice(plan.unit_amount, plan.currency) : "R$ 29,90"}
+              {plan ? formatPrice(plan.unit_amount, plan.currency) : "R$ 49,90"}
             </span>
             <span className="text-white/60 text-sm">/mês no cartão</span>
           </div>
