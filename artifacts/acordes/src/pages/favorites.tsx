@@ -12,6 +12,7 @@ import { CifraFullscreen } from "@/components/CifraFullscreen";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NIVEL_LABELS: Record<string, { label: string; color: string }> = {
+  original: { label: "Original", color: "text-white/60 bg-white/5 border-white/20" },
   suave: { label: "Suave", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
   intermediario: { label: "Intermediário", color: "text-orange-400 bg-orange-500/10 border-orange-500/30" },
   avancado: { label: "Avançado", color: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
@@ -99,7 +100,9 @@ function CifraModal({
         {/* Corpo: apenas cifra sofisticada */}
         <div className="p-6">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold text-primary/80 uppercase tracking-widest">Cifra sofisticada</p>
+            <p className="text-xs font-bold text-primary/80 uppercase tracking-widest">
+              {cifra.nivel === "original" ? "Cifra" : "Cifra sofisticada"}
+            </p>
             <button
               onClick={() => copy(cifra.textoSofisticado, "sofisticada")}
               className="flex items-center gap-1.5 text-xs text-primary/60 hover:text-primary transition-colors"

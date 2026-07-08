@@ -29,6 +29,7 @@ import {
   Volume2,
   Minus,
   Plus,
+  Heart,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -78,6 +79,8 @@ import {
 } from "@/lib/chord-transpose";
 import { cn } from "@/lib/utils";
 import { useIsActive } from "@/components/KeepAlive";
+import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
+import { processChordChartFull, type SophisticationLevel } from "@/data/substitutions";
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_DURATION = 12 * 60; // 12 minutos (limita memória/CPU mesmo com arquivos comprimidos)
@@ -1341,6 +1344,82 @@ export default function AudioLab() {
     navigate("/sofisticador");
   }, [displayChart, navigate]);
 
+  // ── Salvar a cifra gerada nos Favoritos (original ou sofisticada) ─────────
+  const { salvarCifra } = useCifrasFavoritas();
+  const [favModalOpen, setFavModalOpen] = useState(false);
+  const [favTitulo, setFavTitulo] = useState("");
+  const [favVersao, setFavVersao] = useState<"original" | SophisticationLevel>("original");
+  const [favSalvo, setFavSalvo] = useState(false);
+
+  const abrirModalFavoritos = useCallback(() => {
+    const sugestao =
+      cifraQuery.trim() ||
+      (cifraMeta?.artist ? `${cifraMeta.artist} - ${cifraMeta.title}` : cifraMeta?.title) ||
+      displayChart.trim().split("\n")[0]?.trim() ||
+      "Cifra do Audio Lab";
+    setFavTitulo(sugestao);
+    setFavVersao("original");
+    setFavModalOpen(true);
+  }, [cifraQuery, cifraMeta, displayChart]);
+
+  const confirmarSalvarFavoritos = useCallback(() => {
+    if (!displayChart.trim()) return;
+    const titulo = favTitulo.trim() || "Cifra do Audio Lab";
+    if (favVersao === "original") {
+      salvarCifra({
+        titulo,
+        textoOriginal: displayChart,
+        textoSofisticado: displayChart,
+        nivel: "original",
+        mudancas: [],
+      });
+    } else {
+      // Sofistica a cifra no tom em que ela está sendo exibida.
+      const { lines } = processChordChartFull(displayChart, favVersao);
+      const textoSofisticado = lines
+        .map((line) =>
+          line.tokens
+            .map((t) =>
+              t.type === "chord" && t.substitution ? t.substitution.substituted : t.value,
+            )
+            .join(""),
+        )
+        .join("\n");
+      const seen = new Set<string>();
+      const mudancas: Array<{
+        original: string;
+        substituted: string;
+        category: string;
+        chordId?: string;
+      }> = [];
+      lines.forEach((line) => {
+        line.tokens.forEach((t) => {
+          if (
+            t.type === "chord" &&
+            t.substitution &&
+            t.substitution.original !== t.substitution.substituted
+          ) {
+            const key = `${t.substitution.original}→${t.substitution.substituted}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              mudancas.push(t.substitution);
+            }
+          }
+        });
+      });
+      salvarCifra({
+        titulo,
+        textoOriginal: displayChart,
+        textoSofisticado,
+        nivel: favVersao,
+        mudancas,
+      });
+    }
+    setFavModalOpen(false);
+    setFavSalvo(true);
+    window.setTimeout(() => setFavSalvo(false), 2500);
+  }, [displayChart, favTitulo, favVersao, salvarCifra]);
+
   const bpmOpt = result?.bpm.options[result.bpm.recommendedIndex];
 
   return (
@@ -2189,6 +2268,22 @@ export default function AudioLab() {
                       {copied ? "Copiado!" : "Copiar cifra"}
                     </button>
                     <button
+                      onClick={abrirModalFavoritos}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-all",
+                        favSalvo
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                          : "border-white/10 text-white/70 hover:bg-white/5 hover:text-white",
+                      )}
+                    >
+                      {favSalvo ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : (
+                        <Heart className="w-3.5 h-3.5" />
+                      )}
+                      {favSalvo ? "Salva nos favoritos!" : "Salvar nos favoritos"}
+                    </button>
+                    <button
                       onClick={sendChartToSofisticador}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold btn-kordi"
                     >
@@ -2198,6 +2293,106 @@ export default function AudioLab() {
                 </motion.div>
               )}
             </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: salvar cifra nos favoritos (original ou sofisticada) */}
+      <AnimatePresence>
+        {favModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setFavModalOpen(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center">
+                  <Heart className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-white text-lg">Salvar nos favoritos</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {currentKeyName ? `Tom atual: ${currentKeyName}` : "A cifra é salva como está na tela"}
+                  </p>
+                </div>
+              </div>
+
+              <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
+                Nome da cifra
+              </label>
+              <input
+                autoFocus
+                type="text"
+                value={favTitulo}
+                onChange={(e) => setFavTitulo(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") confirmarSalvarFavoritos(); }}
+                placeholder="Ex: Gabriela Rocha - Atos 2"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent mb-5"
+              />
+
+              <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
+                Versão a salvar
+              </label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <button
+                  onClick={() => setFavVersao("original")}
+                  className={cn(
+                    "col-span-2 py-2.5 px-3 rounded-xl border text-sm font-bold transition-all",
+                    favVersao === "original"
+                      ? "border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#9673FF]"
+                      : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20",
+                  )}
+                >
+                  Cifra original
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-5">
+                {([
+                  { key: "suave", label: "Suave" },
+                  { key: "intermediario", label: "Intermediário" },
+                  { key: "avancado", label: "Avançado" },
+                ] as const).map((l) => (
+                  <button
+                    key={l.key}
+                    onClick={() => setFavVersao(l.key)}
+                    className={cn(
+                      "py-2.5 px-2 rounded-xl border text-xs font-bold transition-all",
+                      favVersao === l.key
+                        ? "border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#9673FF]"
+                        : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20",
+                    )}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-white/30 -mt-3 mb-5">
+                "Suave", "Intermediário" e "Avançado" salvam a cifra sofisticada nesse nível.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setFavModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm font-medium hover:bg-white/5 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarSalvarFavoritos}
+                  className="flex-1 py-2.5 rounded-xl btn-kordi text-sm font-bold flex items-center justify-center gap-2"
+                >
+                  <Heart className="w-4 h-4" /> Salvar
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
