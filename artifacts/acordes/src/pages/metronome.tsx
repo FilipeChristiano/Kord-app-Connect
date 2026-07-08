@@ -27,7 +27,15 @@ type TimeSignature =
   | "9/8"
   | "5/8"
   | "7/4";
-type Subdivision = "none" | "eighth" | "triplet" | "sixteenth";
+type Subdivision =
+  | "whole"
+  | "half"
+  | "quarter"
+  | "eighth"
+  | "sixteenth"
+  | "thirtysecond"
+  | "sixtyfourth"
+  | "triplet";
 
 const ACCENT_ORDER: AccentLevel[] = ["strong", "medium", "weak", "muted"];
 
@@ -52,11 +60,11 @@ const PRESETS: Preset[] = [
   // Worship & Gospel
   { id: "adoracao-profunda", name: "Adoração Profunda", bpm: 68, range: "60–72", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Momentos íntimos e contemplativos", group: "Worship & Gospel" },
   { id: "worship-moderno", name: "Worship Moderno", bpm: 74, range: "72–80", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Pop worship contemporâneo", group: "Worship & Gospel" },
-  { id: "worship-6-8", name: "Worship 6/8", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "none", accents: [S, W, W, M, W, W], description: "Compasso composto, fluido", group: "Worship & Gospel" },
-  { id: "balada-gospel", name: "Balada Gospel", bpm: 82, range: "76–90", timeSignature: "4/4", subdivision: "none", accents: [S, W, M, W], description: "Baladas clássicas do gospel", group: "Worship & Gospel" },
+  { id: "worship-6-8", name: "Worship 6/8", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", accents: [S, W, W, M, W, W], description: "Compasso composto, fluido", group: "Worship & Gospel" },
+  { id: "balada-gospel", name: "Balada Gospel", bpm: 82, range: "76–90", timeSignature: "4/4", subdivision: "quarter", accents: [S, W, M, W], description: "Baladas clássicas do gospel", group: "Worship & Gospel" },
   { id: "pentecostal-moderado", name: "Pentecostal Moderado", bpm: 96, range: "90–105", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Levada pentecostal padrão", group: "Worship & Gospel" },
   { id: "pentecostal-rapido", name: "Pentecostal Rápido", bpm: 126, range: "120–140", timeSignature: "4/4", subdivision: "sixteenth", accents: [S, W, M, W], description: "Avivamento e celebração", group: "Worship & Gospel" },
-  { id: "valsa", name: "Valsa", bpm: 90, range: "80–110", timeSignature: "3/4", subdivision: "none", accents: [S, W, W], description: "Hinos antigos e valsas", group: "Worship & Gospel" },
+  { id: "valsa", name: "Valsa", bpm: 90, range: "80–110", timeSignature: "3/4", subdivision: "quarter", accents: [S, W, W], description: "Hinos antigos e valsas", group: "Worship & Gospel" },
   // Ritmos Brasileiros
   { id: "forro-pe-de-serra", name: "Forró Pé de Serra", bpm: 120, range: "110–135", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Forró tradicional nordestino", group: "Ritmos Brasileiros" },
   { id: "xote", name: "Xote", bpm: 90, range: "80–100", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Forró lento e dançante", group: "Ritmos Brasileiros" },
@@ -68,8 +76,8 @@ const PRESETS: Preset[] = [
   // Momentos do Culto
   { id: "oracao", name: "Oração", bpm: 60, range: "55–68", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Fundo suave para orar", group: "Momentos do Culto" },
   { id: "ministracao", name: "Ministração", bpm: 66, range: "60–72", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Base para ministração da Palavra", group: "Momentos do Culto" },
-  { id: "espontaneo-worship", name: "Espontâneo Worship", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "none", accents: [S, W, W, M, W, W], description: "Espontâneos com fluidez em 6/8", group: "Momentos do Culto" },
-  { id: "fundo-de-pregacao", name: "Fundo de Pregação", bpm: 62, range: "55–70", timeSignature: "4/4", subdivision: "none", accents: [S, W, W, W], description: "Cama discreta para pregação", group: "Momentos do Culto" },
+  { id: "espontaneo-worship", name: "Espontâneo Worship", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", accents: [S, W, W, M, W, W], description: "Espontâneos com fluidez em 6/8", group: "Momentos do Culto" },
+  { id: "fundo-de-pregacao", name: "Fundo de Pregação", bpm: 62, range: "55–70", timeSignature: "4/4", subdivision: "quarter", accents: [S, W, W, W], description: "Cama discreta para pregação", group: "Momentos do Culto" },
   { id: "encerramento", name: "Encerramento", bpm: 70, range: "65–78", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Momento final do louvor", group: "Momentos do Culto" },
 ];
 
@@ -124,17 +132,36 @@ function loadSavedAccents(): Partial<Record<TimeSignature, AccentLevel[]>> {
 }
 
 const SUBDIVISION_LABELS: Record<Subdivision, string> = {
-  none: "Sem subdivisão",
-  eighth: "Colcheias",
+  whole: "Semibreve",
+  half: "Mínima",
+  quarter: "Semínima",
+  eighth: "Colcheia",
+  sixteenth: "Semicolcheia",
+  thirtysecond: "Fusa",
+  sixtyfourth: "Semifusa",
   triplet: "Tercinas",
-  sixteenth: "Semicolcheias",
 };
 
 const SUBDIVISION_GLYPHS: Record<Subdivision, string> = {
-  none: "♩",
-  eighth: "♫",
-  triplet: "♫³",
-  sixteenth: "♬",
+  whole: "𝅝",
+  half: "𝅗𝅥",
+  quarter: "𝅘𝅥",
+  eighth: "𝅘𝅥𝅮",
+  sixteenth: "𝅘𝅥𝅯",
+  thirtysecond: "𝅘𝅥𝅰",
+  sixtyfourth: "𝅘𝅥𝅱",
+  triplet: "𝅘𝅥𝅮³",
+};
+
+// Valor de cada figura em relação à semibreve (denominador: 1, 1/2, 1/4...)
+const NOTE_DENOM: Record<Exclude<Subdivision, "triplet">, number> = {
+  whole: 1,
+  half: 2,
+  quarter: 4,
+  eighth: 8,
+  sixteenth: 16,
+  thirtysecond: 32,
+  sixtyfourth: 64,
 };
 
 const TIME_SIGNATURES: TimeSignature[] = [
@@ -166,11 +193,34 @@ const TIME_SIGNATURE_INFO: Record<TimeSignature, { name: string; uso: string }> 
   "7/4": { name: "Assimétrico (4+3)", uso: "Jazz e rock progressivo" },
 };
 
-const SUBDIVISIONS: Subdivision[] = ["none", "eighth", "triplet", "sixteenth"];
+const SUBDIVISIONS: Subdivision[] = [
+  "whole",
+  "half",
+  "quarter",
+  "eighth",
+  "sixteenth",
+  "thirtysecond",
+  "sixtyfourth",
+  "triplet",
+];
 
-// Compassos com denominador 8 (o pulso já é a colcheia)
-function isEighthPulse(ts: TimeSignature): boolean {
-  return ts.endsWith("/8");
+// Denominador do compasso (2, 4 ou 8): a figura que vale um tempo
+function tsDenominator(ts: TimeSignature): number {
+  return parseInt(ts.split("/")[1], 10);
+}
+
+// Figura que corresponde ao pulso do compasso (= "sem subdivisão")
+function pulseSubdivision(ts: TimeSignature): Subdivision {
+  const denom = tsDenominator(ts);
+  if (denom === 2) return "half";
+  if (denom === 8) return "eighth";
+  return "quarter";
+}
+
+// Figuras mais longas que o pulso não podem subdividir o tempo
+function isLongerThanPulse(sub: Subdivision, ts: TimeSignature): boolean {
+  if (sub === "triplet") return false;
+  return NOTE_DENOM[sub] < tsDenominator(ts);
 }
 
 // ── Geometria do seletor circular de BPM ──────────────────────────────────────
@@ -200,25 +250,19 @@ function getBeatsPerBar(ts: TimeSignature): number {
 }
 
 function getSubdivisionMultiplier(sub: Subdivision, ts: TimeSignature): number {
-  if (isEighthPulse(ts)) {
-    // Nos compassos em /8 cada "tempo" já é uma colcheia — colcheia = 1x,
-    // semicolcheia = 2x, tercina (de colcheia) = 3x.
-    if (sub === "sixteenth") return 2;
-    if (sub === "triplet") return 3;
-    return 1;
-  }
-  // Pulso em semínima (/4) ou mínima (/2): subdivisões relativas ao tempo.
-  if (sub === "sixteenth") return 4;
+  // Tercina: sempre 3 cliques por tempo, seja qual for o pulso.
   if (sub === "triplet") return 3;
-  if (sub === "eighth") return 2;
-  return 1;
+  // Cliques por tempo = valor da figura ÷ valor do pulso (ex.: semicolcheia
+  // em 4/4 → 16/4 = 4x). Figuras mais longas que o pulso não subdividem (1x).
+  const mult = NOTE_DENOM[sub] / tsDenominator(ts);
+  return mult >= 1 ? mult : 1;
 }
 
 export default function Metronome() {
   const [bpm, setBpm] = useState(DEFAULT_BPM);
   const [bpmInput, setBpmInput] = useState(String(DEFAULT_BPM));
   const [timeSignature, setTimeSignature] = useState<TimeSignature>("4/4");
-  const [subdivision, setSubdivision] = useState<Subdivision>("none");
+  const [subdivision, setSubdivision] = useState<Subdivision>("quarter");
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [accentPattern, setAccentPattern] = useState<AccentLevel[]>(() => {
     const saved = loadSavedAccents();
@@ -378,9 +422,9 @@ export default function Metronome() {
   const handleTimeSignatureChange = (ts: TimeSignature) => {
     if (ts === timeSignature) return;
     setTimeSignature(ts);
-    // Nos compassos em /8 o pulso já é a colcheia; se "Colcheias" estava
-    // marcada, volta para "Sem subdivisão" (o botão fica desabilitado).
-    if (isEighthPulse(ts) && subdivision === "eighth") setSubdivision("none");
+    // Se a figura marcada ficou mais longa que o novo pulso (ex.: semínima
+    // ao mudar para um compasso em /8), volta para a figura do pulso.
+    if (isLongerThanPulse(subdivision, ts)) setSubdivision(pulseSubdivision(ts));
     const saved = loadSavedAccents();
     setAccentPattern(sanitizeAccents(saved[ts], ts));
     resetBeat();
@@ -407,7 +451,7 @@ export default function Metronome() {
     setBpmClamped(detectedBpm);
     if (ts && ts !== timeSignature) {
       setTimeSignature(ts);
-      if (isEighthPulse(ts) && subdivision === "eighth") setSubdivision("none");
+      if (isLongerThanPulse(subdivision, ts)) setSubdivision(pulseSubdivision(ts));
       const saved = loadSavedAccents();
       setAccentPattern(sanitizeAccents(saved[ts], ts));
       resetBeat();
@@ -699,29 +743,33 @@ export default function Metronome() {
             </div>
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">Subdivisão</div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {SUBDIVISIONS.map((s) => {
-                  // Nos compassos em /8 o pulso já é a colcheia — "Colcheias"
-                  // não acrescenta nada; o botão fica desabilitado com dica.
-                  const redundant = isEighthPulse(timeSignature) && s === "eighth";
+                  // Figuras mais longas que o pulso não subdividem o tempo —
+                  // ficam desabilitadas com a explicação na dica.
+                  const tooLong = isLongerThanPulse(s, timeSignature);
+                  const isPulse = s !== "triplet" && NOTE_DENOM[s] === tsDenominator(timeSignature);
+                  const mult = getSubdivisionMultiplier(s, timeSignature);
                   return (
                     <button
                       key={s}
                       onClick={() => handleSubdivisionChange(s)}
-                      disabled={redundant}
+                      disabled={tooLong}
                       aria-pressed={subdivision === s}
                       aria-label={SUBDIVISION_LABELS[s]}
                       title={
-                        redundant
-                          ? `Em ${timeSignature} o pulso já é em colcheias — use Semicolcheias ou Tercinas para subdividir.`
-                          : SUBDIVISION_LABELS[s]
+                        tooLong
+                          ? `${SUBDIVISION_LABELS[s]} é mais longa que o pulso de ${timeSignature} — não subdivide o tempo.`
+                          : isPulse
+                            ? `${SUBDIVISION_LABELS[s]} — é o próprio pulso (sem subdivisão)`
+                            : `${SUBDIVISION_LABELS[s]} — ${mult} cliques por tempo`
                       }
                       className={cn(
-                        "flex-1 py-3 rounded-xl text-xl leading-none font-bold transition-all border notranslate",
+                        "py-3 rounded-xl text-xl leading-none font-bold transition-all border notranslate",
                         subdivision === s
                           ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
                           : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
-                        redundant && "opacity-40 cursor-not-allowed hover:border-white/5 hover:text-muted-foreground",
+                        tooLong && "opacity-40 cursor-not-allowed hover:border-white/5 hover:text-muted-foreground",
                       )}
                       translate="no"
                     >
@@ -730,6 +778,13 @@ export default function Metronome() {
                   );
                 })}
               </div>
+              <p className="text-[11px] text-muted-foreground/70 mt-2">
+                <span className="text-white/80 font-semibold">{SUBDIVISION_LABELS[subdivision]}</span>
+                {" — "}
+                {subdivision !== "triplet" && NOTE_DENOM[subdivision] === tsDenominator(timeSignature)
+                  ? "pulso do compasso (sem subdivisão)"
+                  : `${getSubdivisionMultiplier(subdivision, timeSignature)} cliques por tempo`}
+              </p>
             </div>
           </div>
 
