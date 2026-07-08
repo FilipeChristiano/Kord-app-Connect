@@ -248,25 +248,6 @@ function CifraCard({
         )}
       </div>
 
-      {/* Substituições resumidas */}
-      {cifra.mudancas.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {cifra.mudancas.slice(0, 5).map((m, i) => (
-            <span
-              key={i}
-              className="flex items-center gap-1 bg-white/[0.04] border border-white/10 rounded-md px-2 py-0.5"
-            >
-              <span className="text-white/40 text-[10px] font-mono">{m.original}</span>
-              <ArrowRight className="w-2 h-2 text-muted-foreground" />
-              <span className="text-primary text-[10px] font-mono font-bold">{m.substituted}</span>
-            </span>
-          ))}
-          {cifra.mudancas.length > 5 && (
-            <span className="text-[10px] text-white/30 self-center">+{cifra.mudancas.length - 5}</span>
-          )}
-        </div>
-      )}
-
       {/* Ações */}
       <div className="flex gap-2 mt-auto pt-1" onClick={(e) => e.stopPropagation()}>
         <button
