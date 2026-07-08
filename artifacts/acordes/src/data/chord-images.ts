@@ -127,6 +127,17 @@ function buildOverviewMap(): Record<string, string> {
 
 const CHORD_OVERVIEW_MAP = buildOverviewMap();
 
+// ── Acordes que usam diagrama SVG em vez de imagem do PDF ─────────────────────
+// (tríades maiores e menores — o dicionário mostra o teclado desenhado)
+export const CHORD_SVG_OVERRIDES = new Set([
+  // Tríades Maiores
+  "C-maior", "Db-maior", "D-maior", "Eb-maior", "E-maior", "F-maior",
+  "Gb-maior", "G-maior", "Ab-maior", "A-maior", "Bb-maior", "B-maior",
+  // Tríades Menores
+  "Cm", "Dbm", "Dm", "Ebm", "Em", "Fm",
+  "Gbm", "Gm", "Abm", "Am", "Bbm", "Bm",
+]);
+
 /**
  * Retorna a URL da imagem de posição única (visão geral) para o acorde,
  * ou null se não houver imagem disponível.

@@ -1,16 +1,21 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { X, Play, ChevronLeft, ChevronRight } from "lucide-react";
-import { getChordById } from "@/data/chords";
+import { getChordById, CHORDS } from "@/data/chords";
+import {
+  getChordVariationImages,
+  getChordOverviewImage,
+  CHORD_SVG_OVERRIDES,
+} from "@/data/chord-images";
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { splitHands } from "@/lib/notes";
 import { playChordVoicing } from "@/lib/piano";
-import { getVoicings7M } from "@/lib/voicings";
 import { cn } from "@/lib/utils";
 
 /**
- * Popup minimalista com a formação de um acorde: nome, fórmula, notas no
- * piano e variações no teclado (mesmos voicings do Dicionário de Acordes).
+ * Popup minimalista com a formação de um acorde, espelhando EXATAMENTE o
+ * módulo Dicionário de Acordes: tríades usam o diagrama SVG; os demais
+ * acordes usam as mesmas imagens de variações/posição do dicionário.
  * Funciona também por cima da cifra em tela cheia (deve ser renderizado
  * DENTRO do elemento em fullscreen nativo).
  */
@@ -20,6 +25,11 @@ const FLAT_TO_SHARP: Record<string, string> = {
   Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#",
 };
 
+// Busca um acorde pelo ID ou pelo nome (para exibir acordes relacionados)
+function findRelatedChord(variation: string) {
+  return CHORDS.find((c) => c.id === variation || c.name === variation);
+}
+
 export function ChordPopup({
   chordId,
   onClose,
@@ -28,7 +38,7 @@ export function ChordPopup({
   chordId: string;
   onClose: () => void;
   /** Nome do acorde como está escrito na cifra (ex: "C#7M(9)"). Quando
-   *  informado, é exibido no lugar do nome do dicionário (ex: "Db9M"),
+   *  informado, é exibido no lugar do nome do dicionário (ex: "Db7M(9)"),
    *  pois o dicionário guarda apenas uma grafia enarmônica de cada acorde. */
   label?: string;
 }) {
@@ -55,19 +65,18 @@ export function ChordPopup({
 
   if (!chord) return null;
 
-  // Acordes de 4+ notas têm as mesmas variações (voicings) do dicionário.
-  const voicings = chord.notes.length >= 4 ? getVoicings7M(chord.id, chord.notes) : null;
-  const voicing = voicings ? voicings[Math.min(active, voicings.length - 1)] : null;
+  // ── Mesma lógica de exibição do Dicionário de Acordes ──────────────────────
+  const isSvgChord = CHORD_SVG_OVERRIDES.has(chord.id);
+  const variationImages = isSvgChord ? null : getChordVariationImages(chord.id);
+  const overviewImage =
+    !isSvgChord && !variationImages ? getChordOverviewImage(chord.id) : null;
 
   const { leftHand, rightHand } = splitHands(chord.notes, chord.category);
   const isFechado = chord.category === "Mão Esquerda — Fechado";
-
-  const shownLeft = voicing ? voicing.leftHand : leftHand;
-  const shownRight = voicing ? voicing.rightHand : rightHand;
-  const shownBaseOctave = voicing ? 0 : isFechado ? 1 : 0;
+  const baseOctave = isFechado ? 1 : 0;
 
   const tocar = () => {
-    playChordVoicing(shownLeft, shownRight, { leftBaseOctave: shownBaseOctave });
+    playChordVoicing(leftHand, rightHand, { leftBaseOctave: baseOctave });
   };
 
   // Nome exibido: o que está escrito na cifra, quando fornecido.
@@ -126,61 +135,85 @@ export function ChordPopup({
           </div>
         </div>
 
-        {/* Seletor de variações (mesmos voicings do dicionário) */}
-        {voicings && (
-          <div className="px-5 pb-3">
-            <div className="flex items-center justify-between bg-black/30 rounded-xl px-3 py-2 border border-white/5">
-              <button
-                onClick={() => setActive((a) => (a - 1 + voicings.length) % voicings.length)}
-                className="p-1 text-white/40 hover:text-white transition-colors"
-                aria-label="Variação anterior"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div className="text-center">
+        {/* ── Variações do dicionário (imagens reais) ── */}
+        {variationImages && (
+          <>
+            <div className="px-5 pb-3">
+              <div className="flex items-center justify-between bg-black/30 rounded-xl px-3 py-2 border border-white/5">
+                <button
+                  onClick={() =>
+                    setActive((a) => (a - 1 + variationImages.length) % variationImages.length)
+                  }
+                  className="p-1 text-white/40 hover:text-white transition-colors"
+                  aria-label="Variação anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
                 <p className="text-sm font-semibold text-white leading-tight">
-                  Variação {Math.min(active, voicings.length - 1) + 1}
-                  <span className="text-white/40 font-normal"> / {voicings.length}</span>
+                  Variação {Math.min(active, variationImages.length - 1) + 1}
+                  <span className="text-white/40 font-normal"> / {variationImages.length}</span>
                 </p>
-                <p className="text-[11px] text-white/40">{voicing!.label}</p>
+                <button
+                  onClick={() => setActive((a) => (a + 1) % variationImages.length)}
+                  className="p-1 text-white/40 hover:text-white transition-colors"
+                  aria-label="Próxima variação"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setActive((a) => (a + 1) % voicings.length)}
-                className="p-1 text-white/40 hover:text-white transition-colors"
-                aria-label="Próxima variação"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            </div>
+            <div className="px-5">
+              <div className="bg-black/30 rounded-xl p-2 border border-white/5 flex justify-center">
+                <img
+                  key={active}
+                  src={variationImages[Math.min(active, variationImages.length - 1)]}
+                  alt={`Variação ${Math.min(active, variationImages.length - 1) + 1} do acorde ${displayName}`}
+                  className="max-w-full rounded-lg object-contain"
+                  style={{ maxHeight: 240 }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-center gap-1.5 pt-3">
+              {variationImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActive(i)}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-200",
+                    i === Math.min(active, variationImages.length - 1)
+                      ? "bg-[#8B5CF6] w-4"
+                      : "bg-white/20 w-1.5 hover:bg-white/40",
+                  )}
+                  aria-label={`Variação ${i + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── Posição única do dicionário (imagem real) ── */}
+        {overviewImage && (
+          <div className="px-5">
+            <div className="bg-black/30 rounded-xl p-2 border border-white/5 flex justify-center">
+              <img
+                src={overviewImage}
+                alt={`Posição no teclado do acorde ${displayName}`}
+                className="max-w-full rounded-lg object-contain"
+                style={{ maxHeight: 240 }}
+              />
             </div>
           </div>
         )}
 
-        {/* Piano com as notas */}
-        <div className="px-5">
-          <PianoKeyboard
-            leftHandNotes={shownLeft}
-            rightHandNotes={shownRight}
-            leftHandBaseOctave={shownBaseOctave}
-            className="w-full"
-          />
-        </div>
-
-        {/* Indicadores de variação */}
-        {voicings && (
-          <div className="flex justify-center gap-1.5 pt-3">
-            {voicings.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActive(i)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-200",
-                  i === Math.min(active, voicings.length - 1)
-                    ? "bg-[#8B5CF6] w-4"
-                    : "bg-white/20 w-1.5 hover:bg-white/40",
-                )}
-                aria-label={`Variação ${i + 1}`}
-              />
-            ))}
+        {/* ── Diagrama SVG (tríades, igual ao dicionário) ── */}
+        {!variationImages && !overviewImage && (
+          <div className="px-5">
+            <PianoKeyboard
+              leftHandNotes={leftHand}
+              rightHandNotes={rightHand}
+              leftHandBaseOctave={baseOctave}
+              className="w-full"
+            />
           </div>
         )}
 
@@ -213,7 +246,7 @@ export function ChordPopup({
                   key={i}
                   className="font-mono text-xs text-[#9673FF] bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 rounded-lg px-2.5 py-1"
                 >
-                  {v}
+                  {findRelatedChord(v)?.name ?? v}
                 </span>
               ))}
             </div>

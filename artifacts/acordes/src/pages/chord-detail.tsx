@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { ArrowLeft, Heart, Tag, Info, Lightbulb, Music, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { getChordById, CHORDS } from "@/data/chords";
-import { getChordVariationImages, getChordOverviewImage } from "@/data/chord-images";
+import { getChordVariationImages, getChordOverviewImage, CHORD_SVG_OVERRIDES } from "@/data/chord-images";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { useFavorites } from "@/hooks/use-favorites";
@@ -43,16 +43,6 @@ function ColorLegend() {
     </div>
   );
 }
-
-// ── Acordes que usam SVG em vez de imagem do PDF ──────────────────────────────
-const CHORD_SVG_OVERRIDES = new Set([
-  // Tríades Maiores
-  "C-maior", "Db-maior", "D-maior", "Eb-maior", "E-maior", "F-maior",
-  "Gb-maior", "G-maior", "Ab-maior", "A-maior", "Bb-maior", "B-maior",
-  // Tríades Menores
-  "Cm", "Dbm", "Dm", "Ebm", "Em", "Fm",
-  "Gbm", "Gm", "Abm", "Am", "Bbm", "Bm",
-]);
 
 // ── Painel SVG para acordes básicos (usados como override) ────────────────────
 function SvgOverviewPanel({ notes, category }: { notes: string[]; category: string }) {

@@ -133,7 +133,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "Use em progressões paralelas",
         description:
-          "Progressões como C7M → F9M → G7sus4 criam movimento harmônico refinado muito comum no gospel moderno e no jazz.",
+          "Progressões como C7M → F7M(9) → G7sus4 criam movimento harmônico refinado muito comum no gospel moderno e no jazz.",
       },
       {
         title: "Atenção ao semiton entre a 7ªM e a fundamental",
@@ -419,7 +419,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "Add9 vs. Maj9",
         description:
-          "O add9 (1-3-5-9) não tem a 7ª. O 9M (1-3-5-7M-9) tem. O add9 é mais simples e mais fácil de aplicar. O 9M é mais luxuoso.",
+          "O add9 (1-3-5-9) não tem a 7ª. O 7M(9) (1-3-5-7M-9) tem. O add9 é mais simples e mais fácil de aplicar. O 7M(9) é mais luxuoso.",
       },
       {
         title: "Use a 9ª na melodia da mão direita",
@@ -450,7 +450,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
     category: "Com 7ªM e 9ª",
     icon: "💎",
     summary:
-      "Os acordes com 7ªM e 9ª (9M) são o pico da elegância harmônica. Combinam a suavidade da 7ª maior com a abertura da 9ª, criando texturas sonoras de beleza incomparável.",
+      "Os acordes com 7ªM e 9ª (7M(9)) são o pico da elegância harmônica. Combinam a suavidade da 7ª maior com a abertura da 9ª, criando texturas sonoras de beleza incomparável.",
     contexts: [
       "Momentos climáticos em adoração e ministração",
       "Intros e finais grandiosamente belos",
@@ -460,38 +460,38 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
     ],
     tips: [
       {
-        title: "Dois acordes 9M criam progressões mágicas",
+        title: "Dois acordes 7M(9) criam progressões mágicas",
         description:
-          "Ab7M(9) → Eb7M(9) ou F9M → C9M são progressões de dois acordes que criam atmosferas belíssimas. Menos é mais quando os acordes são ricos.",
+          "Ab7M(9) → Eb7M(9) ou F7M(9) → C7M(9) são progressões de dois acordes que criam atmosferas belíssimas. Menos é mais quando os acordes são ricos.",
       },
       {
-        title: "Use voicings abertos para o 9M",
+        title: "Use voicings abertos para o 7M(9)",
         description:
-          "Com 5 notas, o 9M pode ficar denso. Omita a quinta (1-3-7M-9) para um voicing mais aberto e musical. Isso é o que os pianistas de jazz fazem.",
+          "Com 5 notas, o 7M(9) pode ficar denso. Omita a quinta (1-3-7M-9) para um voicing mais aberto e musical. Isso é o que os pianistas de jazz fazem.",
       },
       {
         title: "Maj9 como I e IV grau",
         description:
-          "Na tonalidade de Dó: C9M (I) e F9M (IV) criam a base de uma harmonia extremamente refinada. Adicione um G7sus4 e você tem uma progressão de nível profissional.",
+          "Na tonalidade de Dó: C7M(9) (I) e F7M(9) (IV) criam a base de uma harmonia extremamente refinada. Adicione um G7sus4 e você tem uma progressão de nível profissional.",
       },
     ],
     progressions: [
       {
         label: "Progressão ultra-elegante",
-        chords: ["C9M", "F9M", "G7sus4", "C9M"],
+        chords: ["C7M(9)", "F7M(9)", "G7sus4", "C7M(9)"],
         context:
-          "I9M-IV9M-V7sus4-I9M. Progressão de altíssimo nível harmônico.",
+          "I7M(9)-IV7M(9)-V7sus4-I7M(9). Progressão de altíssimo nível harmônico.",
       },
       {
         label: "Dois acordes de adoração",
-        chords: ["Ab9M", "Eb9M"],
+        chords: ["Ab7M(9)", "Eb7M(9)"],
         context:
-          "I9M-V/IV. Riqueza harmônica em apenas dois acordes. Eterno.",
+          "I7M(9)-V/IV. Riqueza harmônica em apenas dois acordes. Eterno.",
       },
       {
         label: "Jazz gospel completo",
-        chords: ["F9M", "Em7", "Am7", "Dm7", "G7", "C9M"],
-        context: "Progressão jazz completa terminando em I9M grandioso.",
+        chords: ["F7M(9)", "Em7", "Am7", "Dm7", "G7", "C7M(9)"],
+        context: "Progressão jazz completa terminando em I7M(9) grandioso.",
       },
     ],
   },
@@ -560,7 +560,7 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       {
         title: "7sus4 → I7M é uma das cadências mais belas",
         description:
-          "Em vez de G7→C, tente G7sus4→C9M. Esse movimento do 7sus4 para o 9M é extremamente sofisticado e muito usado no gospel moderno.",
+          "Em vez de G7→C, tente G7sus4→C7M(9). Esse movimento do 7sus4 para o 7M(9) é extremamente sofisticado e muito usado no gospel moderno.",
       },
       {
         title: "Adicione a 9ª ao 7sus4 para o 9sus4",
@@ -587,8 +587,8 @@ export const CATEGORY_APPLICATIONS: CategoryApplication[] = [
       },
       {
         label: "Resolução luxuosa",
-        chords: ["G9sus4", "C9M"],
-        context: "9sus4 → 9M. O movimento cadencial mais elegante do gospel.",
+        chords: ["G9sus4", "C7M(9)"],
+        context: "9sus4 → 7M(9). O movimento cadencial mais elegante do gospel.",
       },
     ],
   },
