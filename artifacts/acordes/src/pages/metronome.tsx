@@ -15,8 +15,19 @@ import { cn } from "@/lib/utils";
 import BpmDetector from "@/components/bpm-detector";
 import { useMetronome, ACCENT_CONFIG, type AccentLevel } from "@/lib/use-metronome";
 
-type TimeSignature = "2/4" | "3/4" | "4/4" | "6/8";
-type Subdivision = "none" | "eighth" | "sixteenth";
+type TimeSignature =
+  | "2/4"
+  | "3/4"
+  | "4/4"
+  | "6/8"
+  | "12/8"
+  | "2/2"
+  | "5/4"
+  | "7/8"
+  | "9/8"
+  | "5/8"
+  | "7/4";
+type Subdivision = "none" | "eighth" | "triplet" | "sixteenth";
 
 const ACCENT_ORDER: AccentLevel[] = ["strong", "medium", "weak", "muted"];
 
@@ -66,8 +77,25 @@ const PRESET_GROUPS = ["Worship & Gospel", "Ritmos Brasileiros", "Momentos do Cu
 
 const ACCENT_STORAGE_KEY = "harmonic_metro_accents_v1";
 
+// Acentuação padrão musical de cada compasso (agrupamentos usuais: os
+// assimétricos seguem 3+2, 3+2+2, 4+3; os compostos acentuam cada grupo de 3).
+const DEFAULT_ACCENTS: Record<TimeSignature, AccentLevel[]> = {
+  "2/4": [S, W],
+  "3/4": [S, W, W],
+  "4/4": [S, W, M, W],
+  "6/8": [S, W, W, M, W, W],
+  "12/8": [S, W, W, M, W, W, M, W, W, M, W, W],
+  "2/2": [S, W],
+  "5/4": [S, W, W, M, W], // 3+2
+  "7/8": [S, W, W, M, W, M, W], // 3+2+2
+  "9/8": [S, W, W, M, W, W, M, W, W], // 3+3+3
+  "5/8": [S, W, W, M, W], // 3+2
+  "7/4": [S, W, W, W, M, W, W], // 4+3
+};
+
 function defaultAccents(ts: TimeSignature): AccentLevel[] {
-  // Padrão: apenas o Tempo 1 forte, o restante fraco
+  const preset = DEFAULT_ACCENTS[ts];
+  if (preset) return [...preset];
   const beats = getBeatsPerBar(ts);
   return Array.from({ length: beats }, (_, i) => (i === 0 ? "strong" : "weak"));
 }
@@ -98,17 +126,52 @@ function loadSavedAccents(): Partial<Record<TimeSignature, AccentLevel[]>> {
 const SUBDIVISION_LABELS: Record<Subdivision, string> = {
   none: "Sem subdivisão",
   eighth: "Colcheias",
+  triplet: "Tercinas",
   sixteenth: "Semicolcheias",
 };
 
 const SUBDIVISION_GLYPHS: Record<Subdivision, string> = {
   none: "♩",
   eighth: "♫",
+  triplet: "♫³",
   sixteenth: "♬",
 };
 
-const TIME_SIGNATURES: TimeSignature[] = ["2/4", "3/4", "4/4", "6/8"];
-const SUBDIVISIONS: Subdivision[] = ["none", "eighth", "sixteenth"];
+const TIME_SIGNATURES: TimeSignature[] = [
+  "2/4",
+  "3/4",
+  "4/4",
+  "6/8",
+  "12/8",
+  "2/2",
+  "5/4",
+  "7/8",
+  "9/8",
+  "5/8",
+  "7/4",
+];
+
+// Nome e uso típico de cada compasso (mostrado como dica e legenda)
+const TIME_SIGNATURE_INFO: Record<TimeSignature, { name: string; uso: string }> = {
+  "2/4": { name: "Binário simples", uso: "Marchas, polcas, alguns hinos" },
+  "3/4": { name: "Ternário simples", uso: "Valsas, canções tradicionais" },
+  "4/4": { name: "Quaternário simples", uso: "Pop, rock, gospel, worship, sertanejo" },
+  "6/8": { name: "Binário composto", uso: "Worship, baladas, músicas épicas, folk" },
+  "12/8": { name: "Quaternário composto", uso: "Blues, soul, worship lento, gospel americano" },
+  "2/2": { name: "Alla breve (Cut Time)", uso: "Música clássica, corais, marchas" },
+  "5/4": { name: "Assimétrico (3+2)", uso: "Jazz, música progressiva" },
+  "7/8": { name: "Assimétrico (3+2+2)", uso: "Música balcânica, progressivo" },
+  "9/8": { name: "Ternário composto", uso: "Música celta, clássica" },
+  "5/8": { name: "Assimétrico (3+2)", uso: "Música contemporânea" },
+  "7/4": { name: "Assimétrico (4+3)", uso: "Jazz e rock progressivo" },
+};
+
+const SUBDIVISIONS: Subdivision[] = ["none", "eighth", "triplet", "sixteenth"];
+
+// Compassos com denominador 8 (o pulso já é a colcheia)
+function isEighthPulse(ts: TimeSignature): boolean {
+  return ts.endsWith("/8");
+}
 
 // ── Geometria do seletor circular de BPM ──────────────────────────────────────
 const DIAL_CENTER = 120; // centro do viewBox 240x240
@@ -133,19 +196,20 @@ const MIN_BPM = 40;
 const MAX_BPM = 240;
 
 function getBeatsPerBar(ts: TimeSignature): number {
-  if (ts === "2/4") return 2;
-  if (ts === "3/4") return 3;
-  if (ts === "6/8") return 6;
-  return 4;
+  return parseInt(ts.split("/")[0], 10);
 }
 
 function getSubdivisionMultiplier(sub: Subdivision, ts: TimeSignature): number {
-  if (ts === "6/8") {
-    // Em 6/8 cada "tempo" já é uma colcheia — então colcheia = 1x, semicolcheia = 2x.
+  if (isEighthPulse(ts)) {
+    // Nos compassos em /8 cada "tempo" já é uma colcheia — colcheia = 1x,
+    // semicolcheia = 2x, tercina (de colcheia) = 3x.
     if (sub === "sixteenth") return 2;
+    if (sub === "triplet") return 3;
     return 1;
   }
+  // Pulso em semínima (/4) ou mínima (/2): subdivisões relativas ao tempo.
   if (sub === "sixteenth") return 4;
+  if (sub === "triplet") return 3;
   if (sub === "eighth") return 2;
   return 1;
 }
@@ -314,9 +378,9 @@ export default function Metronome() {
   const handleTimeSignatureChange = (ts: TimeSignature) => {
     if (ts === timeSignature) return;
     setTimeSignature(ts);
-    // Em 6/8 o pulso já é a colcheia; se "Colcheias" estava marcada, volta
-    // para "Sem subdivisão" (o botão fica desabilitado nesse compasso).
-    if (ts === "6/8" && subdivision === "eighth") setSubdivision("none");
+    // Nos compassos em /8 o pulso já é a colcheia; se "Colcheias" estava
+    // marcada, volta para "Sem subdivisão" (o botão fica desabilitado).
+    if (isEighthPulse(ts) && subdivision === "eighth") setSubdivision("none");
     const saved = loadSavedAccents();
     setAccentPattern(sanitizeAccents(saved[ts], ts));
     resetBeat();
@@ -343,7 +407,7 @@ export default function Metronome() {
     setBpmClamped(detectedBpm);
     if (ts && ts !== timeSignature) {
       setTimeSignature(ts);
-      if (ts === "6/8" && subdivision === "eighth") setSubdivision("none");
+      if (isEighthPulse(ts) && subdivision === "eighth") setSubdivision("none");
       const saved = loadSavedAccents();
       setAccentPattern(sanitizeAccents(saved[ts], ts));
       resetBeat();
@@ -607,14 +671,16 @@ export default function Metronome() {
           <div className="grid sm:grid-cols-2 gap-6 mt-6">
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">Compasso</div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {TIME_SIGNATURES.map((ts) => (
                   <button
                     key={ts}
                     onClick={() => handleTimeSignatureChange(ts)}
                     aria-pressed={timeSignature === ts}
+                    aria-label={`${ts} — ${TIME_SIGNATURE_INFO[ts].name}`}
+                    title={`${TIME_SIGNATURE_INFO[ts].name} · ${TIME_SIGNATURE_INFO[ts].uso}`}
                     className={cn(
-                      "flex-1 py-3 rounded-xl font-bold transition-all border notranslate",
+                      "py-3 rounded-xl font-bold transition-all border notranslate",
                       timeSignature === ts
                         ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
                         : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
@@ -625,14 +691,19 @@ export default function Metronome() {
                   </button>
                 ))}
               </div>
+              <p className="text-[11px] text-muted-foreground/70 mt-2">
+                <span className="text-white/80 font-semibold notranslate" translate="no">{timeSignature}</span>
+                {" — "}
+                {TIME_SIGNATURE_INFO[timeSignature].name} · {TIME_SIGNATURE_INFO[timeSignature].uso}
+              </p>
             </div>
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">Subdivisão</div>
               <div className="flex gap-2">
                 {SUBDIVISIONS.map((s) => {
-                  // Em 6/8 o pulso já é a colcheia — "Colcheias" não acrescenta
-                  // nada, então o botão fica desabilitado com a explicação.
-                  const redundant = timeSignature === "6/8" && s === "eighth";
+                  // Nos compassos em /8 o pulso já é a colcheia — "Colcheias"
+                  // não acrescenta nada; o botão fica desabilitado com dica.
+                  const redundant = isEighthPulse(timeSignature) && s === "eighth";
                   return (
                     <button
                       key={s}
@@ -642,7 +713,7 @@ export default function Metronome() {
                       aria-label={SUBDIVISION_LABELS[s]}
                       title={
                         redundant
-                          ? "Em 6/8 o pulso já é em colcheias — use Semicolcheias para subdividir."
+                          ? `Em ${timeSignature} o pulso já é em colcheias — use Semicolcheias ou Tercinas para subdividir.`
                           : SUBDIVISION_LABELS[s]
                       }
                       className={cn(
