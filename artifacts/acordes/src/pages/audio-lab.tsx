@@ -49,8 +49,6 @@ import {
   prepareStemsUpload,
   pollStemsStatus,
   stemsFileUrl,
-  fetchStemBeats,
-  analyzeBeatsBlob,
   type FetchedCifra,
   type CifraCandidate,
 } from "@/lib/cifra-remote";
@@ -64,7 +62,6 @@ import {
 import { LiveStudioPlayer } from "@/lib/audio-live";
 import {
   analyzeBpm,
-  computeBeatGrid,
   type BpmOption,
   type BpmRelation,
   type DetectedTimeSignature,
@@ -2262,28 +2259,6 @@ const METRO_MIN_BPM = 40;
 const METRO_MAX_BPM = 240;
 const METRO_DEFAULT_BPM = 90;
 
-// Deriva a FASE (deslocamento em segundos) de uma grade CONSTANTE a partir dos
-// instantes reais rastreados. Usa a média circular de (t mod T): o único
-// deslocamento que melhor alinha o pulso constante às batidas reais do começo ao
-// fim — travando o clique na batida forte/grave sem virar uma grade variável.
-function constantPhaseFromBeats(beats: number[], bpm: number): number | null {
-  if (bpm <= 0 || beats.length < 4) return null;
-  const T = 60 / bpm;
-  let sx = 0;
-  let sy = 0;
-  for (const t of beats) {
-    const frac = (((t % T) + T) % T) / T; // [0, 1)
-    const ang = 2 * Math.PI * frac;
-    sx += Math.cos(ang);
-    sy += Math.sin(ang);
-  }
-  if (sx === 0 && sy === 0) return null;
-  let ang = Math.atan2(sy, sx);
-  if (ang < 0) ang += 2 * Math.PI;
-  const phase = (ang / (2 * Math.PI)) * T;
-  return ((phase % T) + T) % T;
-}
-
 // Ajuste fino de sincronia do clique (em segundos). O clique agora toca no MESMO
 // AudioContext da música (mesmo relógio de saída), então não há mais a latência
 // do <audio> em streaming para compensar — o padrão é 0. O controle continua
@@ -2366,11 +2341,6 @@ function StemMixer({
   const [bpmOptions, setBpmOptions] = useState<BpmOption[]>([]);
   const [bpmChoice, setBpmChoice] = useState(-1);
   const [bpmRecommended, setBpmRecommended] = useState(-1);
-  const [bpmRecomputing, setBpmRecomputing] = useState(false);
-  // Buffer + compasso guardados para recalcular a grade quando o usuário troca de
-  // opção — sem re-mapear a faixa inteira (evita reprocessar o áudio à toa).
-  const analysisBufferRef = useRef<AudioBuffer | null>(null);
-  const analysisTsRef = useRef<DetectedTimeSignature | null>(null);
   // Token para descartar recálculos de grade obsoletos (troca rápida de opção).
   const gridTokenRef = useRef(0);
   // Calibração de sincronia (s): o áudio em streaming tem uma latência um pouco
@@ -2429,64 +2399,47 @@ function StemMixer({
     bpmDetectingRef.current = bpmDetecting;
   }, [bpmDetecting]);
 
-  // Identifica o andamento do INSTRUMENTAL separado do MESMO jeito que o módulo
-  // "Metrônomo": primeiro MAPEIA o instrumental inteiro com o detector oficial
-  // (`analyzeBpm` — bandas de frequência, envelope de onsets, consenso por
-  // autocorrelação + tempograma e validação por oitava) e SÓ ENTÃO define o
-  // tempo do clique. A oitava é travada no BPM já confirmado no envio (escolhe a
-  // opção metade/principal/dobro mais próxima), então `computeBeatGrid` refina o
-  // BPM preciso + a FASE (posição da 1ª batida) sobre a faixa toda — é isso que
-  // mantém o clique colado do começo ao fim, sem lista de instantes.
-  // Refina o BPM PRECISO + fase (grade constante) para uma dada oitava e aplica
-  // no motor do clique. Usada tanto na detecção inicial quanto na troca de opção.
-  const computeAndApplyGrid = useCallback(
-    async (buffer: AudioBuffer, bpm: number | null, ts: DetectedTimeSignature | null, token: number) => {
-      const grid = await computeBeatGrid(buffer, bpm, ts);
-      if (token !== gridTokenRef.current) return;
-      setMetroBeats(null);
-      if (grid) {
-        const clamped = Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, grid.bpm));
-        setMetroBpm(clamped);
-        setMetroOffset(grid.beatOffsetSec);
-        setMetroTs(grid.timeSignature ?? ts);
-      } else {
-        setMetroBpm(bpm ?? METRO_DEFAULT_BPM);
-        setMetroOffset(0);
-        setMetroTs(ts);
-      }
-    },
-    [],
-  );
+  // Identifica o andamento EXATAMENTE como o módulo "Metrônomo": `analyzeBpm`
+  // varre a música inteira, escolhe sozinho o trecho mais rítmico (~10 s, o
+  // mais fácil de ler a batida) e mede ali o BPM e a POSIÇÃO da 1ª batida
+  // (phaseSec). O clique da mesa usa ESSE BPM na música inteira e ancora o
+  // 1º clique NAQUELA batida (início do trecho + phaseSec), estendendo o pulso
+  // constante para frente e para trás — a mesma âncora que faz o módulo
+  // Metrônomo soar perfeito. Nenhum outro passo recalcula a fase por cima.
+  const analysisSegStartRef = useRef(0);
 
-  // Troca a oitava do clique para a opção escolhida (metade/principal/dobro) e
-  // recalcula a fase sobre a faixa toda — sem re-mapear o áudio.
+  // Aplica uma opção (metade/principal/dobro) no motor do clique, ancorando na
+  // batida detectada do trecho analisado. Síncrono — trocar de oitava é imediato.
+  const applyOptionGrid = useCallback((opt: BpmOption) => {
+    const T = 60 / opt.bpm;
+    const anchor = analysisSegStartRef.current + opt.phaseSec;
+    // Fase da grade no tempo 0 da música (pulso constante passa pela âncora).
+    const offset = ((anchor % T) + T) % T;
+    setMetroBeats(null);
+    setMetroBpm(Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, opt.bpm)));
+    setMetroOffset(offset);
+  }, []);
+
+  // Troca a oitava do clique para a opção escolhida (metade/principal/dobro),
+  // reaproveitando a fase medida pelo detector para essa opção.
   const applyBpmOption = useCallback(
-    async (index: number) => {
-      const buffer = analysisBufferRef.current;
+    (index: number) => {
       const opt = bpmOptions[index];
-      if (!buffer || !opt || opt.bpm <= 0) return;
+      if (!opt || opt.bpm <= 0) return;
       setBpmChoice(index);
-      setBpmRecomputing(true);
-      const token = ++gridTokenRef.current;
-      try {
-        await computeAndApplyGrid(buffer, opt.bpm, analysisTsRef.current, token);
-      } finally {
-        if (token === gridTokenRef.current) setBpmRecomputing(false);
-      }
+      applyOptionGrid(opt);
     },
-    [bpmOptions, computeAndApplyGrid],
+    [bpmOptions, applyOptionGrid],
   );
 
   useEffect(() => {
     let cancelled = false;
     const token = ++gridTokenRef.current;
     setBpmDetecting(true);
-    setBpmRecomputing(false);
     setMetroBeats(null);
     setBpmOptions([]);
     setBpmChoice(-1);
     setBpmRecommended(-1);
-    analysisBufferRef.current = null;
     (async () => {
       const bpmHint = typeof initialBpm === "number" && initialBpm > 0 ? initialBpm : null;
       try {
@@ -2505,85 +2458,54 @@ function StemMixer({
           sourceFile ?? new File([blob], "instrumental", { type: blob.type || "audio/wav" });
         const buffer = await fileToAudioBuffer(file);
         if (cancelled) return;
-        analysisBufferRef.current = buffer;
 
-        // 1) Mapeia o áudio (original quando disponível) com o detector do
-        //    Metrônomo, gerando as 3 opções (metade/principal/dobro). O padrão
-        //    selecionado é a oitava mais próxima do BPM já confirmado no envio
-        //    (mesmo detector, mesmo áudio — consistente); o usuário pode trocar.
-        let gridBpm = bpmHint;
-        let gridTs: DetectedTimeSignature | null = initialTimeSignature ?? null;
-        let chosenIndex = -1;
-        try {
-          const analysis = await analyzeBpm(buffer);
-          if (!cancelled && analysis.options.length > 0) {
-            chosenIndex =
-              analysis.recommendedIndex >= 0 && analysis.recommendedIndex < analysis.options.length
-                ? analysis.recommendedIndex
-                : 0;
-            if (bpmHint && bpmHint > 0) {
-              let bestDelta = Infinity;
-              analysis.options.forEach((opt, i) => {
-                const d = Math.abs(opt.bpm - bpmHint);
-                if (d < bestDelta) {
-                  bestDelta = d;
-                  chosenIndex = i;
-                }
-              });
-            }
-            const chosen = analysis.options[chosenIndex];
-            if (chosen && chosen.bpm > 0) gridBpm = chosen.bpm;
-            if (analysis.timeSignature) gridTs = analysis.timeSignature;
-            setBpmOptions(analysis.options);
-            setBpmChoice(chosenIndex);
-            setBpmRecommended(analysis.recommendedIndex);
-          }
-        } catch {
-          // Mantém a dica do envio se o mapeamento falhar.
-        }
-        if (cancelled) return;
-        analysisTsRef.current = gridTs;
+        // Mapeia a música INTEIRA com o detector do módulo Metrônomo: ele
+        // escolhe sozinho o trecho mais rítmico (mais fácil de identificar o
+        // BPM), mede o tempo e a posição exata da 1ª batida ali, e gera as
+        // 3 opções (metade/principal/dobro). O padrão selecionado é a oitava
+        // mais próxima do BPM já confirmado no envio (mesmo detector, mesmo
+        // áudio — consistente); o usuário pode trocar.
+        const analysis = await analyzeBpm(buffer);
+        if (cancelled || token !== gridTokenRef.current) return;
 
-        // 2) Grade constante (BPM + fase) como RESERVA imediata: o clique já
-        //    funciona enquanto o rastreamento fino não chega.
-        await computeAndApplyGrid(buffer, gridBpm, gridTs, token);
+        const gridTs: DetectedTimeSignature | null =
+          analysis.timeSignature ?? initialTimeSignature ?? null;
+        setMetroTs(gridTs);
 
-        // 3) Refina a grade CONSTANTE com a leitura precisa do rastreador do
-        //    estúdio (que mede a batida grave/forte — bumbo/contrabaixo). NÃO
-        //    trocamos por uma lista de instantes variável (o usuário já rejeitou
-        //    isso duas vezes — soa pior): mantemos o pulso constante, mas com o
-        //    ANDAMENTO MÉDIO exato e a FASE travada na batida real. Isso corrige
-        //    o "começa fora do tempo" (fase) e o "atrasa no meio" (andamento
-        //    enviesado que ia acumulando erro). Se falhar, fica a grade anterior.
-        if (!cancelled && token === gridTokenRef.current) {
-          let key = "";
-          try {
-            key = new URL(instrumentalUrl, window.location.origin).searchParams.get("key") ?? "";
-          } catch {
-            key = "";
+        if (analysis.options.length > 0) {
+          analysisSegStartRef.current = analysis.segment?.start ?? 0;
+          let chosenIndex =
+            analysis.recommendedIndex >= 0 && analysis.recommendedIndex < analysis.options.length
+              ? analysis.recommendedIndex
+              : 0;
+          if (bpmHint && bpmHint > 0) {
+            let bestDelta = Infinity;
+            analysis.options.forEach((opt, i) => {
+              const d = Math.abs(opt.bpm - bpmHint);
+              if (d < bestDelta) {
+                bestDelta = d;
+                chosenIndex = i;
+              }
+            });
           }
-          // Com o áudio original em mãos, o rastreador do estúdio mede a batida
-          // na MISTURA COMPLETA (bumbo/baixo intactos) — não no stem separado.
-          const tracked = sourceFile
-            ? await analyzeBeatsBlob(sourceFile, gridBpm)
-            : key
-              ? await fetchStemBeats(key, gridBpm)
-              : await analyzeBeatsBlob(blob, gridBpm);
-          if (
-            !cancelled &&
-            token === gridTokenRef.current &&
-            tracked &&
-            tracked.bpm > 0 &&
-            tracked.beats.length >= 8
-          ) {
-            const phase = constantPhaseFromBeats(tracked.beats, tracked.bpm);
-            if (phase !== null) {
-              setMetroBeats(null);
-              setMetroBpm(Math.max(METRO_MIN_BPM, Math.min(METRO_MAX_BPM, tracked.bpm)));
-              setMetroOffset(phase);
-              if (tracked.meter) setMetroTs(tracked.meter);
-            }
+          setBpmOptions(analysis.options);
+          setBpmChoice(chosenIndex);
+          setBpmRecommended(analysis.recommendedIndex);
+          const chosen = analysis.options[chosenIndex];
+          if (chosen && chosen.bpm > 0) {
+            // Mesma âncora do módulo Metrônomo: 1ª batida do trecho analisado,
+            // estendida com pulso constante para a música inteira.
+            applyOptionGrid(chosen);
+          } else {
+            setMetroBeats(null);
+            setMetroBpm(bpmHint ?? METRO_DEFAULT_BPM);
+            setMetroOffset(0);
           }
+        } else {
+          // Sem batida clara: fica com o BPM do envio, sem âncora de fase.
+          setMetroBeats(null);
+          setMetroBpm(bpmHint ?? METRO_DEFAULT_BPM);
+          setMetroOffset(0);
         }
       } catch {
         if (!cancelled && token === gridTokenRef.current) {
@@ -2602,7 +2524,7 @@ function StemMixer({
       // para não aplicar estado após desmontar/trocar de música.
       gridTokenRef.current++;
     };
-  }, [instrumentalUrl, initialBpm, initialTimeSignature, sourceFile, computeAndApplyGrid]);
+  }, [instrumentalUrl, initialBpm, initialTimeSignature, sourceFile, applyOptionGrid]);
 
   // Cria os dois elementos de áudio uma única vez por par de faixas.
   useEffect(() => {
@@ -2882,7 +2804,6 @@ function StemMixer({
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-[11px] text-white/40">
-              {bpmRecomputing && <Loader2 className="w-3 h-3 animate-spin" />}
               <span className="notranslate" translate="no">
                 {Math.round(metroBpm)} BPM · {metroTs ?? "4/4"}
               </span>
@@ -2900,9 +2821,8 @@ function StemMixer({
                     key={opt.relation}
                     type="button"
                     onClick={() => applyBpmOption(idx)}
-                    disabled={bpmRecomputing}
                     className={cn(
-                      "relative rounded-xl border px-2 py-2 flex flex-col items-center transition-all disabled:opacity-60 disabled:cursor-not-allowed",
+                      "relative rounded-xl border px-2 py-2 flex flex-col items-center transition-all",
                       active
                         ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
                         : "border-white/10 bg-white/[0.03] hover:border-white/25",

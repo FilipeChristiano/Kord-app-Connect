@@ -64,9 +64,9 @@ elements over full buffer decode. Reserve Web Audio buffers for short clips or
 when sample-accurate scheduling is truly required.
 
 ## Rule: tempo identification must run on the ORIGINAL full mix, never on a separated stem
-The mixer's BPM/phase detection (analyzeBpm + computeBeatGrid + server beat tracking)
-must analyze the original uploaded song (`sourceFile` prop), not the separated
-instrumental. Separated stem is only a fallback when the original is unavailable.
+The mixer's BPM/phase detection (analyzeBpm) must analyze the original uploaded
+song (`sourceFile` prop), not the separated instrumental. Separated stem is only
+a fallback when the original is unavailable.
 **Why:** separation (center-extraction DSP and even Demucs mp3) attenuates/alters
 kick and bass, so detection on the stem picked wrong BPM and locked the click on
 the offbeat ("contratempo"), while the standalone Metronome — which analyzes the
@@ -74,6 +74,20 @@ full mix — was perfect on the same song.
 **How to apply:** any tempo/beat analysis in the stem mixer should decode ONE
 buffer (the original mix — same cost as decoding one stem) and feed the same
 detector chain the Metronome module uses; playback stays streaming.
+
+## Rule: mixer click anchors ONLY on analyzeBpm's segment beat — no extra phase stages
+The mixer grid is the Metronome module's result verbatim: constant pulse with
+offset = (segment.start + option.phaseSec) mod T, extended over the whole song.
+Do NOT re-estimate phase with a second pass (whole-track grid recompute, server
+beat tracking, circular-mean phase, etc.).
+**Why:** every extra "refinement" stage recalculated the phase over material the
+detector didn't pick and repeatedly overrode the good anchor — the user reported
+offbeat/late clicks until all post-processing was removed; the module is judged
+"perfect" precisely because it uses only the best-segment anchor. User explicitly
+asked: analyze whole song, pick the easiest segment, use that BPM everywhere.
+**How to apply:** on option switch, reuse that option's phaseSec from the same
+segment (synchronous, no re-analysis). If precision complaints return, tune the
+detector itself (lib/bpm-detector), never re-add a phase-override stage.
 
 ## Rule: octave/BPM options in Audio Lab mirror the Metronome, default stays upload-locked
 The Audio Lab StemMixer exposes the same 3 tempo options as the standalone Metronome
