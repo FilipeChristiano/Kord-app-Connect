@@ -14,15 +14,15 @@ export const clerkAppearance = {
         : `${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: "hsl(20, 100%, 55%)",
-    colorForeground: "hsl(40, 33%, 96%)",
-    colorMutedForeground: "hsl(40, 15%, 70%)",
+    colorPrimary: "hsl(252, 100%, 70%)",
+    colorForeground: "hsl(0, 0%, 98%)",
+    colorMutedForeground: "hsl(240, 10%, 70%)",
     colorDanger: "hsl(0, 75%, 60%)",
     colorBackground: "hsl(224, 38%, 9%)",
     colorInput: "hsl(224, 35%, 12%)",
-    colorInputForeground: "hsl(40, 33%, 96%)",
-    colorNeutral: "hsl(40, 20%, 80%)",
-    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+    colorInputForeground: "hsl(0, 0%, 98%)",
+    colorNeutral: "hsl(240, 12%, 82%)",
+    fontFamily: "'Inter', system-ui, sans-serif",
     borderRadius: "0.75rem",
   },
   elements: {
@@ -36,10 +36,10 @@ export const clerkAppearance = {
     socialButtonsBlockButtonText: "text-white font-medium",
     formFieldLabel: "text-white/90 font-medium",
     footerActionLink:
-      "text-[hsl(20,100%,60%)] hover:text-[hsl(20,100%,70%)] font-medium",
+      "text-[hsl(252,100%,74%)] hover:text-[hsl(252,100%,82%)] font-medium",
     footerActionText: "text-white/70",
     dividerText: "text-white/50",
-    identityPreviewEditButton: "text-[hsl(20,100%,60%)] hover:text-[hsl(20,100%,70%)]",
+    identityPreviewEditButton: "text-[hsl(252,100%,74%)] hover:text-[hsl(252,100%,82%)]",
     formFieldSuccessText: "text-green-400",
     alertText: "text-white",
     logoBox: "flex justify-center mb-4",
@@ -47,9 +47,9 @@ export const clerkAppearance = {
     socialButtonsBlockButton:
       "bg-white/5 hover:bg-white/10 border border-white/10 transition-colors",
     formButtonPrimary:
-      "bg-gradient-to-br from-[hsl(20, 100%, 55%)] to-[hsl(14,90%,42%)] hover:brightness-110 text-white font-semibold shadow-lg shadow-[hsl(20, 100%, 55%)]/20 transition-all",
+      "bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] hover:brightness-110 text-white font-semibold shadow-lg shadow-[#7d48f0]/25 transition-all",
     formFieldInput:
-      "bg-[hsl(224,35%,12%)] border border-white/10 text-white placeholder:text-white/40 focus:border-[hsl(20, 100%, 55%)]",
+      "bg-[hsl(224,35%,12%)] border border-white/10 text-white placeholder:text-white/40 focus:border-[hsl(252,100%,70%)]",
     footerAction: "text-center",
     dividerLine: "bg-white/10",
     alert: "bg-red-950/40 border border-red-500/30 text-red-200",
