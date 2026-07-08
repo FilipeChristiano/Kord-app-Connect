@@ -1,9 +1,9 @@
 ---
 name: Enarmonia no dicionário de acordes
-description: O dicionário guarda só uma grafia enarmônica por acorde; UIs devem exibir o token clicado, não o nome do dicionário.
+description: Ids do dicionário são bemóis legados, names exibem "sustenido/bemol"; popups devem exibir o token clicado e espelhar as imagens do dicionário.
 ---
 
-O dicionário de acordes (CHORDS) guarda apenas UMA grafia enarmônica de cada acorde — em geral com bemóis. `chordIdForToken` mapeia C# e Db para o mesmo id. Atenção: ids legados podem diferir do nome exibido (ex.: id "Db9M" exibe "Db7M(9)") — nunca renomear ids, só `name`, senão quebram rotas, favoritos e o mapa de imagens do PDF.
+O dicionário de acordes (CHORDS) tem UMA entrada por acorde de tecla preta, com ids em bemol legado ("Db7M", "Db9M"...), mas o `name` exibe as DUAS grafias no padrão "sustenido/bemol" (ex.: "C#7M/Db7M"). `chordIdForToken` mapeia C# e Db para o mesmo id. Nunca renomear ids, só `name`, senão quebram rotas, favoritos e o mapa de imagens do PDF. A busca por raiz casa a raiz no início do nome ou após "/" (cuidado com nomes tipo "C#6/9/Db6/9").
 
 O popup das cifras deve espelhar EXATAMENTE o dicionário: imagens reais do PDF (getChordVariationImages/getChordOverviewImage) ou SVG só para tríades (CHORD_SVG_OVERRIDES) — nunca voicings computados ("variações inventadas").
 
