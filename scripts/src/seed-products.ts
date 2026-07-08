@@ -1,16 +1,16 @@
 import { getUncachableStripeClient } from "./stripeClient";
 
 /**
- * Cria o produto e o preço da assinatura mensal do Kordi na Stripe.
+ * Utilitário manual: garante o produto e o preço da assinatura mensal do
+ * Kordi na Stripe, com a MESMA reconciliação do servidor
+ * (artifacts/api-server/src/plan.ts) — que já roda automaticamente no
+ * startup. Mantenha os valores abaixo em sincronia com plan.ts.
  *
- * Idempotente: se o produto já existir, não cria de novo.
  * Rodar com: pnpm --filter @workspace/scripts exec tsx src/seed-products.ts
  */
-// NOTA: o servidor (artifacts/api-server/src/plan.ts) já garante o
-// produto/preço na inicialização. Este script é só um utilitário manual.
-// Mantenha o valor abaixo em sincronia com MONTHLY_AMOUNT_CENTS em plan.ts.
 const PRODUCT_NAME = "Kordi — Assinatura Mensal";
 const MONTHLY_AMOUNT_CENTS = 4990; // R$ 49,90
+const CURRENCY = "brl";
 
 async function createProducts() {
   try {
@@ -21,40 +21,58 @@ async function createProducts() {
       query: `name:'${PRODUCT_NAME}' AND active:'true'`,
     });
 
+    let productId: string;
     if (existing.data.length > 0) {
-      const product = existing.data[0]!;
-      console.log(`Produto já existe: ${product.id}`);
-      const prices = await stripe.prices.list({ product: product.id, active: true });
-      const monthly = prices.data.find((p) => p.recurring?.interval === "month");
-      if (monthly) {
-        console.log(`Preço mensal já existe: ${monthly.id} (${monthly.unit_amount} ${monthly.currency})`);
-        return;
-      }
-      const price = await stripe.prices.create({
-        product: product.id,
-        unit_amount: MONTHLY_AMOUNT_CENTS,
-        currency: "brl",
-        recurring: { interval: "month" },
+      const sorted = [...existing.data].sort((a, b) => {
+        const aKordi = a.metadata?.app === "kordi" ? 0 : 1;
+        const bKordi = b.metadata?.app === "kordi" ? 0 : 1;
+        if (aKordi !== bKordi) return aKordi - bKordi;
+        return a.created - b.created;
       });
-      console.log(`Preço mensal criado: ${price.id}`);
-      return;
+      productId = sorted[0]!.id;
+      console.log(`Produto já existe: ${productId}`);
+    } else {
+      const product = await stripe.products.create({
+        name: PRODUCT_NAME,
+        description:
+          "Acesso completo ao Kordi: dicionário de acordes, cifras inteligentes, sofisticador, audio lab, metrônomo, pads e modo estudo.",
+        metadata: { app: "kordi" },
+      });
+      productId = product.id;
+      console.log(`Produto criado: ${productId}`);
     }
 
-    const product = await stripe.products.create({
-      name: PRODUCT_NAME,
-      description:
-        "Acesso completo ao Kordi: dicionário de acordes, cifras inteligentes, sofisticador, audio lab, metrônomo, pads e modo estudo.",
-      metadata: { app: "kordi" },
-    });
-    console.log(`Produto criado: ${product.id}`);
+    const allPrices = [];
+    for await (const price of stripe.prices.list({
+      product: productId,
+      active: true,
+      limit: 100,
+    })) {
+      allPrices.push(price);
+    }
+    const monthly = allPrices.filter(
+      (p) => p.recurring?.interval === "month" && p.currency === CURRENCY,
+    );
 
-    const price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: MONTHLY_AMOUNT_CENTS,
-      currency: "brl",
-      recurring: { interval: "month" },
-    });
-    console.log(`Preço mensal criado: R$ 29,90/mês (${price.id})`);
+    const correct = monthly.find((p) => p.unit_amount === MONTHLY_AMOUNT_CENTS);
+    if (correct) {
+      console.log(`Preço mensal correto já existe: ${correct.id} (${correct.unit_amount} ${CURRENCY})`);
+    } else {
+      const price = await stripe.prices.create({
+        product: productId,
+        unit_amount: MONTHLY_AMOUNT_CENTS,
+        currency: CURRENCY,
+        recurring: { interval: "month" },
+      });
+      console.log(`Preço mensal criado: R$ 49,90/mês (${price.id})`);
+    }
+
+    for (const p of monthly) {
+      if (p.unit_amount !== MONTHLY_AMOUNT_CENTS) {
+        await stripe.prices.update(p.id, { active: false });
+        console.log(`Preço antigo desativado: ${p.id} (${p.unit_amount})`);
+      }
+    }
 
     console.log("Pronto! Os webhooks sincronizam esses dados para o banco automaticamente.");
   } catch (error) {

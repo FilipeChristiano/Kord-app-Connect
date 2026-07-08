@@ -32,7 +32,9 @@ async function getStripeCredentials(): Promise<{ secretKey: string; webhookSecre
     throw new Error(`Failed to fetch Stripe credentials: ${resp.status} ${resp.statusText}`);
   }
 
-  const data = await resp.json();
+  const data = (await resp.json()) as {
+    items?: Array<{ settings?: { secret_key?: string; secret?: string; webhook_secret?: string } }>;
+  };
   const settings = data.items?.[0]?.settings;
   const secretKey = settings?.secret_key ?? settings?.secret;
 
@@ -45,7 +47,7 @@ async function getStripeCredentials(): Promise<{ secretKey: string; webhookSecre
 
   return {
     secretKey,
-    webhookSecret: settings.webhook_secret,
+    webhookSecret: settings?.webhook_secret,
   };
 }
 

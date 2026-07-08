@@ -29,7 +29,20 @@ export async function ensurePlan(): Promise<void> {
 
   let productId: string;
   if (existing.data.length > 0) {
-    productId = existing.data[0]!.id;
+    // Seleção determinística: prefere o produto com metadata.app === "kordi";
+    // entre candidatos iguais, usa o mais antigo (menor `created`).
+    const sorted = [...existing.data].sort((a, b) => {
+      const aKordi = a.metadata?.app === "kordi" ? 0 : 1;
+      const bKordi = b.metadata?.app === "kordi" ? 0 : 1;
+      if (aKordi !== bKordi) return aKordi - bKordi;
+      return a.created - b.created;
+    });
+    productId = sorted[0]!.id;
+    if (existing.data.length > 1) {
+      console.warn(
+        `[stripe] atenção: ${existing.data.length} produtos ativos com o nome "${PRODUCT_NAME}"; usando ${productId}`,
+      );
+    }
   } else {
     const product = await stripe.products.create({
       name: PRODUCT_NAME,
@@ -40,8 +53,16 @@ export async function ensurePlan(): Promise<void> {
     console.log(`[stripe] produto criado: ${productId}`);
   }
 
-  const prices = await stripe.prices.list({ product: productId, active: true });
-  const monthly = prices.data.filter(
+  // Varre TODAS as páginas de preços ativos do produto (auto-paginação)
+  const allPrices = [];
+  for await (const price of stripe.prices.list({
+    product: productId,
+    active: true,
+    limit: 100,
+  })) {
+    allPrices.push(price);
+  }
+  const monthly = allPrices.filter(
     (p) => p.recurring?.interval === "month" && p.currency === CURRENCY,
   );
 
