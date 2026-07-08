@@ -590,11 +590,18 @@ function buildOptions(
       bpm,
       relation,
       confidence: ev.confidence,
-      phaseSec: ev.phaseFrames / envRate,
+      // + PHASE_LAG_COMP_SEC: a envelope de fluxo enxerga o ataque um pouco
+      // ANTES do pico perceptual da batida — sem compensar, o clique sai
+      // 30–70ms adiantado (medido vs librosa nas faixas de teste e confirmado
+      // de ouvido pelo usuário, que precisava de +40ms de ajuste fino).
+      phaseSec: ev.phaseFrames / envRate + PHASE_LAG_COMP_SEC,
       metrics: ev.metrics,
     };
   });
 }
+
+// Compensação fixa do adiantamento da envelope (s) — ver comentário acima.
+const PHASE_LAG_COMP_SEC = 0.04;
 
 // Escolhe a opção recomendada combinando as métricas de cada opção com uma
 // preferência por andamentos centrais (evita o viés de oitava — grades lentas

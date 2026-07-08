@@ -36,7 +36,9 @@ força. Solução: escolher a fase pelo perfil circular da envelope INTEIRA
 dobrada no período T com kernel estreito (~T/16): posições on-beat acumulam
 energia em todos os ciclos (no 3+3+2, tempos 1 e 3 são on-beat; a antecipação
 só aparece 1×/compasso). Validar comparando a grade (segStart+phaseSec+k·T)
-com beat_track do librosa nas faixas de teste.
+com beat_track do librosa nas faixas de teste. A envelope enxerga o ataque
+~40ms ANTES do pico perceptual: phaseSec carrega compensação fixa de +40ms
+(confirmada de ouvido pelo usuário) — sem ela o clique sai adiantado.
 
 **Why:** librosa também erra a métrica dessa música no servidor; a família ACF
 foi o único discriminador confiável (111 tem família forte, 139 e 75 não).
