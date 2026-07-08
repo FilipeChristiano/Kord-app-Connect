@@ -323,6 +323,12 @@ export default function AudioLab() {
 
   // ── Máxima qualidade: separação completa no servidor (gera as duas faixas) ──
   const [studioQuality, setStudioQuality] = useState<"fast" | "max">("fast");
+  // Aviso mostrado no modo rápido quando a máxima qualidade falhou e o app
+  // voltou sozinho para a separação rápida (fallback automático).
+  const [fastFallbackNotice, setFastFallbackNotice] = useState("");
+  // Preenchido depois que prepareFastMix é definido; permite ao fluxo de
+  // máxima qualidade disparar o preparo rápido sem problema de ordem.
+  const fastPrepareRef = useRef<(() => void) | null>(null);
   const [hqStatus, setHqStatus] = useState<"idle" | "preparing" | "ready" | "error">("idle");
   const [hqKey, setHqKey] = useState<string | null>(null);
   const [hqError, setHqError] = useState("");
@@ -400,6 +406,7 @@ export default function AudioLab() {
     stemRunIdRef.current++;
     fastRunIdRef.current++;
     hqRunIdRef.current++;
+    setFastFallbackNotice("");
     vocalsCancelRef.current?.();
     vocalsCancelRef.current = null;
     if (vocalsUrlRef.current) {
@@ -636,6 +643,18 @@ export default function AudioLab() {
   // ── Máxima qualidade: prepara as DUAS faixas no servidor (voz + sem voz) ────
   // Uma única preparação gera tudo. É mais lenta (alguns minutos), então o app
   // pede a preparação, acompanha o status e libera as faixas quando prontas.
+  // Falha na máxima qualidade → volta AUTOMATICAMENTE para o modo rápido
+  // (que roda no aparelho), avisando o usuário e já preparando as faixas.
+  const fallbackToFast = useCallback((msg: string) => {
+    setHqStatus("error");
+    setHqError(msg);
+    setFastFallbackNotice(
+      "A máxima qualidade não está disponível agora, então voltei para a separação rápida — ela toca na hora, direto no seu aparelho.",
+    );
+    setStudioQuality("fast");
+    fastPrepareRef.current?.();
+  }, []);
+
   const prepareHq = useCallback(async () => {
     if (hqStatus === "preparing") return;
     const runId = ++hqRunIdRef.current;
@@ -665,12 +684,12 @@ export default function AudioLab() {
     if (hqRunIdRef.current !== runId) return;
 
     if (!outcome.ok) {
-      setHqStatus("error");
-      setHqError(
-        outcome.reason === "unauthorized"
-          ? "Sua sessão expirou. Atualize a página e entre novamente."
-          : "Não consegui preparar a máxima qualidade agora. Tente novamente em instantes.",
-      );
+      if (outcome.reason === "unauthorized") {
+        setHqStatus("error");
+        setHqError("Sua sessão expirou. Atualize a página e entre novamente.");
+      } else {
+        fallbackToFast("Não consegui preparar a máxima qualidade agora. Tente novamente em instantes.");
+      }
       return;
     }
 
@@ -694,19 +713,17 @@ export default function AudioLab() {
         return;
       }
       if (status === "error") {
-        setHqStatus("error");
-        setHqError("Não consegui preparar a máxima qualidade dessa música. Tente outra vez.");
+        fallbackToFast("Não consegui preparar a máxima qualidade dessa música. Tente outra vez.");
         return;
       }
       if (Date.now() - startedAt > MAX_WAIT_MS) {
-        setHqStatus("error");
-        setHqError("A preparação está demorando mais que o esperado. Tente novamente.");
+        fallbackToFast("A preparação está demorando mais que o esperado. Tente novamente.");
         return;
       }
       hqPollTimerRef.current = window.setTimeout(() => void tick(), 3000);
     };
     hqPollTimerRef.current = window.setTimeout(() => void tick(), 3000);
-  }, [hqStatus, inputMode, cifraMeta, stemFileName]);
+  }, [hqStatus, inputMode, cifraMeta, stemFileName, fallbackToFast]);
 
   // ── Baixar a versão "sem voz" (gerada offline sob demanda) ─────────────────
   // O efeito ao vivo não gera arquivo; quando o usuário quer baixar, calculamos
@@ -860,6 +877,14 @@ export default function AudioLab() {
       if (fastRunIdRef.current === runId) setFastMixBusy(false);
     }
   }, [fastMixBusy, fastMixFetching, inputMode, cifraMeta, revokeFastMixUrls]);
+
+  // Mantém o "gatilho" do preparo rápido acessível ao fluxo de máxima qualidade
+  // (fallback automático), sem problema de ordem de declaração.
+  useEffect(() => {
+    fastPrepareRef.current = () => {
+      if (!fastMixUrls && !fastMixBusy && !fastMixFetching) void prepareFastMix();
+    };
+  }, [fastMixUrls, fastMixBusy, fastMixFetching, prepareFastMix]);
 
   // ── Pipeline: transcreve a letra do áudio/canto → identifica a música →
   //    busca a cifra pronta na internet. Nunca inventa letra nem acordes.
@@ -1868,7 +1893,10 @@ export default function AudioLab() {
                         Rápido
                       </button>
                       <button
-                        onClick={() => setStudioQuality("max")}
+                        onClick={() => {
+                          setFastFallbackNotice("");
+                          setStudioQuality("max");
+                        }}
                         className={cn(
                           "px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all",
                           studioQuality === "max"
@@ -1932,6 +1960,13 @@ export default function AudioLab() {
                       <p className="text-[12px] text-white/50 mt-2">
                         Preparando a mistura… {Math.round(fastMixProgress * 100)}%
                       </p>
+                    </div>
+                  )}
+
+                  {fastFallbackNotice && (
+                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{fastFallbackNotice}</span>
                     </div>
                   )}
 
