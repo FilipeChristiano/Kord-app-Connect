@@ -1,14 +1,16 @@
 import { useState } from "react";
 import {
-  Heart, Search, Music2, Wand2, Trash2, ArrowRight,
-  Copy, Check, X, FileText, ArrowLeft, ExternalLink, Maximize2,
+  Heart, Search, Music2, Wand2, Trash2,
+  Copy, Check, X, FileText, ArrowLeft, Maximize2,
 } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { CHORDS } from "@/data/chords";
 import { ChordCard } from "@/components/ChordCard";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useCifrasFavoritas, CifraFavorita } from "@/hooks/use-cifras-favoritas";
 import { CifraFullscreen } from "@/components/CifraFullscreen";
+import { CifraClicavel } from "@/components/CifraClicavel";
+import { ChordPopup } from "@/components/ChordPopup";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NIVEL_LABELS: Record<string, { label: string; color: string }> = {
@@ -30,9 +32,9 @@ function CifraModal({
   onRemover: (id: string) => void;
   onFullscreen: (cifra: CifraFavorita) => void;
 }) {
-  const [, navigate] = useLocation();
   const [copied, setCopied] = useState<"original" | "sofisticada" | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [popupChordId, setPopupChordId] = useState<string | null>(null);
   const nivel = NIVEL_LABELS[cifra.nivel] ?? NIVEL_LABELS.intermediario;
 
   const copy = (text: string, which: "original" | "sofisticada") => {
@@ -111,41 +113,13 @@ function CifraModal({
               {copied === "sofisticada" ? "Copiado!" : "Copiar cifra"}
             </button>
           </div>
-          <div className="bg-[#fdfcf9] border border-primary/25 rounded-xl px-5 py-5 font-mono text-sm text-zinc-800 leading-loose whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
-            {cifra.textoSofisticado}
+          <div className="bg-[#fdfcf9] border border-primary/25 rounded-xl px-5 py-5 font-mono text-sm text-zinc-800 leading-loose max-h-[60vh] overflow-y-auto">
+            <CifraClicavel texto={cifra.textoSofisticado} onChordClick={setPopupChordId} />
           </div>
+          <p className="text-[11px] text-white/25 mt-2">
+            Clique em um acorde roxo para ver a formação no teclado.
+          </p>
         </div>
-
-        {/* Substituições */}
-        {cifra.mudancas.length > 0 && (
-          <div className="px-6 pb-4">
-            <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-3">
-              Substituições realizadas ({cifra.mudancas.length})
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {cifra.mudancas.map((m, i) => (
-                <button
-                  key={i}
-                  onClick={() => m.chordId && navigate(`/acorde/${m.chordId}`)}
-                  disabled={!m.chordId}
-                  className={`flex items-center gap-1.5 bg-white/[0.04] border border-white/10 rounded-lg px-3 py-1.5 transition-colors ${
-                    m.chordId ? "hover:bg-white/[0.08] cursor-pointer" : "cursor-default"
-                  }`}
-                >
-                  <span className="text-white/40 font-mono text-xs">{m.original}</span>
-                  <ArrowRight className="w-3 h-3 text-white/20" />
-                  <span className="text-primary font-mono text-xs font-bold">{m.substituted}</span>
-                  {m.chordId && <ExternalLink className="w-2.5 h-2.5 text-white/20" />}
-                </button>
-              ))}
-            </div>
-            {cifra.mudancas.some((m) => m.chordId) && (
-              <p className="text-[11px] text-white/20 mt-2">
-                Clique em um acorde para ver os detalhes no dicionário.
-              </p>
-            )}
-          </div>
-        )}
 
         {/* Rodapé do modal */}
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/10">
@@ -182,6 +156,13 @@ function CifraModal({
           )}
         </div>
       </motion.div>
+
+      {/* Popup de formação do acorde */}
+      <AnimatePresence>
+        {popupChordId && (
+          <ChordPopup chordId={popupChordId} onClose={() => setPopupChordId(null)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -309,6 +290,7 @@ export default function Favorites() {
   const [tab, setTab] = useState<Tab>("acordes");
   const [cifraAberta, setCifraAberta] = useState<CifraFavorita | null>(null);
   const [cifraFullscreen, setCifraFullscreen] = useState<CifraFavorita | null>(null);
+  const [fsPopupChordId, setFsPopupChordId] = useState<string | null>(null);
   const { favorites, favoritesCount } = useFavorites();
   const { cifras, cifrasCount, removerCifra } = useCifrasFavoritas();
 
@@ -465,11 +447,21 @@ export default function Favorites() {
         {cifraFullscreen && (
           <CifraFullscreen
             title={cifraFullscreen.titulo}
-            onClose={() => setCifraFullscreen(null)}
+            onClose={() => { setCifraFullscreen(null); setFsPopupChordId(null); }}
           >
-            <div className="whitespace-pre leading-loose">
-              {cifraFullscreen.textoSofisticado}
+            <div className="leading-loose">
+              <CifraClicavel
+                texto={cifraFullscreen.textoSofisticado}
+                onChordClick={setFsPopupChordId}
+              />
             </div>
+            {/* Em fullscreen nativo só o elemento em tela cheia é visível,
+                então o popup precisa ser renderizado aqui dentro. */}
+            <AnimatePresence>
+              {fsPopupChordId && (
+                <ChordPopup chordId={fsPopupChordId} onClose={() => setFsPopupChordId(null)} />
+              )}
+            </AnimatePresence>
           </CifraFullscreen>
         )}
       </AnimatePresence>

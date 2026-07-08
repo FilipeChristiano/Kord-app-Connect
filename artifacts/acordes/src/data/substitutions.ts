@@ -509,6 +509,34 @@ export function chordIdForToken(token: string): string | undefined {
   return CHORD_ID_MAP[normalizeRoot(parsed.root)]?.[parsed.quality];
 }
 
+// Tokeniza uma linha de texto puro em acordes/texto, sem substituir nada —
+// usado para renderizar cifras salvas com acordes clicáveis (Favoritos etc).
+export interface PlainToken {
+  type: "chord" | "text";
+  value: string;
+  chordId?: string;
+}
+
+export function tokenizeChordText(line: string): PlainToken[] {
+  const tokens: PlainToken[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  CHORD_REGEX.lastIndex = 0;
+
+  while ((match = CHORD_REGEX.exec(line)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push({ type: "text", value: line.slice(lastIndex, match.index) });
+    }
+    const tokenStr = match[1];
+    tokens.push({ type: "chord", value: tokenStr, chordId: chordIdForToken(tokenStr) });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < line.length) {
+    tokens.push({ type: "text", value: line.slice(lastIndex) });
+  }
+  return tokens;
+}
+
 export function processChordChart(text: string, level: SophisticationLevel): ProcessedLine[] {
   const allParsed = extractAllParsed(text);
   const tonality  = detectTonality(allParsed, text);
