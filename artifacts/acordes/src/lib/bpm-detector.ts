@@ -332,18 +332,66 @@ function detectTempo(envSlice: Float32Array, envRate: number): TempoResult | nul
   for (let gi = 1; gi < gridLen; gi++) if (combined[gi] > combined[bestIdx]) bestIdx = gi;
 
   // Refino parabólico (em BPM)
-  let bpm = bpms[bestIdx];
-  if (bestIdx > 0 && bestIdx < gridLen - 1) {
-    const a = combined[bestIdx - 1];
-    const b = combined[bestIdx];
-    const c = combined[bestIdx + 1];
-    const denom = a - 2 * b + c;
-    if (denom !== 0) {
-      const delta = (0.5 * (a - c)) / denom;
-      if (delta > -1 && delta < 1) bpm = bpms[bestIdx] + delta;
+  const refineAt = (idx: number): number => {
+    let v = bpms[idx];
+    if (idx > 0 && idx < gridLen - 1) {
+      const a = combined[idx - 1];
+      const b = combined[idx];
+      const c = combined[idx + 1];
+      const denom = a - 2 * b + c;
+      if (denom !== 0) {
+        const delta = (0.5 * (a - c)) / denom;
+        if (delta > -1 && delta < 1) v = bpms[idx] + delta;
+      }
+    }
+    return clampBpm(v);
+  };
+  let bpm = refineAt(bestIdx);
+
+  // ── Correção de síncope (ex.: bossa/samba 3+3+2) ────────────────────────────
+  // Em músicas sincopadas o consenso pode travar num parcial rítmico (ex.: a
+  // periodicidade de 3 colcheias, ou um espúrio do tempograma) que NÃO é o pulso.
+  // Assinatura do pulso verdadeiro B nesses grooves: a ACF também tem picos nas
+  // "tercinas" vizinhas 2/3·B e 4/3·B. Um parcial espúrio não tem essa família.
+  // Se o vencedor não tem família e existe um pico alternativo com família forte
+  // e score razoável, o alternativo é o pulso real.
+  const famInRange = (b: number) => (2 * b) / 3 >= bpmMin && (4 * b) / 3 <= bpmMax;
+  const famAt = (b: number): number => {
+    // Janela ±2 bins: os picos da família raramente caem no bin exato arredondado
+    const at = (bb: number) => {
+      if (bb < bpmMin || bb > bpmMax) return 0;
+      const gi = Math.round(bb - bpmMin);
+      let best = 0;
+      for (let d = -2; d <= 2; d++) {
+        const j = gi + d;
+        if (j >= 0 && j < gridLen && acf[j] > best) best = acf[j];
+      }
+      return best;
+    };
+    return Math.min(at((2 * b) / 3), at((4 * b) / 3));
+  };
+  const famWinner = famAt(bpm);
+  // Só corrige se a família do vencedor é MENSURÁVEL (2/3·B e 4/3·B dentro da
+  // grade de busca) e fraca. Fora da grade não dá para afirmar que falta família.
+  if (famInRange(bpm) && famWinner < 0.45) {
+    let altIdx = -1;
+    for (let gi = 1; gi < gridLen - 1; gi++) {
+      if (!(combined[gi] > combined[gi - 1] && combined[gi] >= combined[gi + 1])) continue;
+      if (Math.abs(bpms[gi] - bpm) <= 2) continue;
+      // Meia/dupla oitava do vencedor não é "outro pulso": já é coberta pelas
+      // opções metade/dobro — trocar aqui só mudaria a oitava indevidamente.
+      const ratio = bpms[gi] / bpm;
+      if (Math.abs(ratio - 0.5) < 0.04 || Math.abs(ratio - 2) < 0.16) continue;
+      const f = famAt(bpms[gi]);
+      if (f < 0.55 || f < famWinner + 0.2) continue;
+      if (combined[gi] < 0.5 * combined[bestIdx]) continue;
+      if (altIdx < 0 || combined[gi] > combined[altIdx]) altIdx = gi;
+    }
+    if (altIdx >= 0) {
+      bestIdx = altIdx;
+      bpm = refineAt(altIdx);
     }
   }
-  bpm = clampBpm(bpm);
 
   // ── Estatísticas da curva de consenso (para a proeminência) ─────────────────
   let cMean = 0;
