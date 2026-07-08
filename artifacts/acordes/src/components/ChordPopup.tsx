@@ -1,15 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { X, Play } from "lucide-react";
+import { X, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { getChordById } from "@/data/chords";
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { splitHands } from "@/lib/notes";
 import { playChordVoicing } from "@/lib/piano";
+import { getVoicings7M } from "@/lib/voicings";
+import { cn } from "@/lib/utils";
 
 /**
  * Popup minimalista com a formação de um acorde: nome, fórmula, notas no
- * piano e variações. Funciona também por cima da cifra em tela cheia
- * (deve ser renderizado DENTRO do elemento em fullscreen nativo).
+ * piano e variações no teclado (mesmos voicings do Dicionário de Acordes).
+ * Funciona também por cima da cifra em tela cheia (deve ser renderizado
+ * DENTRO do elemento em fullscreen nativo).
  */
 export function ChordPopup({
   chordId,
@@ -19,6 +22,12 @@ export function ChordPopup({
   onClose: () => void;
 }) {
   const chord = getChordById(chordId);
+  const [active, setActive] = useState(0);
+
+  // Volta para a 1ª variação quando o popup passa a mostrar outro acorde.
+  useEffect(() => {
+    setActive(0);
+  }, [chordId]);
 
   // Esc fecha só o popup (capture + stopPropagation para não fechar
   // também a tela cheia, que escuta Esc em bubble no window).
@@ -35,11 +44,19 @@ export function ChordPopup({
 
   if (!chord) return null;
 
+  // Acordes de 4+ notas têm as mesmas variações (voicings) do dicionário.
+  const voicings = chord.notes.length >= 4 ? getVoicings7M(chord.id, chord.notes) : null;
+  const voicing = voicings ? voicings[Math.min(active, voicings.length - 1)] : null;
+
   const { leftHand, rightHand } = splitHands(chord.notes, chord.category);
   const isFechado = chord.category === "Mão Esquerda — Fechado";
 
+  const shownLeft = voicing ? voicing.leftHand : leftHand;
+  const shownRight = voicing ? voicing.rightHand : rightHand;
+  const shownBaseOctave = voicing ? 0 : isFechado ? 1 : 0;
+
   const tocar = () => {
-    playChordVoicing(leftHand, rightHand, { leftBaseOctave: isFechado ? 1 : 0 });
+    playChordVoicing(shownLeft, shownRight, { leftBaseOctave: shownBaseOctave });
   };
 
   return (
@@ -59,7 +76,7 @@ export function ChordPopup({
         initial={{ scale: 0.94, opacity: 0, y: 12 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.94, opacity: 0, y: 12 }}
-        className="bg-[#12121f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+        className="bg-[#12121f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
@@ -90,15 +107,63 @@ export function ChordPopup({
           </div>
         </div>
 
+        {/* Seletor de variações (mesmos voicings do dicionário) */}
+        {voicings && (
+          <div className="px-5 pb-3">
+            <div className="flex items-center justify-between bg-black/30 rounded-xl px-3 py-2 border border-white/5">
+              <button
+                onClick={() => setActive((a) => (a - 1 + voicings.length) % voicings.length)}
+                className="p-1 text-white/40 hover:text-white transition-colors"
+                aria-label="Variação anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-white leading-tight">
+                  Variação {Math.min(active, voicings.length - 1) + 1}
+                  <span className="text-white/40 font-normal"> / {voicings.length}</span>
+                </p>
+                <p className="text-[11px] text-white/40">{voicing!.label}</p>
+              </div>
+              <button
+                onClick={() => setActive((a) => (a + 1) % voicings.length)}
+                className="p-1 text-white/40 hover:text-white transition-colors"
+                aria-label="Próxima variação"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Piano com as notas */}
         <div className="px-5">
           <PianoKeyboard
-            leftHandNotes={leftHand}
-            rightHandNotes={rightHand}
-            leftHandBaseOctave={isFechado ? 1 : 0}
+            leftHandNotes={shownLeft}
+            rightHandNotes={shownRight}
+            leftHandBaseOctave={shownBaseOctave}
             className="w-full"
           />
         </div>
+
+        {/* Indicadores de variação */}
+        {voicings && (
+          <div className="flex justify-center gap-1.5 pt-3">
+            {voicings.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActive(i)}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-200",
+                  i === Math.min(active, voicings.length - 1)
+                    ? "bg-[#8B5CF6] w-4"
+                    : "bg-white/20 w-1.5 hover:bg-white/40",
+                )}
+                aria-label={`Variação ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Notas */}
         <div className="px-5 pt-4">
@@ -117,11 +182,11 @@ export function ChordPopup({
           </div>
         </div>
 
-        {/* Variações */}
+        {/* Acordes relacionados */}
         {chord.variations && chord.variations.length > 0 && (
           <div className="px-5 pt-4 pb-5">
             <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">
-              Variações
+              Acordes relacionados
             </p>
             <div className="flex flex-wrap gap-1.5">
               {chord.variations.map((v, i) => (
