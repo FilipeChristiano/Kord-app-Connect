@@ -19,22 +19,44 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "")
   .filter(Boolean);
 
 app.use(
-  cors({
-    credentials: true,
-    origin: (origin, callback) => {
-      // Same-origin requests (no Origin header) — always allow
-      if (!origin) return callback(null, true);
-      // Explicit allowlist via env var
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      // Replit dev/preview/deploy domains
-      if (
-        /\.replit\.(dev|app|co)$/i.test(new URL(origin).hostname) ||
-        /\.repl\.co$/i.test(new URL(origin).hostname)
-      ) {
-        return callback(null, true);
+  cors((req, callback) => {
+    const origin = req.headers.origin;
+    const requestHosts = [
+      req.headers.host,
+      ...(typeof req.headers["x-forwarded-host"] === "string"
+        ? req.headers["x-forwarded-host"].split(",").map((h) => h.trim())
+        : []),
+    ].filter(Boolean);
+
+    let allowed = false;
+    // Same-origin requests (no Origin header) — always allow
+    if (!origin) {
+      allowed = true;
+    } else {
+      let originHostname = "";
+      let originHost = "";
+      try {
+        const url = new URL(origin);
+        originHostname = url.hostname;
+        originHost = url.host;
+      } catch {
+        // Malformed Origin header — not allowed
       }
+      allowed =
+        // Explicit allowlist via env var
+        allowedOrigins.includes(origin) ||
+        // Same-origin: the Origin host matches the host serving this request
+        // (covers custom domains like kordi.app.br automatically)
+        requestHosts.includes(originHost) ||
+        // Replit dev/preview/deploy domains
+        /\.replit\.(dev|app|co)$/i.test(originHostname) ||
+        /\.repl\.co$/i.test(originHostname);
+    }
+
+    if (!allowed) {
       return callback(new Error(`CORS blocked: ${origin}`));
-    },
+    }
+    callback(null, { credentials: true, origin: true });
   }),
 );
 app.use(express.json());

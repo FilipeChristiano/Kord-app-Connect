@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import {
   Switch,
   Route,
@@ -21,20 +21,22 @@ import { KeepAlive } from "@/components/KeepAlive";
 import { useAccess } from "@/hooks/use-access";
 import { clerkAppearance, clerkLocalization } from "@/lib/clerk-appearance";
 
-import Home from "@/pages/home";
-import Dictionary from "@/pages/dictionary";
-import ChordDetail from "@/pages/chord-detail";
-import StudyMode from "@/pages/study";
-import Favorites from "@/pages/favorites";
-import Applications from "@/pages/applications";
-import ChordSubstitutor from "@/pages/chord-substitutor";
-import AudioLab from "@/pages/audio-lab";
-import Metronome from "@/pages/metronome";
-import PadContinuous from "@/pages/pad-continuous";
-import NotFound from "@/pages/not-found";
-import SignInPage from "@/pages/sign-in";
-import SignUpPage from "@/pages/sign-up";
-import NoAccessPage from "@/pages/no-access";
+// Páginas carregadas sob demanda (code-splitting): o app abre com um bundle
+// inicial pequeno e cada tela baixa seu código só quando visitada.
+const Home = lazy(() => import("@/pages/home"));
+const Dictionary = lazy(() => import("@/pages/dictionary"));
+const ChordDetail = lazy(() => import("@/pages/chord-detail"));
+const StudyMode = lazy(() => import("@/pages/study"));
+const Favorites = lazy(() => import("@/pages/favorites"));
+const Applications = lazy(() => import("@/pages/applications"));
+const ChordSubstitutor = lazy(() => import("@/pages/chord-substitutor"));
+const AudioLab = lazy(() => import("@/pages/audio-lab"));
+const Metronome = lazy(() => import("@/pages/metronome"));
+const PadContinuous = lazy(() => import("@/pages/pad-continuous"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const SignInPage = lazy(() => import("@/pages/sign-in"));
+const SignUpPage = lazy(() => import("@/pages/sign-up"));
+const NoAccessPage = lazy(() => import("@/pages/no-access"));
 
 const queryClient = new QueryClient();
 
@@ -102,6 +104,7 @@ function ProtectedAppRoutes() {
   // já cacheados) continuam no Switch normal.
   return (
     <Layout>
+      <Suspense fallback={<LoadingScreen />}>
       <KeepAlive active={location === "/sofisticador"}>
         <ChordSubstitutor />
       </KeepAlive>
@@ -132,12 +135,14 @@ function ProtectedAppRoutes() {
         <Route path="/estudo" component={EmptyRoute} />
         <Route component={NotFound} />
       </Switch>
+      </Suspense>
     </Layout>
   );
 }
 
 function AppRoutes() {
   return (
+    <Suspense fallback={<LoadingScreen />}>
     <Switch>
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
@@ -156,6 +161,7 @@ function AppRoutes() {
         )}
       </Route>
     </Switch>
+    </Suspense>
   );
 }
 

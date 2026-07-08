@@ -47,10 +47,49 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,woff2}"],
+        // Pré-cache apenas do essencial (código + ícones). As imagens pesadas
+        // (variações de acordes, visão geral, pads) NÃO entram no pré-cache —
+        // senão o app baixa dezenas de MB na primeira visita e parece "travado
+        // carregando". Elas são cacheadas sob demanda (runtimeCaching abaixo).
+        globPatterns: ["**/*.{js,css,html,svg,woff2}", "*.png"],
+        globIgnores: [
+          "variacoes/**",
+          "visao_geral/**",
+          "pads/**",
+          "images/**",
+          "piano/**",
+          "harmonic-logo-hero.png",
+          "harmonic-logo-horizontal.png",
+        ],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: `${basePath}index.html`,
         navigateFallbackDenylist: [/^\/api/],
+        runtimeCaching: [
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|webp|gif)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "kordi-images",
+              expiration: {
+                maxEntries: 600,
+                maxAgeSeconds: 60 * 60 * 24 * 90,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/pads\/.*\.(?:mp3|ogg|wav|m4a)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "kordi-pads",
+              expiration: {
+                maxEntries: 40,
+                maxAgeSeconds: 60 * 60 * 24 * 90,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       devOptions: {
         enabled: false,
