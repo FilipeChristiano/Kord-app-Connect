@@ -41,7 +41,7 @@ const PRESETS: Preset[] = [
   // Worship & Gospel
   { id: "adoracao-profunda", name: "Adoração Profunda", bpm: 68, range: "60–72", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Momentos íntimos e contemplativos", group: "Worship & Gospel" },
   { id: "worship-moderno", name: "Worship Moderno", bpm: 74, range: "72–80", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Pop worship contemporâneo", group: "Worship & Gospel" },
-  { id: "worship-6-8", name: "Worship 6/8", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", accents: [S, W, W, M, W, W], description: "Compasso composto, fluido", group: "Worship & Gospel" },
+  { id: "worship-6-8", name: "Worship 6/8", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "none", accents: [S, W, W, M, W, W], description: "Compasso composto, fluido", group: "Worship & Gospel" },
   { id: "balada-gospel", name: "Balada Gospel", bpm: 82, range: "76–90", timeSignature: "4/4", subdivision: "none", accents: [S, W, M, W], description: "Baladas clássicas do gospel", group: "Worship & Gospel" },
   { id: "pentecostal-moderado", name: "Pentecostal Moderado", bpm: 96, range: "90–105", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Levada pentecostal padrão", group: "Worship & Gospel" },
   { id: "pentecostal-rapido", name: "Pentecostal Rápido", bpm: 126, range: "120–140", timeSignature: "4/4", subdivision: "sixteenth", accents: [S, W, M, W], description: "Avivamento e celebração", group: "Worship & Gospel" },
@@ -57,7 +57,7 @@ const PRESETS: Preset[] = [
   // Momentos do Culto
   { id: "oracao", name: "Oração", bpm: 60, range: "55–68", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Fundo suave para orar", group: "Momentos do Culto" },
   { id: "ministracao", name: "Ministração", bpm: 66, range: "60–72", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Base para ministração da Palavra", group: "Momentos do Culto" },
-  { id: "espontaneo-worship", name: "Espontâneo Worship", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "eighth", accents: [S, W, W, M, W, W], description: "Espontâneos com fluidez em 6/8", group: "Momentos do Culto" },
+  { id: "espontaneo-worship", name: "Espontâneo Worship", bpm: 58, range: "55–68", timeSignature: "6/8", subdivision: "none", accents: [S, W, W, M, W, W], description: "Espontâneos com fluidez em 6/8", group: "Momentos do Culto" },
   { id: "fundo-de-pregacao", name: "Fundo de Pregação", bpm: 62, range: "55–70", timeSignature: "4/4", subdivision: "none", accents: [S, W, W, W], description: "Cama discreta para pregação", group: "Momentos do Culto" },
   { id: "encerramento", name: "Encerramento", bpm: 70, range: "65–78", timeSignature: "4/4", subdivision: "eighth", accents: [S, W, M, W], description: "Momento final do louvor", group: "Momentos do Culto" },
 ];
@@ -314,6 +314,9 @@ export default function Metronome() {
   const handleTimeSignatureChange = (ts: TimeSignature) => {
     if (ts === timeSignature) return;
     setTimeSignature(ts);
+    // Em 6/8 o pulso já é a colcheia; se "Colcheias" estava marcada, volta
+    // para "Sem subdivisão" (o botão fica desabilitado nesse compasso).
+    if (ts === "6/8" && subdivision === "eighth") setSubdivision("none");
     const saved = loadSavedAccents();
     setAccentPattern(sanitizeAccents(saved[ts], ts));
     resetBeat();
@@ -340,6 +343,7 @@ export default function Metronome() {
     setBpmClamped(detectedBpm);
     if (ts && ts !== timeSignature) {
       setTimeSignature(ts);
+      if (ts === "6/8" && subdivision === "eighth") setSubdivision("none");
       const saved = loadSavedAccents();
       setAccentPattern(sanitizeAccents(saved[ts], ts));
       resetBeat();
@@ -625,24 +629,35 @@ export default function Metronome() {
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">Subdivisão</div>
               <div className="flex gap-2">
-                {SUBDIVISIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => handleSubdivisionChange(s)}
-                    aria-pressed={subdivision === s}
-                    aria-label={SUBDIVISION_LABELS[s]}
-                    title={SUBDIVISION_LABELS[s]}
-                    className={cn(
-                      "flex-1 py-3 rounded-xl text-xl leading-none font-bold transition-all border notranslate",
-                      subdivision === s
-                        ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
-                        : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
-                    )}
-                    translate="no"
-                  >
-                    {SUBDIVISION_GLYPHS[s]}
-                  </button>
-                ))}
+                {SUBDIVISIONS.map((s) => {
+                  // Em 6/8 o pulso já é a colcheia — "Colcheias" não acrescenta
+                  // nada, então o botão fica desabilitado com a explicação.
+                  const redundant = timeSignature === "6/8" && s === "eighth";
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => handleSubdivisionChange(s)}
+                      disabled={redundant}
+                      aria-pressed={subdivision === s}
+                      aria-label={SUBDIVISION_LABELS[s]}
+                      title={
+                        redundant
+                          ? "Em 6/8 o pulso já é em colcheias — use Semicolcheias para subdividir."
+                          : SUBDIVISION_LABELS[s]
+                      }
+                      className={cn(
+                        "flex-1 py-3 rounded-xl text-xl leading-none font-bold transition-all border notranslate",
+                        subdivision === s
+                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                          : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
+                        redundant && "opacity-40 cursor-not-allowed hover:border-white/5 hover:text-muted-foreground",
+                      )}
+                      translate="no"
+                    >
+                      {SUBDIVISION_GLYPHS[s]}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

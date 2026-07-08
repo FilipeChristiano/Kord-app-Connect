@@ -29,14 +29,16 @@ export function playClick(
   time: number,
   kind: AccentLevel | "subdivision",
 ): void {
-  let freq = 600;
-  let peak = 0.16;
-  let duration = 0.025;
+  // Tique da subdivisão: mais grave e mais suave que os tempos, mas com volume
+  // suficiente para ser ouvido com clareza entre os cliques principais.
+  let freq = 640;
+  let peak = 0.24;
+  let duration = 0.035;
 
   if (kind === "subdivision") {
-    freq = 600;
-    peak = 0.16;
-    duration = 0.025;
+    freq = 640;
+    peak = 0.24;
+    duration = 0.035;
   } else {
     const cfg = ACCENT_CONFIG[kind];
     if (cfg.peak <= 0) return; // "Mudo" — não emite som
