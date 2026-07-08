@@ -11,7 +11,7 @@ export function CifraClicavel({
   onChordClick,
 }: {
   texto: string;
-  onChordClick: (chordId: string) => void;
+  onChordClick: (chordId: string, label: string) => void;
 }) {
   const linhas = useMemo(
     () => texto.split("\n").map((linha) => tokenizeChordText(linha)),
@@ -27,7 +27,7 @@ export function CifraClicavel({
               return (
                 <span
                   key={j}
-                  onClick={() => t.chordId && onChordClick(t.chordId)}
+                  onClick={() => t.chordId && onChordClick(t.chordId, t.value)}
                   title={t.chordId ? `Ver formação de ${t.value}` : t.value}
                   className={[
                     "font-bold text-[#7C3AED]",

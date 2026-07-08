@@ -74,12 +74,12 @@ function ChordToken({
   onChordClick,
 }: {
   sub: SubstitutionResult;
-  onChordClick: (id: string) => void;
+  onChordClick: (id: string, label: string) => void;
 }) {
   const changed = sub.original !== sub.substituted;
   return (
     <span
-      onClick={() => sub.chordId && onChordClick(sub.chordId)}
+      onClick={() => sub.chordId && onChordClick(sub.chordId, sub.substituted)}
       title={changed ? `${sub.original} → ${sub.substituted}` : sub.original}
       className={[
         "group relative cursor-pointer font-bold text-[#7C3AED] hover:text-[#6D28D9]",
@@ -103,7 +103,7 @@ function RenderedLine({
 }: {
   line: ProcessedLine;
   instrumental: boolean;
-  onChordClick: (id: string) => void;
+  onChordClick: (id: string, label: string) => void;
 }) {
   const text = lineToText(line);
   const trimmed = text.trim();
@@ -160,7 +160,7 @@ export default function ChordSubstitutor() {
   const { salvarCifra } = useCifrasFavoritas();
 
   const [fullscreenAberto, setFullscreenAberto] = useState(false);
-  const [popupChordId, setPopupChordId] = useState<string | null>(null);
+  const [popupChord, setPopupChord] = useState<{ id: string; label: string } | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [salvoId, setSalvoId] = useState<string | null>(null);
   const [tituloInput, setTituloInput] = useState("");
@@ -262,8 +262,8 @@ export default function ChordSubstitutor() {
 
   // Clicar num acorde abre um popup minimalista com a formação, em vez de
   // navegar para o dicionário — funciona igual dentro e fora da tela cheia.
-  const handleChordClick = (id: string) => {
-    setPopupChordId(id);
+  const handleChordClick = (id: string, label: string) => {
+    setPopupChord({ id, label });
   };
 
   const handleAbrirModal = () => {
@@ -462,7 +462,7 @@ export default function ChordSubstitutor() {
                 ? "Cifra original"
                 : "Cifra sofisticada"
             }
-            onClose={() => { setFullscreenAberto(false); setPopupChordId(null); }}
+            onClose={() => { setFullscreenAberto(false); setPopupChord(null); }}
           >
             {processed.map((line, i) => (
               <RenderedLine
@@ -475,8 +475,12 @@ export default function ChordSubstitutor() {
             {/* Em fullscreen nativo só o elemento em tela cheia é visível,
                 então o popup precisa ser renderizado aqui dentro. */}
             <AnimatePresence>
-              {popupChordId && (
-                <ChordPopup chordId={popupChordId} onClose={() => setPopupChordId(null)} />
+              {popupChord && (
+                <ChordPopup
+                  chordId={popupChord.id}
+                  label={popupChord.label}
+                  onClose={() => setPopupChord(null)}
+                />
               )}
             </AnimatePresence>
           </CifraFullscreen>
@@ -485,8 +489,12 @@ export default function ChordSubstitutor() {
 
       {/* Popup de formação do acorde (fora da tela cheia) */}
       <AnimatePresence>
-        {!fullscreenAberto && popupChordId && (
-          <ChordPopup chordId={popupChordId} onClose={() => setPopupChordId(null)} />
+        {!fullscreenAberto && popupChord && (
+          <ChordPopup
+            chordId={popupChord.id}
+            label={popupChord.label}
+            onClose={() => setPopupChord(null)}
+          />
         )}
       </AnimatePresence>
 

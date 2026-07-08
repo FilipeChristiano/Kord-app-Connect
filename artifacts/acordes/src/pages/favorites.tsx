@@ -34,7 +34,7 @@ function CifraModal({
 }) {
   const [copied, setCopied] = useState<"original" | "sofisticada" | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [popupChordId, setPopupChordId] = useState<string | null>(null);
+  const [popupChord, setPopupChord] = useState<{ id: string; label: string } | null>(null);
   const nivel = NIVEL_LABELS[cifra.nivel] ?? NIVEL_LABELS.intermediario;
 
   const copy = (text: string, which: "original" | "sofisticada") => {
@@ -114,7 +114,10 @@ function CifraModal({
             </button>
           </div>
           <div className="bg-[#fdfcf9] border border-primary/25 rounded-xl px-5 py-5 font-mono text-sm text-zinc-800 leading-loose max-h-[60vh] overflow-y-auto">
-            <CifraClicavel texto={cifra.textoSofisticado} onChordClick={setPopupChordId} />
+            <CifraClicavel
+              texto={cifra.textoSofisticado}
+              onChordClick={(id, label) => setPopupChord({ id, label })}
+            />
           </div>
           <p className="text-[11px] text-white/25 mt-2">
             Clique em um acorde roxo para ver a formação no teclado.
@@ -159,8 +162,12 @@ function CifraModal({
 
       {/* Popup de formação do acorde */}
       <AnimatePresence>
-        {popupChordId && (
-          <ChordPopup chordId={popupChordId} onClose={() => setPopupChordId(null)} />
+        {popupChord && (
+          <ChordPopup
+            chordId={popupChord.id}
+            label={popupChord.label}
+            onClose={() => setPopupChord(null)}
+          />
         )}
       </AnimatePresence>
     </motion.div>
@@ -290,7 +297,7 @@ export default function Favorites() {
   const [tab, setTab] = useState<Tab>("acordes");
   const [cifraAberta, setCifraAberta] = useState<CifraFavorita | null>(null);
   const [cifraFullscreen, setCifraFullscreen] = useState<CifraFavorita | null>(null);
-  const [fsPopupChordId, setFsPopupChordId] = useState<string | null>(null);
+  const [fsPopupChord, setFsPopupChord] = useState<{ id: string; label: string } | null>(null);
   const { favorites, favoritesCount } = useFavorites();
   const { cifras, cifrasCount, removerCifra } = useCifrasFavoritas();
 
@@ -447,19 +454,23 @@ export default function Favorites() {
         {cifraFullscreen && (
           <CifraFullscreen
             title={cifraFullscreen.titulo}
-            onClose={() => { setCifraFullscreen(null); setFsPopupChordId(null); }}
+            onClose={() => { setCifraFullscreen(null); setFsPopupChord(null); }}
           >
             <div className="leading-loose">
               <CifraClicavel
                 texto={cifraFullscreen.textoSofisticado}
-                onChordClick={setFsPopupChordId}
+                onChordClick={(id, label) => setFsPopupChord({ id, label })}
               />
             </div>
             {/* Em fullscreen nativo só o elemento em tela cheia é visível,
                 então o popup precisa ser renderizado aqui dentro. */}
             <AnimatePresence>
-              {fsPopupChordId && (
-                <ChordPopup chordId={fsPopupChordId} onClose={() => setFsPopupChordId(null)} />
+              {fsPopupChord && (
+                <ChordPopup
+                  chordId={fsPopupChord.id}
+                  label={fsPopupChord.label}
+                  onClose={() => setFsPopupChord(null)}
+                />
               )}
             </AnimatePresence>
           </CifraFullscreen>

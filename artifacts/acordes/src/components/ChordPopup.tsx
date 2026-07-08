@@ -14,12 +14,23 @@ import { cn } from "@/lib/utils";
  * Funciona também por cima da cifra em tela cheia (deve ser renderizado
  * DENTRO do elemento em fullscreen nativo).
  */
+// Grafia enarmônica: mesma tecla, outro nome (Db = C#). Usada para mostrar as
+// notas com sustenidos quando o acorde clicado na cifra foi escrito com "#".
+const FLAT_TO_SHARP: Record<string, string> = {
+  Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#",
+};
+
 export function ChordPopup({
   chordId,
   onClose,
+  label,
 }: {
   chordId: string;
   onClose: () => void;
+  /** Nome do acorde como está escrito na cifra (ex: "C#7M(9)"). Quando
+   *  informado, é exibido no lugar do nome do dicionário (ex: "Db9M"),
+   *  pois o dicionário guarda apenas uma grafia enarmônica de cada acorde. */
+  label?: string;
 }) {
   const chord = getChordById(chordId);
   const [active, setActive] = useState(0);
@@ -59,6 +70,14 @@ export function ChordPopup({
     playChordVoicing(shownLeft, shownRight, { leftBaseOctave: shownBaseOctave });
   };
 
+  // Nome exibido: o que está escrito na cifra, quando fornecido.
+  const displayName = label ?? chord.name;
+  // Se a cifra usa sustenido (C#…), mostramos as notas também em sustenidos.
+  const useSharps = /^[A-G]#/.test(displayName);
+  const displayNotes = useSharps
+    ? chord.notes.map((n) => FLAT_TO_SHARP[n] ?? n)
+    : chord.notes;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -66,7 +85,7 @@ export function ChordPopup({
       exit={{ opacity: 0 }}
       role="dialog"
       aria-modal="true"
-      aria-label={`Formação do acorde ${chord.name}`}
+      aria-label={`Formação do acorde ${displayName}`}
       className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm font-sans whitespace-normal"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -82,7 +101,7 @@ export function ChordPopup({
         <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
           <div className="flex items-baseline gap-3 min-w-0">
             <h2 className="font-display font-bold text-white text-2xl leading-none">
-              {chord.name}
+              {displayName}
             </h2>
             <span className="text-xs font-mono text-[#9673FF] bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 rounded-full px-2.5 py-0.5 whitespace-nowrap">
               {chord.formula}
@@ -171,7 +190,7 @@ export function ChordPopup({
             Notas
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {chord.notes.map((nota, i) => (
+            {displayNotes.map((nota, i) => (
               <span
                 key={i}
                 className="font-mono text-sm font-bold text-white bg-white/[0.06] border border-white/10 rounded-lg px-3 py-1"

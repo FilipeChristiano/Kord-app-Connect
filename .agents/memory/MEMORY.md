@@ -14,3 +14,4 @@
 - [Papel de cifra claro](cifra-light-paper.md) — shell escuro; só superfícies de cifra em papel claro com acorde #7C3AED; nunca text-primary lilás sobre papel claro.
 - [Real piano playback (acordes)](piano-playback.md) — chord audio must reuse the diagram's placeNotes voicing (octave 0 = C3/MIDI 48) via playChordVoicing; samples cover C3..C6, shift ≤1 tone.
 - [BPM síncope bossa (acordes)](bpm-syncopation.md) — teste de família ACF (2/3·B,4/3·B) corrige espúrios de síncope; exige família mensurável na grade e nunca troca oitava.
+- [Chord dictionary enharmonics](chord-enharmonics.md) — dicionário tem só uma grafia (bemóis); popups devem mostrar o token clicado via prop label, nunca chord.name.
