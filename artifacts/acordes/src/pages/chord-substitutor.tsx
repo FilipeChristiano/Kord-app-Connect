@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight, Heart, BookmarkCheck, Music2, Maximize2 } from "lucide-react";
-import { useLocation } from "wouter";
+import { Wand2, Copy, Check, RotateCcw, Heart, BookmarkCheck, Music2, Maximize2 } from "lucide-react";
 import {
   processChordChartFull,
   SophisticationLevel,
@@ -12,30 +11,12 @@ import {
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 import { useIsActive } from "@/components/KeepAlive";
 import { CifraFullscreen } from "@/components/CifraFullscreen";
+import { ChordPopup } from "@/components/ChordPopup";
 
-const LEVELS: { key: SophisticationLevel; label: string; description: string }[] = [
-  {
-    key: "suave",
-    label: "Suave",
-    description: "7M, m7, sus4 — refinamento leve e natural",
-  },
-  {
-    key: "intermediario",
-    label: "Intermediário",
-    description: "7M(9), m7(9), 7sus4 — worship moderno e emocional",
-  },
-  {
-    key: "avancado",
-    label: "Avançado",
-    description: "7M(9), m7(11), 7sus4(9) — harmonia cinematográfica",
-  },
-];
-
-const EXAMPLES = [
-  { label: "Louvor simples", text: "C  G  Am  F\nC  G  F  C" },
-  { label: "Gospel em Bb", text: "Bb  Eb  F  Bb\nGm  Cm  F  Bb" },
-  { label: "Tom de G", text: "G  Em  C  D\nG  D  Em  C" },
-  { label: "Adoração em Ab", text: "Ab  Db  Eb  Ab\nFm  Db  Eb  Ab" },
+const LEVELS: { key: SophisticationLevel; label: string }[] = [
+  { key: "suave", label: "Suave" },
+  { key: "intermediario", label: "Intermediário" },
+  { key: "avancado", label: "Avançado" },
 ];
 
 const SECTION_RE = /^\[[^\]]+\]$/;
@@ -172,10 +153,10 @@ export default function ChordSubstitutor() {
   const [inputText, setInputText] = useState("");
   const [level, setLevel] = useState<SophisticationLevel>("intermediario");
   const [copied, setCopied] = useState(false);
-  const [, navigate] = useLocation();
   const { salvarCifra } = useCifrasFavoritas();
 
   const [fullscreenAberto, setFullscreenAberto] = useState(false);
+  const [popupChordId, setPopupChordId] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [salvoId, setSalvoId] = useState<string | null>(null);
   const [tituloInput, setTituloInput] = useState("");
@@ -252,36 +233,10 @@ export default function ChordSubstitutor() {
     });
   };
 
+  // Clicar num acorde abre um popup minimalista com a formação, em vez de
+  // navegar para o dicionário — funciona igual dentro e fora da tela cheia.
   const handleChordClick = (id: string) => {
-    navigate(`/acorde/${id}`);
-  };
-
-  // Em tela cheia, clicar num acorde fecha o overlay antes de navegar
-  // (a página fica montada via keep-alive, então o overlay não sumiria sozinho).
-  // O overlay empilha um history state próprio; para não deixar entrada
-  // fantasma, primeiro desfazemos esse state (back) e só então navegamos.
-  // fsChordNavRef impede duplo clique rápido de empilhar múltiplos back().
-  const fsChordNavRef = useRef(false);
-  const handleChordClickFullscreen = (id: string) => {
-    if (fsChordNavRef.current) return;
-    fsChordNavRef.current = true;
-    const irParaAcorde = () => navigate(`/acorde/${id}`);
-    if (window.history.state?.kordiCifraFullscreen) {
-      window.addEventListener(
-        "popstate",
-        () => {
-          setFullscreenAberto(false);
-          irParaAcorde();
-          fsChordNavRef.current = false;
-        },
-        { once: true },
-      );
-      window.history.back();
-    } else {
-      setFullscreenAberto(false);
-      irParaAcorde();
-      fsChordNavRef.current = false;
-    }
+    setPopupChordId(id);
   };
 
   const handleAbrirModal = () => {
@@ -330,39 +285,20 @@ export default function ChordSubstitutor() {
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
           Nível de sofisticação
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {LEVELS.map((l) => (
             <button
               key={l.key}
               onClick={() => { setLevel(l.key); setSalvoId(null); }}
-              className={`flex flex-col items-start gap-1 p-4 rounded-xl border transition-all text-left ${
+              className={`flex items-center justify-center py-3 px-4 rounded-xl border transition-all ${
                 level === l.key
-                  ? "border-[#8B5CF6] bg-[#8B5CF6]/10 text-white shadow-lg shadow-violet-500/20"
-                  : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:bg-white/[0.04]"
+                  ? "border-[#8B5CF6] bg-[#8B5CF6]/10 shadow-lg shadow-violet-500/20"
+                  : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
               }`}
             >
-              <span className={`font-bold text-sm ${level === l.key ? "text-[#9673FF]" : ""}`}>{l.label}</span>
-              <span className={`text-xs leading-snug ${level === l.key ? "text-white/70" : "opacity-50"}`}>
-                {l.description}
+              <span className={`font-bold text-sm ${level === l.key ? "text-[#9673FF]" : "text-white/50"}`}>
+                {l.label}
               </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Examples */}
-      <div className="mb-4">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
-          Exemplos rápidos
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex.label}
-              onClick={() => { setInputText(ex.text); setSalvoId(null); }}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:border-[#8B5CF6]/50 hover:text-[#9673FF] transition-all"
-            >
-              {ex.label}
             </button>
           ))}
         </div>
@@ -488,68 +424,6 @@ export default function ChordSubstitutor() {
         </div>
       </div>
 
-      {/* Changes summary */}
-      <AnimatePresence>
-        {chordsChanged.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="mt-6"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <Info className="w-4 h-4 text-[#9673FF]" />
-              <p className="text-xs font-bold text-[#9673FF] uppercase tracking-widest">
-                Substituições realizadas ({chordsChanged.length})
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {chordsChanged.map((change, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2"
-                >
-                  <span className="text-white/50 font-mono text-xs">{change.original}</span>
-                  <ArrowRight className="w-3 h-3 text-white/30" />
-                  <button
-                    onClick={() => {
-                      const ch = chordsChanged[i];
-                      if (ch) {
-                        const found = processed
-                          .flatMap((l) => l.tokens)
-                          .find(
-                            (t) =>
-                              t.type === "chord" &&
-                              t.substitution?.substituted === ch.substituted &&
-                              t.substitution?.chordId
-                          );
-                        if (found?.substitution?.chordId) {
-                          handleChordClick(found.substitution.chordId);
-                        }
-                      }
-                    }}
-                    className="text-[#9673FF] font-mono text-xs font-bold hover:underline"
-                  >
-                    {change.substituted}
-                  </button>
-                  {change.harmonicFunction ? (
-                    <span className="text-[10px] text-white/40 italic">{change.harmonicFunction}</span>
-                  ) : (
-                    <span className="text-[10px] text-white/30">({change.category})</span>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-            <p className="text-xs text-white/30 mt-3">
-              Clique em qualquer acorde na cifra ou nas substituições acima para ver os detalhes.
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Cifra sofisticada em tela cheia */}
       <AnimatePresence>
         {fullscreenAberto && processed.length > 0 && (
@@ -559,17 +433,31 @@ export default function ChordSubstitutor() {
                 ? `Cifra sofisticada — Tom: ${detectedTonality.keyName} ${detectedTonality.isMinor ? "menor" : "maior"}`
                 : "Cifra sofisticada"
             }
-            onClose={() => setFullscreenAberto(false)}
+            onClose={() => { setFullscreenAberto(false); setPopupChordId(null); }}
           >
             {processed.map((line, i) => (
               <RenderedLine
                 key={i}
                 line={line}
                 instrumental={isInstrumentalChordLine(processed, i)}
-                onChordClick={handleChordClickFullscreen}
+                onChordClick={handleChordClick}
               />
             ))}
+            {/* Em fullscreen nativo só o elemento em tela cheia é visível,
+                então o popup precisa ser renderizado aqui dentro. */}
+            <AnimatePresence>
+              {popupChordId && (
+                <ChordPopup chordId={popupChordId} onClose={() => setPopupChordId(null)} />
+              )}
+            </AnimatePresence>
           </CifraFullscreen>
+        )}
+      </AnimatePresence>
+
+      {/* Popup de formação do acorde (fora da tela cheia) */}
+      <AnimatePresence>
+        {!fullscreenAberto && popupChordId && (
+          <ChordPopup chordId={popupChordId} onClose={() => setPopupChordId(null)} />
         )}
       </AnimatePresence>
 
