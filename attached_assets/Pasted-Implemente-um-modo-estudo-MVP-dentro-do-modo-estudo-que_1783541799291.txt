@@ -1,0 +1,236 @@
+Implemente um modo estudo MVP dentro do modo estudo que já existe no app. (O nome deve manter Modo Estudo. o MVP é só para saber que teremos atualizações futuras mais robustas. Informação interna, nada que o usuário deva saber)
+
+Objetivo: criar uma experiência simples de treino gamificado para tecladistas, sem reconhecimento de áudio, sem MIDI e sem transformar o app em curso.
+
+## Funcionalidades do MVP
+
+Adicionar 3 treinos principais:
+
+### 1. Desafio Diário
+
+Criar um desafio curto de aproximadamente 5 minutos.
+
+O desafio deve misturar:
+
+* 5 perguntas de acordes
+* 5 perguntas de transposição
+* 3 perguntas de inversões
+
+Ao concluir, mostrar:
+
+* acertos
+* erros
+* percentual de acerto
+* XP ganho
+* streak de dias consecutivos
+
+O usuário deve poder iniciar o desafio com um botão: **Começar Desafio Diário**.
+
+---
+
+### 2. Desafio dos Acordes
+
+Criar um treino simples de múltipla escolha.
+
+Funcionamento:
+
+* O app mostra o nome de um acorde.
+* O usuário escolhe entre 4 opções.
+* Cada opção deve mostrar as notas do acorde.
+* Ao responder, mostrar se acertou ou errou.
+* Ao final, mostrar resultado.
+
+Exemplos de acordes:
+
+* C
+* Am
+* G7
+* Dm7
+* Fmaj7
+* C/E
+* G/B
+* Dm9
+* A7
+* Em7
+
+Exemplo:
+
+Pergunta: **Quais notas formam Cmaj7?**
+
+Opções:
+
+* C E G B
+* C E G Bb
+* C Eb G B
+* C F G B
+
+---
+
+### 3. Treino de Transposição
+
+Criar um treino de múltipla escolha para transposição.
+
+Funcionamento:
+
+* O app mostra um acorde original e uma mudança.
+* O usuário escolhe a resposta correta entre 4 opções.
+* Ao responder, mostrar se acertou ou errou.
+* Ao final, mostrar resultado.
+
+Exemplos:
+
+* G subiu 1 tom = A
+* Am desceu 1 tom = Gm
+* C/E subiu 1 tom = D/F#
+* Fmaj7 desceu meio tom = Emaj7
+* Dm7 subiu 2 tons = F#m7
+
+---
+
+## Resposta do usuário no MVP
+
+Não usar reconhecimento de som.
+
+Não usar MIDI.
+
+Não pedir para o usuário conectar teclado.
+
+O usuário responde apenas por:
+
+* múltipla escolha
+* toque em botões
+* seleção visual na tela
+
+Isso é suficiente para validar retenção e uso diário no MVP.
+
+---
+
+## Gamificação simples
+
+Criar ou reaproveitar um sistema simples com:
+
+* XP total
+* XP por treino concluído
+* nível do usuário
+* streak diário
+* melhor pontuação
+* histórico básico dos últimos treinos
+
+Tabela de níveis:
+
+* Nível 1: 0 XP
+* Nível 2: 100 XP
+* Nível 3: 250 XP
+* Nível 4: 500 XP
+* Nível 5: 1000 XP
+
+Cada treino concluído deve gerar XP com base no desempenho.
+
+Sugestão:
+
+* 10 XP por treino concluído
+* +2 XP por resposta correta
+* bônus de 10 XP se acertar 80% ou mais
+* bônus de 20 XP se acertar 100%
+
+---
+
+## Interface
+
+Dentro do modo estudo atual, adicionar 3 cards:
+
+1. **Desafio Diário**
+
+   * descrição: Treino rápido para manter sua evolução todos os dias.
+   * botão: Começar
+
+2. **Desafio dos Acordes**
+
+   * descrição: Reconheça acordes e suas notas com velocidade.
+   * botão: Treinar
+
+3. **Treino de Transposição**
+
+   * descrição: Pratique mudanças de tom para ensaios e cultos.
+   * botão: Treinar
+
+Manter:
+
+* dark mode
+* visual premium
+* linguagem adulta
+* botões grandes
+* textos curtos
+* boa legibilidade
+* identidade visual atual do app
+
+Evitar:
+
+* aparência infantil
+* excesso de animações
+* linguagem de curso
+* módulos de aula
+* vídeos
+* comunidade
+* certificados
+
+---
+
+## Acessibilidade básica
+
+Adicionar apenas acessibilidade simples para o MVP:
+
+* textos claros
+* botões grandes
+* contraste alto
+* labels acessíveis nos botões e opções
+* compatibilidade básica com leitor de tela quando possível
+
+Não implementar ainda:
+
+* leitura por voz dos exercícios
+* reconhecimento de voz
+* reconhecimento de acordes por áudio
+* conexão MIDI
+
+Essas funcionalidades devem ficar para uma fase futura.
+
+---
+
+## Persistência de progresso
+
+Salvar localmente:
+
+* XP total
+* nível
+* streak
+* data do último desafio diário
+* melhor pontuação
+* histórico simples de resultados
+
+Usar o mesmo sistema de armazenamento já existente no app. Se não houver, usar localStorage ou banco local simples.
+
+---
+
+## Critério de conclusão do MVP
+
+Considerar pronto quando o usuário conseguir:
+
+1. Abrir o modo estudo.
+2. Ver os 3 cards de treino.
+3. Iniciar o Desafio Diário.
+4. Responder perguntas por múltipla escolha.
+5. Jogar o Desafio dos Acordes.
+6. Jogar o Treino de Transposição.
+7. Ver acertos, erros, percentual e XP.
+8. Ganhar XP.
+9. Ver nível e streak.
+10. Fechar e abrir o app mantendo o progresso salvo.
+
+Priorize funcionamento real e simples.
+
+Não crie arquitetura complexa.
+
+Não adicione funcionalidades além das listadas.
+
+O objetivo é validar o uso do Modo Estudo no MVP.
