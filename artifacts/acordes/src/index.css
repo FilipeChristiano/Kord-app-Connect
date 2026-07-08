@@ -5,6 +5,7 @@
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-display: 'Sora', 'Inter', system-ui, sans-serif;
   --font-brand: 'Sora', 'Inter', system-ui, sans-serif;
+  --font-music: 'Noto Music', 'Inter', system-ui, sans-serif;
 
   /* Escala tipográfica Kordi — tamanho / altura de linha */
   --text-display: clamp(2.125rem, 4.6vw, 4rem);          /* 34px to 64px */

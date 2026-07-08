@@ -765,7 +765,7 @@ export default function Metronome() {
                             : `${SUBDIVISION_LABELS[s]} — ${mult} cliques por tempo`
                       }
                       className={cn(
-                        "py-3 rounded-xl text-xl leading-none font-bold transition-all border notranslate",
+                        "py-3 rounded-xl font-music text-2xl leading-none transition-all border notranslate",
                         subdivision === s
                           ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
                           : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
