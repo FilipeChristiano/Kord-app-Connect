@@ -106,6 +106,17 @@ async function main() {
       `  ${o.relation}: ${o.bpm} bpm  conf=${o.confidence.toFixed(3)} phase=${o.phaseSec.toFixed(3)}s reg=${o.metrics.regularity.toFixed(2)} err=${o.metrics.meanErrorMs.toFixed(0)}ms stab=${o.metrics.stability.toFixed(2)} beats=${o.metrics.beatCount}`,
     );
   }
+  // Grade de cliques da opção principal (mesma conta do app: âncora no trecho)
+  const main_ = a.options[1];
+  const T = 60 / main_.bpm;
+  const anchor = a.segment.start + main_.phaseSec;
+  const offset = ((anchor % T) + T) % T;
+  const beats: number[] = [];
+  for (let t = offset; t < a.segment.end + 2 * T; t += T) {
+    if (t >= a.segment.start - 0.01) beats.push(Number(t.toFixed(3)));
+    if (beats.length >= 20) break;
+  }
+  console.log("grade principal (s):", beats.join(" "));
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

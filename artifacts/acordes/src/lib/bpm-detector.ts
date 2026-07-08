@@ -478,6 +478,7 @@ function pickOnsets(env: Float32Array): { idx: number; strength: number }[] {
 
 // Avalia o quanto uma grade de batidas em `bpm` se encaixa nos onsets do trecho.
 function evaluateCandidate(
+  env: Float32Array,
   onsets: { idx: number; strength: number }[],
   envRate: number,
   bpm: number,
@@ -509,15 +510,23 @@ function evaluateCandidate(
     return lo;
   };
 
-  // Busca da melhor fase (offset) que maximiza a força casada
+  // ── Fase pelo perfil circular da envelope ────────────────────────────────────
+  // Dobra a envelope INTEIRA no período T (média circular com kernel estreito).
+  // Posições de batida verdadeiras acumulam energia em TODOS os ciclos; ataques
+  // sincopados (antecipações da bossa, padrão 3+3+2) aparecem menos vezes por
+  // compasso e não dominam — ao contrário do antigo "onset mais próximo com
+  // tolerância T/2", que travava no contratempo em músicas sincopadas.
   const step = Math.max(1, Math.round(T / 24));
+  const kernelW = Math.max(1, T / 16);
   let bestPhase = 0;
   let bestScore = -1;
   for (let p = 0; p < T; p += step) {
     let score = 0;
-    for (let g = p; g <= totalFrames - 1; g += T) {
-      const oi = nearest(g);
-      if (Math.abs(idxs[oi] - g) <= tol) score += onsets[oi].strength;
+    for (let i = 0; i < totalFrames; i++) {
+      // distância circular do quadro i à fase p (em quadros)
+      let d = (((i - p) % T) + T) % T;
+      if (d > T / 2) d = T - d;
+      if (d <= kernelW) score += env[i] * (1 - d / kernelW);
     }
     if (score > bestScore) {
       bestScore = score;
@@ -576,7 +585,7 @@ function buildOptions(
     { bpm: clampBpm(detectedBpm * 2), relation: "dobro" },
   ];
   return defs.map(({ bpm, relation }) => {
-    const ev = evaluateCandidate(onsets, envRate, bpm, total);
+    const ev = evaluateCandidate(env, onsets, envRate, bpm, total);
     return {
       bpm,
       relation,

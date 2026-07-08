@@ -30,6 +30,14 @@ Depois de corrigido, o harness reproduziu o navegador real bin a bin (validado
 com página estática temporária em public/ + teste e2e; headless Chromium NÃO
 decodifica m4a/AAC — usar WAV).
 
+**Fase (contratempo):** nesses grooves, casar onsets esparsos com tolerância
+larga (T/2) trava a fase no contratempo — as antecipações graves dominam a
+força. Solução: escolher a fase pelo perfil circular da envelope INTEIRA
+dobrada no período T com kernel estreito (~T/16): posições on-beat acumulam
+energia em todos os ciclos (no 3+3+2, tempos 1 e 3 são on-beat; a antecipação
+só aparece 1×/compasso). Validar comparando a grade (segStart+phaseSec+k·T)
+com beat_track do librosa nas faixas de teste.
+
 **Why:** librosa também erra a métrica dessa música no servidor; a família ACF
 foi o único discriminador confiável (111 tem família forte, 139 e 75 não).
 **How to apply:** ao mexer no detector, rodar o harness nas faixas de teste e
