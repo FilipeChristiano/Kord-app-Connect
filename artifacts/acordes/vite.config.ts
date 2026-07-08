@@ -22,7 +22,7 @@ export default defineConfig({
     runtimeErrorOverlay(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "icon-kordi.svg", "apple-touch-icon.png"],
+      includeAssets: ["favicon.svg", "icon-kordi-k.png", "apple-touch-icon.png"],
       manifest: {
         name: "Kordi",
         short_name: "Kordi",
