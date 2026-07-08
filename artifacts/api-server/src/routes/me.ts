@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
-import { isEmailAllowed } from "../db";
+import { getAccessInfo } from "../db";
 
 const router: IRouter = Router();
 
@@ -27,11 +27,12 @@ router.get("/me", async (req: Request, res: Response) => {
       });
     }
 
-    const allowed = await isEmailAllowed(primaryEmail);
+    const access = await getAccessInfo(primaryEmail);
 
     return res.json({
       authenticated: true,
-      allowed,
+      allowed: access.allowed,
+      accessSource: access.source,
       email: primaryEmail,
       name: user.firstName ?? null,
     });

@@ -1,10 +1,11 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2, LogOut, Timer, Waves, AudioWaveform } from "lucide-react";
+import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2, LogOut, Timer, Waves, AudioWaveform, CreditCard } from "lucide-react";
 import { useClerk } from "@clerk/react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
+import { useAccess } from "@/hooks/use-access";
 import { motion, AnimatePresence } from "framer-motion";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -17,10 +18,32 @@ export function Layout({ children }: { children: ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { signOut } = useClerk();
+  const { data: access } = useAccess();
+  const [openingPortal, setOpeningPortal] = useState(false);
+  const isStripeSubscriber = access?.accessSource === "stripe";
 
   const handleSignOut = () => {
     setMobileMenuOpen(false);
     signOut({ redirectUrl: basePath || "/" });
+  };
+
+  const handleManageSubscription = async () => {
+    if (openingPortal) return;
+    setOpeningPortal(true);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch (err) {
+      console.error("Não foi possível abrir o portal de assinatura:", err);
+      setOpeningPortal(false);
+    }
   };
 
   useEffect(() => {
@@ -89,6 +112,18 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Link>
               ))}
               <div className="w-px h-4 bg-white/10 mx-2" />
+              {isStripeSubscriber && (
+                <button
+                  type="button"
+                  onClick={handleManageSubscription}
+                  disabled={openingPortal}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-sans font-medium whitespace-nowrap text-muted-foreground hover:text-white hover:bg-white/5 transition-all disabled:opacity-60"
+                  title="Gerenciar assinatura"
+                >
+                  <CreditCard className="w-4 h-4 opacity-70" />
+                  {openingPortal ? "Abrindo..." : "Assinatura"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSignOut}
@@ -142,6 +177,17 @@ export function Layout({ children }: { children: ReactNode }) {
                   )}
                 </Link>
               ))}
+              {isStripeSubscriber && (
+                <button
+                  type="button"
+                  onClick={handleManageSubscription}
+                  disabled={openingPortal}
+                  className="flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:bg-white/5 hover:text-white transition-all w-full text-left disabled:opacity-60"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  {openingPortal ? "Abrindo..." : "Gerenciar assinatura"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSignOut}

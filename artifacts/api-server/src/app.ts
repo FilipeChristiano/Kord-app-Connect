@@ -8,10 +8,47 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import { WebhookHandlers } from "./webhookHandlers";
 
 const app: Express = express();
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+// Webhook da Stripe: precisa do corpo BRUTO (Buffer) para verificar a
+// assinatura — registrado ANTES do express.json().
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res): Promise<void> => {
+    const signature = req.headers["stripe-signature"];
+    if (!signature) {
+      res.status(400).json({ error: "Missing stripe-signature" });
+      return;
+    }
+
+    try {
+      const sig = Array.isArray(signature) ? signature[0]! : signature;
+
+      if (!Buffer.isBuffer(req.body)) {
+        console.error(
+          "STRIPE WEBHOOK ERROR: req.body is not a Buffer. " +
+          "Ensure this route is registered BEFORE app.use(express.json())."
+        );
+        res.status(500).json({ error: "Webhook processing error" });
+        return;
+      }
+
+      await WebhookHandlers.processWebhook(req.body as Buffer, sig);
+      // Regras de acesso (ex.: reembolso total cancela a assinatura)
+      await WebhookHandlers.applyAccessRules(req.body as Buffer);
+
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error("Webhook error:", (error as Error).message);
+      res.status(400).json({ error: "Webhook processing error" });
+    }
+  },
+);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "")
   .split(",")
