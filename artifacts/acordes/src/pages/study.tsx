@@ -151,7 +151,7 @@ export default function StudyMode() {
         </button>
         <button 
           onClick={handleNext}
-          className="p-4 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground transition-all shadow-lg shadow-primary/30 focus:ring-2 focus:ring-white outline-none"
+          className="p-4 rounded-full btn-kordi focus:ring-2 focus:ring-white outline-none"
         >
           <ArrowRight className="w-6 h-6" />
         </button>

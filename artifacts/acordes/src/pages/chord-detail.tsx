@@ -384,7 +384,7 @@ export default function ChordDetail() {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => playDefaultVoicing(chord.notes, chord.category)}
-                className="flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary-hover active:scale-95"
+                className="flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 btn-kordi active:scale-95"
               >
                 <Play className="w-5 h-5 fill-current" />
                 Ouvir Acorde
@@ -394,7 +394,7 @@ export default function ChordDetail() {
                 className={cn(
                   "flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg",
                   favorite
-                    ? "bg-primary text-primary-foreground shadow-primary/20 hover:bg-primary-hover"
+                    ? "btn-kordi"
                     : "bg-secondary text-white hover:bg-secondary/80 border border-white/10"
                 )}
               >

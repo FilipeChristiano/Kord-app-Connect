@@ -385,7 +385,7 @@ export default function Favorites() {
                 </p>
                 <Link
                   href="/dicionario"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold btn-kordi"
                 >
                   <Search className="w-5 h-5" /> Explorar Dicionário
                 </Link>
@@ -427,7 +427,7 @@ export default function Favorites() {
                 </p>
                 <Link
                   href="/sofisticador"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-rose-500/80 text-white hover:bg-rose-500 transition-colors shadow-lg shadow-rose-500/20"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold btn-kordi"
                 >
                   <Wand2 className="w-5 h-5" /> Abrir Sofisticador
                 </Link>

@@ -660,7 +660,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
           <div className="flex items-center gap-3">
             <button
               onClick={stopRecording}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-primary-foreground bg-primary hover:bg-primary-hover transition-all"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold btn-kordi"
             >
               <Square className="w-4 h-4 fill-current" />
               Parar gravação
@@ -701,7 +701,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
               "w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold transition-all",
               analyzing
                 ? "bg-secondary text-muted-foreground cursor-wait"
-                : "bg-primary text-primary-foreground hover:bg-primary-hover shadow-lg shadow-primary/20",
+                : "btn-kordi",
             )}
           >
             {analyzing ? (
@@ -882,7 +882,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
               "w-full mt-5 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold transition-all",
               applied
                 ? "bg-green-500/20 text-green-300 border border-green-500/30"
-                : "bg-primary text-primary-foreground hover:bg-primary-hover shadow-lg shadow-primary/20 hover:-translate-y-0.5",
+                : "btn-kordi",
             )}
           >
             {applied ? (
@@ -998,7 +998,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
                       "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold transition-all",
                       tapApplied
                         ? "bg-green-500/20 text-green-300 border border-green-500/30"
-                        : "bg-primary text-primary-foreground hover:bg-primary-hover shadow-lg shadow-primary/20",
+                        : "btn-kordi",
                     )}
                   >
                     {tapApplied ? (

@@ -574,7 +574,7 @@ export default function Metronome() {
                 "flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-3 px-3 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-sm sm:text-lg transition-all duration-300 shadow-lg",
                 isPlaying
                   ? "bg-white text-background hover:bg-white/90 shadow-white/20"
-                  : "bg-primary text-primary-foreground hover:bg-primary-hover shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5",
+                  : "btn-kordi",
               )}
               aria-label={isPlaying ? "Pausar" : "Tocar"}
             >

@@ -1390,7 +1390,7 @@ export default function AudioLab() {
                       "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
                       searchTitle.trim().length === 0
                         ? "bg-white/5 text-white/30 cursor-not-allowed"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90",
+                        : "btn-kordi",
                     )}
                   >
                     <Search className="w-4 h-4" /> Pesquisar
@@ -1431,7 +1431,7 @@ export default function AudioLab() {
                     O Kordi detecta o tom, descobre a música pela letra e entrega a cifra.
                     Arraste o arquivo ou clique para escolher.
                   </p>
-                  <span className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-all">
+                  <span className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold btn-kordi">
                     <FileAudio className="w-5 h-5" />
                     Escolher áudio
                   </span>
@@ -1454,7 +1454,7 @@ export default function AudioLab() {
                   </p>
                   <button
                     onClick={startRecording}
-                    className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-all"
+                    className="mt-auto inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold btn-kordi"
                   >
                     <Mic className="w-5 h-5" />
                     Gravar canto
@@ -1763,7 +1763,7 @@ export default function AudioLab() {
                         "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
                         cifraQuery.trim().length === 0
                           ? "bg-white/5 text-white/30 cursor-not-allowed"
-                          : "bg-primary text-primary-foreground hover:bg-primary/90",
+                          : "btn-kordi",
                       )}
                     >
                       <Sparkles className="w-4 h-4" /> Detectar cifra
@@ -1812,7 +1812,7 @@ export default function AudioLab() {
                     </p>
                     <button
                       onClick={() => studioInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold btn-kordi"
                     >
                       <UploadCloud className="w-4 h-4" /> Enviar áudio (MP3, WAV)
                     </button>
@@ -1901,7 +1901,7 @@ export default function AudioLab() {
                           "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0",
                           fastMixBusy || fastMixFetching
                             ? "bg-white/[0.04] text-white/40 cursor-not-allowed"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90",
+                            : "btn-kordi",
                         )}
                       >
                         {fastMixBusy || fastMixFetching ? (
@@ -1977,7 +1977,7 @@ export default function AudioLab() {
                           "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0",
                           hqStatus === "preparing"
                             ? "bg-white/[0.04] text-white/40 cursor-not-allowed"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90",
+                            : "btn-kordi",
                         )}
                       >
                         {hqStatus === "preparing" ? (
@@ -2156,7 +2156,7 @@ export default function AudioLab() {
                     </button>
                     <button
                       onClick={sendChartToSofisticador}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold btn-kordi"
                     >
                       <Wand2 className="w-3.5 h-3.5" /> Sofisticar cifra
                     </button>
@@ -2780,7 +2780,7 @@ function StemMixer({
             "shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all",
             loadState === "loading" || bpmDetecting
               ? "bg-white/[0.06] text-white/40"
-              : "bg-primary text-primary-foreground hover:bg-primary/90",
+              : "btn-kordi",
           )}
           aria-label={bpmDetecting ? "Identificando o tempo…" : isPlaying ? "Pausar" : "Tocar"}
         >
@@ -2986,7 +2986,7 @@ function RecordingPanel({
       <div className="flex flex-wrap gap-3 justify-center">
         <button
           onClick={onStop}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold btn-kordi"
         >
           <Square className="w-4 h-4" /> Parar e identificar
         </button>

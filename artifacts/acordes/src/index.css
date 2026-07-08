@@ -228,6 +228,22 @@
   background: linear-gradient(135deg, #C24BF7, #4B45E8);
 }
 
+/* Botão padrão Kordi — gradiente da marca com brilho (igual ao CTA do hero) */
+.btn-kordi {
+  background-image: linear-gradient(135deg, #C24BF7 0%, #4B45E8 100%);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 28px -8px rgba(194, 75, 247, 0.5);
+  transition: filter 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.btn-kordi:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 0 34px -8px rgba(194, 75, 247, 0.65);
+}
+.btn-kordi:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* ===== Gradientes oficiais Kordi ===== */
 .bg-gradient-kordi {
   background: linear-gradient(135deg, #C24BF7 0%, #8B5CF6 45%, #4B45E8 100%);

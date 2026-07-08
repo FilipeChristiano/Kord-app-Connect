@@ -409,7 +409,7 @@ export default function ChordSubstitutor() {
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                   !outputText
                     ? "border-white/10 text-white/20 cursor-not-allowed"
-                    : "bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] border-transparent text-white shadow-lg shadow-violet-500/30 hover:opacity-90 cursor-pointer"
+                    : "btn-kordi border-transparent cursor-pointer"
                 }`}
               >
                 {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -552,7 +552,7 @@ export default function ChordSubstitutor() {
                 </button>
                 <button
                   onClick={handleConfirmarSalvar}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] hover:opacity-90 text-white text-sm font-bold transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl btn-kordi text-sm font-bold flex items-center justify-center gap-2"
                 >
                   <Heart className="w-4 h-4" /> Salvar
                 </button>

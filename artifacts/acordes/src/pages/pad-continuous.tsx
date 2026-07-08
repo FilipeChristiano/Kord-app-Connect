@@ -378,7 +378,7 @@ export default function PadContinuous() {
               <button
                 onClick={handlePause}
                 aria-label="Pausar"
-                className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary-hover transition-all"
+                className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl btn-kordi"
               >
                 <Pause className="w-5 h-5" />
               </button>
@@ -387,7 +387,7 @@ export default function PadContinuous() {
                 onClick={handlePlay}
                 disabled={isLoading}
                 aria-label="Tocar"
-                className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary-hover transition-all disabled:opacity-60"
+                className="flex items-center justify-center w-12 h-12 shrink-0 rounded-xl btn-kordi"
               >
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
               </button>
@@ -504,7 +504,7 @@ export default function PadContinuous() {
             </p>
             <Link
               href="/sofisticador"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold btn-kordi"
             >
               <Wand2 className="w-5 h-5" /> Abrir Sofisticador
             </Link>
@@ -558,7 +558,7 @@ export default function PadContinuous() {
           {isPlaying ? (
             <button
               onClick={handlePause}
-              className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/30 hover:bg-primary-hover hover:-translate-y-0.5 transition-all"
+              className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold btn-kordi"
             >
               <Pause className="w-6 h-6" /> Pausar
             </button>
@@ -566,7 +566,7 @@ export default function PadContinuous() {
             <button
               onClick={handlePlay}
               disabled={isLoading}
-              className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/30 hover:bg-primary-hover hover:-translate-y-0.5 transition-all disabled:opacity-60"
+              className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold btn-kordi"
             >
               {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Play className="w-6 h-6" />}
               {isLoading ? "Carregando" : "Tocar Pad"}
