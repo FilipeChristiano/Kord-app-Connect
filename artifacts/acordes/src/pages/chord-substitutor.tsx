@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight, Heart, BookmarkCheck, Music2 } from "lucide-react";
+import { Wand2, Copy, Check, RotateCcw, Info, ArrowRight, Heart, BookmarkCheck, Music2, Maximize2 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   processChordChartFull,
@@ -11,6 +11,7 @@ import {
 } from "@/data/substitutions";
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 import { useIsActive } from "@/components/KeepAlive";
+import { CifraFullscreen } from "@/components/CifraFullscreen";
 
 const LEVELS: { key: SophisticationLevel; label: string; description: string }[] = [
   {
@@ -174,6 +175,7 @@ export default function ChordSubstitutor() {
   const [, navigate] = useLocation();
   const { salvarCifra } = useCifrasFavoritas();
 
+  const [fullscreenAberto, setFullscreenAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [salvoId, setSalvoId] = useState<string | null>(null);
   const [tituloInput, setTituloInput] = useState("");
@@ -252,6 +254,34 @@ export default function ChordSubstitutor() {
 
   const handleChordClick = (id: string) => {
     navigate(`/acorde/${id}`);
+  };
+
+  // Em tela cheia, clicar num acorde fecha o overlay antes de navegar
+  // (a página fica montada via keep-alive, então o overlay não sumiria sozinho).
+  // O overlay empilha um history state próprio; para não deixar entrada
+  // fantasma, primeiro desfazemos esse state (back) e só então navegamos.
+  // fsChordNavRef impede duplo clique rápido de empilhar múltiplos back().
+  const fsChordNavRef = useRef(false);
+  const handleChordClickFullscreen = (id: string) => {
+    if (fsChordNavRef.current) return;
+    fsChordNavRef.current = true;
+    const irParaAcorde = () => navigate(`/acorde/${id}`);
+    if (window.history.state?.kordiCifraFullscreen) {
+      window.addEventListener(
+        "popstate",
+        () => {
+          setFullscreenAberto(false);
+          irParaAcorde();
+          fsChordNavRef.current = false;
+        },
+        { once: true },
+      );
+      window.history.back();
+    } else {
+      setFullscreenAberto(false);
+      irParaAcorde();
+      fsChordNavRef.current = false;
+    }
   };
 
   const handleAbrirModal = () => {
@@ -383,6 +413,22 @@ export default function ChordSubstitutor() {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {/* Botão tela cheia */}
+              <button
+                disabled={!outputText}
+                onClick={() => setFullscreenAberto(true)}
+                aria-label="Ver cifra em tela cheia"
+                title="Ver em tela cheia"
+                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
+                  !outputText
+                    ? "border-white/10 text-white/20 cursor-not-allowed"
+                    : "bg-white/5 border-white/15 text-white/70 hover:border-[#8B5CF6]/50 hover:text-[#9673FF] cursor-pointer"
+                }`}
+              >
+                <Maximize2 className="w-3 h-3" />
+                <span className="hidden sm:inline">Tela cheia</span>
+              </button>
+
               {/* Botão salvar cifra — sempre visível */}
               <button
                 disabled={!outputText}
@@ -501,6 +547,29 @@ export default function ChordSubstitutor() {
               Clique em qualquer acorde na cifra ou nas substituições acima para ver os detalhes.
             </p>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cifra sofisticada em tela cheia */}
+      <AnimatePresence>
+        {fullscreenAberto && processed.length > 0 && (
+          <CifraFullscreen
+            title={
+              detectedTonality
+                ? `Cifra sofisticada — Tom: ${detectedTonality.keyName} ${detectedTonality.isMinor ? "menor" : "maior"}`
+                : "Cifra sofisticada"
+            }
+            onClose={() => setFullscreenAberto(false)}
+          >
+            {processed.map((line, i) => (
+              <RenderedLine
+                key={i}
+                line={line}
+                instrumental={isInstrumentalChordLine(processed, i)}
+                onChordClick={handleChordClickFullscreen}
+              />
+            ))}
+          </CifraFullscreen>
         )}
       </AnimatePresence>
 

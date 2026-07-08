@@ -1,13 +1,14 @@
 import { useState } from "react";
 import {
   Heart, Search, Music2, Wand2, Trash2, ArrowRight,
-  Copy, Check, X, FileText, ArrowLeft, ExternalLink,
+  Copy, Check, X, FileText, ArrowLeft, ExternalLink, Maximize2,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { CHORDS } from "@/data/chords";
 import { ChordCard } from "@/components/ChordCard";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useCifrasFavoritas, CifraFavorita } from "@/hooks/use-cifras-favoritas";
+import { CifraFullscreen } from "@/components/CifraFullscreen";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NIVEL_LABELS: Record<string, { label: string; color: string }> = {
@@ -21,10 +22,12 @@ function CifraModal({
   cifra,
   onClose,
   onRemover,
+  onFullscreen,
 }: {
   cifra: CifraFavorita;
   onClose: () => void;
   onRemover: (id: string) => void;
+  onFullscreen: (cifra: CifraFavorita) => void;
 }) {
   const [, navigate] = useLocation();
   const [copied, setCopied] = useState<"original" | "sofisticada" | null>(null);
@@ -74,12 +77,23 @@ function CifraModal({
               {cifra.titulo}
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 hover:text-white transition-all shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => onFullscreen(cifra)}
+              aria-label="Ver cifra em tela cheia"
+              title="Ver em tela cheia"
+              className="flex items-center gap-1.5 p-2 sm:px-3 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 hover:text-[#9673FF] hover:border-[#8B5CF6]/40 transition-all"
+            >
+              <Maximize2 className="w-4 h-4" />
+              <span className="hidden sm:inline text-xs font-medium">Tela cheia</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 hover:text-white transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Corpo: apenas cifra sofisticada */}
@@ -174,10 +188,12 @@ function CifraCard({
   cifra,
   onRemover,
   onAbrir,
+  onFullscreen,
 }: {
   cifra: CifraFavorita;
   onRemover: (id: string) => void;
   onAbrir: (cifra: CifraFavorita) => void;
+  onFullscreen: (cifra: CifraFavorita) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -265,6 +281,15 @@ function CifraCard({
           <FileText className="w-3.5 h-3.5" /> Ver completa
         </button>
 
+        <button
+          onClick={() => onFullscreen(cifra)}
+          aria-label="Ver cifra em tela cheia"
+          title="Ver em tela cheia"
+          className="p-2 rounded-lg border border-white/10 text-white/30 hover:text-[#9673FF] hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/10 transition-all"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+        </button>
+
         {confirmDelete ? (
           <div className="flex gap-1">
             <button
@@ -299,6 +324,7 @@ type Tab = "acordes" | "cifras";
 export default function Favorites() {
   const [tab, setTab] = useState<Tab>("acordes");
   const [cifraAberta, setCifraAberta] = useState<CifraFavorita | null>(null);
+  const [cifraFullscreen, setCifraFullscreen] = useState<CifraFavorita | null>(null);
   const { favorites, favoritesCount } = useFavorites();
   const { cifras, cifrasCount, removerCifra } = useCifrasFavoritas();
 
@@ -411,6 +437,7 @@ export default function Favorites() {
                       cifra={cifra}
                       onRemover={removerCifra}
                       onAbrir={setCifraAberta}
+                      onFullscreen={setCifraFullscreen}
                     />
                   ))}
                 </AnimatePresence>
@@ -444,7 +471,22 @@ export default function Favorites() {
             cifra={cifraAberta}
             onClose={() => setCifraAberta(null)}
             onRemover={(id) => { removerCifra(id); setCifraAberta(null); }}
+            onFullscreen={setCifraFullscreen}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Cifra em tela cheia */}
+      <AnimatePresence>
+        {cifraFullscreen && (
+          <CifraFullscreen
+            title={cifraFullscreen.titulo}
+            onClose={() => setCifraFullscreen(null)}
+          >
+            <div className="whitespace-pre leading-loose">
+              {cifraFullscreen.textoSofisticado}
+            </div>
+          </CifraFullscreen>
         )}
       </AnimatePresence>
     </div>
