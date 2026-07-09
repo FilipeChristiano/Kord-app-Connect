@@ -423,6 +423,9 @@ importers:
       pg:
         specifier: ^8.20.0
         version: 8.20.0
+      stripe-replit-sync:
+        specifier: ^1.0.0
+        version: 1.0.0(stripe@22.3.0(@types/node@25.3.5))
       svix:
         specifier: ^1.94.0
         version: 1.94.0

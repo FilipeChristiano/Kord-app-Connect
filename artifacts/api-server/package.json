@@ -21,6 +21,7 @@
     "http-proxy-middleware": "^4.0.0",
     "openai": "^6.27.0",
     "pg": "^8.20.0",
+    "stripe-replit-sync": "^1.0.0",
     "svix": "^1.94.0"
   },
   "devDependencies": {
