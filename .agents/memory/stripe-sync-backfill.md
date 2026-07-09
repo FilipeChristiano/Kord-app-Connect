@@ -7,7 +7,7 @@ description: Como o syncBackfill da lib stripe-replit-sync funciona e o acesso v
 - **Why:** descoberto quando `stripe.products` ficou vazio e `/api/stripe/plan` dava 404 mesmo com seed OK.
 - **How to apply:** qualquer chamada de backfill no startup do api-server deve usar `{ object: "all" }`.
 
-Outras decisões da assinatura Stripe (Task de assinatura mensal):
+Outras decisões da assinatura Stripe do Kordi:
 - Acesso Stripe é lido **direto do schema `stripe`** (join `stripe.subscriptions` + `stripe.customers` por e-mail, status active/trialing) — fonte única; NUNCA grava em `allowed_emails` (que fica só para Hotmart legado/manual, intocado).
 - Webhook raw (`express.raw`) registrado ANTES de `express.json` em app.ts; `stripe-replit-sync` valida a assinatura.
 - Credenciais vêm da connection Replit: chave em `settings.secret` (não `secret_key`); `settings.webhook_secret` para o webhook.

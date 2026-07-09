@@ -37,6 +37,38 @@ function formatPrice(unitAmount: number, currency: string) {
   }).format(unitAmount / 100);
 }
 
+/**
+ * Detecta se o app está rodando como app Android instalado da Play Store
+ * (Trusted Web Activity). Nesse caso, a política da loja proíbe botão ou
+ * link de compra dentro do app — mostramos apenas orientação em texto.
+ *
+ * Sinais usados:
+ * 1. referrer "android-app://..." (presente na 1ª navegação vinda do TWA) —
+ *    persistido em sessionStorage (escopo da SESSÃO/aba atual, para
+ *    sobreviver a recarregamentos dentro do app sem "contaminar" visitas
+ *    futuras pelo navegador comum, que têm sessionStorage próprio);
+ * 2. fallback: modo standalone + user agent Android (cobre o caso de o
+ *    referrer se perder; pode incluir PWA instalado fora da loja, mas é o
+ *    lado seguro para a política da Play Store — a mensagem orienta como
+ *    assinar pelo navegador).
+ */
+function detectAndroidTwa(): boolean {
+  try {
+    if (document.referrer.startsWith("android-app://")) {
+      sessionStorage.setItem("kordi-twa", "1");
+      return true;
+    }
+    if (sessionStorage.getItem("kordi-twa") === "1") {
+      return true;
+    }
+  } catch {
+    // sessionStorage indisponível — segue para o fallback
+  }
+  const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches;
+  const android = /android/i.test(navigator.userAgent);
+  return Boolean(standalone && android);
+}
+
 export default function NoAccessPage() {
   const { signOut } = useClerk();
   const { user } = useUser();
@@ -44,6 +76,7 @@ export default function NoAccessPage() {
   const [checking, setChecking] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [isAndroidApp] = useState(detectAndroidTwa);
 
   const email =
     user?.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)
@@ -147,23 +180,36 @@ export default function NoAccessPage() {
           </p>
         </div>
 
-        {checkoutError && (
-          <p className="text-red-400 text-sm mb-4">{checkoutError}</p>
-        )}
+        {isAndroidApp ? (
+          /* App Android (Play Store): sem botão nem link de compra dentro do
+             app, conforme a política da loja — apenas orientação em texto. */
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 text-sm text-white/70 text-center">
+            A assinatura é feita pelo site do Kordi. Abra{" "}
+            <span className="text-white font-medium">kordi.app.br</span> no
+            navegador do seu celular ou computador (por exemplo, Chrome) e
+            entre com a mesma conta para assinar.
+          </div>
+        ) : (
+          <>
+            {checkoutError && (
+              <p className="text-red-400 text-sm mb-4">{checkoutError}</p>
+            )}
 
-        <button
-          type="button"
-          onClick={handleSubscribe}
-          disabled={subscribing}
-          className="w-full flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-gradient-to-br from-primary to-primary-700 text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20 hover:brightness-110 transition-all disabled:opacity-70 mb-4"
-        >
-          {subscribing ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <CreditCard className="w-5 h-5" />
-          )}
-          {subscribing ? "Abrindo pagamento..." : "Assinar agora"}
-        </button>
+            <button
+              type="button"
+              onClick={handleSubscribe}
+              disabled={subscribing}
+              className="w-full flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-gradient-to-br from-primary to-primary-700 text-primary-foreground font-semibold text-base shadow-lg shadow-primary/20 hover:brightness-110 transition-all disabled:opacity-70 mb-4"
+            >
+              {subscribing ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <CreditCard className="w-5 h-5" />
+              )}
+              {subscribing ? "Abrindo pagamento..." : "Assinar agora"}
+            </button>
+          </>
+        )}
 
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 text-sm text-white/70">
           <div className="flex items-start gap-3">

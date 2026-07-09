@@ -24,6 +24,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "icon-kordi-k.png", "apple-touch-icon.png"],
       manifest: {
+        id: "kordi-app",
         name: "Kordi",
         short_name: "Kordi",
         description:

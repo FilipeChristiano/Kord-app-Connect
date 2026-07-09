@@ -37,6 +37,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 const SignInPage = lazy(() => import("@/pages/sign-in"));
 const SignUpPage = lazy(() => import("@/pages/sign-up"));
 const NoAccessPage = lazy(() => import("@/pages/no-access"));
+const PrivacidadePage = lazy(() => import("@/pages/privacidade"));
 
 const queryClient = new QueryClient();
 
@@ -146,6 +147,8 @@ function AppRoutes() {
     <Switch>
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
+      {/* Página pública: exigência da Play Store, acessível sem login */}
+      <Route path="/privacidade" component={PrivacidadePage} />
       <Route>
         {PREVIEW_MODE ? (
           <ProtectedAppRoutes />
