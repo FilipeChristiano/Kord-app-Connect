@@ -15,6 +15,7 @@ import {
 import { publishableKeyFromHost } from "@clerk/react/internal";
 
 import { Toaster } from "@/components/ui/toaster";
+import { isIosApp } from "@/lib/native-app";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/Layout";
 import { KeepAlive } from "@/components/KeepAlive";
@@ -158,7 +159,9 @@ function AppRoutes() {
               <ProtectedAppRoutes />
             </Show>
             <Show when="signed-out">
-              <Redirect to="/sign-up" />
+              {/* No app iOS (App Store) o fluxo é somente-login: deslogado
+                  cai na tela de entrar, não na de criar conta. */}
+              <Redirect to={isIosApp() ? "/sign-in" : "/sign-up"} />
             </Show>
           </>
         )}

@@ -11,6 +11,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { isIosApp } from "@/lib/native-app";
+
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface Plan {
@@ -76,7 +78,8 @@ export default function NoAccessPage() {
   const [checking, setChecking] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [isAndroidApp] = useState(detectAndroidTwa);
+  const [iosApp] = useState(isIosApp);
+  const [isAndroidApp] = useState(() => !isIosApp() && detectAndroidTwa());
 
   const email =
     user?.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)
@@ -92,6 +95,8 @@ export default function NoAccessPage() {
     },
     staleTime: 5 * 60_000,
     retry: 1,
+    // No app iOS o preço nunca é exibido — não busca o plano à toa.
+    enabled: !iosApp,
   });
 
   async function handleSubscribe() {
@@ -145,11 +150,22 @@ export default function NoAccessPage() {
         </div>
 
         <h1 className="font-display text-3xl font-bold text-white mb-3">
-          Assine o Kordi
+          {iosApp ? "Conta sem acesso ativo" : "Assine o Kordi"}
         </h1>
 
         <p className="text-white/70 mb-6 leading-relaxed">
-          {email ? (
+          {iosApp ? (
+            email ? (
+              <>
+                Sua conta{" "}
+                <span className="text-white font-medium">{email}</span> ainda
+                não tem um acesso ativo. Assim que ele estiver ativo, o app
+                libera automaticamente.
+              </>
+            ) : (
+              "Sua conta ainda não tem um acesso ativo. Assim que ele estiver ativo, o app libera automaticamente."
+            )
+          ) : email ? (
             <>
               Sua conta{" "}
               <span className="text-white font-medium">{email}</span> foi
@@ -160,27 +176,32 @@ export default function NoAccessPage() {
           )}
         </p>
 
-        <div className="bg-white/5 border border-primary/25 rounded-xl p-5 mb-5">
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="font-display text-4xl font-bold text-white">
-              {plan ? formatPrice(plan.unit_amount, plan.currency) : "R$ 49,90"}
-            </span>
-            <span className="text-white/60 text-sm">/mês no cartão</span>
+        {/* App iOS (App Store): a regra 3.1.1 da Apple proíbe mostrar preço,
+            botão/link de compra ou orientar o usuário a assinar fora do app.
+            Nada de painel de preço, benefícios de venda ou instruções. */}
+        {!iosApp && (
+          <div className="bg-white/5 border border-primary/25 rounded-xl p-5 mb-5">
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="font-display text-4xl font-bold text-white">
+                {plan ? formatPrice(plan.unit_amount, plan.currency) : "R$ 49,90"}
+              </span>
+              <span className="text-white/60 text-sm">/mês no cartão</span>
+            </div>
+            <ul className="space-y-2.5">
+              {BENEFITS.map((b) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-white/80">
+                  <Check className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                  {b}
+                </li>
+              ))}
+            </ul>
+            <p className="text-white/50 text-xs mt-4">
+              Sem fidelidade — cancele quando quiser.
+            </p>
           </div>
-          <ul className="space-y-2.5">
-            {BENEFITS.map((b) => (
-              <li key={b} className="flex items-start gap-2.5 text-sm text-white/80">
-                <Check className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                {b}
-              </li>
-            ))}
-          </ul>
-          <p className="text-white/50 text-xs mt-4">
-            Sem fidelidade — cancele quando quiser, direto pelo app.
-          </p>
-        </div>
+        )}
 
-        {isAndroidApp ? (
+        {iosApp ? null : isAndroidApp ? (
           /* App Android (Play Store): sem botão nem link de compra dentro do
              app, conforme a política da loja — apenas orientação em texto. */
           <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 text-sm text-white/70 text-center">
@@ -214,12 +235,22 @@ export default function NoAccessPage() {
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 text-sm text-white/70">
           <div className="flex items-start gap-3">
             <Mail className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-            <div>
-              <strong className="text-white">Já assinou ou comprou antes?</strong>{" "}
-              Use exatamente o mesmo e-mail da compra. Verificamos
-              automaticamente a cada poucos segundos — assim que o pagamento
-              for confirmado, esta página libera sozinha.
-            </div>
+            {iosApp ? (
+              /* iOS: sem menção a compra/pagamento (regra 3.1.1 da Apple) */
+              <div>
+                <strong className="text-white">Já tem acesso?</strong>{" "}
+                Entre exatamente com o mesmo e-mail da sua conta Kordi.
+                Verificamos automaticamente a cada poucos segundos — assim que
+                o acesso estiver ativo, esta página libera sozinha.
+              </div>
+            ) : (
+              <div>
+                <strong className="text-white">Já assinou ou comprou antes?</strong>{" "}
+                Use exatamente o mesmo e-mail da compra. Verificamos
+                automaticamente a cada poucos segundos — assim que o pagamento
+                for confirmado, esta página libera sozinha.
+              </div>
+            )}
           </div>
         </div>
 

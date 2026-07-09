@@ -15,4 +15,5 @@
 - [Real piano playback (acordes)](piano-playback.md) — chord audio must reuse the diagram's placeNotes voicing (octave 0 = C3/MIDI 48) via playChordVoicing; samples cover C3..C6, shift ≤1 tone.
 - [BPM síncope bossa (acordes)](bpm-syncopation.md) — teste de família ACF (2/3·B,4/3·B) corrige espúrios de síncope; exige família mensurável na grade e nunca troca oitava.
 - [Chord dictionary enharmonics](chord-enharmonics.md) — ids em bemol legado, names duplos "C#7M/Db7M"; popups mostram o token clicado (prop label) e as imagens do dicionário, nunca voicings computados.
+- [Modos de loja iOS/Android](store-app-modes.md) — dentro dos apps das lojas o site esconde preço/compra: iOS nada (3.1.1), Android só texto; qualquer superfície nova de preço deve checar o modo.
 - [stripe-replit-sync backfill](stripe-sync-backfill.md) — syncBackfill() sem params não sincroniza nada: usar { object: "all" }; acesso Stripe lido do schema stripe, allowed_emails só Hotmart legado.
