@@ -268,6 +268,22 @@
   cursor: not-allowed;
 }
 
+/* Flip 3D dos flashcards do Modo Estudo: sem estas classes a face de trás
+   fica visível espelhada. Usadas em study.tsx. */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
 /* Troca de imagem por tema: elementos .dark-only aparecem no tema escuro
    (padrão) e .light-only apenas no claro. Usado para o wordmark (branco no
    escuro, escuro no claro). Telas de login mantêm fundo escuro fixo e usam

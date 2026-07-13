@@ -93,12 +93,10 @@ function decodeEntities(s: string): string {
     .replace(/&#x([0-9a-f]+);/gi, (_m, h: string) => String.fromCodePoint(parseInt(h, 16)));
 }
 
-// Lê o TOM a partir de "tom:" (pode ter tags no meio).
+// Lê o TOM a partir de "tom:" (pode ter tags no meio). O `(?<![a-z])` evita
+// falsos positivos com CSS embutido na página normal (ex.: "bottom:10px").
 function parseKey(html: string): string | null {
-  const idx = html.toLowerCase().indexOf("tom:");
-  if (idx === -1) return null;
-  const window = html.slice(idx + 4, idx + 120).replace(/<[^>]+>/g, " ");
-  const m = window.match(/([A-G][#b]?m?)\b/);
+  const m = html.match(/(?<![a-z])tom\s*:\s*(?:<[^>]*>\s*)*([A-G][#b]?m?)\b/i);
   return m ? m[1] : null;
 }
 
@@ -183,16 +181,22 @@ async function fetchText(url: string, timeoutMs: number): Promise<{ ok: boolean;
 }
 
 // Tenta a página de impressão de uma música; só conta se tiver o <pre> da cifra.
+// O site às vezes responde 500 na página de impressão de ALGUMAS músicas — nesse
+// caso caímos para a página normal, que também traz o <pre> com a cifra.
 async function fetchPrint(artist: string, song: string): Promise<Parsed | null> {
   if (!artist || !song) return null;
-  const printUrl = `https://www.cifraclub.com.br/${artist}/${song}/imprimir.html`;
-  const page = await fetchText(printUrl, 18000);
-  if (!page.ok || !page.text) return null;
-  const body = parseBody(page.text);
+  const baseUrl = `https://www.cifraclub.com.br/${artist}/${song}/`;
+  let page = await fetchText(`${baseUrl}imprimir.html`, 18000);
+  let body = page.ok && page.text ? parseBody(page.text) : null;
+  if (!body) {
+    page = await fetchText(baseUrl, 18000);
+    if (!page.ok || !page.text) return null;
+    body = parseBody(page.text);
+  }
   if (!body) return null;
   const { title, artist: a } = parseTitleArtist(page.text, { artist, song });
   return {
-    url: `https://www.cifraclub.com.br/${artist}/${song}/`,
+    url: baseUrl,
     title,
     artist: a,
     key: parseKey(page.text),
