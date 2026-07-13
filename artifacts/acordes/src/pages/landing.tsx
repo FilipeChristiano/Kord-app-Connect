@@ -284,7 +284,7 @@ export default function LandingPage() {
                 <span className="text-primary">de qualquer música</span>
               </>
             }
-            description="Envie uma música e o Kordi separa a voz dos instrumentos: tire a voz para montar playback ou deixe só a voz para estudar o vocal. Mexa nos controles:"
+            description="Digite o nome de uma música e o Kordi encontra a cifra, vincula o áudio e separa Voz, Instrumental e Metrônomo: tire a voz para montar playback ou deixe só a voz para estudar o vocal. Veja o fluxo completo:"
           >
             <AudioLabDemo />
           </FeatureSection>
@@ -297,7 +297,7 @@ export default function LandingPage() {
                 <span className="text-primary">tempo firme e clima</span>
               </>
             }
-            description="Metrônomo preciso para estudar no andamento certo e pads contínuos para sustentar o som entre as músicas. Aperte o play:"
+            description="Metrônomo preciso para estudar no andamento certo e pads contínuos para sustentar o som entre as músicas — com Fade In, Fade Out e Low Cut para encaixar no seu som. Tudo funcionando de verdade aqui embaixo:"
           >
             <div className="grid sm:grid-cols-2 gap-4">
               <MetronomoDemo />

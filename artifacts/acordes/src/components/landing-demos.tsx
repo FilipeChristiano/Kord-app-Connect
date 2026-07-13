@@ -2,105 +2,149 @@
  * Demonstrações interativas da página pública de venda (/assinar).
  *
  * Todas reutilizam os motores reais do app:
- * - AcordeDemo    → PianoKeyboard + playChordVoicing (samples reais de piano)
+ * - AcordeDemo    → forma comum × variações sofisticadas (PianoKeyboard +
+ *                   playChordVoicing com samples reais de piano)
  * - CifraDemo     → transposeChart/classifyLine (mesma transposição do app)
- * - AudioLabDemo  → simulação visual interativa da mesa do Audio Lab
- * - RitmoDemo     → metrônomo Web Audio (mesmo timbre do app) + pads reais
+ * - AudioLabDemo  → animação roteirizada do fluxo real (pesquisa → cifra →
+ *                   áudio → separação Voz/Instrumental/Metrônomo)
+ * - MetronomoDemo → metrônomo Web Audio (mesmo timbre do app)
+ * - PadsDemo      → pads reais com Fade In/Out e Low Cut funcionais
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Minus, Pause, Play, Plus, Volume2, VolumeX } from "lucide-react";
+import {
+  Check,
+  Download,
+  FileText,
+  Loader2,
+  Minus,
+  Music2,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  Scissors,
+  Search,
+  Volume2,
+} from "lucide-react";
 
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { playChordVoicing, getAudio } from "@/lib/piano";
 import { classifyLine, transposeChart, transposeToken } from "@/lib/chord-transpose";
 
-// ─── 1. Dicionário de acordes ────────────────────────────────────────────────
+// ─── 1. Dicionário: forma comum × variações sofisticadas ────────────────────
 
-interface DemoChord {
+interface DemoVoicing {
   name: string;
+  badge: string;
   left: string[];
   right: string[];
   hint: string;
+  common?: boolean;
 }
 
-const DEMO_CHORDS: DemoChord[] = [
+const C_VOICINGS: DemoVoicing[] = [
+  {
+    name: "C",
+    badge: "Forma comum",
+    common: true,
+    left: ["C"],
+    right: ["C", "E", "G"],
+    hint: "A tríade básica, do jeito que todo mundo copia da internet. Funciona — mas soa igual em todo lugar.",
+  },
   {
     name: "C7M",
+    badge: "Variação Kordi",
     left: ["C", "G"],
     right: ["C", "E", "G", "B"],
-    hint: "O acorde maior com sétima — som aberto e elegante.",
+    hint: "A sétima maior abre o acorde — som elegante, com a mão esquerda sustentando o grave.",
   },
   {
-    name: "Am7",
-    left: ["A", "E"],
-    right: ["A", "C", "E", "G"],
-    hint: "Menor com sétima — presença suave, muito usado em levadas.",
+    name: "Cadd9",
+    badge: "Variação Kordi",
+    left: ["C", "G"],
+    right: ["C", "E", "G", "D"],
+    hint: "A nona adicionada traz brilho moderno — muito usada no worship e no pop.",
   },
   {
-    name: "F7M(9)",
-    left: ["F", "C"],
-    right: ["F", "A", "C", "E", "G"],
-    hint: "Sétima maior com nona — aquele brilho a mais no acorde.",
-  },
-  {
-    name: "G7(13)",
-    left: ["G", "D"],
-    right: ["F", "B", "E"],
-    hint: "Dominante com décima terceira — tensão sofisticada antes de resolver.",
+    name: "C6",
+    badge: "Variação Kordi",
+    left: ["C", "G"],
+    right: ["C", "E", "G", "A"],
+    hint: "A sexta dá um colorido vintage e suave — ótima para finais de frase.",
   },
 ];
 
 export function AcordeDemo() {
-  const [selected, setSelected] = useState(0);
-  const chord = DEMO_CHORDS[selected];
+  const [selected, setSelected] = useState(1);
+  const v = C_VOICINGS[selected];
 
   function choose(i: number) {
     setSelected(i);
-    playChordVoicing(DEMO_CHORDS[i].left, DEMO_CHORDS[i].right);
+    playChordVoicing(C_VOICINGS[i].left, C_VOICINGS[i].right);
   }
 
   return (
     <div>
       <div className="flex flex-wrap gap-2 mb-5">
-        {DEMO_CHORDS.map((c, i) => (
+        {C_VOICINGS.map((c, i) => (
           <button
             key={c.name}
             type="button"
             onClick={() => choose(i)}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
               i === selected
-                ? "bg-gradient-to-br from-primary to-primary-700 text-primary-foreground shadow-lg shadow-primary/25"
+                ? c.common
+                  ? "bg-white/20 text-white"
+                  : "bg-gradient-to-br from-primary to-primary-700 text-primary-foreground shadow-lg shadow-primary/25"
                 : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
             }`}
           >
             {c.name}
+            <span
+              className={`ml-2 text-[10px] font-bold uppercase tracking-wide ${
+                c.common ? "text-white/50" : "text-primary-foreground/70"
+              } ${i === selected ? "" : "text-white/40"}`}
+            >
+              {c.common ? "comum" : "Kordi"}
+            </span>
           </button>
         ))}
       </div>
 
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-6">
         <PianoKeyboard
-          leftHandNotes={chord.left}
-          rightHandNotes={chord.right}
+          leftHandNotes={v.left}
+          rightHandNotes={v.right}
           className="w-full"
         />
         <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
           <p className="text-sm text-white/60 leading-relaxed max-w-md">
-            {chord.hint}
+            <span
+              className={`inline-block text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 mr-2 align-middle ${
+                v.common
+                  ? "bg-white/10 text-white/60"
+                  : "bg-primary/15 text-primary border border-primary/25"
+              }`}
+            >
+              {v.badge}
+            </span>
+            {v.hint}
           </p>
           <button
             type="button"
-            onClick={() => playChordVoicing(chord.left, chord.right)}
+            onClick={() => playChordVoicing(v.left, v.right)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-colors shrink-0"
           >
             <Play className="w-4 h-4 text-primary" />
-            Ouvir {chord.name}
+            Ouvir {v.name}
           </button>
         </div>
       </div>
       <p className="text-xs text-white/40 mt-3">
-        Som de piano de verdade, gravado nota a nota — igualzinho dentro do app.
+        Compare a forma comum com as variações do Kordi — som de piano de
+        verdade, gravado nota a nota. No app, todos os acordes têm variações
+        assim.
       </p>
     </div>
   );
@@ -195,134 +239,254 @@ export function CifraDemo() {
         </pre>
       </div>
       <p className="text-xs text-white/40 mt-3">
-        Só os acordes mudam — a letra fica intacta e alinhada, como no app.
+        Só os acordes mudam — a letra fica intacta e alinhada, como no app. E o
+        Sofisticador ainda troca os acordes simples por versões sofisticadas.
       </p>
     </div>
   );
 }
 
-// ─── 3. Audio Lab (simulação visual da mesa) ────────────────────────────────
+// ─── 3. Audio Lab: animação roteirizada do fluxo real ───────────────────────
 
-const WAVE_BARS = 36;
+// Roteiro: digitar título → encontrar cifra → baixar áudio → separar → mesa.
+// "Grandioso És Tu" é hino de domínio público.
+const TYPED_TITLE = "Grandioso És Tu";
 
-function waveHeights(seed: number): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < WAVE_BARS; i++) {
-    const v =
-      0.35 +
-      0.65 *
-        Math.abs(
-          Math.sin(i * 0.55 + seed) * Math.cos(i * 0.23 + seed * 1.7),
-        );
-    out.push(Math.min(1, v));
-  }
-  return out;
-}
+type LabStep = "typing" | "searching" | "found" | "downloading" | "separating" | "mixer";
 
-interface ChannelProps {
-  label: string;
-  color: string;
-  seed: number;
-  playing: boolean;
-  volume: number;
-  onVolume: (v: number) => void;
-}
+const STEP_AFTER: Record<LabStep, { next: LabStep; delay: number }> = {
+  typing: { next: "searching", delay: 600 },
+  searching: { next: "found", delay: 1500 },
+  found: { next: "downloading", delay: 1600 },
+  downloading: { next: "separating", delay: 2200 },
+  separating: { next: "mixer", delay: 2400 },
+  mixer: { next: "mixer", delay: 0 },
+};
 
-function MixChannel({ label, color, seed, playing, volume, onVolume }: ChannelProps) {
-  const heights = waveHeights(seed);
-  const muted = volume === 0;
+const MIXER_CHANNELS = [
+  { label: "Voz", color: "#9673FF" },
+  { label: "Instrumental", color: "#34d399" },
+  { label: "Metrônomo", color: "#fbbf24" },
+];
+
+function ProgressBar({ running, ms }: { running: boolean; ms: number }) {
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold">{label}</span>
-        <button
-          type="button"
-          aria-label={muted ? `Ativar ${label}` : `Silenciar ${label}`}
-          onClick={() => onVolume(muted ? 80 : 0)}
-          className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
-        >
-          {muted ? (
-            <VolumeX className="w-4 h-4 text-white/40" />
-          ) : (
-            <Volume2 className="w-4 h-4" style={{ color }} />
-          )}
-        </button>
-      </div>
-      <div className="flex items-end gap-[3px] h-14 mb-3" aria-hidden="true">
-        {heights.map((h, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-full transition-all duration-300"
-            style={{
-              height: `${Math.max(8, h * (volume / 100) * 100)}%`,
-              backgroundColor: color,
-              opacity: muted ? 0.15 : 0.4 + 0.6 * (volume / 100),
-              animation:
-                playing && !muted
-                  ? `kordi-wave 0.9s ease-in-out ${i * 0.045}s infinite alternate`
-                  : "none",
-            }}
-          />
-        ))}
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={volume}
-        onChange={(e) => onVolume(Number(e.target.value))}
-        aria-label={`Volume de ${label}`}
-        className="w-full accent-[#9673FF]"
+    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div
+        className="h-full rounded-full bg-gradient-to-r from-primary to-[#C24BF7]"
+        style={{
+          width: running ? "100%" : "0%",
+          transition: running ? `width ${ms}ms linear` : "none",
+        }}
       />
     </div>
   );
 }
 
 export function AudioLabDemo() {
-  const [playing, setPlaying] = useState(false);
-  const [vozVol, setVozVol] = useState(80);
-  const [instVol, setInstVol] = useState(80);
+  const [step, setStep] = useState<LabStep>("typing");
+  const [typed, setTyped] = useState("");
+  const [cycle, setCycle] = useState(0);
+  const timersRef = useRef<number[]>([]);
+
+  // Roteiro: digita o título letra a letra, depois avança pelos passos.
+  useEffect(() => {
+    const timers = timersRef.current;
+    setStep("typing");
+    setTyped("");
+    for (let i = 1; i <= TYPED_TITLE.length; i++) {
+      timers.push(
+        window.setTimeout(() => setTyped(TYPED_TITLE.slice(0, i)), 350 + i * 90),
+      );
+    }
+    let acc = 350 + TYPED_TITLE.length * 90;
+    let cur: LabStep = "typing";
+    while (cur !== "mixer") {
+      const info: { next: LabStep; delay: number } = STEP_AFTER[cur];
+      acc += info.delay;
+      const target = info.next;
+      timers.push(window.setTimeout(() => setStep(target), acc));
+      cur = info.next;
+    }
+    return () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      timersRef.current = [];
+    };
+  }, [cycle]);
+
+  const stepIndex: Record<LabStep, number> = {
+    typing: 0,
+    searching: 1,
+    found: 1,
+    downloading: 2,
+    separating: 3,
+    mixer: 4,
+  };
+  const idx = stepIndex[step];
+
+  const stages = [
+    { icon: Search, label: "Encontrando a cifra" },
+    { icon: Download, label: "Baixando o áudio" },
+    { icon: Scissors, label: "Separando voz e instrumentos" },
+  ];
 
   return (
-    <div>
-      <style>{`@keyframes kordi-wave { from { transform: scaleY(0.55); } to { transform: scaleY(1.05); } }`}</style>
-      <div className="grid sm:grid-cols-2 gap-3 mb-4">
-        <MixChannel
-          label="Voz"
-          color="#9673FF"
-          seed={1.3}
-          playing={playing}
-          volume={vozVol}
-          onVolume={setVozVol}
-        />
-        <MixChannel
-          label="Instrumentos"
-          color="#34d399"
-          seed={4.1}
-          playing={playing}
-          volume={instVol}
-          onVolume={setInstVol}
-        />
+    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-6">
+      {/* Campo de busca com digitação */}
+      <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4">
+        <Search className="w-4 h-4 text-white/40 shrink-0" />
+        <span className="font-mono text-sm sm:text-base">
+          {typed}
+          {step === "typing" && (
+            <span className="inline-block w-[2px] h-4 bg-primary align-middle ml-0.5 animate-pulse" />
+          )}
+        </span>
       </div>
-      <div className="flex items-center gap-3">
+
+      {/* Etapas */}
+      <div className="space-y-2.5 mb-4">
+        {/* Cifra encontrada */}
+        <div
+          className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-500 ${
+            idx >= 1
+              ? "bg-white/5 border-white/10 opacity-100"
+              : "border-transparent opacity-30"
+          }`}
+        >
+          {step === "searching" ? (
+            <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
+          ) : idx > 1 || step === "found" ? (
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+          ) : (
+            <FileText className="w-4 h-4 text-white/30 shrink-0" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">
+              {step === "searching" ? "Encontrando a cifra…" : "Cifra encontrada"}
+            </p>
+            {(idx > 1 || step === "found") && (
+              <p className="font-mono text-xs text-[#b79aff] truncate">
+                G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;C/G&nbsp;&nbsp;&nbsp;&nbsp;G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;D7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;G — tom detectado: G
+              </p>
+            )}
+          </div>
+          <Music2 className={`w-4 h-4 shrink-0 ${idx >= 1 ? "text-primary" : "text-white/20"}`} />
+        </div>
+
+        {/* Download do áudio */}
+        <div
+          className={`rounded-xl border px-4 py-3 transition-all duration-500 ${
+            idx >= 2
+              ? "bg-white/5 border-white/10 opacity-100"
+              : "border-transparent opacity-30"
+          }`}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            {step === "downloading" ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
+            ) : idx > 2 ? (
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <Download className="w-4 h-4 text-white/30 shrink-0" />
+            )}
+            <p className="text-sm font-medium">
+              {step === "downloading"
+                ? "Baixando o áudio…"
+                : idx > 2
+                  ? "Áudio vinculado"
+                  : "Baixar o áudio"}
+            </p>
+          </div>
+          {idx >= 2 && (
+            <ProgressBar running={step === "downloading" || idx > 2} ms={2000} />
+          )}
+        </div>
+
+        {/* Separação */}
+        <div
+          className={`rounded-xl border px-4 py-3 transition-all duration-500 ${
+            idx >= 3
+              ? "bg-white/5 border-white/10 opacity-100"
+              : "border-transparent opacity-30"
+          }`}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            {step === "separating" ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
+            ) : idx > 3 ? (
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <Scissors className="w-4 h-4 text-white/30 shrink-0" />
+            )}
+            <p className="text-sm font-medium">
+              {step === "separating"
+                ? "Separando voz e instrumentos…"
+                : idx > 3
+                  ? "Separação concluída"
+                  : "Separar voz e instrumentos"}
+            </p>
+          </div>
+          {idx >= 3 && (
+            <ProgressBar running={step === "separating" || idx > 3} ms={2200} />
+          )}
+        </div>
+      </div>
+
+      {/* Mesa de mistura */}
+      <div
+        className={`transition-all duration-700 ${
+          step === "mixer" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none h-0 overflow-hidden"
+        }`}
+      >
+        <style>{`@keyframes kordi-wave { from { transform: scaleY(0.45); } to { transform: scaleY(1.05); } }`}</style>
+        <div className="grid grid-cols-3 gap-2.5">
+          {MIXER_CHANNELS.map(({ label, color }, ch) => (
+            <div
+              key={label}
+              className="bg-white/5 border border-white/10 rounded-xl p-3"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold truncate">{label}</span>
+                <Volume2 className="w-3.5 h-3.5 shrink-0" style={{ color }} />
+              </div>
+              <div className="flex items-end gap-[2px] h-10" aria-hidden="true">
+                {Array.from({ length: 14 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-full"
+                    style={{
+                      height: `${30 + 65 * Math.abs(Math.sin(i * 0.8 + ch * 2.1))}%`,
+                      backgroundColor: color,
+                      opacity: 0.85,
+                      animation: `kordi-wave ${0.7 + ch * 0.15}s ease-in-out ${i * 0.05}s infinite alternate`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 mt-4">
+        <p className="text-xs text-white/40 leading-relaxed">
+          Reprodução do fluxo real do Audio Lab: digite o nome, o Kordi acha a
+          cifra, vincula o áudio e separa Voz, Instrumental e Metrônomo.
+        </p>
         <button
           type="button"
-          onClick={() => setPlaying((p) => !p)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-700 text-primary-foreground text-sm font-semibold shadow-lg shadow-primary/20 hover:brightness-110 transition-all"
+          onClick={() => setCycle((c) => c + 1)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-medium transition-colors shrink-0"
         >
-          {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          {playing ? "Pausar" : "Simular"}
+          <RotateCcw className="w-3.5 h-3.5 text-primary" />
+          Ver de novo
         </button>
-        <p className="text-xs text-white/40 leading-relaxed">
-          Ilustração da mesa real do Audio Lab. No app, você envia qualquer
-          música sua e controla voz e instrumentos separadamente, de verdade.
-        </p>
       </div>
     </div>
   );
 }
 
-// ─── 4. Metrônomo + Pads ─────────────────────────────────────────────────────
+// ─── 4. Metrônomo ────────────────────────────────────────────────────────────
 
 function clickAt(ctx: AudioContext, dest: AudioNode, t: number, strong: boolean) {
   const osc = ctx.createOscillator();
@@ -456,6 +620,8 @@ export function MetronomoDemo() {
   );
 }
 
+// ─── 5. Pads contínuos com Fade In/Out e Low Cut reais ──────────────────────
+
 const PAD_KEYS: { label: string; file: string }[] = [
   { label: "C", file: "C" },
   { label: "D", file: "D" },
@@ -465,28 +631,86 @@ const PAD_KEYS: { label: string; file: string }[] = [
   { label: "A", file: "A" },
 ];
 
+const LOWCUT_MIN = 20;
+const LOWCUT_MAX = 300;
+
 export function PadsDemo() {
   const [active, setActive] = useState<string | null>(null);
+  const [fadeIn, setFadeIn] = useState(3);
+  const [fadeOut, setFadeOut] = useState(4);
+  const [lowCutHz, setLowCutHz] = useState(85);
+  const [lowCutOn, setLowCutOn] = useState(false);
+
   const currentRef = useRef<{ src: AudioBufferSourceNode; gain: GainNode } | null>(null);
+  const filterRef = useRef<BiquadFilterNode | null>(null);
   const buffersRef = useRef(new Map<string, Promise<AudioBuffer | null>>());
   const requestRef = useRef(0);
+  const fadeInRef = useRef(fadeIn);
+  const fadeOutRef = useRef(fadeOut);
+  fadeInRef.current = fadeIn;
+  fadeOutRef.current = fadeOut;
 
   useEffect(() => {
-    return () => stopPad(0.15);
+    return () => {
+      requestRef.current++;
+      stopPad(0.15);
+      filterRef.current?.disconnect();
+      filterRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function stopPad(fade = 0.8) {
+  // Cadeia: pad → gain (fades) → filtro low cut (highpass) → saída.
+  function getFilter(ctx: AudioContext): BiquadFilterNode {
+    if (!filterRef.current) {
+      const f = ctx.createBiquadFilter();
+      f.type = "highpass";
+      f.Q.value = 0.707;
+      f.frequency.value = lowCutOn ? lowCutHz : LOWCUT_MIN;
+      f.connect(ctx.destination);
+      filterRef.current = f;
+    }
+    return filterRef.current;
+  }
+
+  // Aplica o low cut em tempo real, com rampa curta (sem estalos) —
+  // mesma lógica da tela real de pads.
+  useEffect(() => {
+    const f = filterRef.current;
+    const a = getAudio();
+    if (!f || !a) return;
+    const target = lowCutOn ? lowCutHz : LOWCUT_MIN;
+    const t = a.ctx.currentTime;
+    f.frequency.cancelScheduledValues(t);
+    f.frequency.setValueAtTime(f.frequency.value, t);
+    f.frequency.linearRampToValueAtTime(target, t + 0.08);
+  }, [lowCutHz, lowCutOn]);
+
+  function stopPad(fade?: number) {
     const cur = currentRef.current;
     currentRef.current = null;
     if (!cur) return;
     const a = getAudio();
     if (!a) return;
+    const dur = fade ?? fadeOutRef.current;
     const t = a.ctx.currentTime;
     cur.gain.gain.cancelScheduledValues(t);
     cur.gain.gain.setValueAtTime(cur.gain.gain.value, t);
-    cur.gain.gain.linearRampToValueAtTime(0.0001, t + fade);
-    cur.src.stop(t + fade + 0.05);
+    cur.gain.gain.linearRampToValueAtTime(0.0001, t + dur);
+    cur.src.stop(t + dur + 0.05);
+  }
+
+  // Desconecta src/gain assim que o pad termina, evitando acúmulo de nós
+  function attachTeardown(src: AudioBufferSourceNode, g: GainNode) {
+    src.onended = () => {
+      src.onended = null;
+      try {
+        src.disconnect();
+        g.disconnect();
+      } catch {
+        /* já desconectado */
+      }
+    };
   }
 
   async function playPad(file: string) {
@@ -521,8 +745,9 @@ export function PadsDemo() {
     const g = a.ctx.createGain();
     const t = a.ctx.currentTime;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.9, t + 1.2);
-    src.connect(g).connect(a.ctx.destination);
+    g.gain.linearRampToValueAtTime(0.9, t + fadeInRef.current);
+    src.connect(g).connect(getFilter(a.ctx));
+    attachTeardown(src, g);
     src.start(t);
     currentRef.current = { src, gain: g };
   }
@@ -537,13 +762,14 @@ export function PadsDemo() {
           </span>
         )}
       </div>
-      <div className="grid grid-cols-6 gap-2">
+
+      <div className="grid grid-cols-6 gap-2 mb-4">
         {PAD_KEYS.map(({ label, file }) => (
           <button
             key={file}
             type="button"
             onClick={() => void playPad(file)}
-            className={`h-12 rounded-xl font-semibold text-sm transition-all ${
+            className={`h-11 rounded-xl font-semibold text-sm transition-all ${
               active === file
                 ? "bg-gradient-to-br from-primary to-primary-700 text-primary-foreground shadow-lg shadow-primary/30"
                 : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
@@ -553,8 +779,84 @@ export function PadsDemo() {
           </button>
         ))}
       </div>
+
+      {/* Controles reais: Fade In / Fade Out / Low Cut */}
+      <div className="space-y-3">
+        <div>
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="text-white/60">Fade In</span>
+            <span className="text-white/80 font-medium">{fadeIn.toFixed(1)}s</span>
+          </div>
+          <input
+            type="range"
+            min={0.5}
+            max={8}
+            step={0.5}
+            value={fadeIn}
+            onChange={(e) => setFadeIn(Number(e.target.value))}
+            aria-label="Duração do fade in"
+            className="w-full accent-[#9673FF]"
+          />
+        </div>
+        <div>
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="text-white/60">Fade Out</span>
+            <span className="text-white/80 font-medium">{fadeOut.toFixed(1)}s</span>
+          </div>
+          <input
+            type="range"
+            min={0.5}
+            max={8}
+            step={0.5}
+            value={fadeOut}
+            onChange={(e) => setFadeOut(Number(e.target.value))}
+            aria-label="Duração do fade out"
+            className="w-full accent-[#9673FF]"
+          />
+        </div>
+        <div>
+          <div className="flex items-center justify-between text-xs mb-1">
+            <button
+              type="button"
+              onClick={() => setLowCutOn((v) => !v)}
+              className={`flex items-center gap-1.5 font-medium transition-colors ${
+                lowCutOn ? "text-primary" : "text-white/60 hover:text-white/80"
+              }`}
+            >
+              <span
+                className={`inline-block w-7 h-4 rounded-full relative transition-colors ${
+                  lowCutOn ? "bg-primary" : "bg-white/15"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${
+                    lowCutOn ? "left-3.5" : "left-0.5"
+                  }`}
+                />
+              </span>
+              Low Cut
+            </button>
+            <span className={`font-medium ${lowCutOn ? "text-white/80" : "text-white/35"}`}>
+              {lowCutHz} Hz
+            </span>
+          </div>
+          <input
+            type="range"
+            min={LOWCUT_MIN}
+            max={LOWCUT_MAX}
+            step={5}
+            value={lowCutHz}
+            disabled={!lowCutOn}
+            onChange={(e) => setLowCutHz(Number(e.target.value))}
+            aria-label="Frequência do low cut"
+            className={`w-full ${lowCutOn ? "accent-[#9673FF]" : "accent-[#52525b] opacity-50"}`}
+          />
+        </div>
+      </div>
+
       <p className="text-xs text-white/40 mt-3">
-        Toque um tom e ouça o pad que sustenta o louvor entre uma música e outra.
+        Tudo funcionando de verdade: toque um tom, ajuste o Fade In/Out e ligue
+        o Low Cut para limpar os graves — os mesmos controles da tela do app.
       </p>
     </div>
   );
