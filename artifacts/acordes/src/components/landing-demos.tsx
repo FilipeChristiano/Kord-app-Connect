@@ -23,82 +23,213 @@ import {
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { playChordVoicing, getAudio } from "@/lib/piano";
 import { classifyLine, transposeChart, transposeToken } from "@/lib/chord-transpose";
+import { CHORDS } from "@/data/chords";
+import { splitHands } from "@/lib/notes";
 
-// ─── 1. Dicionário: forma comum × variações sofisticadas ────────────────────
+// ─── 1. Dicionário: cifra simplificada × cifra Kordi ("Santo Pra Sempre") ───
+// Trecho REAL da cifra usada no app; todas as variações vêm do dicionário
+// real (data/chords.ts) — mesmo diagrama e mesmo piano do app.
 
-interface DemoVoicing {
-  name: string;
+type FamilyKey = "C" | "Am" | "G" | "F";
+
+interface SongVariation {
+  token: string; // como o acorde aparece na cifra
+  dictId: string; // id real no dicionário do app
   badge: string;
-  left: string[];
-  right: string[];
-  hint: string;
   common?: boolean;
 }
 
-const C_VOICINGS: DemoVoicing[] = [
+const FAMILIES: Record<FamilyKey, SongVariation[]> = {
+  C: [
+    { token: "C", dictId: "C-maior", badge: "Na cifra simples", common: true },
+    { token: "C7M", dictId: "C7M", badge: "Variação" },
+    { token: "Cadd9", dictId: "Cadd9", badge: "Variação" },
+    { token: "C7M(9)", dictId: "C9M", badge: "Na cifra Kordi" },
+  ],
+  Am: [
+    { token: "Am7", dictId: "Am7", badge: "Na cifra simples", common: true },
+    { token: "Am11", dictId: "Am11", badge: "Variação" },
+    { token: "Am7(9)", dictId: "Am9", badge: "Na cifra Kordi" },
+  ],
+  G: [
+    { token: "G", dictId: "G-maior", badge: "Na cifra simples", common: true },
+    { token: "Gsus4", dictId: "Gsus4", badge: "Variação" },
+    { token: "G7sus4", dictId: "G7sus4", badge: "Na cifra Kordi" },
+  ],
+  F: [
+    { token: "F9", dictId: "Fadd9", badge: "Na cifra simples", common: true },
+    { token: "F7M", dictId: "F7M", badge: "Variação" },
+    { token: "F7M(9)", dictId: "F9M", badge: "Na cifra Kordi" },
+  ],
+};
+
+interface SongLine {
+  chords: { token: string; family: FamilyKey }[];
+  lyric: string;
+}
+
+const SIMPLE_LINES: SongLine[] = [
+  { chords: [{ token: "C", family: "C" }], lyric: "As muitas gerações rendidas em louvor" },
   {
-    name: "C",
-    badge: "Forma comum",
-    common: true,
-    left: ["C"],
-    right: ["C", "E", "G"],
-    hint: "A tríade básica, do jeito que todo mundo copia da internet. Funciona — mas soa igual em todo lugar.",
-  },
-  {
-    name: "C7M",
-    badge: "Variação Kordi",
-    left: ["C", "G"],
-    right: ["C", "E", "G", "B"],
-    hint: "A sétima maior abre o acorde — som elegante, com a mão esquerda sustentando o grave.",
-  },
-  {
-    name: "Cadd9",
-    badge: "Variação Kordi",
-    left: ["C", "G"],
-    right: ["C", "E", "G", "D"],
-    hint: "A nona adicionada traz brilho moderno — muito usada no worship e no pop.",
-  },
-  {
-    name: "C6",
-    badge: "Variação Kordi",
-    left: ["C", "G"],
-    right: ["C", "E", "G", "A"],
-    hint: "A sexta dá um colorido vintage e suave — ótima para finais de frase.",
+    chords: [
+      { token: "Am7", family: "Am" },
+      { token: "G", family: "G" },
+      { token: "F9", family: "F" },
+    ],
+    lyric: "Cantando ao cordeiro uma canção",
   },
 ];
 
-export function AcordeDemo() {
-  const [selected, setSelected] = useState(1);
-  const v = C_VOICINGS[selected];
+const KORDI_LINES: SongLine[] = [
+  { chords: [{ token: "C7M(9)", family: "C" }], lyric: "As muitas gerações rendidas em louvor" },
+  {
+    chords: [
+      { token: "Am7(9)", family: "Am" },
+      { token: "G7sus4", family: "G" },
+      { token: "F7M(9)", family: "F" },
+    ],
+    lyric: "Cantando ao cordeiro uma canção",
+  },
+];
 
-  function choose(i: number) {
-    setSelected(i);
-    playChordVoicing(C_VOICINGS[i].left, C_VOICINGS[i].right);
+function dictChord(dictId: string) {
+  return CHORDS.find((c) => c.id === dictId)!;
+}
+
+function playDictChord(dictId: string) {
+  const chord = dictChord(dictId);
+  const { leftHand, rightHand } = splitHands(chord.notes, chord.category);
+  playChordVoicing(leftHand, rightHand);
+}
+
+function CifraCard({
+  title,
+  badge,
+  kordi,
+  lines,
+  selectedToken,
+  onPick,
+}: {
+  title: string;
+  badge: string;
+  kordi?: boolean;
+  lines: SongLine[];
+  selectedToken: string;
+  onPick: (family: FamilyKey, token: string) => void;
+}) {
+  return (
+    <div
+      className={`rounded-3xl border p-5 sm:p-6 ${
+        kordi
+          ? "bg-[#FAF7F0] border-primary/30 shadow-lg shadow-primary/10"
+          : "bg-[#FAF7F0] border-[#EBE5D9] shadow-inner"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm font-bold text-stone-700">{title}</span>
+        <span
+          className={`text-[10px] font-bold uppercase tracking-widest rounded-full px-2.5 py-1 ${
+            kordi
+              ? "bg-primary/10 text-primary border border-primary/20"
+              : "bg-stone-200/70 text-stone-500"
+          }`}
+        >
+          {badge}
+        </span>
+      </div>
+      <div className="flex flex-col gap-4">
+        {lines.map((line) => (
+          <div key={line.lyric}>
+            <div className="flex flex-wrap gap-2 mb-1.5">
+              {line.chords.map((c) => (
+                <button
+                  key={c.token}
+                  type="button"
+                  onClick={() => onPick(c.family, c.token)}
+                  title={`Ver variações de ${c.token}`}
+                  className={`font-mono text-sm font-bold px-2.5 py-1 rounded-lg border transition-all active:scale-95 ${
+                    selectedToken === c.token
+                      ? "bg-[#7C3AED] text-white border-[#7C3AED] shadow-md shadow-[#7C3AED]/30"
+                      : "bg-white text-[#7C3AED] border-[#7C3AED]/25 hover:border-[#7C3AED]/60 hover:bg-[#7C3AED]/5"
+                  }`}
+                >
+                  {c.token}
+                </button>
+              ))}
+            </div>
+            <p className="font-mono text-[13px] sm:text-sm text-stone-700 whitespace-nowrap overflow-x-auto">
+              {line.lyric}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function AcordeDemo() {
+  const [family, setFamily] = useState<FamilyKey>("C");
+  const [token, setToken] = useState("C7M(9)");
+
+  const variations = FAMILIES[family];
+  const current = variations.find((v) => v.token === token) ?? variations[0];
+  const chord = dictChord(current.dictId);
+  const { leftHand, rightHand } = splitHands(chord.notes, chord.category);
+
+  function pick(f: FamilyKey, t: string) {
+    setFamily(f);
+    setToken(t);
+    const v = FAMILIES[f].find((x) => x.token === t) ?? FAMILIES[f][0];
+    playDictChord(v.dictId);
   }
 
   return (
     <div>
+      {/* Trecho real, lado a lado: cifra simples × cifra Kordi */}
+      <div className="grid sm:grid-cols-2 gap-4 mb-6">
+        <CifraCard
+          title="Cifra simplificada"
+          badge="como se acha por aí"
+          lines={SIMPLE_LINES}
+          selectedToken={token}
+          onPick={pick}
+        />
+        <CifraCard
+          title="Cifra Kordi"
+          badge="sofisticada"
+          kordi
+          lines={KORDI_LINES}
+          selectedToken={token}
+          onPick={pick}
+        />
+      </div>
+
+      {/* Variações do acorde clicado — dados reais do dicionário */}
       <div className="flex flex-wrap gap-2 mb-5">
-        {C_VOICINGS.map((c, i) => (
+        {variations.map((v) => (
           <button
-            key={c.name}
+            key={v.token}
             type="button"
-            onClick={() => choose(i)}
+            onClick={() => pick(family, v.token)}
             className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all transform hover:scale-[1.02] active:scale-95 ${
-              i === selected
-                ? c.common
+              v.token === current.token
+                ? v.common
                   ? "bg-slate-800 text-white shadow-md shadow-slate-900/20"
                   : "bg-gradient-to-br from-primary to-[#8B5CF6] text-white shadow-lg shadow-primary/30 ring-2 ring-primary/20 ring-offset-2"
                 : "bg-white border border-slate-200 text-slate-600 hover:border-primary/40 hover:text-primary shadow-sm"
             }`}
           >
-            {c.name}
+            {v.token}
             <span
               className={`ml-2 text-[10px] font-bold uppercase tracking-widest ${
-                c.common ? "text-slate-300" : "text-white/80"
-              } ${i === selected ? "" : "text-slate-400"}`}
+                v.token === current.token
+                  ? v.common
+                    ? "text-slate-300"
+                    : "text-white/80"
+                  : "text-slate-400"
+              }`}
             >
-              {c.common ? "comum" : "Kordi"}
+              {v.common ? "simples" : "Kordi"}
             </span>
           </button>
         ))}
@@ -106,37 +237,37 @@ export function AcordeDemo() {
 
       <div className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all">
         <PianoKeyboard
-          leftHandNotes={v.left}
-          rightHandNotes={v.right}
+          leftHandNotes={leftHand}
+          rightHandNotes={rightHand}
           className="w-full max-w-full drop-shadow-sm"
         />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mt-8">
           <p className="text-sm text-slate-500 leading-relaxed max-w-md">
             <span
               className={`inline-block text-[10px] font-bold uppercase tracking-widest rounded-full px-2.5 py-1 mr-3 align-middle transition-colors ${
-                v.common
+                current.common
                   ? "bg-slate-100 text-slate-500"
                   : "bg-primary/10 text-primary border border-primary/20"
               }`}
             >
-              {v.badge}
+              {current.badge}
             </span>
-            {v.hint}
+            {chord.description}
           </p>
           <button
             type="button"
-            onClick={() => playChordVoicing(v.left, v.right)}
+            onClick={() => playDictChord(current.dictId)}
             className="group flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 hover:border-primary/50 hover:bg-primary/5 text-slate-700 hover:text-primary text-sm font-bold transition-all shadow-sm shrink-0 active:scale-95"
           >
             <Play className="w-4 h-4 text-primary fill-primary/20 group-hover:fill-primary transition-all" />
-            Ouvir {v.name}
+            Ouvir {current.token}
           </button>
         </div>
       </div>
       <p className="text-xs text-slate-400 mt-4 px-2">
-        Compare a forma comum com as variações do Kordi — som de piano de
-        verdade, gravado nota a nota. No app, todos os acordes têm variações
-        assim.
+        Trecho de "Santo Pra Sempre" (Gabriel Guedes). Toque em qualquer acorde
+        das duas cifras para ver e ouvir as variações — som de piano de
+        verdade, gravado nota a nota, direto do dicionário do Kordi.
       </p>
     </div>
   );

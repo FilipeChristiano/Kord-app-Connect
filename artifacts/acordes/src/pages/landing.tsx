@@ -307,7 +307,7 @@ export default function LandingPage() {
                 <SectionHeader 
                   badge="Dicionário Vivo"
                   title="Saia do básico."
-                  subtitle="Toque nos acordes abaixo e perceba a diferença na hora. Formas comuns soam quadradas. Nossas variações preenchem a sala."
+                  subtitle="Um trecho real de 'Santo Pra Sempre': a cifra simplificada ao lado da cifra que o Kordi sugere. Toque em qualquer acorde e ouça as variações na hora."
                 />
                 <AcordeDemo />
                 <ModuleScreenshots
