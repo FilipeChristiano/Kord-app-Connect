@@ -249,7 +249,7 @@ export default function LandingPage() {
               <div className="text-center lg:text-left">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm mb-8 animate-fade-in-up">
                   <BadgeCheck className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">O app do tecladista inteligente</span>
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Feito para tecladistas e pianistas</span>
                 </div>
                 
                 <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-black text-slate-900 leading-[1.05] tracking-tight mb-8">
@@ -260,7 +260,7 @@ export default function LandingPage() {
                 </h1>
                 
                 <p className="text-lg sm:text-xl text-slate-600 leading-relaxed font-medium mb-10 max-w-2xl mx-auto lg:mx-0">
-                  Do quarto ao palco, o Kordi caminha com você.
+                  O parceiro que prepara o seu som no ensaio e te acompanha no ao vivo — do primeiro acorde ao louvor.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
