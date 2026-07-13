@@ -1,4 +1,5 @@
 import { SignIn } from "@clerk/react";
+import { isIosApp } from "@/lib/native-app";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -19,11 +20,18 @@ export default function SignInPage() {
           draggable={false}
         />
       </div>
+      {/* No app iOS não há cadastro dentro do app (regra 3.1.1): esconde o
+          rodapé "Criar conta" e não aponta para /sign-up */}
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
+        {...(isIosApp() ? {} : { signUpUrl: `${basePath}/sign-up` })}
         fallbackRedirectUrl={basePath || "/"}
+        appearance={
+          isIosApp()
+            ? { elements: { footerAction: "!hidden", footer: "!hidden" } }
+            : undefined
+        }
       />
     </div>
   );

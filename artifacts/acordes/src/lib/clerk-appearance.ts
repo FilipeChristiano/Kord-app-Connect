@@ -1,6 +1,12 @@
 import { shadcn } from "@clerk/themes";
+import { isIosApp } from "@/lib/native-app";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+/* Dentro do app da App Store nenhum texto pode mencionar compra/pagamento
+   (regra 3.1.1 da Apple) — os textos abaixo trocam a referência à compra
+   por uma versão neutra quando estamos no app iOS. */
+const IOS = typeof window !== "undefined" && isIosApp();
 
 export const clerkAppearance = {
   theme: shadcn,
@@ -103,8 +109,9 @@ export const clerkLocalization = {
   signUp: {
     start: {
       title: "Crie sua conta",
-      subtitle:
-        "Use o mesmo e-mail da sua compra e crie uma senha de acesso",
+      subtitle: IOS
+        ? "Informe seu e-mail e crie uma senha de acesso"
+        : "Use o mesmo e-mail da sua compra e crie uma senha de acesso",
       actionText: "Já criou sua conta antes?",
       actionLink: "Entrar",
     },
@@ -127,8 +134,9 @@ export const clerkLocalization = {
     formButtonReset: "Cancelar",
   },
   unstable__errors: {
-    form_identifier_not_found:
-      "E-mail não cadastrado. Use o mesmo e-mail da sua compra.",
+    form_identifier_not_found: IOS
+      ? "E-mail não encontrado. Verifique e tente novamente."
+      : "E-mail não cadastrado. Use o mesmo e-mail da sua compra.",
     form_password_incorrect: "Senha incorreta. Tente novamente.",
     form_password_length_too_short: "A senha precisa ter pelo menos 8 caracteres.",
     form_password_no_uppercase: "A senha precisa ter pelo menos uma letra maiúscula.",

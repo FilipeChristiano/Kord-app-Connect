@@ -149,7 +149,10 @@ function AppRoutes() {
     <Suspense fallback={<LoadingScreen />}>
     <Switch>
       <Route path="/sign-in/*?" component={SignInPage} />
-      <Route path="/sign-up/*?" component={SignUpPage} />
+      {/* No app iOS o cadastro fica indisponível (fluxo somente-login, regra 3.1.1) */}
+      <Route path="/sign-up/*?">
+        {isIosApp() ? <Redirect to="/sign-in" /> : <SignUpPage />}
+      </Route>
       {/* Páginas públicas, acessíveis sem login */}
       <Route path="/privacidade" component={PrivacidadePage} />
       <Route path="/assinar" component={LandingPage} />
