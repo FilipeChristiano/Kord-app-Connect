@@ -107,9 +107,12 @@ function SceneSofisticador(_: SceneProps) {
     const t = setTimeout(() => setDone(true), 1300);
     return () => clearTimeout(t);
   }, []);
-  /* refrão real de "Santo Pra Sempre" sofisticado pelo motor real do app */
-  const antes = ["F9", "Am7", "G", "C"];
-  const depois = ["F7M(9)", "Am7(9)", "G7sus4", "C7M(9)"];
+  /* refrão real de "Santo Pra Sempre" (letra + cifra) sofisticado pelo motor real do app */
+  const linhas: { chords: [string, string][]; lyric: string }[] = [
+    { chords: [["F9", "F7M(9)"], ["Am7", "Am7(9)"], ["G", "G7sus4"]], lyric: "E os anjos clamam: Santo" },
+    { chords: [["Em7", "Em7(9)"], ["Am7", "Am7(9)"]], lyric: "Toda criação: Santo" },
+    { chords: [["Dm7", "Dm7(9)"], ["G", "G7sus4"]], lyric: "Exaltado És, Santo" },
+  ];
   const niveis = ["Original", "Suave", "Intermediário", "Avançado"];
   return (
     <div className="h-full flex flex-col">
@@ -132,31 +135,32 @@ function SceneSofisticador(_: SceneProps) {
       <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.14em] mb-1.5">
         {done ? "Cifra sofisticada" : "Cifra original"}
       </p>
-      <div className="bg-[#fdfcf9] rounded-xl px-3 py-3.5 flex-1 flex flex-col gap-2 shadow-inner">
-        <div className="flex flex-wrap gap-1.5">
-          <AnimatePresence mode="popLayout">
-            {(done ? depois : antes).map((c, i) => (
-              <motion.span
-                key={`${done}-${c}`}
-                initial={{ opacity: 0, y: done ? 10 : 0, scale: 0.85 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.35, delay: i * 0.12 }}
-              >
-                <span
-                  className={`px-1.5 py-1 rounded-md font-mono text-[11px] font-bold border ${
-                    done
-                      ? "bg-[#7C3AED]/10 text-[#7C3AED] border-[#7C3AED]/30"
-                      : "bg-slate-100 text-slate-500 border-slate-200"
-                  }`}
-                >
-                  {c}
-                </span>
-              </motion.span>
-            ))}
-          </AnimatePresence>
-        </div>
-        <p className="text-slate-400 text-[10px] font-medium font-mono">E os anjos clamam: Santo…</p>
+      <div className="bg-[#fdfcf9] rounded-xl px-3 py-3 flex-1 flex flex-col gap-2 shadow-inner">
+        {linhas.map((linha, li) => (
+          <div key={li}>
+            <div className="flex flex-wrap gap-1.5 mb-0.5">
+              {linha.chords.map(([orig, sof], i) => {
+                const c = done ? sof : orig;
+                return (
+                  <motion.span
+                    key={`${done}-${li}-${i}`}
+                    initial={{ opacity: 0, y: done ? 8 : 0, scale: 0.85 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3, delay: (li * 2 + i) * 0.08 }}
+                    className={`px-1.5 py-0.5 rounded-md font-mono text-[10px] font-bold border ${
+                      done
+                        ? "bg-[#7C3AED]/10 text-[#7C3AED] border-[#7C3AED]/30"
+                        : "bg-slate-100 text-slate-500 border-slate-200"
+                    }`}
+                  >
+                    {c}
+                  </motion.span>
+                );
+              })}
+            </div>
+            <p className="text-slate-500 text-[9.5px] font-medium font-mono leading-tight">{linha.lyric}</p>
+          </div>
+        ))}
         <motion.div
           animate={{ opacity: done ? 1 : 0 }}
           transition={{ duration: 0.4 }}
@@ -169,22 +173,27 @@ function SceneSofisticador(_: SceneProps) {
   );
 }
 
-/* 2 — Audio Lab: busca, download e separação com os áudios REAIS extraídos pelo app */
+/* 2 — Audio Lab: busca, download, separação e a MESA com 15 s REAIS da música */
 const QUERY = "santo pra sempre - gabriel guedes";
 const TYPE_MS = 52;
 const T_TYPED = QUERY.length * TYPE_MS;
-const STEMS = [
-  { label: "Instrumental", file: "landing-audio/instrumental.mp3" },
-  { label: "Metrônomo", file: "landing-audio/metronomo.mp3" },
-  { label: "Voz", file: "landing-audio/voz.mp3" },
+const T_DOWNLOAD = T_TYPED + 350;
+const T_ISOLATE = T_DOWNLOAD + 1300;
+const T_MESA = T_ISOLATE + 2000;
+const MESA_FASES: { at: number; label: string; canais: boolean[] }[] = [
+  { at: 0, label: "Tudo junto", canais: [true, true, true] },
+  { at: 6000, label: "Só a voz", canais: [true, false, false] },
+  { at: 10500, label: "Só o instrumental", canais: [false, true, false] },
 ];
-const STEM_STEP = 1550;
+const T_LAB_END = T_MESA + 15600;
+const CANAIS = ["Voz", "Instrumental", "Metrônomo"];
 
 function SceneAudioLab({ sound }: SceneProps) {
   const [typed, setTyped] = useState(0);
-  const [phase, setPhase] = useState<"typing" | "download" | "isolate" | "cifra">("typing");
+  const [phase, setPhase] = useState<"typing" | "download" | "isolate" | "mesa">("typing");
   const [pct, setPct] = useState(0);
-  const [activeStem, setActiveStem] = useState(-1);
+  const [stemsOn, setStemsOn] = useState(0);
+  const [fase, setFase] = useState(0);
 
   useEffect(() => {
     const type = setInterval(() => {
@@ -201,47 +210,48 @@ function SceneAudioLab({ sound }: SceneProps) {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase("download"), T_TYPED + 350),
-      setTimeout(() => setPhase("isolate"), T_TYPED + 1650),
-      setTimeout(() => setPhase("cifra"), T_TYPED + 1650 + STEM_STEP * 3 + 250),
-      ...STEMS.map((_, i) => setTimeout(() => setActiveStem(i), T_TYPED + 1650 + STEM_STEP * i)),
+      setTimeout(() => setPhase("download"), T_DOWNLOAD),
+      setTimeout(() => setPhase("isolate"), T_ISOLATE),
+      setTimeout(() => setPhase("mesa"), T_MESA),
+      ...CANAIS.map((_, i) => setTimeout(() => setStemsOn(i + 1), T_ISOLATE + 500 * i)),
+      ...MESA_FASES.map((f, i) => setTimeout(() => setFase(i), T_MESA + f.at)),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
   useEffect(() => {
     if (phase !== "download") return;
-    const t = setInterval(() => setPct((p) => Math.min(100, p + 8)), 90);
+    const t = setInterval(() => setPct((p) => Math.min(100, p + 10)), 90);
     return () => clearInterval(t);
   }, [phase]);
 
-  /* toca o stem REAL correspondente enquanto o selo dele está em destaque */
+  /* 15 s REAIS da música separada pelo app: tudo junto → só a voz → só o instrumental */
   useEffect(() => {
-    if (!sound || activeStem < 0) return;
-    const stop = playClip(STEMS[activeStem].file, {
-      vol: 0.85,
-      dur: (STEM_STEP - 120) / 1000,
-    });
-    return stop;
-  }, [sound, activeStem]);
+    if (!sound || phase !== "mesa") return;
+    return playClip("landing-audio/audiolab-demo.mp3", { vol: 0.95, dur: 15, fadeIn: 0.1, fadeOut: 0.8 });
+  }, [sound, phase]);
 
   return (
     <div className="h-full flex flex-col">
       <PageTitle icon={AudioWaveform} plain="Audio" accent="Lab" />
-      <div className="bg-white/[0.04] border border-white/10 rounded-2xl px-3 py-3.5 flex flex-col gap-2.5 flex-1">
-        <p className="text-[11px] font-bold text-white flex items-center gap-1.5">
-          <Search className="w-3 h-3 text-[#9673FF]" /> Pesquisar pelo título
-        </p>
-        <div className="flex items-center gap-2 bg-white/[0.04] border border-white/15 rounded-xl px-2.5 py-2">
-          <span className="text-[9.5px] font-medium text-slate-200 leading-tight">
-            {typed === 0 ? <span className="text-slate-500">Ex.: Gabriela Rocha - Atos 2</span> : QUERY.slice(0, typed)}
-            {phase === "typing" && (
-              <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.5, repeat: Infinity }} className="text-[#9673FF]">
-                |
-              </motion.span>
-            )}
-          </span>
-        </div>
+      <div className="bg-white/[0.04] border border-white/10 rounded-2xl px-3 py-3 flex flex-col gap-2.5 flex-1">
+        {phase !== "mesa" && (
+          <>
+            <p className="text-[11px] font-bold text-white flex items-center gap-1.5">
+              <Search className="w-3 h-3 text-[#9673FF]" /> Pesquisar pelo título
+            </p>
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/15 rounded-xl px-2.5 py-2">
+              <span className="text-[9.5px] font-medium text-slate-200 leading-tight">
+                {typed === 0 ? <span className="text-slate-500">Ex.: Gabriela Rocha - Atos 2</span> : QUERY.slice(0, typed)}
+                {phase === "typing" && (
+                  <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.5, repeat: Infinity }} className="text-[#9673FF]">
+                    |
+                  </motion.span>
+                )}
+              </span>
+            </div>
+          </>
+        )}
 
         {phase === "download" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-1.5">
@@ -255,53 +265,74 @@ function SceneAudioLab({ sound }: SceneProps) {
           </motion.div>
         )}
 
-        {(phase === "isolate" || phase === "cifra") && (
+        {phase === "isolate" && (
           <div className="flex flex-col gap-1.5">
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Separando o áudio…</p>
-            {STEMS.map((s, i) => {
-              const on = activeStem >= i;
-              const playing = activeStem === i && phase === "isolate";
+            {CANAIS.map((nome, i) => {
+              const on = stemsOn > i;
               return (
                 <motion.div
-                  key={s.label}
+                  key={nome}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: on ? 1 : 0.3, x: 0 }}
                   className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors ${
-                    playing
-                      ? "bg-[#9673FF]/15 border-[#9673FF]/50"
-                      : on
-                        ? "bg-emerald-500/10 border-emerald-500/30"
-                        : "bg-white/[0.03] border-white/10"
+                    on ? "bg-emerald-500/10 border-emerald-500/30" : "bg-white/[0.03] border-white/10"
                   }`}
                 >
-                  {on ? (
-                    <Check className={`w-3 h-3 shrink-0 ${playing ? "text-[#9673FF]" : "text-emerald-400"}`} />
-                  ) : (
-                    <span className="w-3 h-3 shrink-0" />
-                  )}
-                  <span className={`text-[9.5px] font-bold ${playing ? "text-[#9673FF]" : on ? "text-emerald-400" : "text-slate-500"}`}>
-                    {s.label}
-                  </span>
-                  {playing && (
-                    <div className="ml-auto w-12">
-                      <Waveform color="bg-[#9673FF]" bars={8} />
-                    </div>
-                  )}
+                  {on ? <Check className="w-3 h-3 shrink-0 text-emerald-400" /> : <span className="w-3 h-3 shrink-0" />}
+                  <span className={`text-[9.5px] font-bold ${on ? "text-emerald-400" : "text-slate-500"}`}>{nome}</span>
                 </motion.div>
               );
             })}
           </div>
         )}
 
-        {phase === "cifra" && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-[#fdfcf9] rounded-xl px-3 py-2.5 mt-auto"
-          >
-            <p className="font-mono text-[11px] font-bold text-[#7C3AED]">F9  Am7  G  Em7</p>
-            <p className="text-[9.5px] text-slate-500 font-medium">E os anjos clamam: Santo…</p>
+        {phase === "mesa" && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mesa de mistura</p>
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={fase}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="px-2 py-0.5 rounded-full bg-[#9673FF]/15 border border-[#9673FF]/40 text-[#9673FF] text-[9px] font-bold"
+                >
+                  {MESA_FASES[fase].label}
+                </motion.span>
+              </AnimatePresence>
+            </div>
+            {CANAIS.map((nome, i) => {
+              const on = MESA_FASES[fase].canais[i];
+              return (
+                <div
+                  key={nome}
+                  className={`rounded-xl border px-2.5 py-2 transition-colors ${
+                    on ? "bg-[#9673FF]/10 border-[#9673FF]/40" : "bg-white/[0.03] border-white/10"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-[10px] font-bold ${on ? "text-white" : "text-slate-500"}`}>{nome}</span>
+                    <span
+                      className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${
+                        on ? "bg-emerald-500/15 text-emerald-400" : "bg-white/[0.05] text-slate-500"
+                      }`}
+                    >
+                      {on ? "100%" : "0%"}
+                    </span>
+                  </div>
+                  {on ? (
+                    <Waveform color="bg-[#9673FF]" bars={14} />
+                  ) : (
+                    <div className="h-7 flex items-center">
+                      <div className="h-[3px] w-full rounded-full bg-white/10" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <p className="text-[8.5px] text-slate-500 font-medium mt-auto truncate">Santo Pra Sempre · separada pelo Kordi</p>
           </motion.div>
         )}
       </div>
@@ -309,8 +340,8 @@ function SceneAudioLab({ sound }: SceneProps) {
   );
 }
 
-/* 3 — Metrônomo: medidor circular de BPM igual ao da tela real */
-const BPM_TARGET = 96;
+/* 3 — Metrônomo: demonstração real com "Jó" (arquivo do usuário) detectado pelo app */
+const BPM_TARGET = 66;
 const BPM_MIN = 40;
 const BPM_MAX = 240;
 
@@ -381,18 +412,25 @@ function SceneMetronomo({ sound }: SceneProps) {
     };
   }, []);
 
+  /* bolinhas alinhadas com o primeiro clique do áudio (2,715 s − 2,3 s do travamento) */
   useEffect(() => {
     if (!locked) return;
-    setBeat(0);
-    const t = setInterval(() => setBeat((b) => (b + 1) % 4), 60000 / BPM_TARGET);
-    return () => clearInterval(t);
+    let iv = 0;
+    const d = setTimeout(() => {
+      setBeat(0);
+      iv = window.setInterval(() => setBeat((b) => (b + 1) % 4), 60000 / BPM_TARGET);
+    }, 415);
+    return () => {
+      clearTimeout(d);
+      window.clearInterval(iv);
+    };
   }, [locked]);
 
-  /* clique nas batidas REAIS detectadas pelo app (96 BPM) enquanto as bolinhas pulsam */
+  /* "Jó" REAL tocando desde o início; o clique entra quando o BPM trava (batidas do detector do app) */
   useEffect(() => {
-    if (!locked || !sound) return;
-    return playClip("landing-audio/metronomo.mp3", { vol: 0.7, dur: 2.6 });
-  }, [locked, sound]);
+    if (!sound) return;
+    return playClip("landing-audio/metronomo-jo.mp3", { vol: 0.9, dur: 8.3, fadeOut: 0.8 });
+  }, [sound]);
 
   const listening = !locked && progress === 0;
   const accent = ["#9673FF", "#94A3B8", "#EAB308", "#94A3B8"];
@@ -400,6 +438,7 @@ function SceneMetronomo({ sound }: SceneProps) {
   return (
     <div className="h-full flex flex-col">
       <PageTitle icon={Timer} plain="Metrônomo" accent="Inteligente" />
+      <p className="text-[8.5px] font-semibold text-slate-400 -mt-2 mb-2 truncate">♪ Jó — Midian Lima</p>
       <div className="bg-white/[0.04] border border-white/10 rounded-2xl px-3 py-3 flex-1 flex flex-col">
         <ArcGauge progress={listening ? 0 : progress} listening={listening} />
 
@@ -599,7 +638,7 @@ function SceneFavoritos(_: SceneProps) {
       <div className="flex flex-col gap-2">
         {[
           { t: "Santo Pra Sempre", d: "Tom Db · 96 BPM" },
-          { t: "Ensaio de domingo", d: "Tom Eb · setlist" },
+          { t: "Jó", d: "Midian Lima · 66 BPM" },
         ].map((s, i) => (
           <motion.div
             key={s.t}
@@ -623,9 +662,9 @@ function SceneFavoritos(_: SceneProps) {
 }
 
 const SCENES: { Comp: (p: SceneProps) => React.ReactElement; ms: number }[] = [
-  { Comp: SceneSofisticador, ms: 3600 },
-  { Comp: SceneAudioLab, ms: T_TYPED + 1650 + STEM_STEP * 3 + 1900 },
-  { Comp: SceneMetronomo, ms: 5200 },
+  { Comp: SceneSofisticador, ms: 4200 },
+  { Comp: SceneAudioLab, ms: T_LAB_END },
+  { Comp: SceneMetronomo, ms: 8600 },
   { Comp: ScenePad, ms: 5400 },
   { Comp: SceneAcordes, ms: 250 + DICT_STEP * 3 + 900 },
   { Comp: SceneFavoritos, ms: 3200 },
