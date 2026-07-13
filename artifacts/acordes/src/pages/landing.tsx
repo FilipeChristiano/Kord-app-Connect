@@ -249,18 +249,18 @@ export default function LandingPage() {
               <div className="text-center lg:text-left">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm mb-8 animate-fade-in-up">
                   <BadgeCheck className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">A revolução no seu louvor</span>
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Feito para tecladistas e pianistas</span>
                 </div>
                 
                 <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-black text-slate-900 leading-[1.05] tracking-tight mb-8">
-                  O som que inspira.<br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-[#8B5CF6] to-[#C24BF7] inline-block mt-2">
-                    A ferramenta que liberta.
+                  O app do{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-[#8B5CF6] to-[#C24BF7]">
+                    tecladista inteligente
                   </span>
                 </h1>
                 
                 <p className="text-lg sm:text-xl text-slate-600 leading-relaxed font-medium mb-10 max-w-2xl mx-auto lg:mx-0">
-                  Esqueça apps escuros e confusos. O Kordi é claro, rápido e feito para músicos exigentes. Acordes reais, cifras que acompanham seu cantor, e separação de áudio no navegador.
+                  Seu parceiro do ensaio ao palco — prepara o seu som e te acompanha no ao vivo com tudo que você precisa na hora H.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
@@ -282,7 +282,7 @@ export default function LandingPage() {
                     className="w-full sm:w-auto group inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-slate-700 transition-all duration-300 bg-white border-2 border-slate-200 rounded-2xl hover:border-slate-300 hover:bg-slate-50 focus:outline-none shadow-sm"
                   >
                     <ChevronDown className="w-5 h-5 text-primary mr-2 group-hover:translate-y-1 transition-transform" />
-                    Experimente agora
+                    Ver o Kordi funcionando
                   </button>
                 </div>
               </div>
