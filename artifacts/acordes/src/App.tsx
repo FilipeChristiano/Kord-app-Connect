@@ -37,6 +37,7 @@ const PadContinuous = lazy(() => import("@/pages/pad-continuous"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const SignInPage = lazy(() => import("@/pages/sign-in"));
 const SignUpPage = lazy(() => import("@/pages/sign-up"));
+const LandingPage = lazy(() => import("@/pages/landing"));
 const NoAccessPage = lazy(() => import("@/pages/no-access"));
 const PrivacidadePage = lazy(() => import("@/pages/privacidade"));
 
@@ -148,8 +149,9 @@ function AppRoutes() {
     <Switch>
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
-      {/* Página pública: exigência da Play Store, acessível sem login */}
+      {/* Páginas públicas, acessíveis sem login */}
       <Route path="/privacidade" component={PrivacidadePage} />
+      <Route path="/assinar" component={LandingPage} />
       <Route>
         {PREVIEW_MODE ? (
           <ProtectedAppRoutes />
@@ -160,8 +162,10 @@ function AppRoutes() {
             </Show>
             <Show when="signed-out">
               {/* No app iOS (App Store) o fluxo é somente-login: deslogado
-                  cai na tela de entrar, não na de criar conta. */}
-              <Redirect to={isIosApp() ? "/sign-in" : "/sign-up"} />
+                  cai na tela de entrar, não na página de venda (a regra
+                  3.1.1 da Apple proíbe preço/compra dentro do app). Nos
+                  demais casos, deslogado vê a página pública de venda. */}
+              {isIosApp() ? <Redirect to="/sign-in" /> : <LandingPage />}
             </Show>
           </>
         )}

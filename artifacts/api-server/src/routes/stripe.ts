@@ -108,10 +108,10 @@ router.get("/stripe/plan", async (_req: Request, res: Response) => {
  */
 router.post("/stripe/checkout", async (req: Request, res: Response) => {
   try {
+    // Compra pública (página de venda): sem login, a Stripe coleta o e-mail
+    // no próprio checkout e o acesso é liberado quando a pessoa criar a
+    // conta no Kordi com o mesmo e-mail (getAccessInfo casa por e-mail).
     const email = await resolveEmail(req);
-    if (!email) {
-      return res.status(401).json({ error: "unauthorized" });
-    }
 
     const { rows } = await pool.query<{ price_id: string }>(
       `SELECT pr.id AS price_id
@@ -129,9 +129,25 @@ router.post("/stripe/checkout", async (req: Request, res: Response) => {
       return res.status(500).json({ error: "plan_not_configured" });
     }
 
-    const customer = await findOrCreateCustomer(email);
-
     const stripe = await getUncachableStripeClient();
+    const baseUrl = requestBaseUrl(req);
+
+    if (!email) {
+      // Comprador novo, sem conta: a Stripe coleta o e-mail no checkout.
+      // Depois do pagamento, ele cria a conta com o mesmo e-mail e o
+      // acesso libera sozinho.
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        locale: "pt-BR",
+        success_url: `${baseUrl}/sign-up?checkout=success`,
+        cancel_url: `${baseUrl}/assinar?checkout=cancel`,
+      });
+      return res.json({ url: session.url });
+    }
+
+    const customer = await findOrCreateCustomer(email);
 
     // Evita assinatura duplicada: se já existe uma ativa (ou em teste
     // gratuito), não abre um novo checkout
@@ -147,7 +163,6 @@ router.post("/stripe/checkout", async (req: Request, res: Response) => {
       return res.status(409).json({ error: "already_subscribed" });
     }
 
-    const baseUrl = requestBaseUrl(req);
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       payment_method_types: ["card"],

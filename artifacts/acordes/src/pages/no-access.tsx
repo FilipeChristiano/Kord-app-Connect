@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { isIosApp } from "@/lib/native-app";
+import { isIosApp, isAndroidTwa } from "@/lib/native-app";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -39,35 +39,6 @@ function formatPrice(unitAmount: number, currency: string) {
   }).format(unitAmount / 100);
 }
 
-/**
- * Detecta se o app está rodando como app Android instalado da Play Store
- * (Trusted Web Activity). Nesse caso, a política da loja proíbe botão ou
- * link de compra dentro do app — mostramos apenas orientação em texto.
- *
- * Sinal usado: referrer "android-app://..." (presente na 1ª navegação vinda
- * do TWA) — persistido em sessionStorage (escopo da SESSÃO/aba atual, para
- * sobreviver a recarregamentos dentro do app sem "contaminar" visitas
- * futuras pelo navegador comum, que têm sessionStorage próprio).
- *
- * IMPORTANTE: não usar "modo standalone + Android" como fallback — isso
- * pegava por engano o PWA instalado pelo navegador (fora da loja), que PODE
- * e DEVE mostrar o botão de assinatura. A política da Play Store só vale
- * para o app distribuído pela loja, que sempre chega com o referrer
- * android-app:// na primeira navegação.
- */
-function detectAndroidTwa(): boolean {
-  try {
-    if (document.referrer.startsWith("android-app://")) {
-      sessionStorage.setItem("kordi-twa", "1");
-      return true;
-    }
-    return sessionStorage.getItem("kordi-twa") === "1";
-  } catch {
-    // sessionStorage indisponível — trata como navegador comum
-    return false;
-  }
-}
-
 export default function NoAccessPage() {
   const { signOut } = useClerk();
   const { user } = useUser();
@@ -76,7 +47,7 @@ export default function NoAccessPage() {
   const [subscribing, setSubscribing] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [iosApp] = useState(isIosApp);
-  const [isAndroidApp] = useState(() => !isIosApp() && detectAndroidTwa());
+  const [isAndroidApp] = useState(() => !isIosApp() && isAndroidTwa());
 
   const email =
     user?.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)
