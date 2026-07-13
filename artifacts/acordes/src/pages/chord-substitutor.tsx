@@ -297,7 +297,7 @@ export default function ChordSubstitutor() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center shadow-lg shadow-violet-500/30">
-            <Wand2 className="w-5 h-5 text-foreground" />
+            <Wand2 className="w-5 h-5 text-white" />
           </div>
           <h1 className="font-display text-3xl font-bold text-foreground">Sofisticador de <span className="text-gradient-primary">Cifra</span></h1>
         </div>
@@ -516,7 +516,7 @@ export default function ChordSubstitutor() {
             >
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center">
-                  <Heart className="w-4 h-4 text-foreground" />
+                  <Heart className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-foreground text-lg">
