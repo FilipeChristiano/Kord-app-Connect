@@ -114,7 +114,14 @@ export function Layout({ children }: { children: ReactNode }) {
                 src={`${basePath}/logo.svg`}
                 alt=""
                 aria-hidden="true"
-                className="h-6 sm:h-7 w-auto select-none"
+                className="dark-only h-6 sm:h-7 w-auto select-none"
+                draggable={false}
+              />
+              <img
+                src={`${basePath}/logo-light.png`}
+                alt=""
+                aria-hidden="true"
+                className="light-only h-6 sm:h-7 w-auto select-none"
                 draggable={false}
               />
               <img
@@ -254,7 +261,12 @@ export function Layout({ children }: { children: ReactNode }) {
           <img
             src={`${basePath}/logo.png`}
             alt="Kordi"
-            className="w-8 h-8 rounded-lg opacity-70"
+            className="dark-only w-8 h-8 rounded-lg opacity-70"
+          />
+          <img
+            src={`${basePath}/logo-light.png`}
+            alt="Kordi"
+            className="light-only w-8 h-8 object-contain opacity-80"
           />
           <p>© {new Date().getFullYear()} Kordi. Ferramentas inteligentes para transformar o seu som.</p>
         </div>

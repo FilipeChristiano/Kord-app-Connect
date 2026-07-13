@@ -85,7 +85,13 @@ export default function Home() {
               <img
                 src={`${import.meta.env.BASE_URL}logo.svg`}
                 alt=""
-                className="h-[100px] sm:h-[130px] lg:h-[158px] w-auto select-none"
+                className="dark-only h-[100px] sm:h-[130px] lg:h-[158px] w-auto select-none"
+                draggable={false}
+              />
+              <img
+                src={`${import.meta.env.BASE_URL}logo-light.png`}
+                alt=""
+                className="light-only h-[100px] sm:h-[130px] lg:h-[158px] w-auto select-none"
                 draggable={false}
               />
               <img
@@ -227,8 +233,8 @@ function HeroCard({
             {visual}
           </div>
         </div>
-        <h3 className="text-[22px] font-display font-semibold text-foreground text-balance mt-auto pt-4 leading-[1.2]">{title}</h3>
-        <p className="text-[15px] font-sans text-muted-foreground leading-[1.55]">{desc}</p>
+        <h3 className="text-[22px] font-display font-semibold text-white text-balance mt-auto pt-4 leading-[1.2]">{title}</h3>
+        <p className="text-[15px] font-sans text-slate-400 leading-[1.55]">{desc}</p>
         <span className="inline-flex items-center gap-1.5 text-[13px] font-display font-semibold text-primary group-hover:text-white transition-colors duration-200">
           {cta}
           <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
@@ -367,9 +373,9 @@ function MetronomeGauge({
         <circle cx={knob.x} cy={knob.y} r={size * 0.033} fill="#fb923c" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`font-semibold tracking-[0.2em] text-muted-foreground mb-0.5 ${labelClass}`}>BPM</span>
-        <span className={`font-display font-bold text-foreground leading-none tabular-nums ${bpmClass}`}>72</span>
-        {meter && <span className="text-[9px] text-muted-foreground mt-0.5 font-mono">{meter}</span>}
+        <span className={`font-semibold tracking-[0.2em] text-slate-400 mb-0.5 ${labelClass}`}>BPM</span>
+        <span className={`font-display font-bold text-white leading-none tabular-nums ${bpmClass}`}>72</span>
+        {meter && <span className="text-[9px] text-slate-400 mt-0.5 font-mono">{meter}</span>}
       </div>
     </div>
   );
