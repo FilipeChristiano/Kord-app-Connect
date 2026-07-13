@@ -90,7 +90,16 @@ export default function StudyMode() {
                   <div className="flex justify-center">
                     <CategoryBadge category={currentChord.category} />
                   </div>
-                  <h2 className="font-display text-5xl sm:text-7xl font-bold text-foreground leading-tight break-words max-w-full notranslate" translate="no">
+                  <h2
+                    className={`font-display font-bold text-foreground leading-tight whitespace-nowrap max-w-full notranslate ${
+                      currentChord.name.length > 13
+                        ? "text-3xl sm:text-5xl"
+                        : currentChord.name.length > 9
+                          ? "text-4xl sm:text-6xl"
+                          : "text-5xl sm:text-7xl"
+                    }`}
+                    translate="no"
+                  >
                     {currentChord.name}
                   </h2>
                   <p className="text-muted-foreground text-sm font-medium animate-pulse">
