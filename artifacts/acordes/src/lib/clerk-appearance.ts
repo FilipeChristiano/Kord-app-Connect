@@ -103,8 +103,7 @@ export const clerkLocalization = {
   signUp: {
     start: {
       title: "Crie sua conta",
-      subtitle:
-        "Use o mesmo e-mail da compra na Hotmart e crie uma senha de acesso",
+      subtitle: "Crie sua conta gratuita para começar",
       actionText: "Já criou sua conta antes?",
       actionLink: "Entrar",
     },
@@ -128,7 +127,7 @@ export const clerkLocalization = {
   },
   unstable__errors: {
     form_identifier_not_found:
-      "E-mail não cadastrado. Use o mesmo e-mail da compra na Hotmart.",
+      "E-mail não cadastrado. Crie sua conta primeiro.",
     form_password_incorrect: "Senha incorreta. Tente novamente.",
     form_password_length_too_short: "A senha precisa ter pelo menos 8 caracteres.",
     form_password_no_uppercase: "A senha precisa ter pelo menos uma letra maiúscula.",
