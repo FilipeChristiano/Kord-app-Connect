@@ -13,6 +13,7 @@ import {
   useClerk,
 } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
+import { ThemeProvider } from "next-themes";
 
 import { Toaster } from "@/components/ui/toaster";
 import { isIosApp } from "@/lib/native-app";
@@ -71,8 +72,8 @@ if (!clerkPubKey) {
 function LoadingScreen({ message }: { message?: string }) {
   return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4 text-white/60">
-        <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-primary animate-spin" />
+      <div className="flex flex-col items-center gap-4 text-foreground/60">
+        <div className="w-10 h-10 rounded-full border-2 border-foreground/20 border-t-primary animate-spin" />
         {message && <p className="text-sm">{message}</p>}
       </div>
     </div>
@@ -229,10 +230,12 @@ function PreviewBadge() {
 
 function App() {
   return (
-    <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
-      {PREVIEW_MODE && <PreviewBadge />}
-    </WouterRouter>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <WouterRouter base={basePath}>
+        <ClerkProviderWithRoutes />
+        {PREVIEW_MODE && <PreviewBadge />}
+      </WouterRouter>
+    </ThemeProvider>
   );
 }
 

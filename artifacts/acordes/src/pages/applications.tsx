@@ -30,12 +30,12 @@ function CategoryCard({ app }: { app: CategoryApplication }) {
   return (
     <motion.div
       layout
-      className="glass-card rounded-2xl border border-white/5 overflow-hidden"
+      className="glass-card rounded-2xl border border-foreground/5 overflow-hidden"
     >
       {/* Header */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-4 p-5 sm:p-6 text-left hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center gap-4 p-5 sm:p-6 text-left hover:bg-foreground/[0.02] transition-colors"
       >
         <span className="text-2xl select-none">{app.icon}</span>
         <div className="flex-1 min-w-0">
@@ -44,7 +44,7 @@ function CategoryCard({ app }: { app: CategoryApplication }) {
           >
             {app.category}
           </span>
-          <p className="text-white/70 text-sm line-clamp-2 leading-relaxed">
+          <p className="text-foreground/70 text-sm line-clamp-2 leading-relaxed">
             {app.summary}
           </p>
         </div>
@@ -63,7 +63,7 @@ function CategoryCard({ app }: { app: CategoryApplication }) {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="px-5 sm:px-6 pb-6 space-y-6 border-t border-white/5 pt-5">
+            <div className="px-5 sm:px-6 pb-6 space-y-6 border-t border-foreground/5 pt-5">
 
               {/* Contexts */}
               <div>
@@ -75,7 +75,7 @@ function CategoryCard({ app }: { app: CategoryApplication }) {
                 </div>
                 <ul className="space-y-1.5">
                   {app.contexts.map((ctx, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-white/70">
+                    <li key={i} className="flex items-start gap-2 text-sm text-foreground/70">
                       <span className="text-primary mt-1 shrink-0">•</span>
                       {ctx}
                     </li>
@@ -93,9 +93,9 @@ function CategoryCard({ app }: { app: CategoryApplication }) {
                 </div>
                 <div className="space-y-3">
                   {app.tips.map((tip, i) => (
-                    <div key={i} className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
-                      <p className="text-sm font-semibold text-white mb-1">{tip.title}</p>
-                      <p className="text-sm text-white/60 leading-relaxed">{tip.description}</p>
+                    <div key={i} className="bg-foreground/[0.03] border border-foreground/5 rounded-xl p-4">
+                      <p className="text-sm font-semibold text-foreground mb-1">{tip.title}</p>
+                      <p className="text-sm text-foreground/60 leading-relaxed">{tip.description}</p>
                     </div>
                   ))}
                 </div>
@@ -116,7 +116,7 @@ function CategoryCard({ app }: { app: CategoryApplication }) {
                         {prog.label}
                       </p>
                       <ProgressionChip chords={prog.chords} />
-                      <p className="text-xs text-white/50 mt-2 leading-relaxed">{prog.context}</p>
+                      <p className="text-xs text-foreground/50 mt-2 leading-relaxed">{prog.context}</p>
                     </div>
                   ))}
                 </div>
@@ -147,7 +147,7 @@ export default function Applications() {
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <Lightbulb className="w-5 h-5 text-primary" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-white">Guia de <span className="text-gradient-primary">Aplicações</span></h1>
+          <h1 className="font-display text-3xl font-bold text-foreground">Guia de <span className="text-gradient-primary">Aplicações</span></h1>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
           Para cada categoria de acordes, veja onde usar, dicas práticas e progressões de
@@ -162,7 +162,7 @@ export default function Applications() {
           placeholder="Buscar categoria ou contexto..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-secondary/50 border border-white/10 rounded-xl px-5 py-3 text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+          className="w-full bg-secondary/50 border border-foreground/10 rounded-xl px-5 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
         />
       </div>
 

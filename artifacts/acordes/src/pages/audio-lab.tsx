@@ -180,7 +180,7 @@ function ChordSheet({ text }: { text: string }) {
   };
 
   return (
-    <div className="w-full overflow-x-auto rounded-2xl border border-white/10 bg-secondary/30 px-5 py-5 sm:px-7 sm:py-6 font-mono text-[13px] sm:text-[15px] leading-[1.85] notranslate" translate="no">
+    <div className="w-full overflow-x-auto rounded-2xl border border-foreground/10 bg-secondary/30 px-5 py-5 sm:px-7 sm:py-6 font-mono text-[13px] sm:text-[15px] leading-[1.85] notranslate" translate="no">
       {lines.map((line, i) => {
         const kind = kinds[i];
         if (kind === "blank") return <div key={i} className="h-5" aria-hidden />;
@@ -223,20 +223,20 @@ function ChordSheet({ text }: { text: string }) {
         }
         if (kind === "annotation") {
           return (
-            <div key={i} className="whitespace-pre text-white/40 italic">
+            <div key={i} className="whitespace-pre text-foreground/40 italic">
               {line || " "}
             </div>
           );
         }
         if (kind === "tab") {
           return (
-            <div key={i} className="whitespace-pre text-white/40">
+            <div key={i} className="whitespace-pre text-foreground/40">
               {line || " "}
             </div>
           );
         }
         return (
-          <div key={i} className="whitespace-pre text-white/90">
+          <div key={i} className="whitespace-pre text-foreground/90">
             {line || " "}
           </div>
         );
@@ -1430,13 +1430,13 @@ export default function AudioLab() {
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <AudioWaveform className="w-5 h-5 text-primary" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-white">Audio <span className="text-gradient-primary">Lab</span></h1>
+          <h1 className="font-display text-3xl font-bold text-foreground">Audio <span className="text-gradient-primary">Lab</span></h1>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
           Envie a música ou cante um trecho. O Kordi descobre a música pela letra e
           entrega a cifra pronta — depois é só ajustar e mandar para o Sofisticador.
-          Você também pode separar o áudio: ouça a música <strong className="text-white/80">sem a
-          voz</strong> (só o instrumental) ou deixe a <strong className="text-white/80">voz em
+          Você também pode separar o áudio: ouça a música <strong className="text-foreground/80">sem a
+          voz</strong> (só o instrumental) ou deixe a <strong className="text-foreground/80">voz em
           destaque</strong> — ótimo para cantar ou tocar por cima.
         </p>
       </div>
@@ -1459,10 +1459,10 @@ export default function AudioLab() {
             ) : (
               <>
               {/* Pesquisar pelo título → ouvir no YouTube + cifra */}
-              <div className="glass-card rounded-3xl border border-white/15 p-6 mb-4">
+              <div className="glass-card rounded-3xl border border-foreground/15 p-6 mb-4">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Search className="w-4 h-4 text-primary" />
-                  <h2 className="font-display text-lg font-bold text-white">
+                  <h2 className="font-display text-lg font-bold text-foreground">
                     Pesquisar pelo título
                   </h2>
                 </div>
@@ -1482,7 +1482,7 @@ export default function AudioLab() {
                       }
                     }}
                     placeholder="Ex.: Gabriela Rocha - Atos 2"
-                    className="flex-1 bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="flex-1 bg-secondary/40 border border-foreground/10 rounded-xl px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   />
                   <button
                     onClick={handleSearchByTitle}
@@ -1490,7 +1490,7 @@ export default function AudioLab() {
                     className={cn(
                       "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
                       searchTitle.trim().length === 0
-                        ? "bg-white/5 text-white/30 cursor-not-allowed"
+                        ? "bg-foreground/5 text-foreground/30 cursor-not-allowed"
                         : "btn-kordi",
                     )}
                   >
@@ -1500,9 +1500,9 @@ export default function AudioLab() {
               </div>
 
               <div className="flex items-center gap-3 my-4">
-                <div className="h-px flex-1 bg-white/10" />
-                <span className="text-xs uppercase tracking-wider text-white/30">ou</span>
-                <div className="h-px flex-1 bg-white/10" />
+                <div className="h-px flex-1 bg-foreground/10" />
+                <span className="text-xs uppercase tracking-wider text-foreground/30">ou</span>
+                <div className="h-px flex-1 bg-foreground/10" />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -1519,13 +1519,13 @@ export default function AudioLab() {
                     "glass-card rounded-3xl border-2 border-dashed p-8 text-center cursor-pointer transition-all flex flex-col items-center",
                     dragOver
                       ? "border-primary bg-primary/10"
-                      : "border-white/15 hover:border-primary/50 hover:bg-white/[0.03]",
+                      : "border-foreground/15 hover:border-primary/50 hover:bg-foreground/[0.03]",
                   )}
                 >
                   <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary mb-4">
                     <UploadCloud className="w-7 h-7" />
                   </div>
-                  <h2 className="font-display text-lg font-bold text-white mb-1.5">
+                  <h2 className="font-display text-lg font-bold text-foreground mb-1.5">
                     Enviar o áudio da música
                   </h2>
                   <p className="text-sm text-muted-foreground mb-5">
@@ -1542,11 +1542,11 @@ export default function AudioLab() {
                 </div>
 
                 {/* Opção B: cantar */}
-                <div className="glass-card rounded-3xl border border-white/15 p-8 text-center flex flex-col items-center">
+                <div className="glass-card rounded-3xl border border-foreground/15 p-8 text-center flex flex-col items-center">
                   <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary mb-4">
                     <Mic className="w-7 h-7" />
                   </div>
-                  <h2 className="font-display text-lg font-bold text-white mb-1.5">
+                  <h2 className="font-display text-lg font-bold text-foreground mb-1.5">
                     Cantar a música
                   </h2>
                   <p className="text-sm text-muted-foreground mb-5">
@@ -1588,7 +1588,7 @@ export default function AudioLab() {
             )}
 
             {!isRecording && (
-              <div className="flex items-start gap-2 mt-5 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+              <div className="flex items-start gap-2 mt-5 text-[12px] text-muted-foreground/80 bg-foreground/5 border border-foreground/10 rounded-xl px-3 py-2.5">
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
                 <span>
                   A cifra é detectada automaticamente por inteligência a partir da letra — e
@@ -1607,12 +1607,12 @@ export default function AudioLab() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="glass-card rounded-3xl border border-white/10 p-8 sm:p-10"
+            className="glass-card rounded-3xl border border-foreground/10 p-8 sm:p-10"
           >
             <div className="flex items-center gap-3 mb-6">
               <Loader2 className="w-6 h-6 text-primary animate-spin" />
               <div className="min-w-0">
-                <p className="font-display font-bold text-white">Analisando sua música</p>
+                <p className="font-display font-bold text-foreground">Analisando sua música</p>
                 <p className="text-xs text-muted-foreground truncate">{fileName}</p>
               </div>
             </div>
@@ -1628,7 +1628,7 @@ export default function AudioLab() {
                         "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors",
                         state === "done" && "bg-primary border-primary text-primary-foreground",
                         state === "active" && "border-primary text-primary",
-                        state === "todo" && "border-white/15 text-white/30",
+                        state === "todo" && "border-foreground/15 text-foreground/30",
                       )}
                     >
                       {state === "active" ? <Loader2 className="w-3 h-3 animate-spin" /> : i + 1}
@@ -1636,7 +1636,7 @@ export default function AudioLab() {
                     <span
                       className={cn(
                         "text-sm transition-colors",
-                        state === "todo" ? "text-white/35" : "text-white/85",
+                        state === "todo" ? "text-foreground/35" : "text-foreground/85",
                       )}
                     >
                       {s.label}
@@ -1659,15 +1659,15 @@ export default function AudioLab() {
           >
             {/* Resumo (só quando há análise do áudio enviado) */}
             {result ? (
-              <div className="glass-card rounded-3xl border border-white/10 p-6">
+              <div className="glass-card rounded-3xl border border-foreground/10 p-6">
                 <div className="flex items-center justify-between gap-3 mb-5">
                   <div className="flex items-center gap-2 min-w-0">
                     <FileAudio className="w-4 h-4 text-primary shrink-0" />
-                    <p className="text-sm text-white/80 truncate">{fileName}</p>
+                    <p className="text-sm text-foreground/80 truncate">{fileName}</p>
                   </div>
                   <button
                     onClick={reset}
-                    className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors shrink-0"
+                    className="flex items-center gap-1.5 text-xs text-foreground/40 hover:text-foreground/80 transition-colors shrink-0"
                   >
                     <RotateCcw className="w-3.5 h-3.5" /> Nova música
                   </button>
@@ -1689,7 +1689,7 @@ export default function AudioLab() {
                 </div>
               </div>
             ) : (
-              <div className="glass-card rounded-3xl border border-white/10 p-5">
+              <div className="glass-card rounded-3xl border border-foreground/10 p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
                     {inputMode === "search" ? (
@@ -1697,11 +1697,11 @@ export default function AudioLab() {
                     ) : (
                       <Mic className="w-4 h-4 text-primary shrink-0" />
                     )}
-                    <p className="text-sm text-white/80 truncate">{fileName}</p>
+                    <p className="text-sm text-foreground/80 truncate">{fileName}</p>
                   </div>
                   <button
                     onClick={reset}
-                    className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors shrink-0"
+                    className="flex items-center gap-1.5 text-xs text-foreground/40 hover:text-foreground/80 transition-colors shrink-0"
                   >
                     <RotateCcw className="w-3.5 h-3.5" /> Nova música
                   </button>
@@ -1713,7 +1713,7 @@ export default function AudioLab() {
             <div className="glass-card rounded-3xl border border-primary/20 bg-primary/5 p-6">
               {/* Status do pipeline */}
               {(cifraStatus === "transcribing" || cifraStatus === "searching") && (
-                <div className="flex items-center gap-2 text-sm text-white/70">
+                <div className="flex items-center gap-2 text-sm text-foreground/70">
                   <Loader2 className="w-4 h-4 animate-spin text-primary" />
                   {cifraStatus === "transcribing"
                     ? inputMode === "record"
@@ -1727,11 +1727,11 @@ export default function AudioLab() {
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="font-display font-bold text-white text-lg leading-tight">
+                      <h3 className="font-display font-bold text-foreground text-lg leading-tight">
                         {cifraMeta.title || "Cifra"}
                       </h3>
                       {cifraMeta.artist && (
-                        <p className="text-sm text-white/50 mt-0.5">{cifraMeta.artist}</p>
+                        <p className="text-sm text-foreground/50 mt-0.5">{cifraMeta.artist}</p>
                       )}
                     </div>
                     {currentKeyName && (
@@ -1755,10 +1755,10 @@ export default function AudioLab() {
                     <div className="mt-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Youtube className="w-4 h-4 text-primary" />
-                        <p className="text-sm font-semibold text-white/90">Ouça a música</p>
+                        <p className="text-sm font-semibold text-foreground/90">Ouça a música</p>
                       </div>
                       {cifraMeta.youtubeId ? (
-                        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black aspect-video">
+                        <div className="overflow-hidden rounded-2xl border border-foreground/10 bg-black aspect-video">
                           <iframe
                             key={cifraMeta.youtubeId}
                             src={`https://www.youtube-nocookie.com/embed/${cifraMeta.youtubeId}?enablejsapi=1`}
@@ -1773,7 +1773,7 @@ export default function AudioLab() {
                           href={cifraMeta.youtubeUrl ?? undefined}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-foreground/10 text-foreground/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
                         >
                           <Youtube className="w-4 h-4" /> Ouvir no YouTube
                         </a>
@@ -1795,7 +1795,7 @@ export default function AudioLab() {
                 <div className="mt-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-4 h-4 text-primary" />
-                    <p className="text-sm font-semibold text-white/90">
+                    <p className="text-sm font-semibold text-foreground/90">
                       Versões que o Kordi detectou
                     </p>
                   </div>
@@ -1811,14 +1811,14 @@ export default function AudioLab() {
                           className={cn(
                             "group flex items-center justify-between gap-3 text-left rounded-2xl border px-4 py-3 transition-all",
                             disabled
-                              ? "border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed"
-                              : "border-white/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
+                              ? "border-foreground/5 bg-foreground/[0.02] opacity-50 cursor-not-allowed"
+                              : "border-foreground/10 bg-secondary/40 hover:border-primary/50 hover:bg-primary/[0.06]",
                           )}
                         >
                           <div className="min-w-0">
-                            <p className="font-medium text-white truncate">{v.title}</p>
+                            <p className="font-medium text-foreground truncate">{v.title}</p>
                             {v.artist && (
-                              <p className="text-[13px] text-white/50 truncate">{v.artist}</p>
+                              <p className="text-[13px] text-foreground/50 truncate">{v.artist}</p>
                             )}
                           </div>
                           {loading ? (
@@ -1838,7 +1838,7 @@ export default function AudioLab() {
               {/* Rede de segurança: ajustar o nome e buscar de novo */}
               {cifraStatus !== "transcribing" && cifraStatus !== "searching" && (
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-white/80 mb-2">
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
                     {cifraStatus === "done"
                       ? "Não é essa música? Ajuste o nome e detecte de novo"
                       : "Ajuste o nome da música e tente de novo"}
@@ -1855,7 +1855,7 @@ export default function AudioLab() {
                         }
                       }}
                       placeholder="Ex.: Gabriela Rocha - Atos 2"
-                      className="flex-1 bg-secondary/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                      className="flex-1 bg-secondary/40 border border-foreground/10 rounded-xl px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     />
                     <button
                       onClick={handleFetchCifraByName}
@@ -1863,7 +1863,7 @@ export default function AudioLab() {
                       className={cn(
                         "inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shrink-0",
                         cifraQuery.trim().length === 0
-                          ? "bg-white/5 text-white/30 cursor-not-allowed"
+                          ? "bg-foreground/5 text-foreground/30 cursor-not-allowed"
                           : "btn-kordi",
                       )}
                     >
@@ -1876,15 +1876,15 @@ export default function AudioLab() {
 
             {/* ── Estúdio de áudio: sem voz / voz em destaque ───────────────── */}
             {(inputMode === "upload" || inputMode === "search") && (
-              <div className="glass-card rounded-3xl border border-white/10 p-6">
+              <div className="glass-card rounded-3xl border border-foreground/10 p-6">
                 <div className="flex items-center gap-2 mb-1">
                   <Headphones className="w-4 h-4 text-primary" />
-                  <h3 className="font-display font-bold text-white text-base">Estúdio de áudio</h3>
+                  <h3 className="font-display font-bold text-foreground text-base">Estúdio de áudio</h3>
                 </div>
                 <p className="text-[12px] text-muted-foreground/70 mb-4">
-                  Ouça a música <strong className="text-white/80">sem a voz</strong> na hora (para
+                  Ouça a música <strong className="text-foreground/80">sem a voz</strong> na hora (para
                   cantar/tocar por cima) ou realce a{" "}
-                  <strong className="text-white/80">voz em destaque</strong>. É um efeito do próprio
+                  <strong className="text-foreground/80">voz em destaque</strong>. É um efeito do próprio
                   app — funciona melhor em gravações de estúdio em estéreo e não fica perfeito como
                   uma separação profissional.
                 </p>
@@ -1902,8 +1902,8 @@ export default function AudioLab() {
                 />
 
                 {inputMode === "search" && !stemFileName && !cifraMeta?.youtubeId ? (
-                  <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-center">
-                    <p className="text-sm text-white/70 mb-1">
+                  <div className="rounded-2xl border border-dashed border-foreground/15 bg-foreground/[0.02] p-5 text-center">
+                    <p className="text-sm text-foreground/70 mb-1">
                       Para ouvir a versão sem voz ou destacar o vocal, envie o arquivo de áudio
                       desta música.
                     </p>
@@ -1927,7 +1927,7 @@ export default function AudioLab() {
                 ) : (
                 <>
                 {stemFileName ? (
-                  <div className="flex items-center gap-2 mb-3 text-[12px] text-white/50">
+                  <div className="flex items-center gap-2 mb-3 text-[12px] text-foreground/50">
                     <FileAudio className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span className="truncate">{stemFileName}</span>
                   </div>
@@ -1946,24 +1946,24 @@ export default function AudioLab() {
                 )}
 
                 {/* ── Qualidade da separação (escolha por música) ─────────── */}
-                <div className="mb-3 rounded-2xl border border-white/10 bg-secondary/40 p-3">
+                <div className="mb-3 rounded-2xl border border-foreground/10 bg-secondary/40 p-3">
                   <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12px] font-semibold text-white/80">Qualidade</p>
-                      <p className="text-[11px] text-white/45">
+                      <p className="text-[12px] font-semibold text-foreground/80">Qualidade</p>
+                      <p className="text-[11px] text-foreground/45">
                         {studioQuality === "fast"
                           ? "Rápido — toca na hora, direto no seu aparelho"
                           : "Máxima qualidade — separa muito melhor, leva alguns minutos"}
                       </p>
                     </div>
-                    <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.03] p-1 shrink-0">
+                    <div className="inline-flex rounded-xl border border-foreground/10 bg-foreground/[0.03] p-1 shrink-0">
                       <button
                         onClick={() => setStudioQuality("fast")}
                         className={cn(
                           "px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all",
                           studioQuality === "fast"
                             ? "bg-primary text-primary-foreground"
-                            : "text-white/60 hover:text-white",
+                            : "text-foreground/60 hover:text-foreground",
                         )}
                       >
                         Rápido
@@ -1977,7 +1977,7 @@ export default function AudioLab() {
                           "px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all",
                           studioQuality === "max"
                             ? "bg-primary text-primary-foreground"
-                            : "text-white/60 hover:text-white",
+                            : "text-foreground/60 hover:text-foreground",
                         )}
                       >
                         Máxima
@@ -1988,12 +1988,12 @@ export default function AudioLab() {
 
                 {/* ── Mesa de mistura RÁPIDA (voz + sem voz no navegador) ───── */}
                 {studioQuality === "fast" && (
-                <div className="rounded-2xl border border-white/10 bg-secondary/40 p-4">
+                <div className="rounded-2xl border border-foreground/10 bg-secondary/40 p-4">
                   <div className="flex items-center gap-3">
                     <Headphones className="w-5 h-5 text-primary shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white text-sm">Mesa de mistura</p>
-                      <p className="text-[12px] text-white/50">
+                      <p className="font-semibold text-foreground text-sm">Mesa de mistura</p>
+                      <p className="text-[12px] text-foreground/50">
                         Um player com faders — ajuste a voz, o instrumental e o metrônomo
                       </p>
                     </div>
@@ -2004,7 +2004,7 @@ export default function AudioLab() {
                         className={cn(
                           "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0",
                           fastMixBusy || fastMixFetching
-                            ? "bg-white/[0.04] text-white/40 cursor-not-allowed"
+                            ? "bg-foreground/[0.04] text-foreground/40 cursor-not-allowed"
                             : "btn-kordi",
                         )}
                       >
@@ -2019,7 +2019,7 @@ export default function AudioLab() {
                   </div>
 
                   {fastMixFetching && (
-                    <div className="mt-3 flex items-center gap-2 text-[12px] text-white/60">
+                    <div className="mt-3 flex items-center gap-2 text-[12px] text-foreground/60">
                       <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
                       Baixando o áudio da música do YouTube…
                     </div>
@@ -2027,13 +2027,13 @@ export default function AudioLab() {
 
                   {fastMixBusy && (
                     <div className="mt-3">
-                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-foreground/10 overflow-hidden">
                         <div
                           className="h-full bg-primary transition-all"
                           style={{ width: `${Math.round(fastMixProgress * 100)}%` }}
                         />
                       </div>
-                      <p className="text-[12px] text-white/50 mt-2">
+                      <p className="text-[12px] text-foreground/50 mt-2">
                         Preparando a mistura… {Math.round(fastMixProgress * 100)}%
                       </p>
                     </div>
@@ -2072,12 +2072,12 @@ export default function AudioLab() {
 
                 {/* ── Máxima qualidade: separação completa (voz + sem voz) ──── */}
                 {studioQuality === "max" && (
-                <div className="rounded-2xl border border-white/10 bg-secondary/40 p-4">
+                <div className="rounded-2xl border border-foreground/10 bg-secondary/40 p-4">
                   <div className="flex items-center gap-3">
                     <Sparkles className="w-5 h-5 text-primary shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white text-sm">Máxima qualidade</p>
-                      <p className="text-[12px] text-white/50">
+                      <p className="font-semibold text-foreground text-sm">Máxima qualidade</p>
+                      <p className="text-[12px] text-foreground/50">
                         Separa a voz e o instrumental com o máximo de isolamento
                       </p>
                     </div>
@@ -2088,7 +2088,7 @@ export default function AudioLab() {
                         className={cn(
                           "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0",
                           hqStatus === "preparing"
-                            ? "bg-white/[0.04] text-white/40 cursor-not-allowed"
+                            ? "bg-foreground/[0.04] text-foreground/40 cursor-not-allowed"
                             : "btn-kordi",
                         )}
                       >
@@ -2103,7 +2103,7 @@ export default function AudioLab() {
                   </div>
 
                   {hqStatus === "preparing" && (
-                    <div className="mt-3 flex items-start gap-2 text-[12px] text-white/60">
+                    <div className="mt-3 flex items-start gap-2 text-[12px] text-foreground/60">
                       <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary mt-0.5" />
                       <span>
                         Preparando a separação de máxima qualidade. Isso pode levar
@@ -2125,9 +2125,9 @@ export default function AudioLab() {
                       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                         <div className="flex items-center gap-2 mb-1">
                           <Headphones className="w-4 h-4 text-primary shrink-0" />
-                          <p className="text-sm font-semibold text-white/90">Mesa de mistura</p>
+                          <p className="text-sm font-semibold text-foreground/90">Mesa de mistura</p>
                         </div>
-                        <p className="text-[11px] text-white/45 mb-3">
+                        <p className="text-[11px] text-foreground/45 mb-3">
                           Toque a música e ajuste a voz, o instrumental e o metrônomo como quiser
                         </p>
                         <StemMixer
@@ -2156,7 +2156,7 @@ export default function AudioLab() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="glass-card rounded-3xl border border-white/10 p-6"
+                  className="glass-card rounded-3xl border border-foreground/10 p-6"
                 >
                   <p className="text-[12px] text-muted-foreground/70 mb-4">
                     Você pode ajustar o que quiser antes de usar.
@@ -2164,20 +2164,20 @@ export default function AudioLab() {
 
                   {/* ── Mudar o tom ──────────────────────────────────────── */}
                   {!editingChart && (
-                    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-secondary/30 px-3 py-2.5">
-                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/80 mr-1">
+                    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-foreground/10 bg-secondary/30 px-3 py-2.5">
+                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground/80 mr-1">
                         <Music2 className="w-4 h-4 text-primary" /> Mudar o tom
                       </span>
                       <button
                         onClick={() => stepSemitone(-1)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-foreground/10 text-foreground/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
                         title="Descer meio tom"
                       >
                         <Minus className="w-3.5 h-3.5" /> Descer ½ tom
                       </button>
                       <button
                         onClick={() => stepSemitone(1)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-white/10 text-white/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border border-foreground/10 text-foreground/80 hover:border-primary/50 hover:bg-primary/[0.06] transition-all"
                         title="Subir meio tom"
                       >
                         <Plus className="w-3.5 h-3.5" /> Subir ½ tom
@@ -2194,7 +2194,7 @@ export default function AudioLab() {
                           )}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm font-medium text-white/50">
+                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-sm font-medium text-foreground/50">
                           Tom não detectado
                           {transpose !== 0 && (
                             <span>
@@ -2206,12 +2206,12 @@ export default function AudioLab() {
                       )}
 
                       {keySelectOptions.length > 0 && currentKeyPc !== null && (
-                        <label className="inline-flex items-center gap-1.5 text-sm text-white/60">
+                        <label className="inline-flex items-center gap-1.5 text-sm text-foreground/60">
                           <span className="hidden sm:inline">Tom específico:</span>
                           <select
                             value={currentKeyPc}
                             onChange={(e) => selectKeyPc(Number(e.target.value))}
-                            className="bg-secondary/60 border border-white/10 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="bg-secondary/60 border border-foreground/10 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                           >
                             {keySelectOptions.map((o) => (
                               <option key={o.pc} value={o.pc}>
@@ -2225,7 +2225,7 @@ export default function AudioLab() {
                       {transpose !== 0 && (
                         <button
                           onClick={() => setTranspose(0)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-all"
                           title="Voltar ao tom original"
                         >
                           <RotateCcw className="w-3.5 h-3.5" /> Original
@@ -2242,7 +2242,7 @@ export default function AudioLab() {
                         setChart(e.target.value);
                       }}
                       spellCheck={false}
-                      className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
+                      className="w-full min-h-[260px] bg-secondary/40 border border-primary/30 rounded-xl px-4 py-3 text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y leading-loose whitespace-pre"
                     />
                   ) : (
                     <ChordSheet text={displayChart} />
@@ -2251,14 +2251,14 @@ export default function AudioLab() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       onClick={toggleEditChart}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-foreground/10 text-foreground/70 hover:bg-foreground/5 hover:text-foreground transition-all"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                       {editingChart ? "Concluir edição" : "Editar"}
                     </button>
                     <button
                       onClick={copyChart}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-all"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-foreground/10 text-foreground/70 hover:bg-foreground/5 hover:text-foreground transition-all"
                     >
                       {copied ? (
                         <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -2273,7 +2273,7 @@ export default function AudioLab() {
                         "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-all",
                         favSalvo
                           ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                          : "border-white/10 text-white/70 hover:bg-white/5 hover:text-white",
+                          : "border-foreground/10 text-foreground/70 hover:bg-foreground/5 hover:text-foreground",
                       )}
                     >
                       {favSalvo ? (
@@ -2311,21 +2311,21 @@ export default function AudioLab() {
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
-              className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              className="bg-modal border border-foreground/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
             >
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center">
                   <Heart className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-display font-bold text-white text-lg">Salvar nos favoritos</h2>
+                  <h2 className="font-display font-bold text-foreground text-lg">Salvar nos favoritos</h2>
                   <p className="text-xs text-muted-foreground">
                     {currentKeyName ? `Tom atual: ${currentKeyName}` : "A cifra é salva como está na tela"}
                   </p>
                 </div>
               </div>
 
-              <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold text-foreground/50 uppercase tracking-widest mb-2">
                 Nome da cifra
               </label>
               <input
@@ -2335,10 +2335,10 @@ export default function AudioLab() {
                 onChange={(e) => setFavTitulo(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") confirmarSalvarFavoritos(); }}
                 placeholder="Ex: Gabriela Rocha - Atos 2"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent mb-5"
+                className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent mb-5"
               />
 
-              <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold text-foreground/50 uppercase tracking-widest mb-2">
                 Versão a salvar
               </label>
               <div className="grid grid-cols-2 gap-2 mb-2">
@@ -2348,7 +2348,7 @@ export default function AudioLab() {
                     "col-span-2 py-2.5 px-3 rounded-xl border text-sm font-bold transition-all",
                     favVersao === "original"
                       ? "border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#9673FF]"
-                      : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20",
+                      : "border-foreground/10 bg-foreground/[0.02] text-foreground/50 hover:border-foreground/20",
                   )}
                 >
                   Cifra original
@@ -2367,21 +2367,21 @@ export default function AudioLab() {
                       "py-2.5 px-2 rounded-xl border text-xs font-bold transition-all",
                       favVersao === l.key
                         ? "border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#9673FF]"
-                        : "border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20",
+                        : "border-foreground/10 bg-foreground/[0.02] text-foreground/50 hover:border-foreground/20",
                     )}
                   >
                     {l.label}
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-white/30 -mt-3 mb-5">
+              <p className="text-[11px] text-foreground/30 -mt-3 mb-5">
                 "Suave", "Intermediário" e "Avançado" salvam a cifra sofisticada nesse nível.
               </p>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setFavModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm font-medium hover:bg-white/5 transition-all"
+                  className="flex-1 py-2.5 rounded-xl border border-foreground/10 text-foreground/50 text-sm font-medium hover:bg-foreground/5 transition-all"
                 >
                   Cancelar
                 </button>
@@ -2426,9 +2426,9 @@ function StemFader({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+    <div className="rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
+        <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70">
           <Icon className="w-3.5 h-3.5 text-primary" /> {label}
         </span>
         <span className="text-[12px] font-mono text-primary tabular-nums">
@@ -2956,7 +2956,7 @@ function StemMixer({
           className={cn(
             "shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all",
             loadState === "loading" || bpmDetecting
-              ? "bg-white/[0.06] text-white/40"
+              ? "bg-foreground/[0.06] text-foreground/40"
               : "btn-kordi",
           )}
           aria-label={bpmDetecting ? "Identificando o tempo…" : isPlaying ? "Pausar" : "Tocar"}
@@ -2980,7 +2980,7 @@ function StemMixer({
           className="flex-1 h-1.5 accent-primary cursor-pointer disabled:cursor-not-allowed"
           aria-label="Posição da música"
         />
-        <span className="text-[11px] font-mono text-white/50 tabular-nums w-[88px] text-right">
+        <span className="text-[11px] font-mono text-foreground/50 tabular-nums w-[88px] text-right">
           {formatClock(position)} / {formatClock(duration)}
         </span>
       </div>
@@ -2988,17 +2988,17 @@ function StemMixer({
       {/* Tempo da música (BPM) — 3 opções (metade/principal/dobro), a MESMA
           inteligência do módulo "Metrônomo". O usuário escolhe a oitava certa e
           o clique re-sincroniza com a música. */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+      <div className="rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5">
         <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70">
             <Gauge className="w-3.5 h-3.5 text-primary" /> Tempo da música
           </span>
           {bpmDetecting || metroBpm <= 0 ? (
-            <span className="inline-flex items-center gap-1.5 text-[12px] text-white/50">
+            <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/50">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Identificando o tempo…
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-white/40">
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-foreground/40">
               <span className="notranslate" translate="no">
                 {Math.round(metroBpm)} BPM · {metroTs ?? "4/4"}
               </span>
@@ -3020,7 +3020,7 @@ function StemMixer({
                       "relative rounded-xl border px-2 py-2 flex flex-col items-center transition-all",
                       active
                         ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
-                        : "border-white/10 bg-white/[0.03] hover:border-white/25",
+                        : "border-foreground/10 bg-foreground/[0.03] hover:border-foreground/25",
                     )}
                   >
                     {bpmRecommended === idx && (
@@ -3031,13 +3031,13 @@ function StemMixer({
                     <span
                       className={cn(
                         "text-[9px] font-semibold uppercase tracking-wide",
-                        active ? "text-primary" : "text-white/45",
+                        active ? "text-primary" : "text-foreground/45",
                       )}
                     >
                       {RELATION_LABEL[opt.relation]}
                     </span>
                     <span
-                      className="font-mono tabular-nums text-lg text-white leading-none mt-1 notranslate"
+                      className="font-mono tabular-nums text-lg text-foreground leading-none mt-1 notranslate"
                       translate="no"
                     >
                       {opt.bpm}
@@ -3046,7 +3046,7 @@ function StemMixer({
                 );
               })}
             </div>
-            <p className="text-[10px] text-white/35 mt-1.5 leading-snug">
+            <p className="text-[10px] text-foreground/35 mt-1.5 leading-snug">
               Toque numa opção para o clique seguir esse tempo.
             </p>
           </>
@@ -3056,12 +3056,12 @@ function StemMixer({
       {/* Ajuste fino do clique — calibração de sincronia (latência do aparelho).
           O som tem um pequeno atraso que muda de aparelho p/ aparelho; um toque
           aqui cola o clique 100% na música e fica salvo neste dispositivo. */}
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5">
         <div className="flex flex-col">
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70">
             <Gauge className="w-3.5 h-3.5 text-primary" /> Ajuste fino do clique
           </span>
-          <span className="text-[11px] text-white/40 mt-0.5">
+          <span className="text-[11px] text-foreground/40 mt-0.5">
             {metroSync === 0
               ? "no tempo da música"
               : metroSync > 0
@@ -3074,7 +3074,7 @@ function StemMixer({
             type="button"
             onClick={() => changeMetroSync(metroSync - METRO_SYNC_STEP)}
             disabled={metroSync <= METRO_SYNC_MIN}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.06] text-white/80 hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-foreground/[0.06] text-foreground/80 hover:bg-foreground/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Clique mais cedo"
             title="Clique mais cedo"
           >
@@ -3083,7 +3083,7 @@ function StemMixer({
           <button
             type="button"
             onClick={() => changeMetroSync(METRO_SYNC_DEFAULT)}
-            className="px-2 h-8 rounded-lg text-[11px] font-medium bg-white/[0.06] text-white/70 hover:bg-white/10 transition-all"
+            className="px-2 h-8 rounded-lg text-[11px] font-medium bg-foreground/[0.06] text-foreground/70 hover:bg-foreground/10 transition-all"
             title="Voltar ao ajuste padrão"
           >
             Padrão
@@ -3092,7 +3092,7 @@ function StemMixer({
             type="button"
             onClick={() => changeMetroSync(metroSync + METRO_SYNC_STEP)}
             disabled={metroSync >= METRO_SYNC_MAX}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.06] text-white/80 hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-foreground/[0.06] text-foreground/80 hover:bg-foreground/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Clique mais tarde"
             title="Clique mais tarde"
           >
@@ -3117,14 +3117,14 @@ function StemMixer({
         <a
           href={instrumentalUrl}
           download={`harmonic-sem-voz.${downloadExt}`}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/[0.06] text-white/90 hover:bg-white/10 transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-foreground/[0.06] text-foreground/90 hover:bg-foreground/10 transition-all"
         >
           <Download className="w-4 h-4" /> Sem voz
         </a>
         <a
           href={vocalsUrl}
           download={`harmonic-voz.${downloadExt}`}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/[0.06] text-white/90 hover:bg-white/10 transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-foreground/[0.06] text-foreground/90 hover:bg-foreground/10 transition-all"
         >
           <Download className="w-4 h-4" /> Só a voz
         </a>
@@ -3150,11 +3150,11 @@ function RecordingPanel({
           <Mic className="w-8 h-8" />
         </div>
       </div>
-      <p className="font-display text-xl font-bold text-white mb-1">Gravando…</p>
+      <p className="font-display text-xl font-bold text-foreground mb-1">Gravando…</p>
       <p className="text-sm text-muted-foreground mb-1">
         Cante o trecho da música com clareza.
       </p>
-      <p className="font-mono text-2xl text-white tabular-nums mb-6">
+      <p className="font-mono text-2xl text-foreground tabular-nums mb-6">
         {formatClock(seconds)}{" "}
         <span className="text-sm text-muted-foreground/60">/ {formatClock(MAX_RECORD_SECONDS)}</span>
       </p>
@@ -3167,7 +3167,7 @@ function RecordingPanel({
         </button>
         <button
           onClick={onCancel}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-medium text-white/70 border border-white/10 hover:bg-white/5 hover:text-white transition-all"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-medium text-foreground/70 border border-foreground/10 hover:bg-foreground/5 hover:text-foreground transition-all"
         >
           Cancelar
         </button>
@@ -3188,12 +3188,12 @@ function SummaryCard({
   hint?: string;
 }) {
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+    <div className="bg-foreground/[0.03] border border-foreground/10 rounded-2xl p-4">
       <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
         <Icon className="w-3.5 h-3.5" />
         <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
       </div>
-      <p className="text-xl font-bold text-white leading-none">{value}</p>
+      <p className="text-xl font-bold text-foreground leading-none">{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground/70 mt-1.5 truncate">{hint}</p>}
     </div>
   );

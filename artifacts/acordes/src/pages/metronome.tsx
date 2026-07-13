@@ -480,7 +480,7 @@ export default function Metronome() {
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-4 uppercase tracking-wider">
           <Music2 className="w-3.5 h-3.5" /> Ferramenta de Estudo
         </div>
-        <h1 className="font-display text-4xl md:text-5xl font-bold text-white mb-3">
+        <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-3">
           Metrônomo <span className="text-gradient-primary">Inteligente</span>
         </h1>
         <p className="text-muted-foreground max-w-2xl lg:mx-0 mx-auto">
@@ -490,7 +490,7 @@ export default function Metronome() {
 
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6">
         {/* ── Painel principal ──────────────────────────────────────────────── */}
-        <div className="glass-card rounded-3xl p-6 sm:p-10 border border-white/10 shadow-2xl relative overflow-hidden">
+        <div className="glass-card rounded-3xl p-6 sm:p-10 border border-foreground/10 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
           {/* Preset ativo */}
@@ -498,7 +498,7 @@ export default function Metronome() {
             <div className="mb-6 flex flex-col items-center gap-2 text-center">
               <div className="flex items-center justify-center gap-2 flex-wrap">
                 <span className="text-xs uppercase tracking-widest text-primary/70 font-semibold">Estilo ativo</span>
-                <span className="text-sm font-bold text-white">{activePreset.name}</span>
+                <span className="text-sm font-bold text-foreground">{activePreset.name}</span>
                 {presetAdjusted && (
                   <span className="text-[10px] uppercase tracking-wider bg-fuchsia-500/20 text-fuchsia-300 px-2 py-0.5 rounded-full border border-fuchsia-500/30">
                     ajustado
@@ -506,9 +506,9 @@ export default function Metronome() {
                 )}
               </div>
               <div className="flex items-center justify-center gap-2 flex-wrap text-[11px] text-muted-foreground">
-                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 notranslate" translate="no">{activePreset.timeSignature}</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">{SUBDIVISION_LABELS[activePreset.subdivision]}</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 notranslate" translate="no">{activePreset.range} BPM</span>
+                <span className="px-2 py-0.5 rounded-full bg-foreground/5 border border-foreground/10 notranslate" translate="no">{activePreset.timeSignature}</span>
+                <span className="px-2 py-0.5 rounded-full bg-foreground/5 border border-foreground/10">{SUBDIVISION_LABELS[activePreset.subdivision]}</span>
+                <span className="px-2 py-0.5 rounded-full bg-foreground/5 border border-foreground/10 notranslate" translate="no">{activePreset.range} BPM</span>
               </div>
             </div>
           )}
@@ -529,7 +529,7 @@ export default function Metronome() {
               />
               <div className={cn(
                 "absolute inset-10 rounded-full transition-colors duration-100",
-                isPlaying && currentBeat === 0 ? "bg-primary/15" : isPlaying ? "bg-white/5" : "bg-transparent",
+                isPlaying && currentBeat === 0 ? "bg-primary/15" : isPlaying ? "bg-foreground/5" : "bg-transparent",
               )} />
 
               {/* Seletor circular (arrastável) */}
@@ -603,7 +603,7 @@ export default function Metronome() {
                   onChange={(e) => setBpmInput(e.target.value.replace(/[^0-9]/g, ""))}
                   onBlur={handleBpmInputBlur}
                   onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-                  className={`font-display font-bold text-white bg-transparent text-center w-44 leading-none outline-none focus:text-primary transition-colors notranslate pointer-events-auto ${
+                  className={`font-display font-bold text-foreground bg-transparent text-center w-44 leading-none outline-none focus:text-primary transition-colors notranslate pointer-events-auto ${
                     bpmInput.length >= 3 ? "text-5xl sm:text-6xl" : "text-6xl sm:text-7xl"
                   }`}
                   translate="no"
@@ -640,12 +640,12 @@ export default function Metronome() {
                           "rounded-full border transition-all duration-100",
                           level === "strong" && "w-5 h-5 bg-primary border-primary",
                           level === "medium" && "w-[18px] h-[18px] bg-amber-400 border-amber-400",
-                          level === "weak" && "w-4 h-4 bg-white/25 border-white/30",
-                          level === "muted" && "w-3.5 h-3.5 bg-transparent border-white/15",
+                          level === "weak" && "w-4 h-4 bg-foreground/25 border-foreground/30",
+                          level === "muted" && "w-3.5 h-3.5 bg-transparent border-foreground/15",
                           isFlashing && level === "strong" && "scale-125 shadow-md shadow-primary/50 ring-1 ring-primary/40",
                           isFlashing && level === "medium" && "scale-125 shadow-md shadow-amber-400/50 ring-1 ring-amber-300/40",
                           isFlashing && level === "weak" && "scale-110 shadow-sm shadow-white/30",
-                          isFlashing && level === "muted" && "scale-110 border-white/40",
+                          isFlashing && level === "muted" && "scale-110 border-foreground/40",
                           "group-hover:brightness-110 group-active:scale-95",
                         )}
                       />
@@ -666,10 +666,10 @@ export default function Metronome() {
                   <span className="w-3 h-3 rounded-full bg-amber-400" /> Médio
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-white/25" /> Fraco
+                  <span className="w-3 h-3 rounded-full bg-foreground/25" /> Fraco
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full border border-white/20 bg-transparent" /> Mudo
+                  <span className="w-3 h-3 rounded-full border border-foreground/20 bg-transparent" /> Mudo
                 </span>
               </div>
               <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
@@ -685,7 +685,7 @@ export default function Metronome() {
               className={cn(
                 "flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-3 px-3 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-sm sm:text-lg transition-all duration-300 shadow-lg",
                 isPlaying
-                  ? "bg-white text-background hover:bg-white/90 shadow-white/20"
+                  ? "bg-foreground text-background hover:bg-foreground/90 shadow-white/20"
                   : "btn-kordi",
               )}
               aria-label={isPlaying ? "Pausar" : "Tocar"}
@@ -695,7 +695,7 @@ export default function Metronome() {
             </button>
             <button
               onClick={handleTap}
-              className="flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-3.5 sm:py-4 rounded-2xl font-semibold text-sm sm:text-base text-white bg-secondary hover:bg-secondary/80 border border-white/10 transition-all"
+              className="flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-3.5 sm:py-4 rounded-2xl font-semibold text-sm sm:text-base text-foreground bg-secondary hover:bg-secondary/80 border border-foreground/10 transition-all"
               aria-label="Tap Tempo"
             >
               <Hand className="w-5 h-5" />
@@ -703,7 +703,7 @@ export default function Metronome() {
             </button>
             <button
               onClick={resetBpm}
-              className="flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-3.5 sm:py-4 rounded-2xl font-semibold text-sm sm:text-base text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 hover:border-white/10 transition-all"
+              className="flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-3.5 sm:py-4 rounded-2xl font-semibold text-sm sm:text-base text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary border border-foreground/5 hover:border-foreground/10 transition-all"
               aria-label="Reset"
             >
               <RotateCcw className="w-5 h-5" />
@@ -727,7 +727,7 @@ export default function Metronome() {
                       "py-3 rounded-xl font-bold transition-all border notranslate",
                       timeSignature === ts
                         ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
-                        : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
+                        : "bg-secondary/50 text-muted-foreground border-foreground/5 hover:border-foreground/20 hover:text-foreground",
                     )}
                     translate="no"
                   >
@@ -736,7 +736,7 @@ export default function Metronome() {
                 ))}
               </div>
               <p className="text-[11px] text-muted-foreground/70 mt-2">
-                <span className="text-white/80 font-semibold notranslate" translate="no">{timeSignature}</span>
+                <span className="text-foreground/80 font-semibold notranslate" translate="no">{timeSignature}</span>
                 {" — "}
                 {TIME_SIGNATURE_INFO[timeSignature].name} · {TIME_SIGNATURE_INFO[timeSignature].uso}
               </p>
@@ -768,8 +768,8 @@ export default function Metronome() {
                         "py-3 rounded-xl font-music text-2xl leading-none transition-all border notranslate",
                         subdivision === s
                           ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
-                          : "bg-secondary/50 text-muted-foreground border-white/5 hover:border-white/20 hover:text-white",
-                        tooLong && "opacity-40 cursor-not-allowed hover:border-white/5 hover:text-muted-foreground",
+                          : "bg-secondary/50 text-muted-foreground border-foreground/5 hover:border-foreground/20 hover:text-foreground",
+                        tooLong && "opacity-40 cursor-not-allowed hover:border-foreground/5 hover:text-muted-foreground",
                       )}
                       translate="no"
                     >
@@ -779,7 +779,7 @@ export default function Metronome() {
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground/70 mt-2">
-                <span className="text-white/80 font-semibold">{SUBDIVISION_LABELS[subdivision]}</span>
+                <span className="text-foreground/80 font-semibold">{SUBDIVISION_LABELS[subdivision]}</span>
                 {" — "}
                 {subdivision !== "triplet" && NOTE_DENOM[subdivision] === tsDenominator(timeSignature)
                   ? "pulso do compasso (sem subdivisão)"
@@ -789,7 +789,7 @@ export default function Metronome() {
           </div>
 
           <p className="text-xs text-muted-foreground/70 text-center mt-6">
-            Dica: pressione <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-white/80 font-mono text-[10px]">espaço</kbd> para tocar/pausar.
+            Dica: pressione <kbd className="px-1.5 py-0.5 bg-foreground/10 rounded text-foreground/80 font-mono text-[10px]">espaço</kbd> para tocar/pausar.
           </p>
         </div>
 
@@ -797,7 +797,7 @@ export default function Metronome() {
         <div className="space-y-6">
         {/* Detectar BPM (abre gravar/subir áudio ao clicar) */}
         {!detectOpen ? (
-          <div className="glass-card rounded-3xl p-6 border border-white/10">
+          <div className="glass-card rounded-3xl p-6 border border-foreground/10">
             <button
               type="button"
               onClick={() => setDetectOpen(true)}
@@ -807,7 +807,7 @@ export default function Metronome() {
                 <Gauge className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-display text-xl font-bold text-white">Detectar BPM</div>
+                <div className="font-display text-xl font-bold text-foreground">Detectar BPM</div>
                 <div className="text-xs text-muted-foreground">
                   Grave ou suba um áudio para descobrir o tempo
                 </div>
@@ -819,7 +819,7 @@ export default function Metronome() {
           <BpmDetector onApply={handleDetectedBpm} />
         )}
         {/* Estilos (minimizável) */}
-        <div className="glass-card rounded-3xl p-6 border border-white/10">
+        <div className="glass-card rounded-3xl p-6 border border-foreground/10">
           <button
             type="button"
             onClick={() => setStylesOpen((v) => !v)}
@@ -827,7 +827,7 @@ export default function Metronome() {
             className="w-full flex items-center gap-2 text-left"
           >
             <Sparkles className="w-5 h-5 text-primary shrink-0" />
-            <span className="font-display text-xl font-bold text-white flex-1">Estilos</span>
+            <span className="font-display text-xl font-bold text-foreground flex-1">Estilos</span>
             <ChevronDown
               className={cn(
                 "w-5 h-5 text-muted-foreground transition-transform",
@@ -858,26 +858,26 @@ export default function Metronome() {
                           "w-full text-left p-4 rounded-xl border transition-all duration-200 group",
                           isActive
                             ? "bg-primary/15 border-primary/50 shadow-md shadow-primary/10"
-                            : "bg-secondary/30 border-white/5 hover:bg-secondary/50 hover:border-white/15",
+                            : "bg-secondary/30 border-foreground/5 hover:bg-secondary/50 hover:border-foreground/15",
                         )}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className={cn(
                               "font-bold mb-0.5 transition-colors",
-                              isActive ? "text-white" : "text-white/90 group-hover:text-white",
+                              isActive ? "text-foreground" : "text-foreground/90 group-hover:text-foreground",
                             )}>
                               {preset.name}
                             </div>
                             <div className="text-xs text-muted-foreground line-clamp-1">{preset.description}</div>
                             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 notranslate" translate="no">
+                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-foreground/5 border border-foreground/10 notranslate" translate="no">
                                 {preset.timeSignature}
                               </span>
-                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
+                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-foreground/5 border border-foreground/10">
                                 {SUBDIVISION_LABELS[preset.subdivision]}
                               </span>
-                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 notranslate" translate="no">
+                              <span className="text-[10px] text-muted-foreground/90 px-1.5 py-0.5 rounded bg-foreground/5 border border-foreground/10 notranslate" translate="no">
                                 {preset.range}
                               </span>
                             </div>
@@ -885,7 +885,7 @@ export default function Metronome() {
                           <div className="text-right shrink-0">
                             <div className={cn(
                               "font-display font-bold text-lg notranslate",
-                              isActive ? "text-primary" : "text-white/80",
+                              isActive ? "text-primary" : "text-foreground/80",
                             )} translate="no">
                               {preset.bpm}
                             </div>

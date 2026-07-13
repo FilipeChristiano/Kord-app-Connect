@@ -1,14 +1,6 @@
 /**
  * Demonstrações interativas da página pública de venda (/assinar).
- *
- * Todas reutilizam os motores reais do app:
- * - AcordeDemo    → forma comum × variações sofisticadas (PianoKeyboard +
- *                   playChordVoicing com samples reais de piano)
- * - CifraDemo     → transposeChart/classifyLine (mesma transposição do app)
- * - AudioLabDemo  → animação roteirizada do fluxo real (pesquisa → cifra →
- *                   áudio → separação Voz/Instrumental/Metrônomo)
- * - MetronomoDemo → metrônomo Web Audio (mesmo timbre do app)
- * - PadsDemo      → pads reais com Fade In/Out e Low Cut funcionais
+ * Tema: Light, Airy, Modern.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -92,19 +84,19 @@ export function AcordeDemo() {
             key={c.name}
             type="button"
             onClick={() => choose(i)}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+            className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all transform hover:scale-[1.02] active:scale-95 ${
               i === selected
                 ? c.common
-                  ? "bg-white/20 text-white"
-                  : "bg-gradient-to-br from-primary to-primary-700 text-primary-foreground shadow-lg shadow-primary/25"
-                : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                  ? "bg-slate-800 text-white shadow-md shadow-slate-900/20"
+                  : "bg-gradient-to-br from-primary to-[#8B5CF6] text-white shadow-lg shadow-primary/30 ring-2 ring-primary/20 ring-offset-2"
+                : "bg-white border border-slate-200 text-slate-600 hover:border-primary/40 hover:text-primary shadow-sm"
             }`}
           >
             {c.name}
             <span
-              className={`ml-2 text-[10px] font-bold uppercase tracking-wide ${
-                c.common ? "text-white/50" : "text-primary-foreground/70"
-              } ${i === selected ? "" : "text-white/40"}`}
+              className={`ml-2 text-[10px] font-bold uppercase tracking-widest ${
+                c.common ? "text-slate-300" : "text-white/80"
+              } ${i === selected ? "" : "text-slate-400"}`}
             >
               {c.common ? "comum" : "Kordi"}
             </span>
@@ -112,19 +104,19 @@ export function AcordeDemo() {
         ))}
       </div>
 
-      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-6">
+      <div className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all">
         <PianoKeyboard
           leftHandNotes={v.left}
           rightHandNotes={v.right}
-          className="w-full"
+          className="w-full max-w-full drop-shadow-sm"
         />
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-          <p className="text-sm text-white/60 leading-relaxed max-w-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mt-8">
+          <p className="text-sm text-slate-500 leading-relaxed max-w-md">
             <span
-              className={`inline-block text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 mr-2 align-middle ${
+              className={`inline-block text-[10px] font-bold uppercase tracking-widest rounded-full px-2.5 py-1 mr-3 align-middle transition-colors ${
                 v.common
-                  ? "bg-white/10 text-white/60"
-                  : "bg-primary/15 text-primary border border-primary/25"
+                  ? "bg-slate-100 text-slate-500"
+                  : "bg-primary/10 text-primary border border-primary/20"
               }`}
             >
               {v.badge}
@@ -134,14 +126,14 @@ export function AcordeDemo() {
           <button
             type="button"
             onClick={() => playChordVoicing(v.left, v.right)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-colors shrink-0"
+            className="group flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 hover:border-primary/50 hover:bg-primary/5 text-slate-700 hover:text-primary text-sm font-bold transition-all shadow-sm shrink-0 active:scale-95"
           >
-            <Play className="w-4 h-4 text-primary" />
+            <Play className="w-4 h-4 text-primary fill-primary/20 group-hover:fill-primary transition-all" />
             Ouvir {v.name}
           </button>
         </div>
       </div>
-      <p className="text-xs text-white/40 mt-3">
+      <p className="text-xs text-slate-400 mt-4 px-2">
         Compare a forma comum com as variações do Kordi — som de piano de
         verdade, gravado nota a nota. No app, todos os acordes têm variações
         assim.
@@ -152,7 +144,6 @@ export function AcordeDemo() {
 
 // ─── 2. Cifras inteligentes (transposição ao vivo) ──────────────────────────
 
-// Trecho original criado para a demonstração (sem direitos de terceiros).
 const DEMO_CHART = [
   "[Refrão]",
   "C           G/B         Am7          F7M",
@@ -181,66 +172,64 @@ export function CifraDemo() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-sm text-white/60">Tom:</span>
-        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
+      <div className="flex items-center gap-4 mb-5">
+        <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Mudar Tom:</span>
+        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-full p-1.5 shadow-sm">
           <button
             type="button"
             onClick={() => bump(-1)}
             aria-label="Baixar meio tom"
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors active:scale-90"
           >
-            <Minus className="w-4 h-4" />
+            <Minus className="w-5 h-5" />
           </button>
-          <span className="font-display font-bold text-lg w-12 text-center text-primary">
+          <span className="font-display font-bold text-xl w-14 text-center text-primary">
             {key}
           </span>
           <button
             type="button"
             onClick={() => bump(1)}
             aria-label="Subir meio tom"
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors active:scale-90"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
           </button>
         </div>
         {semis !== 0 && (
           <button
             type="button"
             onClick={() => setSemis(0)}
-            className="text-xs text-white/50 hover:text-white/80 underline underline-offset-2"
+            className="text-xs font-semibold text-slate-400 hover:text-primary transition-colors underline underline-offset-4"
           >
-            voltar para C
+            Voltar para C
           </button>
         )}
       </div>
 
-      {/* Papel de cifra claro — mesma superfície do app */}
-      <div className="bg-[#FAF7F0] text-stone-800 rounded-2xl p-5 sm:p-6 overflow-x-auto shadow-inner">
-        <pre className="font-mono text-[13px] sm:text-sm leading-relaxed whitespace-pre">
+      <div className="bg-[#FAF7F0] text-stone-800 rounded-3xl p-6 sm:p-8 overflow-x-auto shadow-inner border border-[#EBE5D9]">
+        <pre className="font-mono text-[14px] sm:text-base leading-relaxed whitespace-pre">
           {chart.split("\n").map((line, i) => {
             const kind = classifyLine(line);
             if (kind === "section") {
               return (
-                <div key={i} className="text-stone-500 font-semibold">
-                  {line}
+                <div key={i} className="text-stone-400 font-bold uppercase tracking-widest text-xs mb-1 mt-2">
+                  {line.replace(/[\[\]]/g, '')}
                 </div>
               );
             }
             if (kind === "chords") {
               return (
-                <div key={i} className="text-[#7C3AED] font-bold">
+                <div key={i} className="text-[#7C3AED] font-bold text-[1.05em]">
                   {line}
                 </div>
               );
             }
-            return <div key={i}>{line || "\u00A0"}</div>;
+            return <div key={i} className="text-stone-700">{line || "\u00A0"}</div>;
           })}
         </pre>
       </div>
-      <p className="text-xs text-white/40 mt-3">
-        Só os acordes mudam — a letra fica intacta e alinhada, como no app. E o
-        Sofisticador ainda troca os acordes simples por versões sofisticadas.
+      <p className="text-xs text-slate-400 mt-4 px-2">
+        Só os acordes mudam — a letra fica intacta e alinhada. O Sofisticador (no app) ainda troca acordes simples por versões sofisticadas.
       </p>
     </div>
   );
@@ -248,9 +237,6 @@ export function CifraDemo() {
 
 // ─── 3. Audio Lab: animação roteirizada do fluxo real ───────────────────────
 
-// Roteiro: digitar título → encontrar cifra → baixar áudio → separar → mesa.
-// Trecho de 30s enviado pelo dono do app; stems separados com o mesmo motor
-// de máxima qualidade do Audio Lab (Demucs). BPM/1º tempo medidos do trecho.
 const TYPED_TITLE = "Midian Lima - Jó";
 const LAB_BPM = 64.6;
 const LAB_FIRST_BEAT = 0.372;
@@ -275,13 +261,13 @@ const MIXER_CHANNELS: {
   file: string | null;
 }[] = [
   { id: "voz", label: "Voz", color: "#9673FF", file: "lab-voz.mp3" },
-  { id: "instrumental", label: "Instrumental", color: "#34d399", file: "lab-instrumental.mp3" },
-  { id: "metronomo", label: "Metrônomo", color: "#fbbf24", file: null },
+  { id: "instrumental", label: "Instrumental", color: "#10B981", file: "lab-instrumental.mp3" },
+  { id: "metronomo", label: "Metrônomo", color: "#F59E0B", file: null },
 ];
 
 function ProgressBar({ running, ms }: { running: boolean; ms: number }) {
   return (
-    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+    <div className="h-2 bg-slate-100 rounded-full overflow-hidden w-full mt-3 border border-slate-200/60">
       <div
         className="h-full rounded-full bg-gradient-to-r from-primary to-[#C24BF7]"
         style={{
@@ -299,7 +285,6 @@ export function AudioLabDemo() {
   const [cycle, setCycle] = useState(0);
   const timersRef = useRef<number[]>([]);
 
-  // Roteiro: digita o título letra a letra, depois avança pelos passos.
   useEffect(() => {
     const timers = timersRef.current;
     setStep("typing");
@@ -334,7 +319,6 @@ export function AudioLabDemo() {
   };
   const idx = stepIndex[step];
 
-  // ── Mesa de mistura REAL: stems do trecho separados pelo Kordi ──
   const [labPlaying, setLabPlaying] = useState(false);
   const [labLoading, setLabLoading] = useState(false);
   const [labError, setLabError] = useState(false);
@@ -347,8 +331,6 @@ export function AudioLabDemo() {
   volsRef.current = vols;
   const labBuffersRef = useRef<Map<LabChannelId, AudioBuffer> | null>(null);
   const labOffsetRef = useRef(0);
-  // Token de geração: invalida startLab() pendente após cancelar/reiniciar,
-  // para o áudio nunca começar "sozinho" depois de um reset.
   const labSeqRef = useRef(0);
   const labLoadingRef = useRef(false);
   const labPlayRef = useRef<{
@@ -370,16 +352,8 @@ export function AudioLabDemo() {
     labOffsetRef.current = remember ? pb.offset + elapsed : 0;
     pb.srcs.forEach((s) => {
       s.onended = null;
-      try {
-        s.stop();
-      } catch {
-        /* já parado */
-      }
-      try {
-        s.disconnect();
-      } catch {
-        /* já desconectado */
-      }
+      try { s.stop(); } catch {}
+      try { s.disconnect(); } catch {}
     });
     pb.gains.forEach((g) => g.disconnect());
   }
@@ -395,8 +369,22 @@ export function AudioLabDemo() {
       cancelPendingLab();
       stopLab(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function clickAt(ctx: AudioContext, dest: AudioNode, t: number, strong: boolean) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = strong ? 1500 : 1050;
+    const dur = strong ? 0.06 : 0.05;
+    const peak = strong ? 0.9 : 0.55;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g).connect(dest);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
 
   async function startLab() {
     const a = getAudio();
@@ -453,7 +441,6 @@ export function AudioLabDemo() {
         srcs.push(src);
       }
     }
-    // Cliques do metrônomo ancorados no relógio do AudioContext (sem deriva)
     const clickGain = gains.get("metronomo");
     if (clickGain) {
       const beat = 60 / LAB_BPM;
@@ -478,172 +465,151 @@ export function AudioLabDemo() {
   }
 
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-6">
-      {/* Campo de busca com digitação */}
-      <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4">
-        <Search className="w-4 h-4 text-white/40 shrink-0" />
-        <span className="font-mono text-sm sm:text-base">
-          {typed}
+    <div className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+      {/* Campo de busca */}
+      <div className="flex items-center gap-3 bg-white border-2 border-slate-100 rounded-2xl px-5 py-4 mb-6 shadow-sm focus-within:border-primary/30 transition-colors">
+        <Search className="w-5 h-5 text-slate-400 shrink-0" />
+        <span className="font-sans font-medium text-slate-800 text-base sm:text-lg">
+          {typed || <span className="text-slate-300 font-normal">Digite uma música...</span>}
           {step === "typing" && (
-            <span className="inline-block w-[2px] h-4 bg-primary align-middle ml-0.5 animate-pulse" />
+            <span className="inline-block w-0.5 h-5 bg-primary align-middle ml-1 animate-pulse" />
           )}
         </span>
       </div>
 
       {/* Etapas */}
-      <div className="space-y-2.5 mb-4">
-        {/* Cifra encontrada */}
+      <div className="space-y-3 mb-8">
+        {/* Cifra */}
         <div
-          className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-500 ${
+          className={`flex items-center gap-4 rounded-2xl border px-5 py-4 transition-all duration-500 shadow-sm ${
             idx >= 1
-              ? "bg-white/5 border-white/10 opacity-100"
-              : "border-transparent opacity-30"
+              ? "bg-white border-slate-200 opacity-100"
+              : "bg-slate-50 border-transparent opacity-40 grayscale"
           }`}
         >
-          {step === "searching" ? (
-            <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
-          ) : idx > 1 || step === "found" ? (
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-          ) : (
-            <FileText className="w-4 h-4 text-white/30 shrink-0" />
-          )}
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${idx > 1 || step === "found" ? "bg-emerald-100 text-emerald-600" : "bg-primary/10 text-primary"}`}>
+            {step === "searching" ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : idx > 1 || step === "found" ? (
+              <Check className="w-5 h-5" />
+            ) : (
+              <FileText className="w-5 h-5" />
+            )}
+          </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">
-              {step === "searching" ? "Encontrando a cifra…" : "Cifra encontrada"}
+            <p className="text-sm font-bold text-slate-800">
+              {step === "searching" ? "Encontrando a cifra..." : "Cifra encontrada"}
             </p>
             {(idx > 1 || step === "found") && (
-              <p className="font-mono text-xs text-[#b79aff] truncate">
-                G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;C/G&nbsp;&nbsp;&nbsp;&nbsp;G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;D7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;G — tom detectado: G
+              <p className="font-mono text-xs text-primary truncate mt-1 bg-primary/5 inline-block px-2 py-0.5 rounded">
+                G   C/G  G   D7   G — Tom: G
               </p>
             )}
           </div>
-          <Music2 className={`w-4 h-4 shrink-0 ${idx >= 1 ? "text-primary" : "text-white/20"}`} />
         </div>
 
-        {/* Download do áudio */}
+        {/* Download */}
         <div
-          className={`rounded-xl border px-4 py-3 transition-all duration-500 ${
+          className={`rounded-2xl border px-5 py-4 transition-all duration-500 shadow-sm ${
             idx >= 2
-              ? "bg-white/5 border-white/10 opacity-100"
-              : "border-transparent opacity-30"
+              ? "bg-white border-slate-200 opacity-100"
+              : "bg-slate-50 border-transparent opacity-40 grayscale"
           }`}
         >
-          <div className="flex items-center gap-3 mb-2">
-            {step === "downloading" ? (
-              <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
-            ) : idx > 2 ? (
-              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            ) : (
-              <Download className="w-4 h-4 text-white/30 shrink-0" />
-            )}
-            <p className="text-sm font-medium">
-              {step === "downloading"
-                ? "Baixando o áudio…"
-                : idx > 2
-                  ? "Áudio vinculado"
-                  : "Baixar o áudio"}
-            </p>
+          <div className="flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${idx > 2 ? "bg-emerald-100 text-emerald-600" : "bg-primary/10 text-primary"}`}>
+              {step === "downloading" ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : idx > 2 ? (
+                <Check className="w-5 h-5" />
+              ) : (
+                <Download className="w-5 h-5" />
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-slate-800">
+                {step === "downloading" ? "Baixando o áudio..." : idx > 2 ? "Áudio vinculado" : "Baixar áudio"}
+              </p>
+            </div>
           </div>
-          {idx >= 2 && (
-            <ProgressBar running={step === "downloading" || idx > 2} ms={2000} />
-          )}
+          {idx >= 2 && <ProgressBar running={step === "downloading" || idx > 2} ms={2000} />}
         </div>
 
         {/* Separação */}
         <div
-          className={`rounded-xl border px-4 py-3 transition-all duration-500 ${
+          className={`rounded-2xl border px-5 py-4 transition-all duration-500 shadow-sm ${
             idx >= 3
-              ? "bg-white/5 border-white/10 opacity-100"
-              : "border-transparent opacity-30"
+              ? "bg-white border-slate-200 opacity-100"
+              : "bg-slate-50 border-transparent opacity-40 grayscale"
           }`}
         >
-          <div className="flex items-center gap-3 mb-2">
-            {step === "separating" ? (
-              <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
-            ) : idx > 3 ? (
-              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            ) : (
-              <Scissors className="w-4 h-4 text-white/30 shrink-0" />
-            )}
-            <p className="text-sm font-medium">
-              {step === "separating"
-                ? "Separando voz e instrumentos…"
-                : idx > 3
-                  ? "Separação concluída"
-                  : "Separar voz e instrumentos"}
-            </p>
+          <div className="flex items-center gap-4">
+             <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${idx > 3 ? "bg-emerald-100 text-emerald-600" : "bg-primary/10 text-primary"}`}>
+              {step === "separating" ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : idx > 3 ? (
+                <Check className="w-5 h-5" />
+              ) : (
+                <Scissors className="w-5 h-5" />
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-slate-800">
+                {step === "separating" ? "Separando instrumentos..." : idx > 3 ? "Separação concluída" : "Separar faixas"}
+              </p>
+            </div>
           </div>
-          {idx >= 3 && (
-            <ProgressBar running={step === "separating" || idx > 3} ms={2200} />
-          )}
+          {idx >= 3 && <ProgressBar running={step === "separating" || idx > 3} ms={2200} />}
         </div>
       </div>
 
       {/* Mesa de mistura */}
       <div
-        className={`transition-all duration-700 ${
-          step === "mixer" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none h-0 overflow-hidden"
+        className={`transition-all duration-700 bg-slate-50 border border-slate-200 rounded-3xl p-6 ${
+          step === "mixer" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none h-0 overflow-hidden hidden"
         }`}
       >
         <style>{`@keyframes kordi-wave { from { transform: scaleY(0.45); } to { transform: scaleY(1.05); } }`}</style>
 
-        {/* Player real: stems do trecho separados pelo Kordi */}
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-4 mb-6">
           <button
             type="button"
             onClick={() => {
-              if (labLoading) {
-                cancelPendingLab();
-              } else if (labPlaying) {
-                stopLab(true);
-              } else {
-                void startLab();
-              }
+              if (labLoading) cancelPendingLab();
+              else if (labPlaying) stopLab(true);
+              else void startLab();
             }}
-            aria-label={labPlaying ? "Pausar trecho" : "Ouvir trecho separado"}
-            className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary-700 text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/25 hover:brightness-110 transition-all shrink-0"
+            aria-label={labLoading ? "Cancelar carregamento" : labPlaying ? "Pausar mesa de som" : "Tocar mesa de som"}
+            className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-[#8B5CF6] text-white flex items-center justify-center shadow-lg shadow-primary/30 hover:shadow-xl hover:scale-105 transition-all shrink-0 active:scale-95"
           >
-            {labLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : labPlaying ? (
-              <Pause className="w-5 h-5" />
-            ) : (
-              <Play className="w-5 h-5 ml-0.5" />
-            )}
+            {labLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : labPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1 fill-white" />}
           </button>
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate">Jó — Midian Lima</p>
-            <p className="text-xs text-white/50">
-              Trecho de 30s separado pelo Kordi — aperte o play e mexa nos
-              volumes de cada canal
+            <p className="text-base font-bold text-slate-900 truncate">Jó — Midian Lima</p>
+            <p className="text-sm text-slate-500">
+              Aperte o play e teste os volumes separados.
             </p>
           </div>
         </div>
         {labError && (
-          <p className="text-xs text-rose-400 mb-3">
-            Não foi possível carregar o áudio da demonstração. Tente de novo.
+          <p className="text-sm font-medium text-rose-500 mb-4 bg-rose-50 p-3 rounded-lg">
+            Erro ao carregar o áudio. Tente novamente.
           </p>
         )}
 
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
           {MIXER_CHANNELS.map(({ id, label, color }, ch) => (
-            <div
-              key={id}
-              className="bg-white/5 border border-white/10 rounded-xl p-3"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold truncate">{label}</span>
-                <Volume2 className="w-3.5 h-3.5 shrink-0" style={{ color }} />
-              </div>
-              <div className="flex items-end gap-[2px] h-10 mb-2" aria-hidden="true">
-                {Array.from({ length: 14 }).map((_, i) => (
+            <div key={id} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 flex flex-col items-center">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">{label}</span>
+              <div className="flex items-end justify-center gap-1 h-12 w-full mb-4 px-2" aria-hidden="true">
+                {Array.from({ length: 8 }).map((_, i) => (
                   <div
                     key={i}
-                    className="flex-1 rounded-full"
+                    className="flex-1 rounded-full max-w-[4px]"
                     style={{
                       height: `${(30 + 65 * Math.abs(Math.sin(i * 0.8 + ch * 2.1))) * Math.max(0.15, vols[id])}%`,
                       backgroundColor: color,
-                      opacity: labPlaying ? 0.9 : 0.35,
+                      opacity: labPlaying ? 0.9 : 0.2,
                       animation: `kordi-wave ${0.7 + ch * 0.15}s ease-in-out ${i * 0.05}s infinite alternate`,
                       animationPlayState: labPlaying ? "running" : "paused",
                       transition: "opacity 0.4s",
@@ -658,7 +624,7 @@ export function AudioLabDemo() {
                 value={Math.round(vols[id] * 100)}
                 onChange={(e) => setChannelVol(id, Number(e.target.value) / 100)}
                 aria-label={`Volume do canal ${label}`}
-                className="w-full"
+                className="w-full h-2 rounded-full cursor-pointer appearance-none bg-slate-200"
                 style={{ accentColor: color }}
               />
             </div>
@@ -666,11 +632,9 @@ export function AudioLabDemo() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 mt-4">
-        <p className="text-xs text-white/40 leading-relaxed">
-          Fluxo real do Audio Lab: digite o nome, o Kordi acha a cifra, vincula
-          o áudio e separa Voz, Instrumental e Metrônomo — e o resultado acima
-          é áudio de verdade, separado pelo Kordi.
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+        <p className="text-sm text-slate-500 leading-relaxed text-center sm:text-left px-2">
+          Isto é áudio real separado no navegador. O Kordi acha a cifra, baixa o áudio e gera as faixas isoladas para você estudar.
         </p>
         <button
           type="button"
@@ -679,10 +643,10 @@ export function AudioLabDemo() {
             stopLab(false);
             setCycle((c) => c + 1);
           }}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-medium transition-colors shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 text-sm font-bold transition-all shadow-sm shrink-0 active:scale-95"
         >
-          <RotateCcw className="w-3.5 h-3.5 text-primary" />
-          Ver de novo
+          <RotateCcw className="w-4 h-4 text-primary" />
+          Repetir
         </button>
       </div>
     </div>
@@ -720,7 +684,6 @@ export function MetronomoDemo() {
   const bpmRef = useRef(bpm);
   bpmRef.current = bpm;
 
-  // Libera todos os recursos do metrônomo (intervalo, timeouts e nó de ganho)
   function releaseMetronome() {
     const st = stateRef.current;
     if (st.timer !== null) window.clearInterval(st.timer);
@@ -746,7 +709,6 @@ export function MetronomoDemo() {
       return;
     }
     const { ctx } = a;
-    // Ganho próprio (o master compartilhado é baixo demais para cliques)
     if (!st.gain) {
       st.gain = ctx.createGain();
       st.gain.gain.value = 0.5;
@@ -772,41 +734,40 @@ export function MetronomoDemo() {
     tick();
     st.timer = window.setInterval(tick, 40);
     return releaseMetronome;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing]);
 
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-semibold">Metrônomo</span>
-        <div className="flex gap-1.5" aria-hidden="true">
+    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] h-full flex flex-col justify-center">
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-sm font-bold text-slate-800 uppercase tracking-wider">Metrônomo</span>
+        <div className="flex gap-2" aria-hidden="true">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-100 ${
+              className={`w-3 h-3 rounded-full transition-all duration-100 ${
                 beat === i
                   ? i === 0
-                    ? "bg-primary scale-125 shadow-lg shadow-primary/50"
-                    : "bg-white scale-110"
-                  : "bg-white/15"
+                    ? "bg-primary scale-125 shadow-md shadow-primary/40 ring-2 ring-primary/20"
+                    : "bg-slate-700 scale-110"
+                  : "bg-slate-200"
               }`}
             />
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-5">
         <button
           type="button"
           onClick={() => setPlaying((p) => !p)}
           aria-label={playing ? "Parar metrônomo" : "Tocar metrônomo"}
-          className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary-700 text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/25 hover:brightness-110 transition-all shrink-0"
+          className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-[#8B5CF6] text-white flex items-center justify-center shadow-lg shadow-primary/30 hover:scale-105 hover:shadow-xl transition-all shrink-0 active:scale-95"
         >
-          {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+          {playing ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1 fill-white" />}
         </button>
-        <div className="flex-1">
-          <div className="flex items-baseline justify-between mb-1">
-            <span className="font-display font-bold text-2xl">{bpm}</span>
-            <span className="text-xs text-white/50">BPM</span>
+        <div className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+          <div className="flex items-baseline justify-center gap-1 mb-2">
+            <span className="font-display font-black text-3xl text-slate-900">{bpm}</span>
+            <span className="text-xs font-bold text-slate-400">BPM</span>
           </div>
           <input
             type="range"
@@ -815,7 +776,8 @@ export function MetronomoDemo() {
             value={bpm}
             onChange={(e) => setBpm(Number(e.target.value))}
             aria-label="Andamento em BPM"
-            className="w-full accent-[#9673FF]"
+            className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer"
+            style={{ accentColor: "#9673FF" }}
           />
         </div>
       </div>
@@ -860,10 +822,8 @@ export function PadsDemo() {
       filterRef.current?.disconnect();
       filterRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Cadeia: pad → gain (fades) → filtro low cut (highpass) → saída.
   function getFilter(ctx: AudioContext): BiquadFilterNode {
     if (!filterRef.current) {
       const f = ctx.createBiquadFilter();
@@ -876,8 +836,6 @@ export function PadsDemo() {
     return filterRef.current;
   }
 
-  // Aplica o low cut em tempo real, com rampa curta (sem estalos) —
-  // mesma lógica da tela real de pads.
   useEffect(() => {
     const f = filterRef.current;
     const a = getAudio();
@@ -903,16 +861,13 @@ export function PadsDemo() {
     cur.src.stop(t + dur + 0.05);
   }
 
-  // Desconecta src/gain assim que o pad termina, evitando acúmulo de nós
   function attachTeardown(src: AudioBufferSourceNode, g: GainNode) {
     src.onended = () => {
       src.onended = null;
       try {
         src.disconnect();
         g.disconnect();
-      } catch {
-        /* já desconectado */
-      }
+      } catch {}
     };
   }
 
@@ -940,7 +895,6 @@ export function PadsDemo() {
       buffersRef.current.set(file, p);
     }
     const buffer = await p;
-    // Se o usuário mudou de pad (ou parou) enquanto carregava, não toca este
     if (!buffer || req !== requestRef.current) return;
     const src = a.ctx.createBufferSource();
     src.buffer = buffer;
@@ -956,26 +910,26 @@ export function PadsDemo() {
   }
 
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-semibold">Pads contínuos</span>
+    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] h-full flex flex-col">
+      <div className="flex items-center justify-between mb-5">
+        <span className="text-sm font-bold text-slate-800 uppercase tracking-wider">Pad Worship</span>
         {active && (
-          <span className="text-xs text-primary font-medium animate-pulse">
-            tocando em {active}
+          <span className="text-xs font-bold text-primary animate-pulse bg-primary/10 px-2 py-1 rounded-md">
+            Tocando {active}
           </span>
         )}
       </div>
 
-      <div className="grid grid-cols-6 gap-2 mb-4">
+      <div className="grid grid-cols-6 gap-2 mb-6">
         {PAD_KEYS.map(({ label, file }) => (
           <button
             key={file}
             type="button"
             onClick={() => void playPad(file)}
-            className={`h-11 rounded-xl font-semibold text-sm transition-all ${
+            className={`h-12 rounded-xl font-black text-sm transition-all active:scale-95 ${
               active === file
-                ? "bg-gradient-to-br from-primary to-primary-700 text-primary-foreground shadow-lg shadow-primary/30"
-                : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                ? "bg-gradient-to-br from-primary to-[#8B5CF6] text-white shadow-lg shadow-primary/30 ring-2 ring-primary/20 ring-offset-1 scale-105"
+                : "bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-primary/40 hover:text-primary"
             }`}
           >
             {label}
@@ -983,12 +937,11 @@ export function PadsDemo() {
         ))}
       </div>
 
-      {/* Controles reais: Fade In / Fade Out / Low Cut */}
-      <div className="space-y-3">
-        <div>
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-white/60">Fade In</span>
-            <span className="text-white/80 font-medium">{fadeIn.toFixed(1)}s</span>
+      <div className="space-y-4 flex-1">
+        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <span>Fade In</span>
+            <span className="text-primary">{fadeIn.toFixed(1)}s</span>
           </div>
           <input
             type="range"
@@ -997,14 +950,14 @@ export function PadsDemo() {
             step={0.5}
             value={fadeIn}
             onChange={(e) => setFadeIn(Number(e.target.value))}
-            aria-label="Duração do fade in"
-            className="w-full accent-[#9673FF]"
+            className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer"
+            style={{ accentColor: "#9673FF" }}
           />
         </div>
-        <div>
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-white/60">Fade Out</span>
-            <span className="text-white/80 font-medium">{fadeOut.toFixed(1)}s</span>
+        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <span>Fade Out</span>
+            <span className="text-primary">{fadeOut.toFixed(1)}s</span>
           </div>
           <input
             type="range"
@@ -1013,33 +966,33 @@ export function PadsDemo() {
             step={0.5}
             value={fadeOut}
             onChange={(e) => setFadeOut(Number(e.target.value))}
-            aria-label="Duração do fade out"
-            className="w-full accent-[#9673FF]"
+            className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer"
+            style={{ accentColor: "#9673FF" }}
           />
         </div>
-        <div>
-          <div className="flex items-center justify-between text-xs mb-1">
+        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+          <div className="flex items-center justify-between mb-2">
             <button
               type="button"
               onClick={() => setLowCutOn((v) => !v)}
-              className={`flex items-center gap-1.5 font-medium transition-colors ${
-                lowCutOn ? "text-primary" : "text-white/60 hover:text-white/80"
+              className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors outline-none ${
+                lowCutOn ? "text-primary" : "text-slate-400 hover:text-slate-600"
               }`}
             >
-              <span
-                className={`inline-block w-7 h-4 rounded-full relative transition-colors ${
-                  lowCutOn ? "bg-primary" : "bg-white/15"
+              <div
+                className={`w-8 h-4.5 rounded-full relative transition-colors ${
+                  lowCutOn ? "bg-primary" : "bg-slate-300"
                 }`}
               >
-                <span
-                  className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${
-                    lowCutOn ? "left-3.5" : "left-0.5"
+                <div
+                  className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-all shadow-sm ${
+                    lowCutOn ? "left-[18px]" : "left-0.5"
                   }`}
                 />
-              </span>
+              </div>
               Low Cut
             </button>
-            <span className={`font-medium ${lowCutOn ? "text-white/80" : "text-white/35"}`}>
+            <span className={`text-xs font-bold ${lowCutOn ? "text-primary" : "text-slate-400"}`}>
               {lowCutHz} Hz
             </span>
           </div>
@@ -1051,16 +1004,13 @@ export function PadsDemo() {
             value={lowCutHz}
             disabled={!lowCutOn}
             onChange={(e) => setLowCutHz(Number(e.target.value))}
-            aria-label="Frequência do low cut"
-            className={`w-full ${lowCutOn ? "accent-[#9673FF]" : "accent-[#52525b] opacity-50"}`}
+            className={`w-full h-2 bg-slate-200 rounded-full appearance-none transition-opacity ${
+              lowCutOn ? "cursor-pointer" : "opacity-40 cursor-not-allowed"
+            }`}
+            style={{ accentColor: "#9673FF" }}
           />
         </div>
       </div>
-
-      <p className="text-xs text-white/40 mt-3">
-        Tudo funcionando de verdade: toque um tom, ajuste o Fade In/Out e ligue
-        o Low Cut para limpar os graves — os mesmos controles da tela do app.
-      </p>
     </div>
   );
 }

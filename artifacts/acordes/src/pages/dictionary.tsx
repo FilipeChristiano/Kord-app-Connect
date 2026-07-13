@@ -21,7 +21,7 @@ export default function Dictionary() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
       <div className="mb-10 text-center lg:text-left">
-        <h1 className="font-display text-4xl font-bold text-white mb-4">Dicionário de <span className="text-gradient-primary">Acordes</span></h1>
+        <h1 className="font-display text-4xl font-bold text-foreground mb-4">Dicionário de <span className="text-gradient-primary">Acordes</span></h1>
         <p className="text-muted-foreground max-w-2xl lg:mx-0 mx-auto">Explore, busque e filtre acordes sofisticados. Encontre a harmonia perfeita para o seu arranjo.</p>
       </div>
 
@@ -33,7 +33,7 @@ export default function Dictionary() {
           </div>
           <input
             type="text"
-            className="w-full bg-secondary/50 border-2 border-white/5 rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all text-lg"
+            className="w-full bg-secondary/50 border-2 border-foreground/5 rounded-xl pl-12 pr-4 py-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all text-lg"
             placeholder="Buscar por nome (ex: C, C7M, Cm7, sus4) ou categoria..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -48,7 +48,7 @@ export default function Dictionary() {
               "whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border",
               activeCategory === "Todos" 
                 ? "bg-primary text-primary-foreground border-primary" 
-                : "bg-secondary text-muted-foreground border-white/5 hover:border-white/20 hover:text-white"
+                : "bg-secondary text-muted-foreground border-foreground/5 hover:border-foreground/20 hover:text-foreground"
             )}
           >
             Todos
@@ -61,7 +61,7 @@ export default function Dictionary() {
                 "whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border",
                 activeCategory === cat
                   ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-                  : "bg-secondary text-muted-foreground border-white/5 hover:border-white/20 hover:text-white"
+                  : "bg-secondary text-muted-foreground border-foreground/5 hover:border-foreground/20 hover:text-foreground"
               )}
             >
               {cat}
@@ -86,7 +86,7 @@ export default function Dictionary() {
           <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4 text-muted-foreground">
             <Search className="w-8 h-8" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Nenhum acorde encontrado</h3>
+          <h3 className="text-xl font-bold text-foreground mb-2">Nenhum acorde encontrado</h3>
           <p className="text-muted-foreground">Tente buscar por outro nome ou limpe os filtros.</p>
           <button 
             onClick={() => { setQuery(""); setActiveCategory("Todos"); }}

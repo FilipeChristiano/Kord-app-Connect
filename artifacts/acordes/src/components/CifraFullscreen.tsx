@@ -126,16 +126,16 @@ export function CifraFullscreen({
       role="dialog"
       aria-modal="true"
       aria-label={title ? `Cifra em tela cheia: ${title}` : "Cifra em tela cheia"}
-      className="fixed inset-0 z-[100] flex h-[100dvh] flex-col bg-[#0b0e17] overscroll-contain"
+      className="fixed inset-0 z-[100] flex h-[100dvh] flex-col bg-background overscroll-contain"
     >
       {/* Barra superior */}
-      <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 border-b border-white/10 bg-[#0b0e17] shrink-0">
+      <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 border-b border-foreground/10 bg-background shrink-0">
         <div className="min-w-0">
           <p className="text-[10px] font-bold text-[#9673FF] uppercase tracking-widest leading-none mb-0.5">
             Tela cheia
           </p>
           {title && (
-            <h2 className="font-display font-bold text-white text-sm sm:text-base leading-tight truncate">
+            <h2 className="font-display font-bold text-foreground text-sm sm:text-base leading-tight truncate">
               {title}
             </h2>
           )}
@@ -145,7 +145,7 @@ export function CifraFullscreen({
             onClick={() => changeFont(-1)}
             disabled={fontSize <= FONT_MIN}
             aria-label="Diminuir tamanho da letra"
-            className="flex items-center gap-0.5 min-h-[44px] px-3 rounded-lg border border-white/15 text-white/70 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-0.5 min-h-[44px] px-3 rounded-lg border border-foreground/15 text-foreground/70 hover:bg-foreground/10 hover:text-foreground transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Minus className="w-3.5 h-3.5" aria-hidden />
             <span className="text-xs font-bold" aria-hidden>A</span>
@@ -154,7 +154,7 @@ export function CifraFullscreen({
             onClick={() => changeFont(1)}
             disabled={fontSize >= FONT_MAX}
             aria-label="Aumentar tamanho da letra"
-            className="flex items-center gap-0.5 min-h-[44px] px-3 rounded-lg border border-white/15 text-white/70 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-0.5 min-h-[44px] px-3 rounded-lg border border-foreground/15 text-foreground/70 hover:bg-foreground/10 hover:text-foreground transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Plus className="w-3.5 h-3.5" aria-hidden />
             <span className="text-sm font-bold" aria-hidden>A</span>

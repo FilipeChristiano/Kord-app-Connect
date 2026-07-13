@@ -571,13 +571,13 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
     tapStabilityPct >= 80 ? "Ótima" : tapStabilityPct >= 55 ? "Boa" : "Irregular";
 
   return (
-    <div className="glass-card rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
+    <div className="glass-card rounded-3xl p-6 sm:p-8 border border-foreground/10 shadow-2xl">
       <div className="flex items-center gap-3 mb-2">
         <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary">
           <Gauge className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="font-display text-xl font-bold text-white">Detectar BPM</h2>
+          <h2 className="font-display text-xl font-bold text-foreground">Detectar BPM</h2>
           <p className="text-xs text-muted-foreground">
             Suba um áudio ou grave um trecho para descobrir o tempo
           </p>
@@ -585,24 +585,24 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
       </div>
 
       {/* Aviso de limitações */}
-      <div className="flex items-start gap-2 mt-4 mb-6 text-[12px] text-muted-foreground/80 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+      <div className="flex items-start gap-2 mt-4 mb-6 text-[12px] text-muted-foreground/80 bg-foreground/5 border border-foreground/10 rounded-xl px-3 py-2.5">
         <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
         <span>
           A detecção funciona melhor com trechos que tenham batida, palmas, violão ou
-          bateria bem marcados. Use <span className="text-white/90 font-medium">Ouvir com
+          bateria bem marcados. Use <span className="text-foreground/90 font-medium">Ouvir com
           metrônomo</span> para conferir qual opção encaixa e o modo{" "}
-          <span className="text-white/90 font-medium">Marcar Pulso</span> para acertar
+          <span className="text-foreground/90 font-medium">Marcar Pulso</span> para acertar
           manualmente.
         </span>
       </div>
 
       {/* Última referência confirmada */}
       {lastConfirmed && !result && !isRecording && (
-        <div className="flex items-center gap-2 mb-4 text-[12px] text-muted-foreground bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+        <div className="flex items-center gap-2 mb-4 text-[12px] text-muted-foreground bg-foreground/5 border border-foreground/10 rounded-xl px-3 py-2">
           <Check className="w-3.5 h-3.5 text-primary" />
           <span>
             Último BPM confirmado:{" "}
-            <span className="text-white font-semibold notranslate" translate="no">
+            <span className="text-foreground font-semibold notranslate" translate="no">
               {lastConfirmed.bpm}
             </span>
             {lastConfirmed.ts ? ` • ${lastConfirmed.ts}` : ""}
@@ -615,14 +615,14 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
         <div className="grid sm:grid-cols-2 gap-3">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-semibold text-white bg-secondary hover:bg-secondary/80 border border-white/10 transition-all"
+            className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-semibold text-foreground bg-secondary hover:bg-secondary/80 border border-foreground/10 transition-all"
           >
             <Upload className="w-5 h-5 text-primary" />
             Subir áudio
           </button>
           <button
             onClick={startRecording}
-            className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-semibold text-white bg-secondary hover:bg-secondary/80 border border-white/10 transition-all"
+            className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-semibold text-foreground bg-secondary hover:bg-secondary/80 border border-foreground/10 transition-all"
           >
             <Mic className="w-5 h-5 text-primary" />
             Gravar áudio
@@ -646,12 +646,12 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
         <div className="flex flex-col items-center gap-4 py-4">
           <div className="flex items-center gap-3">
             <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-            <span className="font-display text-3xl font-bold text-white notranslate" translate="no">
+            <span className="font-display text-3xl font-bold text-foreground notranslate" translate="no">
               {recordSeconds}s
             </span>
             <span className="text-sm text-muted-foreground">/ {MAX_RECORD_SECONDS}s</span>
           </div>
-          <div className="w-full max-w-sm h-2 rounded-full bg-white/10 overflow-hidden">
+          <div className="w-full max-w-sm h-2 rounded-full bg-foreground/10 overflow-hidden">
             <div
               className="h-full bg-primary transition-[width] duration-1000 ease-linear"
               style={{ width: `${(recordSeconds / MAX_RECORD_SECONDS) * 100}%` }}
@@ -667,7 +667,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
             </button>
             <button
               onClick={cancelRecording}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 transition-all"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary border border-foreground/5 transition-all"
             >
               Cancelar
             </button>
@@ -678,9 +678,9 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
       {/* Áudio carregado/gravado */}
       {hasAudio && (
         <div className="mt-5 space-y-4">
-          <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+          <div className="flex items-center gap-3 bg-foreground/5 border border-foreground/10 rounded-2xl px-4 py-3">
             <AudioWaveform className="w-5 h-5 text-primary shrink-0" />
-            <span className="text-sm text-white font-medium truncate flex-1">
+            <span className="text-sm text-foreground font-medium truncate flex-1">
               {fileName}
             </span>
             <button
@@ -734,7 +734,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
             <div className="text-xs uppercase tracking-widest text-primary/70 font-semibold">
               BPM escolhido
             </div>
-            <div className="font-display text-6xl font-bold text-white my-1 notranslate" translate="no">
+            <div className="font-display text-6xl font-bold text-foreground my-1 notranslate" translate="no">
               {clampBpm(finalBpm)}
             </div>
             {result.segment && (
@@ -776,10 +776,10 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
           </div>
 
           {/* Métricas da opção selecionada — faixa de largura total (sempre legível) */}
-          <div className="mt-3 rounded-xl border border-white/5 bg-white/5 p-3 @container">
+          <div className="mt-3 rounded-xl border border-foreground/5 bg-foreground/5 p-3 @container">
             <div className="text-[11px] text-muted-foreground mb-2.5">
               Detalhes —{" "}
-              <span className="text-white font-semibold notranslate" translate="no">
+              <span className="text-foreground font-semibold notranslate" translate="no">
                 {RELATION_LABEL[selectedOption.relation]} · {selectedOption.bpm} BPM
               </span>
             </div>
@@ -804,14 +804,14 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
           </div>
 
           {/* Ajuste fino */}
-          <div className="mt-5 rounded-xl border border-white/10 bg-white/5 p-4">
+          <div className="mt-5 rounded-xl border border-foreground/10 bg-foreground/5 p-4">
             <div className="text-xs text-muted-foreground mb-3 text-center">
               Ajuste fino
             </div>
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => nudgeBpm(-1)}
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/70 border border-white/10 text-white transition-all"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/70 border border-foreground/10 text-foreground transition-all"
                 aria-label="Menos 1 BPM"
               >
                 <Minus className="w-4 h-4" />
@@ -823,12 +823,12 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
                 max={MAX_BPM}
                 value={finalBpm || ""}
                 onChange={(e) => handleManualBpm(e.target.value)}
-                className="w-24 text-center font-display text-2xl font-bold bg-background/60 border border-white/15 rounded-xl py-2 text-white outline-none focus:border-primary/60 notranslate"
+                className="w-24 text-center font-display text-2xl font-bold bg-background/60 border border-foreground/15 rounded-xl py-2 text-foreground outline-none focus:border-primary/60 notranslate"
                 translate="no"
               />
               <button
                 onClick={() => nudgeBpm(1)}
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/70 border border-white/10 text-white transition-all"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary hover:bg-secondary/70 border border-foreground/10 text-foreground transition-all"
                 aria-label="Mais 1 BPM"
               >
                 <Plus className="w-4 h-4" />
@@ -843,7 +843,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
                 "mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed",
                 playingIndex === FINE_PLAY_KEY
                   ? "bg-primary text-primary-foreground"
-                  : "bg-secondary hover:bg-secondary/70 text-white border border-white/10",
+                  : "bg-secondary hover:bg-secondary/70 text-foreground border border-foreground/10",
               )}
             >
               {playingIndex === FINE_PLAY_KEY ? (
@@ -863,7 +863,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
             {result.timeSignature ? (
               <span className="text-muted-foreground">
                 Compasso provável:{" "}
-                <span className="text-white font-bold notranslate" translate="no">
+                <span className="text-foreground font-bold notranslate" translate="no">
                   {result.timeSignature}
                 </span>
               </span>
@@ -905,21 +905,21 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
         {!tapMode ? (
           <button
             onClick={openTapMode}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white bg-secondary/60 hover:bg-secondary border border-white/10 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-foreground bg-secondary/60 hover:bg-secondary border border-foreground/10 transition-all"
           >
             <Hand className="w-5 h-5 text-primary" />
             Marcar Pulso (correção manual)
           </button>
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-2xl border border-foreground/10 bg-foreground/5 p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Hand className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold text-white">Marcar Pulso</span>
+                <span className="text-sm font-semibold text-foreground">Marcar Pulso</span>
               </div>
               <button
                 onClick={() => setTapMode(false)}
-                className="text-xs text-muted-foreground hover:text-white transition-colors"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 Fechar
               </button>
@@ -943,7 +943,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
                     "px-4 py-1.5 rounded-full text-sm font-semibold border transition-all notranslate",
                     tapTarget === t
                       ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-white/5 text-muted-foreground border-white/10 hover:border-white/25",
+                      : "bg-foreground/5 text-muted-foreground border-foreground/10 hover:border-foreground/25",
                   )}
                   translate="no"
                 >
@@ -955,7 +955,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
             {/* Botão de toque */}
             <button
               onClick={handleTap}
-              className="w-full select-none flex flex-col items-center justify-center gap-1 py-8 rounded-2xl font-bold bg-primary/15 hover:bg-primary/25 border-2 border-primary/30 text-white transition-all active:scale-[0.98]"
+              className="w-full select-none flex flex-col items-center justify-center gap-1 py-8 rounded-2xl font-bold bg-primary/15 hover:bg-primary/25 border-2 border-primary/30 text-foreground transition-all active:scale-[0.98]"
             >
               <span className="text-sm text-primary/80 uppercase tracking-widest">
                 Toque no tempo
@@ -971,7 +971,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
                 <div className="text-xs uppercase tracking-widest text-primary/70 font-semibold">
                   BPM sugerido
                 </div>
-                <div className="font-display text-5xl font-bold text-white my-1 notranslate" translate="no">
+                <div className="font-display text-5xl font-bold text-foreground my-1 notranslate" translate="no">
                   {tapResult.bpm}
                 </div>
                 <div className="text-xs text-muted-foreground mb-3">
@@ -1011,7 +1011,7 @@ export default function BpmDetector({ onApply }: BpmDetectorProps) {
                   </button>
                   <button
                     onClick={resetTaps}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-muted-foreground hover:text-white bg-secondary/50 hover:bg-secondary border border-white/5 transition-all"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary border border-foreground/5 transition-all"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Refazer
@@ -1053,7 +1053,7 @@ function OptionCard({
         "cursor-pointer rounded-2xl border p-3 transition-all flex flex-col min-w-0 overflow-hidden",
         selected
           ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
-          : "border-white/10 bg-white/5 hover:border-white/25",
+          : "border-foreground/10 bg-foreground/5 hover:border-foreground/25",
       )}
     >
       {/* Cabeçalho: nome + selo */}
@@ -1074,7 +1074,7 @@ function OptionCard({
       </div>
 
       <div
-        className="font-display text-3xl font-bold text-white mt-1 leading-none notranslate"
+        className="font-display text-3xl font-bold text-foreground mt-1 leading-none notranslate"
         translate="no"
       >
         {option.bpm}
@@ -1106,7 +1106,7 @@ function OptionCard({
           "mt-3 w-full flex items-center justify-center gap-1.5 px-1.5 py-2 rounded-xl text-[12px] font-semibold transition-all",
           playing
             ? "bg-primary text-primary-foreground"
-            : "bg-secondary hover:bg-secondary/70 text-white border border-white/10",
+            : "bg-secondary hover:bg-secondary/70 text-foreground border border-foreground/10",
         )}
       >
         {playing ? (
@@ -1128,7 +1128,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
       <div className="text-muted-foreground leading-tight break-words">{label}</div>
-      <div className="text-white/90 font-semibold leading-tight mt-0.5 notranslate" translate="no">
+      <div className="text-foreground/90 font-semibold leading-tight mt-0.5 notranslate" translate="no">
         {value}
       </div>
     </div>

@@ -88,7 +88,7 @@ function ChordToken({
     >
       {sub.substituted}
       {changed && (
-        <span className="absolute -top-5 left-0 text-[10px] text-white/90 whitespace-nowrap hidden group-hover:block bg-zinc-800 rounded px-1.5 py-0.5 pointer-events-none z-10 shadow-md">
+        <span className="absolute -top-5 left-0 text-[10px] text-foreground/90 whitespace-nowrap hidden group-hover:block bg-zinc-800 rounded px-1.5 py-0.5 pointer-events-none z-10 shadow-md">
           era: {sub.original}
         </span>
       )}
@@ -297,9 +297,9 @@ export default function ChordSubstitutor() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center shadow-lg shadow-violet-500/30">
-            <Wand2 className="w-5 h-5 text-white" />
+            <Wand2 className="w-5 h-5 text-foreground" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-white">Sofisticador de <span className="text-gradient-primary">Cifra</span></h1>
+          <h1 className="font-display text-3xl font-bold text-foreground">Sofisticador de <span className="text-gradient-primary">Cifra</span></h1>
         </div>
         <p className="text-muted-foreground text-base leading-relaxed">
           Cole a cifra de uma música e o app substitui automaticamente os acordes por versões
@@ -320,10 +320,10 @@ export default function ChordSubstitutor() {
               className={`flex items-center justify-center py-3 px-4 rounded-xl border transition-all ${
                 level === l.key
                   ? "border-[#8B5CF6] bg-[#8B5CF6]/10 shadow-lg shadow-violet-500/20"
-                  : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+                  : "border-foreground/10 bg-foreground/[0.02] hover:border-foreground/20 hover:bg-foreground/[0.04]"
               }`}
             >
-              <span className={`font-bold text-sm ${level === l.key ? "text-[#9673FF]" : "text-white/50"}`}>
+              <span className={`font-bold text-sm ${level === l.key ? "text-[#9673FF]" : "text-foreground/50"}`}>
                 {l.label}
               </span>
             </button>
@@ -336,13 +336,13 @@ export default function ChordSubstitutor() {
         {/* Input */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-white/50 uppercase tracking-widest">
+            <p className="text-xs font-bold text-foreground/50 uppercase tracking-widest">
               Cifra original
             </p>
             {inputText && (
               <button
                 onClick={() => { setInputText(""); setSalvoId(null); }}
-                className="flex items-center gap-1 text-xs text-white/30 hover:text-white/60 transition-colors"
+                className="flex items-center gap-1 text-xs text-foreground/30 hover:text-foreground/60 transition-colors"
               >
                 <RotateCcw className="w-3 h-3" /> Limpar
               </button>
@@ -352,7 +352,7 @@ export default function ChordSubstitutor() {
             value={inputText}
             onChange={(e) => { setInputText(e.target.value); setSalvoId(null); }}
             placeholder={`Cole a cifra aqui...\n\nExemplo:\nC  G  Am  F\nC  G  F  C`}
-            className="flex-1 min-h-[280px] w-full bg-[#fdfcf9] border border-white/10 rounded-2xl px-5 py-4 text-zinc-800 font-mono text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent transition-all resize-none leading-loose"
+            className="flex-1 min-h-[280px] w-full bg-[#fdfcf9] border border-foreground/10 rounded-2xl px-5 py-4 text-zinc-800 font-mono text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent transition-all resize-none leading-loose"
           />
         </div>
 
@@ -384,8 +384,8 @@ export default function ChordSubstitutor() {
                 title="Ver em tela cheia"
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                   !outputText
-                    ? "border-white/10 text-white/20 cursor-not-allowed"
-                    : "bg-white/5 border-white/15 text-white/70 hover:border-[#8B5CF6]/50 hover:text-[#9673FF] cursor-pointer"
+                    ? "border-foreground/10 text-foreground/20 cursor-not-allowed"
+                    : "bg-foreground/5 border-foreground/15 text-foreground/70 hover:border-[#8B5CF6]/50 hover:text-[#9673FF] cursor-pointer"
                 }`}
               >
                 <Maximize2 className="w-3 h-3" />
@@ -398,10 +398,10 @@ export default function ChordSubstitutor() {
                 onClick={salvoId ? undefined : handleAbrirModal}
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                   !outputText
-                    ? "border-white/10 text-white/20 cursor-not-allowed"
+                    ? "border-foreground/10 text-foreground/20 cursor-not-allowed"
                     : salvoId
                     ? "bg-[#8B5CF6]/15 border-[#8B5CF6]/40 text-[#9673FF] cursor-default"
-                    : "bg-white/5 border-white/15 text-white/70 hover:border-[#8B5CF6]/50 hover:text-[#9673FF] cursor-pointer"
+                    : "bg-foreground/5 border-foreground/15 text-foreground/70 hover:border-[#8B5CF6]/50 hover:text-[#9673FF] cursor-pointer"
                 }`}
               >
                 {salvoId ? (
@@ -417,7 +417,7 @@ export default function ChordSubstitutor() {
                 onClick={handleCopy}
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                   !outputText
-                    ? "border-white/10 text-white/20 cursor-not-allowed"
+                    ? "border-foreground/10 text-foreground/20 cursor-not-allowed"
                     : "btn-kordi border-transparent cursor-pointer"
                 }`}
               >
@@ -512,14 +512,14 @@ export default function ChordSubstitutor() {
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
-              className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              className="bg-modal border border-foreground/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
             >
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center">
-                  <Heart className="w-4 h-4 text-white" />
+                  <Heart className="w-4 h-4 text-foreground" />
                 </div>
                 <div>
-                  <h2 className="font-display font-bold text-white text-lg">
+                  <h2 className="font-display font-bold text-foreground text-lg">
                     {level === "original" ? "Salvar cifra original" : "Salvar cifra sofisticada"}
                   </h2>
                   <p className="text-xs text-muted-foreground">
@@ -528,7 +528,7 @@ export default function ChordSubstitutor() {
                 </div>
               </div>
 
-              <label className="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold text-foreground/50 uppercase tracking-widest mb-2">
                 Nome da cifra
               </label>
               <input
@@ -538,13 +538,13 @@ export default function ChordSubstitutor() {
                 onChange={(e) => setTituloInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleConfirmarSalvar(); }}
                 placeholder="Ex: Louvor em C — Gospel Intermediário"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent mb-5"
+                className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent mb-5"
               />
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowTituloModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm font-medium hover:bg-white/5 transition-all"
+                  className="flex-1 py-2.5 rounded-xl border border-foreground/10 text-foreground/50 text-sm font-medium hover:bg-foreground/5 transition-all"
                 >
                   Cancelar
                 </button>

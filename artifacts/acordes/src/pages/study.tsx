@@ -46,20 +46,20 @@ export default function StudyMode() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 lg:py-12 flex flex-col min-h-[calc(100vh-140px)]">
       
       <div className="text-center mb-8">
-        <h1 className="font-display text-3xl font-bold text-white mb-3 flex items-center justify-center gap-3">
+        <h1 className="font-display text-3xl font-bold text-foreground mb-3 flex items-center justify-center gap-3">
           <RefreshCw className="w-8 h-8 text-primary" /> Modo <span className="text-gradient-primary">Estudo</span>
         </h1>
         <p className="text-muted-foreground">Teste sua memória com flashcards interativos.</p>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-secondary/50 p-4 rounded-xl border border-white/5">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-secondary/50 p-4 rounded-xl border border-foreground/5">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Layers className="w-5 h-5 text-muted-foreground hidden sm:block" />
           <select 
             value={selectedCategory}
             onChange={handleCategoryChange}
-            className="w-full sm:w-auto bg-background border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+            className="w-full sm:w-auto bg-background border border-foreground/10 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
           >
             <option value="Todos">Todas as Categorias</option>
             {CATEGORIES.map(cat => (
@@ -86,11 +86,11 @@ export default function StudyMode() {
             >
               {/* Front of card */}
               <div className="absolute inset-0 backface-hidden w-full h-full">
-                <div className="relative w-full h-full glass-card rounded-3xl px-6 py-16 sm:px-10 sm:py-20 flex flex-col items-center justify-between text-center shadow-2xl border-2 border-white/5 hover:border-primary/30 transition-colors">
+                <div className="relative w-full h-full glass-card rounded-3xl px-6 py-16 sm:px-10 sm:py-20 flex flex-col items-center justify-between text-center shadow-2xl border-2 border-foreground/5 hover:border-primary/30 transition-colors">
                   <div className="flex justify-center">
                     <CategoryBadge category={currentChord.category} />
                   </div>
-                  <h2 className="font-display text-5xl sm:text-7xl font-bold text-white leading-tight break-words max-w-full notranslate" translate="no">
+                  <h2 className="font-display text-5xl sm:text-7xl font-bold text-foreground leading-tight break-words max-w-full notranslate" translate="no">
                     {currentChord.name}
                   </h2>
                   <p className="text-muted-foreground text-sm font-medium animate-pulse">
@@ -111,7 +111,7 @@ export default function StudyMode() {
                       <div className="text-xs text-primary/70 uppercase tracking-widest font-bold mb-2">Notas</div>
                       <div className="flex flex-wrap gap-2">
                         {currentChord.notes.map((n, i) => (
-                          <span key={i} className="bg-white/10 text-white font-bold px-4 py-2 rounded-lg border border-white/20 notranslate" translate="no">
+                          <span key={i} className="bg-foreground/10 text-foreground font-bold px-4 py-2 rounded-lg border border-foreground/20 notranslate" translate="no">
                             {n}
                           </span>
                         ))}
@@ -120,12 +120,12 @@ export default function StudyMode() {
                     
                     <div>
                       <div className="text-xs text-primary/70 uppercase tracking-widest font-bold mb-2">Fórmula</div>
-                      <code className="text-lg text-white font-mono notranslate" translate="no">{currentChord.formula}</code>
+                      <code className="text-lg text-foreground font-mono notranslate" translate="no">{currentChord.formula}</code>
                     </div>
 
                     <div>
                       <div className="text-xs text-primary/70 uppercase tracking-widest font-bold mb-2">Resumo</div>
-                      <p className="text-white/80 text-sm leading-relaxed">{currentChord.description}</p>
+                      <p className="text-foreground/80 text-sm leading-relaxed">{currentChord.description}</p>
                     </div>
                   </div>
                 </div>
@@ -139,13 +139,13 @@ export default function StudyMode() {
       <div className="flex justify-center items-center gap-6 mt-12">
         <button 
           onClick={handlePrev}
-          className="p-4 rounded-full bg-secondary hover:bg-secondary/80 text-white transition-all shadow-lg focus:ring-2 focus:ring-primary outline-none"
+          className="p-4 rounded-full bg-secondary hover:bg-secondary/80 text-foreground transition-all shadow-lg focus:ring-2 focus:ring-primary outline-none"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
         <button 
           onClick={() => setIsFlipped(!isFlipped)}
-          className="px-8 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all"
+          className="px-8 py-3 rounded-xl bg-foreground/10 hover:bg-foreground/20 text-foreground font-medium transition-all"
         >
           {isFlipped ? "Esconder" : "Revelar"}
         </button>

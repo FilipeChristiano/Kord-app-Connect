@@ -10,4 +10,6 @@ Regra final (após 3 iterações com o usuário, 07/2026):
 
 **Why:** usuário reclamou de cifra escura desconfortável, depois de excesso de cores, depois rejeitou a página toda clara ("o app todo com fundo claro não ficou legal") e pediu roxo com mais destaque.
 
-**How to apply:** novas superfícies que renderizem cifra seguem papel claro + #7C3AED; o restante da UI permanece no tema escuro com acentos #D97AFF/gradiente.
+**How to apply:** novas superfícies que renderizem cifra seguem papel claro + #7C3AED; o restante da UI do APP permanece no tema escuro com acentos #D97AFF/gradiente.
+
+Exceção (07/2026): a landing de venda /assinar é CLARA/BRANCA por pedido explícito do usuário ("mais branco, está tudo muito escuro") — regra do shell escuro vale para o app logado, não para a página de venda.

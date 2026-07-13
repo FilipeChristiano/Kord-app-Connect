@@ -12,6 +12,7 @@
 - [Synced metronome timing (acordes)](synced-metronome-timing.md) — anchor beats to the AudioContext clock, not live media currentTime, or it drifts/desyncs on fader drags.
 - [Kordi brand palette](kordi-brand-palette.md) — acento unissex #9673FF (nunca lilás rosado); #C24BF7 só em gradientes da marca; laranja restante é semântico, nunca bulk-replace.
 - [Papel de cifra claro](cifra-light-paper.md) — shell escuro; só superfícies de cifra em papel claro com acorde #7C3AED; nunca text-primary lilás sobre papel claro.
+- [Tema claro/escuro](theme-light-dark.md) — :root=escuro, .light=identidade da landing; novas telas só com tokens semânticos; nunca remover utilidades globais do CSS sem grep de consumo.
 - [Real piano playback (acordes)](piano-playback.md) — chord audio must reuse the diagram's placeNotes voicing (octave 0 = C3/MIDI 48) via playChordVoicing; samples cover C3..C6, shift ≤1 tone.
 - [BPM síncope bossa (acordes)](bpm-syncopation.md) — teste de família ACF (2/3·B,4/3·B) corrige espúrios de síncope; exige família mensurável na grade e nunca troca oitava.
 - [Chord dictionary enharmonics](chord-enharmonics.md) — ids em bemol legado, names duplos "C#7M/Db7M"; popups mostram o token clicado (prop label) e as imagens do dicionário, nunca voicings computados.

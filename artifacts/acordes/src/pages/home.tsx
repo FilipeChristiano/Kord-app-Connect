@@ -69,7 +69,7 @@ export default function Home() {
                   Explorar ferramentas
                   <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
-                <Link href="/aplicacoes" className="px-7 py-4 rounded-xl font-display font-semibold bg-white/5 text-foreground border border-[rgba(255,255,255,0.12)] backdrop-blur-md hover:border-primary/50 hover:bg-white/[0.09] transition-all duration-200 flex items-center justify-center gap-2">
+                <Link href="/aplicacoes" className="px-7 py-4 rounded-xl font-display font-semibold bg-foreground/5 text-foreground border border-[rgba(255,255,255,0.12)] backdrop-blur-md hover:border-primary/50 hover:bg-foreground/[0.09] transition-all duration-200 flex items-center justify-center gap-2">
                   <CirclePlay className="w-4 h-4 opacity-90" />
                   Ver demonstração
                 </Link>
@@ -91,7 +91,7 @@ export default function Home() {
               <img
                 src={`${import.meta.env.BASE_URL}wordmark.svg`}
                 alt=""
-                className="h-7 sm:h-9 lg:h-10 w-auto select-none"
+                className="wordmark-adaptive h-7 sm:h-9 lg:h-10 w-auto select-none"
                 draggable={false}
               />
             </motion.div>

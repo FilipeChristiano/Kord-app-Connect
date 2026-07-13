@@ -86,7 +86,9 @@
 :root {
   /* ===== Kordi Design System ===== */
 
-  /* Superfícies profundas em camadas — nunca preto puro */
+  /* O app Kordi interno permanece dark (não alteramos as cores base para não quebrar o app),
+     a landing page reescreve localmente via classes do tailwind (bg-slate-50, text-slate-900 etc).
+     A paleta base continua a mesma da especificação. */
   --background: 224 44% 5%;          /* #070A12 */
   --surface: 221 39% 11%;            /* #111827 */
   --surface-elevated: 224 29% 13%;   /* #171C2A */
@@ -107,13 +109,13 @@
   --primary-800: 253 68% 36%;
   --primary-900: 248 64% 27%;
 
-  /* Ação primária + estados — violeta-azulado (sóbrio, destaca no fundo escuro) */
+  /* Ação primária + estados — violeta-azulado (sóbrio, destaca no fundo escuro e claro) */
   --primary: 252 100% 70%;          /* #9673FF */
   --primary-foreground: 222 30% 8%;
   --primary-hover: 252 100% 78%;    /* mais claro */
   --primary-pressed: 252 90% 60%;   /* #6E43F5 */
 
-  /* Índigo Kordi — base da ponta azul da logo #4B45E8 (recursos inteligentes, detalhes premium) */
+  /* Índigo Kordi — base da ponta azul da logo #4B45E8 */
   --brand-purple-100: 240 91% 95%;   /* #E7E7FC */
   --brand-purple-300: 240 90% 84%;   /* #B1B1F8 */
   --brand-purple-500: 242 78% 59%;   /* #4B45E8 */
@@ -141,11 +143,41 @@
   --radius: 0.75rem;
 }
 
+/* ===== Tema claro (identidade da landing /assinar) =====
+   Ativado pela classe .light no <html> (next-themes). O padrão continua
+   escuro (:root acima) — nada muda para quem não escolher o tema claro. */
+.light {
+  --background: 210 40% 98%;         /* #F8FAFC slate-50 */
+  --surface: 0 0% 100%;              /* branco */
+  --surface-elevated: 210 40% 96%;   /* slate-100 */
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;    /* slate-900 */
+  --modal: 0 0% 100%;
+  --foreground: 222 47% 11%;         /* slate-900 */
+
+  /* Ação primária — mesmo violeta #9673FF, texto branco como na landing */
+  --primary: 252 100% 70%;
+  --primary-foreground: 0 0% 100%;
+  --primary-hover: 252 90% 62%;      /* mais escuro sobre fundo claro */
+  --primary-pressed: 252 82% 54%;
+
+  --secondary: 210 40% 96%;          /* slate-100 */
+  --secondary-foreground: 215 25% 27%; /* slate-700 */
+
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;   /* slate-500 */
+
+  --accent: 25 95% 53%;
+  --accent-foreground: 0 0% 100%;
+
+  --border: 214 32% 91%;             /* slate-200 */
+  --ring: 252 100% 70%;
+}
+
 @layer base {
   body {
     @apply bg-background text-foreground antialiased font-sans overflow-x-hidden;
-    background-image: radial-gradient(circle at 50% -10%, hsl(var(--surface-elevated) / 0.55) 0%, transparent 60%);
-    background-attachment: fixed;
+    /* O background do app interno permanece (será sobreposto pela landing page na rota /assinar) */
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -161,7 +193,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -176,7 +208,7 @@
 /* Seleção de texto com identidade violeta */
 ::selection {
   background: hsl(var(--primary) / 0.28);
-  color: hsl(var(--foreground));
+  color: inherit;
 }
 
 /* Foco acessível e elegante */
@@ -185,39 +217,34 @@
   outline-offset: 2px;
 }
 
-/* Flashcard 3D effects */
-.perspective-1000 {
-  perspective: 1000px;
-}
-.transform-style-3d {
-  transform-style: preserve-3d;
-}
-.backface-hidden {
-  backface-visibility: hidden;
-}
-.rotate-y-180 {
-  transform: rotateY(180deg);
+/* Utility Animations para Landing Page */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Glassmorphism utilities */
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ===== Utilidades Kordi usadas nas telas internas (temáveis) ===== */
 .glass {
-  @apply backdrop-blur-xl border border-white/5;
+  @apply backdrop-blur-xl border border-foreground/5;
   background: hsl(var(--surface) / 0.72);
 }
 .glass-card {
-  @apply backdrop-blur-md border border-white/[0.06];
+  @apply backdrop-blur-md border border-foreground/[0.06];
   background: hsl(var(--card) / 0.85);
   box-shadow: 0 8px 24px -12px hsl(var(--background) / 0.8);
 }
-
-/* Profundidade por tonalidade */
-.surface-elevated {
-  background: hsl(var(--surface-elevated));
-}
-
-/* Identidade violeta — glow + gradiente */
-.glow-primary {
-  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 10px 32px -10px hsl(var(--primary) / 0.45);
+.light .glass-card {
+  box-shadow: 0 8px 24px -12px hsl(222 47% 11% / 0.12);
 }
 .text-gradient-primary {
   background: linear-gradient(135deg, #9673FF 0%, #5570FF 100%);
@@ -225,11 +252,7 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.bg-gradient-primary {
-  background: linear-gradient(135deg, #C24BF7, #4B45E8);
-}
-
-/* Botão padrão Kordi — gradiente da marca com brilho (igual ao CTA do hero) */
+/* Botão padrão Kordi — gradiente da marca com brilho (igual nos dois temas) */
 .btn-kordi {
   background-image: linear-gradient(135deg, #C24BF7 0%, #4B45E8 100%);
   color: #fff;
@@ -245,6 +268,13 @@
   cursor: not-allowed;
 }
 
+/* Wordmark branco (imagem) adaptado ao tema claro: inverte para escuro
+   preservando aproximadamente o matiz do detalhe violeta. Aplicar somente
+   onde o fundo acompanha o tema (não nas telas de login, de fundo escuro fixo). */
+.light .wordmark-adaptive {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 /* ===== Gradientes oficiais Kordi ===== */
 .bg-gradient-kordi {
   background: linear-gradient(135deg, #C24BF7 0%, #8B5CF6 45%, #4B45E8 100%);
@@ -257,16 +287,4 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-.bg-gradient-dark-premium {
-  background: linear-gradient(180deg, #0D111A 0%, #080B12 100%);
-}
-.bg-glow-orange {
-  background: radial-gradient(circle, rgba(194, 75, 247, 0.2) 0%, rgba(194, 75, 247, 0) 70%);
-}
-.bg-glow-purple {
-  background: radial-gradient(circle, rgba(75, 69, 232, 0.18) 0%, rgba(75, 69, 232, 0) 70%);
-}
-.glow-purple {
-  box-shadow: 0 0 0 1px hsl(var(--brand-purple-500) / 0.25), 0 10px 32px -10px hsl(var(--brand-purple-500) / 0.45);
 }

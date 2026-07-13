@@ -104,12 +104,12 @@ export function ChordPopup({
         initial={{ scale: 0.94, opacity: 0, y: 12 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.94, opacity: 0, y: 12 }}
-        className="bg-[#12121f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="bg-modal border border-foreground/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
           <div className="flex items-baseline gap-3 min-w-0">
-            <h2 className="font-display font-bold text-white text-2xl leading-none">
+            <h2 className="font-display font-bold text-foreground text-2xl leading-none">
               {displayName}
             </h2>
             <span className="text-xs font-mono text-[#9673FF] bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 rounded-full px-2.5 py-0.5 whitespace-nowrap">
@@ -128,7 +128,7 @@ export function ChordPopup({
             <button
               onClick={onClose}
               aria-label="Fechar"
-              className="flex items-center justify-center w-9 h-9 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 hover:text-white transition-all"
+              className="flex items-center justify-center w-9 h-9 rounded-lg border border-foreground/10 text-foreground/40 hover:bg-foreground/5 hover:text-foreground transition-all"
             >
               <X className="w-4 h-4" aria-hidden />
             </button>
@@ -139,23 +139,23 @@ export function ChordPopup({
         {variationImages && (
           <>
             <div className="px-5 pb-3">
-              <div className="flex items-center justify-between bg-black/30 rounded-xl px-3 py-2 border border-white/5">
+              <div className="flex items-center justify-between bg-black/30 rounded-xl px-3 py-2 border border-foreground/5">
                 <button
                   onClick={() =>
                     setActive((a) => (a - 1 + variationImages.length) % variationImages.length)
                   }
-                  className="p-1 text-white/40 hover:text-white transition-colors"
+                  className="p-1 text-foreground/40 hover:text-foreground transition-colors"
                   aria-label="Variação anterior"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <p className="text-sm font-semibold text-white leading-tight">
+                <p className="text-sm font-semibold text-foreground leading-tight">
                   Variação {Math.min(active, variationImages.length - 1) + 1}
-                  <span className="text-white/40 font-normal"> / {variationImages.length}</span>
+                  <span className="text-foreground/40 font-normal"> / {variationImages.length}</span>
                 </p>
                 <button
                   onClick={() => setActive((a) => (a + 1) % variationImages.length)}
-                  className="p-1 text-white/40 hover:text-white transition-colors"
+                  className="p-1 text-foreground/40 hover:text-foreground transition-colors"
                   aria-label="Próxima variação"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -163,7 +163,7 @@ export function ChordPopup({
               </div>
             </div>
             <div className="px-5">
-              <div className="bg-black/30 rounded-xl p-2 border border-white/5 flex justify-center">
+              <div className="bg-black/30 rounded-xl p-2 border border-foreground/5 flex justify-center">
                 <img
                   key={active}
                   src={variationImages[Math.min(active, variationImages.length - 1)]}
@@ -182,7 +182,7 @@ export function ChordPopup({
                     "h-1.5 rounded-full transition-all duration-200",
                     i === Math.min(active, variationImages.length - 1)
                       ? "bg-[#8B5CF6] w-4"
-                      : "bg-white/20 w-1.5 hover:bg-white/40",
+                      : "bg-foreground/20 w-1.5 hover:bg-foreground/40",
                   )}
                   aria-label={`Variação ${i + 1}`}
                 />
@@ -194,7 +194,7 @@ export function ChordPopup({
         {/* ── Posição única do dicionário (imagem real) ── */}
         {overviewImage && (
           <div className="px-5">
-            <div className="bg-black/30 rounded-xl p-2 border border-white/5 flex justify-center">
+            <div className="bg-black/30 rounded-xl p-2 border border-foreground/5 flex justify-center">
               <img
                 src={overviewImage}
                 alt={`Posição no teclado do acorde ${displayName}`}
@@ -219,14 +219,14 @@ export function ChordPopup({
 
         {/* Notas */}
         <div className="px-5 pt-4">
-          <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">
+          <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mb-2">
             Notas
           </p>
           <div className="flex flex-wrap gap-1.5">
             {displayNotes.map((nota, i) => (
               <span
                 key={i}
-                className="font-mono text-sm font-bold text-white bg-white/[0.06] border border-white/10 rounded-lg px-3 py-1"
+                className="font-mono text-sm font-bold text-foreground bg-foreground/[0.06] border border-foreground/10 rounded-lg px-3 py-1"
               >
                 {nota}
               </span>
@@ -237,7 +237,7 @@ export function ChordPopup({
         {/* Acordes relacionados */}
         {chord.variations && chord.variations.length > 0 && (
           <div className="px-5 pt-4 pb-5">
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">
+            <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest mb-2">
               Acordes relacionados
             </p>
             <div className="flex flex-wrap gap-1.5">

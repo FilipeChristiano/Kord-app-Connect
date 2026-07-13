@@ -56,7 +56,7 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
 
   return (
     <div>
-      <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
+      <div className="bg-black/30 rounded-2xl p-4 border border-foreground/5">
         <div className="flex justify-center mb-3">
           <button
             onClick={() => playChordVoicing(leftHand, rightHand, { leftBaseOctave: leftHandBaseOctave })}
@@ -76,23 +76,23 @@ function SvgOverviewPanel({ notes, category }: { notes: string[]; category: stri
             <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
             <div>
               <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
-              <p className="text-sm text-white/80 font-mono notranslate" translate="no">{meLabel}</p>
+              <p className="text-sm text-foreground/80 font-mono notranslate" translate="no">{meLabel}</p>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3">
             <span className="mt-0.5 w-3 h-3 rounded-full bg-purple-400 flex-shrink-0 ring-2 ring-purple-400/30" />
             <div>
               <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
-              <p className="text-sm text-white/80 font-mono notranslate" translate="no">
+              <p className="text-sm text-foreground/80 font-mono notranslate" translate="no">
                 {isLeftOnly
-                  ? <span className="italic text-white/50" translate="yes">Livre para melodia ou extensões</span>
+                  ? <span className="italic text-foreground/50" translate="yes">Livre para melodia ou extensões</span>
                   : rightHand.join(" — ")}
               </p>
             </div>
           </div>
         </div>
         {isLeftOnly && (
-          <p className="mt-3 text-center text-xs text-muted-foreground bg-white/5 rounded-lg px-3 py-2">
+          <p className="mt-3 text-center text-xs text-muted-foreground bg-foreground/5 rounded-lg px-3 py-2">
             {isFechado
               ? "Mão esquerda toca a 3ª e a 5ª do acorde na região média do teclado."
               : "Este voicing é executado integralmente pela mão esquerda."}
@@ -114,7 +114,7 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
     <div>
       {/* Tabs desktop */}
       <div className="mb-3">
-        <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-white/5">
+        <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-foreground/5">
           {voicings.map((vo, i) => (
             <button
               key={i}
@@ -123,7 +123,7 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
                 "flex-1 px-2 py-2 rounded-lg text-xs font-semibold transition-all duration-200",
                 active === i
                   ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
               )}
             >
               Variação {i + 1}
@@ -132,24 +132,24 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
         </div>
 
         {/* Navegação mobile */}
-        <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-white/5">
+        <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-foreground/5">
           <button
             onClick={() => setActive((a) => (a - 1 + voicings.length) % voicings.length)}
-            className="p-1 text-muted-foreground hover:text-white"
+            className="p-1 text-muted-foreground hover:text-foreground"
             aria-label="Variação anterior"
           ><ChevronLeft className="w-5 h-5" /></button>
-          <span className="text-sm font-semibold text-white">
+          <span className="text-sm font-semibold text-foreground">
             Variação {active + 1} <span className="text-muted-foreground font-normal">/ {voicings.length}</span>
           </span>
           <button
             onClick={() => setActive((a) => (a + 1) % voicings.length)}
-            className="p-1 text-muted-foreground hover:text-white"
+            className="p-1 text-muted-foreground hover:text-foreground"
             aria-label="Próxima variação"
           ><ChevronRight className="w-5 h-5" /></button>
         </div>
       </div>
 
-      <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
+      <div className="bg-black/30 rounded-2xl p-4 border border-foreground/5">
         <div className="flex items-center justify-center gap-3 mb-3">
           <p className="text-center text-xs text-muted-foreground font-medium">{v.label}</p>
           <button
@@ -169,14 +169,14 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
             <span className="mt-0.5 w-3 h-3 rounded-full bg-red-500 flex-shrink-0 ring-2 ring-red-500/30" />
             <div>
               <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-0.5">Mão Esquerda</p>
-              <p className="text-sm text-white/80 font-mono notranslate" translate="no">{v.leftHand.join(" — ")}</p>
+              <p className="text-sm text-foreground/80 font-mono notranslate" translate="no">{v.leftHand.join(" — ")}</p>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3">
             <span className="mt-0.5 w-3 h-3 rounded-full bg-purple-400 flex-shrink-0 ring-2 ring-purple-400/30" />
             <div>
               <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-0.5">Mão Direita</p>
-              <p className="text-sm text-white/80 font-mono notranslate" translate="no">{v.rightHand.join(" — ")}</p>
+              <p className="text-sm text-foreground/80 font-mono notranslate" translate="no">{v.rightHand.join(" — ")}</p>
             </div>
           </div>
         </div>
@@ -190,7 +190,7 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
             onClick={() => setActive(i)}
             className={cn(
               "h-2 rounded-full transition-all duration-200",
-              i === active ? "bg-primary w-4" : "bg-white/20 w-2 hover:bg-white/40"
+              i === active ? "bg-primary w-4" : "bg-foreground/20 w-2 hover:bg-foreground/40"
             )}
             aria-label={`Variação ${i + 1}`}
           />
@@ -204,7 +204,7 @@ function SvgVariationPanel({ chordId, notes }: { chordId: string; notes: string[
 // ── Painel de imagem única (tríades, sus4, sus2, dim, m7b5, ME) ────────────────
 function ImageOverviewPanel({ imageUrl }: { imageUrl: string }) {
   return (
-    <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex justify-center">
+    <div className="bg-black/30 rounded-2xl p-4 border border-foreground/5 flex justify-center">
       <img
         src={imageUrl}
         alt="Posição no teclado"
@@ -223,7 +223,7 @@ function ImageVariationPanel({ images }: { images: string[] }) {
     <div>
       {/* Tabs desktop */}
       <div className="mb-3">
-        <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-white/5">
+        <div className="hidden sm:flex items-center gap-1 bg-black/30 rounded-xl p-1 border border-foreground/5">
           {images.map((_, i) => (
             <button
               key={i}
@@ -232,7 +232,7 @@ function ImageVariationPanel({ images }: { images: string[] }) {
                 "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200",
                 active === i
                   ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
               )}
             >
               Variação {i + 1}
@@ -241,24 +241,24 @@ function ImageVariationPanel({ images }: { images: string[] }) {
         </div>
 
         {/* Navegação mobile */}
-        <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-white/5">
+        <div className="flex sm:hidden items-center justify-between bg-black/30 rounded-xl px-4 py-3 border border-foreground/5">
           <button
             onClick={() => setActive((a) => (a - 1 + images.length) % images.length)}
-            className="p-1 text-muted-foreground hover:text-white"
+            className="p-1 text-muted-foreground hover:text-foreground"
             aria-label="Variação anterior"
           ><ChevronLeft className="w-5 h-5" /></button>
-          <span className="text-sm font-semibold text-white">
+          <span className="text-sm font-semibold text-foreground">
             Variação {active + 1} <span className="text-muted-foreground font-normal">/ {images.length}</span>
           </span>
           <button
             onClick={() => setActive((a) => (a + 1) % images.length)}
-            className="p-1 text-muted-foreground hover:text-white"
+            className="p-1 text-muted-foreground hover:text-foreground"
             aria-label="Próxima variação"
           ><ChevronRight className="w-5 h-5" /></button>
         </div>
       </div>
 
-      <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex justify-center">
+      <div className="bg-black/30 rounded-2xl p-4 border border-foreground/5 flex justify-center">
         <img
           key={active}
           src={images[active]}
@@ -276,7 +276,7 @@ function ImageVariationPanel({ images }: { images: string[] }) {
             onClick={() => setActive(i)}
             className={cn(
               "h-2 rounded-full transition-all duration-200",
-              i === active ? "bg-primary w-4" : "bg-white/20 w-2 hover:bg-white/40"
+              i === active ? "bg-primary w-4" : "bg-foreground/20 w-2 hover:bg-foreground/40"
             )}
             aria-label={`Variação ${i + 1}`}
           />
@@ -301,19 +301,19 @@ export default function ChordDetail() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
-      <Link href="/dicionario" className="inline-flex items-center gap-2 text-muted-foreground hover:text-white mb-8 transition-colors">
+      <Link href="/dicionario" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors">
         <ArrowLeft className="w-4 h-4" /> Voltar ao dicionário
       </Link>
 
-      <div className="glass-card rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
+      <div className="glass-card rounded-3xl overflow-hidden border border-foreground/10 shadow-2xl relative">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
         {/* Header */}
-        <div className="p-6 md:p-10 border-b border-white/5 relative z-10">
+        <div className="p-6 md:p-10 border-b border-foreground/5 relative z-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <CategoryBadge category={chord.category} className="mb-4" />
-              <h1 className="font-display text-5xl md:text-7xl font-bold text-white tracking-tight notranslate" translate="no">
+              <h1 className="font-display text-5xl md:text-7xl font-bold text-foreground tracking-tight notranslate" translate="no">
                 {chord.name}
               </h1>
             </div>
@@ -331,7 +331,7 @@ export default function ChordDetail() {
                   "flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg",
                   favorite
                     ? "btn-kordi"
-                    : "bg-secondary text-white hover:bg-secondary/80 border border-white/10"
+                    : "bg-secondary text-foreground hover:bg-secondary/80 border border-foreground/10"
                 )}
               >
                 <Heart className={cn("w-5 h-5", favorite ? "fill-current" : "")} />
@@ -342,7 +342,7 @@ export default function ChordDetail() {
         </div>
 
         {/* ── Diagrama do Teclado ──────────────────────────────────────────────── */}
-        <div className="px-6 md:px-10 pt-8 pb-6 border-b border-white/5 relative z-10">
+        <div className="px-6 md:px-10 pt-8 pb-6 border-b border-foreground/5 relative z-10">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-5 flex items-center gap-2">
             <Music className="w-4 h-4 text-primary" />
             {hasVariations ? "Variações no Teclado" : "Posição no Teclado"}
@@ -395,7 +395,7 @@ export default function ChordDetail() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Info className="w-4 h-4" /> Fórmula
               </h3>
-              <div className="bg-secondary/50 rounded-xl p-4 border border-white/5">
+              <div className="bg-secondary/50 rounded-xl p-4 border border-foreground/5">
                 <code className="text-xl font-mono text-primary font-bold notranslate" translate="no">{chord.formula}</code>
               </div>
             </section>
@@ -409,7 +409,7 @@ export default function ChordDetail() {
                 {chord.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-3 py-1 bg-white/5 text-muted-foreground rounded-full text-sm border border-white/5"
+                    className="px-3 py-1 bg-foreground/5 text-muted-foreground rounded-full text-sm border border-foreground/5"
                   >
                     {tag}
                   </span>
@@ -424,7 +424,7 @@ export default function ChordDetail() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                 Sonoridade
               </h3>
-              <p className="text-lg text-white/90 leading-relaxed">{chord.description}</p>
+              <p className="text-lg text-foreground/90 leading-relaxed">{chord.description}</p>
             </section>
 
             <section>
@@ -433,7 +433,7 @@ export default function ChordDetail() {
               </h3>
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                <p className="text-white/90 leading-relaxed relative z-10">{chord.application}</p>
+                <p className="text-foreground/90 leading-relaxed relative z-10">{chord.application}</p>
               </div>
             </section>
 
@@ -449,7 +449,7 @@ export default function ChordDetail() {
                       <Link
                         key={variation}
                         href={`/acorde/${related.id}`}
-                        className="px-4 py-2 bg-secondary text-white rounded-lg font-medium border border-white/5 hover:border-primary/40 hover:bg-secondary/80 transition-all notranslate"
+                        className="px-4 py-2 bg-secondary text-foreground rounded-lg font-medium border border-foreground/5 hover:border-primary/40 hover:bg-secondary/80 transition-all notranslate"
                         translate="no"
                       >
                         {related.name}
@@ -457,7 +457,7 @@ export default function ChordDetail() {
                     ) : (
                       <span
                         key={variation}
-                        className="px-4 py-2 bg-secondary/40 text-white/40 rounded-lg font-medium border border-white/5 cursor-default"
+                        className="px-4 py-2 bg-secondary/40 text-foreground/40 rounded-lg font-medium border border-foreground/5 cursor-default"
                       >
                         {variation}
                       </span>

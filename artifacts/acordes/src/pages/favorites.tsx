@@ -14,7 +14,7 @@ import { ChordPopup } from "@/components/ChordPopup";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NIVEL_LABELS: Record<string, { label: string; color: string }> = {
-  original: { label: "Original", color: "text-white/60 bg-white/5 border-white/20" },
+  original: { label: "Original", color: "text-foreground/60 bg-foreground/5 border-foreground/20" },
   suave: { label: "Suave", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
   intermediario: { label: "Intermediário", color: "text-orange-400 bg-orange-500/10 border-orange-500/30" },
   avancado: { label: "Avançado", color: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
@@ -61,10 +61,10 @@ function CifraModal({
         initial={{ scale: 0.94, opacity: 0, y: 16 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.94, opacity: 0, y: 16 }}
-        className="bg-[#12121f] border border-white/10 rounded-2xl w-full max-w-3xl shadow-2xl mb-8"
+        className="bg-modal border border-foreground/10 rounded-2xl w-full max-w-3xl shadow-2xl mb-8"
       >
         {/* Header do modal */}
-        <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4 border-b border-white/10">
+        <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4 border-b border-foreground/10">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${nivel.color}`}>
@@ -76,7 +76,7 @@ function CifraModal({
                 })}
               </span>
             </div>
-            <h2 className="font-display font-bold text-white text-xl leading-tight">
+            <h2 className="font-display font-bold text-foreground text-xl leading-tight">
               {cifra.titulo}
             </h2>
           </div>
@@ -85,14 +85,14 @@ function CifraModal({
               onClick={() => onFullscreen(cifra)}
               aria-label="Ver cifra em tela cheia"
               title="Ver em tela cheia"
-              className="flex items-center gap-1.5 p-2 sm:px-3 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 hover:text-[#9673FF] hover:border-[#8B5CF6]/40 transition-all"
+              className="flex items-center gap-1.5 p-2 sm:px-3 rounded-lg border border-foreground/10 text-foreground/40 hover:bg-foreground/5 hover:text-[#9673FF] hover:border-[#8B5CF6]/40 transition-all"
             >
               <Maximize2 className="w-4 h-4" />
               <span className="hidden sm:inline text-xs font-medium">Tela cheia</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 hover:text-white transition-all"
+              className="p-2 rounded-lg border border-foreground/10 text-foreground/40 hover:bg-foreground/5 hover:text-foreground transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -119,26 +119,26 @@ function CifraModal({
               onChordClick={(id, label) => setPopupChord({ id, label })}
             />
           </div>
-          <p className="text-[11px] text-white/25 mt-2">
+          <p className="text-[11px] text-foreground/25 mt-2">
             Clique em um acorde roxo para ver a formação no teclado.
           </p>
         </div>
 
         {/* Rodapé do modal */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/10">
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-foreground/10">
           <button
             onClick={onClose}
-            className="flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-sm text-foreground/40 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Voltar
           </button>
 
           {confirmDelete ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-white/40">Excluir esta cifra?</span>
+              <span className="text-xs text-foreground/40">Excluir esta cifra?</span>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-white/40 hover:bg-white/5"
+                className="text-xs px-3 py-1.5 rounded-lg border border-foreground/10 text-foreground/40 hover:bg-foreground/5"
               >
                 Não
               </button>
@@ -152,7 +152,7 @@ function CifraModal({
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 text-xs text-white/30 hover:text-red-400 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-foreground/30 hover:text-red-400 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" /> Excluir cifra
             </button>
@@ -207,12 +207,12 @@ function CifraCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       onClick={() => onAbrir(cifra)}
-      className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-primary/30 hover:bg-white/[0.05] transition-all cursor-pointer group"
+      className="bg-foreground/[0.03] border border-foreground/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-primary/30 hover:bg-foreground/[0.05] transition-all cursor-pointer group"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-display font-bold text-white text-base leading-tight truncate group-hover:text-primary transition-colors">
+          <h3 className="font-display font-bold text-foreground text-base leading-tight truncate group-hover:text-primary transition-colors">
             {cifra.titulo}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -248,7 +248,7 @@ function CifraCard({
 
         <button
           onClick={() => onAbrir(cifra)}
-          className="flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white transition-all"
+          className="flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-foreground/5 border border-foreground/10 text-foreground/50 hover:bg-foreground/10 hover:text-foreground transition-all"
         >
           <FileText className="w-3.5 h-3.5" /> Ver completa
         </button>
@@ -257,7 +257,7 @@ function CifraCard({
           onClick={() => onFullscreen(cifra)}
           aria-label="Ver cifra em tela cheia"
           title="Ver em tela cheia"
-          className="p-2 rounded-lg border border-white/10 text-white/30 hover:text-[#9673FF] hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/10 transition-all"
+          className="p-2 rounded-lg border border-foreground/10 text-foreground/30 hover:text-[#9673FF] hover:border-[#8B5CF6]/40 hover:bg-[#8B5CF6]/10 transition-all"
         >
           <Maximize2 className="w-3.5 h-3.5" />
         </button>
@@ -266,7 +266,7 @@ function CifraCard({
           <div className="flex gap-1">
             <button
               onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
-              className="text-xs px-2 py-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5"
+              className="text-xs px-2 py-2 rounded-lg border border-foreground/10 text-foreground/40 hover:bg-foreground/5"
             >
               Não
             </button>
@@ -280,7 +280,7 @@ function CifraCard({
         ) : (
           <button
             onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
-            className="p-2 rounded-lg border border-white/10 text-white/30 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all"
+            className="p-2 rounded-lg border border-foreground/10 text-foreground/30 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -308,18 +308,18 @@ export default function Favorites() {
       {/* Header */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold text-white mb-2 flex items-center gap-3">
+          <h1 className="font-display text-4xl font-bold text-foreground mb-2 flex items-center gap-3">
             <Heart className="w-8 h-8 text-primary fill-primary" />
             Meus <span className="text-gradient-primary">Favoritos</span>
           </h1>
           <p className="text-muted-foreground">Sua coleção pessoal de acordes e cifras sofisticadas.</p>
         </div>
         <div className="flex gap-3">
-          <div className="bg-secondary/50 border border-white/5 px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center gap-2 w-max">
+          <div className="bg-secondary/50 border border-foreground/5 px-4 py-2 rounded-lg text-sm font-medium text-foreground inline-flex items-center gap-2 w-max">
             <Music2 className="w-4 h-4 text-primary" />
             {favoritesCount} {favoritesCount === 1 ? "acorde" : "acordes"}
           </div>
-          <div className="bg-secondary/50 border border-white/5 px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center gap-2 w-max">
+          <div className="bg-secondary/50 border border-foreground/5 px-4 py-2 rounded-lg text-sm font-medium text-foreground inline-flex items-center gap-2 w-max">
             <Wand2 className="w-4 h-4 text-rose-400" />
             {cifrasCount} {cifrasCount === 1 ? "cifra" : "cifras"}
           </div>
@@ -327,11 +327,11 @@ export default function Favorites() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 w-fit mb-8">
+      <div className="flex gap-1 bg-foreground/5 border border-foreground/10 rounded-xl p-1 w-fit mb-8">
         <button
           onClick={() => setTab("acordes")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            tab === "acordes" ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white"
+            tab === "acordes" ? "bg-foreground/10 text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Music2 className="w-4 h-4" />
@@ -345,7 +345,7 @@ export default function Favorites() {
         <button
           onClick={() => setTab("cifras")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            tab === "cifras" ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white"
+            tab === "cifras" ? "bg-foreground/10 text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Wand2 className="w-4 h-4" />
@@ -378,7 +378,7 @@ export default function Favorites() {
                 <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6 text-muted-foreground">
                   <Music2 className="w-10 h-10" />
                 </div>
-                <h3 className="text-2xl font-display font-bold text-white mb-3">Nenhum acorde salvo</h3>
+                <h3 className="text-2xl font-display font-bold text-foreground mb-3">Nenhum acorde salvo</h3>
                 <p className="text-muted-foreground mb-8 text-lg">
                   Navegue pelo dicionário e clique no coração para salvar acordes.
                 </p>
@@ -420,7 +420,7 @@ export default function Favorites() {
                 <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6 text-muted-foreground">
                   <Wand2 className="w-10 h-10" />
                 </div>
-                <h3 className="text-2xl font-display font-bold text-white mb-3">Nenhuma cifra salva</h3>
+                <h3 className="text-2xl font-display font-bold text-foreground mb-3">Nenhuma cifra salva</h3>
                 <p className="text-muted-foreground mb-8 text-lg">
                   Use o Sofisticador para gerar cifras e clique em{" "}
                   <span className="text-rose-400 font-semibold">Salvar cifra</span> para guardar aqui.

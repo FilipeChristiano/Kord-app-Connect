@@ -21,7 +21,7 @@ export default function SignUpPage() {
           <div>
             <strong className="text-emerald-300">Pagamento confirmado!</strong>{" "}
             Agora crie sua conta usando{" "}
-            <strong className="text-white">
+            <strong className="text-foreground">
               o mesmo e-mail que você informou na compra
             </strong>{" "}
             — o acesso libera sozinho em segundos.

@@ -1,7 +1,8 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2, LogOut, Timer, Waves, AudioWaveform, CreditCard } from "lucide-react";
+import { Music, BookOpen, Heart, Menu, X, Lightbulb, Wand2, LogOut, Timer, Waves, AudioWaveform, CreditCard, Sun, Moon } from "lucide-react";
 import { useClerk } from "@clerk/react";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
@@ -9,6 +10,41 @@ import { useAccess } from "@/hooks/use-access";
 import { motion, AnimatePresence } from "framer-motion";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function ThemeToggle({ variant }: { variant: "desktop" | "mobile" }) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const isLight = mounted && resolvedTheme === "light";
+  const label = isLight ? "Tema escuro" : "Tema claro";
+  const Icon = isLight ? Moon : Sun;
+
+  if (variant === "mobile") {
+    return (
+      <button
+        type="button"
+        onClick={() => setTheme(isLight ? "dark" : "light")}
+        className="flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-all w-full text-left"
+      >
+        <Icon className="w-5 h-5" />
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(isLight ? "dark" : "light")}
+      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-sans font-medium whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all"
+      title={label}
+      aria-label={label}
+    >
+      <Icon className="w-4 h-4 opacity-70" />
+    </button>
+  );
+}
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -68,7 +104,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-300",
         isScrolled
-          ? "bg-surface/80 backdrop-blur-xl border-b border-white/5 shadow-sm"
+          ? "bg-surface/80 backdrop-blur-xl border-b border-foreground/5 shadow-sm"
           : "bg-background/40 backdrop-blur-md border-b border-transparent py-2"
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,7 +120,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <img
                 src={`${basePath}/wordmark.svg`}
                 alt="Kordi"
-                className="h-4 sm:h-[1.15rem] w-auto select-none"
+                className="wordmark-adaptive h-4 sm:h-[1.15rem] w-auto select-none"
                 draggable={false}
               />
             </Link>
@@ -111,13 +147,14 @@ export function Layout({ children }: { children: ReactNode }) {
                   )}
                 </Link>
               ))}
-              <div className="w-px h-4 bg-white/10 mx-2" />
+              <div className="w-px h-4 bg-foreground/10 mx-2" />
+              <ThemeToggle variant="desktop" />
               {isStripeSubscriber && (
                 <button
                   type="button"
                   onClick={handleManageSubscription}
                   disabled={openingPortal}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-sans font-medium whitespace-nowrap text-muted-foreground hover:text-white hover:bg-white/5 transition-all disabled:opacity-60"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-sans font-medium whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all disabled:opacity-60"
                   title="Gerenciar assinatura"
                 >
                   <CreditCard className="w-4 h-4 opacity-70" />
@@ -127,7 +164,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-sans font-medium whitespace-nowrap text-muted-foreground hover:text-white hover:bg-white/5 transition-all"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-sans font-medium whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all"
                 title="Sair"
               >
                 <LogOut className="w-4 h-4 opacity-70" />
@@ -137,7 +174,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
             {/* Mobile Menu Toggle */}
             <button 
-              className="lg:hidden p-2 rounded-lg text-muted-foreground hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="lg:hidden p-2 rounded-lg text-muted-foreground hover:bg-foreground/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -153,7 +190,7 @@ export function Layout({ children }: { children: ReactNode }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden fixed top-20 inset-x-0 z-40 glass border-b border-white/10"
+            className="lg:hidden fixed top-20 inset-x-0 z-40 glass border-b border-foreground/10"
           >
             <div className="px-4 py-6 space-y-2 flex flex-col">
               {navItems.map((item) => (
@@ -165,7 +202,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     "flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium transition-all",
                     location === item.href 
                       ? "bg-primary/20 text-primary border border-primary/30" 
-                      : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                      : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                   )}
                 >
                   <item.icon className="w-5 h-5" />
@@ -177,12 +214,13 @@ export function Layout({ children }: { children: ReactNode }) {
                   )}
                 </Link>
               ))}
+              <ThemeToggle variant="mobile" />
               {isStripeSubscriber && (
                 <button
                   type="button"
                   onClick={handleManageSubscription}
                   disabled={openingPortal}
-                  className="flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:bg-white/5 hover:text-white transition-all w-full text-left disabled:opacity-60"
+                  className="flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-all w-full text-left disabled:opacity-60"
                 >
                   <CreditCard className="w-5 h-5" />
                   {openingPortal ? "Abrindo..." : "Gerenciar assinatura"}
@@ -191,7 +229,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:bg-white/5 hover:text-white transition-all w-full text-left"
+                className="flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-all w-full text-left"
               >
                 <LogOut className="w-5 h-5" />
                 Sair
@@ -205,7 +243,7 @@ export function Layout({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <footer className="border-t border-white/5 py-8 mt-12 bg-surface/40">
+      <footer className="border-t border-foreground/5 py-8 mt-12 bg-surface/40">
         <div className="max-w-7xl mx-auto px-4 text-center text-muted-foreground text-sm flex flex-col items-center gap-4">
           <img
             src={`${basePath}/logo.png`}

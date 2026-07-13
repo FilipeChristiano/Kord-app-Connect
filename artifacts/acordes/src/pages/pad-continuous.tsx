@@ -344,11 +344,11 @@ export default function PadContinuous() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {/* Seletor de modo: Só Pads  /  Pads + Cifra */}
       <div className="flex justify-center mb-8">
-        <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-2xl p-1">
+        <div className="inline-flex items-center gap-1 bg-foreground/5 border border-foreground/10 rounded-2xl p-1">
           <button
             onClick={() => setModoCifra(false)}
             className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              !modoCifra ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:text-white"
+              !modoCifra ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Waves className="w-4 h-4" /> Pads
@@ -356,7 +356,7 @@ export default function PadContinuous() {
           <button
             onClick={() => setModoCifra(true)}
             className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              modoCifra ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:text-white"
+              modoCifra ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <FileText className="w-4 h-4" /> Pads + cifras
@@ -372,7 +372,7 @@ export default function PadContinuous() {
     return (
       <div className="flex flex-col gap-5">
         {/* Barra de pads minimalista, fixa no topo */}
-        <div className="sticky top-20 z-30 glass-card rounded-2xl p-4 border border-white/10 backdrop-blur-xl">
+        <div className="sticky top-20 z-30 glass-card rounded-2xl p-4 border border-foreground/10 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             {isPlaying ? (
               <button
@@ -395,7 +395,7 @@ export default function PadContinuous() {
             <button
               onClick={handleStop}
               aria-label="Parar"
-              className="flex items-center justify-center w-11 h-11 shrink-0 rounded-xl bg-secondary text-white border border-white/5 hover:border-white/10 hover:bg-secondary/70 transition-all"
+              className="flex items-center justify-center w-11 h-11 shrink-0 rounded-xl bg-secondary text-foreground border border-foreground/5 hover:border-foreground/10 hover:bg-secondary/70 transition-all"
             >
               <Square className="w-4 h-4" />
             </button>
@@ -404,7 +404,7 @@ export default function PadContinuous() {
               <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground leading-none mb-1">
                 {isLoading ? "Carregando" : isPlaying ? "Tocando" : "Tom"}
               </div>
-              <div className="font-display text-2xl font-bold text-white leading-none notranslate" translate="no">
+              <div className="font-display text-2xl font-bold text-foreground leading-none notranslate" translate="no">
                 {KEYS[selectedPc].label.split(" / ")[0]}
               </div>
             </div>
@@ -429,7 +429,7 @@ export default function PadContinuous() {
                 className={`py-2 rounded-lg font-bold text-sm transition-all border notranslate ${
                   selectedPc === k.pc
                     ? "bg-primary text-primary-foreground border-primary shadow shadow-primary/20"
-                    : "bg-secondary/60 text-white/80 border-white/5 hover:border-primary/40 hover:bg-secondary"
+                    : "bg-secondary/60 text-foreground/80 border-foreground/5 hover:border-primary/40 hover:bg-secondary"
                 }`}
                 translate="no"
               >
@@ -448,11 +448,11 @@ export default function PadContinuous() {
                 <select
                   value={cifraAtual?.id ?? ""}
                   onChange={(e) => setCifraSelId(e.target.value)}
-                  className="w-full appearance-none bg-secondary/60 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer truncate"
+                  className="w-full appearance-none bg-secondary/60 border border-foreground/10 rounded-xl pl-4 pr-10 py-3 text-sm font-medium text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer truncate"
                   aria-label="Escolher cifra"
                 >
                   {cifras.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#12121f] text-white">
+                    <option key={c.id} value={c.id} className="bg-card text-foreground">
                       {c.titulo}
                     </option>
                   ))}
@@ -481,12 +481,12 @@ export default function PadContinuous() {
                   >
                     {(NIVEL_LABELS[cifraAtual.nivel] ?? NIVEL_LABELS.intermediario).label}
                   </span>
-                  <h2 className="font-display font-bold text-white text-base leading-tight truncate">
+                  <h2 className="font-display font-bold text-foreground text-base leading-tight truncate">
                     {cifraAtual.titulo}
                   </h2>
                 </div>
                 {/* Área da cifra: rola sozinha, sem mexer na tela inteira */}
-                <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 sm:px-5 py-4 font-mono text-sm text-white/90 leading-loose whitespace-pre-wrap max-h-[55vh] overflow-y-auto overscroll-contain">
+                <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 sm:px-5 py-4 font-mono text-sm text-foreground/90 leading-loose whitespace-pre-wrap max-h-[55vh] overflow-y-auto overscroll-contain">
                   {cifraAtual.textoSofisticado}
                 </div>
               </>
@@ -497,7 +497,7 @@ export default function PadContinuous() {
             <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-5 text-muted-foreground">
               <Wand2 className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-display font-bold text-white mb-2">Nenhuma cifra salva ainda</h3>
+            <h3 className="text-xl font-display font-bold text-foreground mb-2">Nenhuma cifra salva ainda</h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Use o Sofisticador para gerar cifras sofisticadas e salvá-las. Elas vão aparecer aqui
               para você ler enquanto toca o pad.
@@ -522,7 +522,7 @@ export default function PadContinuous() {
           <Waves className="w-4 h-4" />
           Pad Continuous
         </div>
-        <h1 className="font-display text-3xl md:text-5xl font-bold text-white mb-3">
+        <h1 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-3">
           Pad <span className="text-gradient-primary">Worship</span> Contínuo
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -543,7 +543,7 @@ export default function PadContinuous() {
             {isLoading ? "Carregando pad..." : isPlaying ? "Tocando agora" : "Pronto para tocar"}
           </div>
           <div
-            className="font-display text-5xl md:text-7xl font-bold text-white mb-1 notranslate"
+            className="font-display text-5xl md:text-7xl font-bold text-foreground mb-1 notranslate"
             translate="no"
           >
             {KEYS[selectedPc].label.split(" / ")[0]}
@@ -574,7 +574,7 @@ export default function PadContinuous() {
           )}
           <button
             onClick={handleStop}
-            className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-secondary text-white font-medium border border-white/5 hover:border-white/10 hover:bg-secondary/70 transition-all"
+            className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-secondary text-foreground font-medium border border-foreground/5 hover:border-foreground/10 hover:bg-secondary/70 transition-all"
           >
             <Square className="w-5 h-5" /> Stop
           </button>
@@ -582,7 +582,7 @@ export default function PadContinuous() {
 
         <div className="grid md:grid-cols-3 gap-6">
           <div>
-            <label className="flex items-center gap-2 text-sm text-white/80 font-medium mb-2">
+            <label className="flex items-center gap-2 text-sm text-foreground/80 font-medium mb-2">
               <Volume2 className="w-4 h-4" /> Volume
             </label>
             <input
@@ -593,7 +593,7 @@ export default function PadContinuous() {
             <div className="text-xs text-muted-foreground mt-1 notranslate" translate="no">{Math.round(volume * 100)}%</div>
           </div>
           <div>
-            <label className="text-sm text-white/80 font-medium mb-2 block">Fade In</label>
+            <label className="text-sm text-foreground/80 font-medium mb-2 block">Fade In</label>
             <input
               type="range" min={0.1} max={8} step={0.1} value={fadeIn}
               onChange={(e) => setFadeIn(parseFloat(e.target.value))}
@@ -602,7 +602,7 @@ export default function PadContinuous() {
             <div className="text-xs text-muted-foreground mt-1 notranslate" translate="no">{fadeIn.toFixed(1)}s</div>
           </div>
           <div>
-            <label className="text-sm text-white/80 font-medium mb-2 block">Fade Out</label>
+            <label className="text-sm text-foreground/80 font-medium mb-2 block">Fade Out</label>
             <input
               type="range" min={0.1} max={8} step={0.1} value={fadeOut}
               onChange={(e) => setFadeOut(parseFloat(e.target.value))}
@@ -613,9 +613,9 @@ export default function PadContinuous() {
         </div>
 
         {/* Low Cut dinâmico (High-Pass) */}
-        <div className="mt-6 pt-6 border-t border-white/5">
+        <div className="mt-6 pt-6 border-t border-foreground/5">
           <div className="flex items-center justify-between gap-3 mb-3">
-            <label className="flex items-center gap-2 text-sm text-white/80 font-medium">
+            <label className="flex items-center gap-2 text-sm text-foreground/80 font-medium">
               <Filter className="w-4 h-4" /> Low Cut
             </label>
             <div className="flex items-center gap-3">
@@ -634,11 +634,11 @@ export default function PadContinuous() {
                 aria-label="Ligar ou desligar o Low Cut"
                 onClick={() => setLowCutOn((v) => !v)}
                 className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
-                  lowCutOn ? "bg-primary" : "bg-white/15"
+                  lowCutOn ? "bg-primary" : "bg-foreground/15"
                 }`}
               >
                 <span
-                  className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
+                  className={`inline-block h-6 w-6 transform rounded-full bg-foreground shadow-md transition-transform duration-200 ${
                     lowCutOn ? "translate-x-[22px]" : "translate-x-0.5"
                   }`}
                 />
@@ -686,7 +686,7 @@ export default function PadContinuous() {
               className={`px-2 py-4 rounded-xl font-bold text-base transition-all border notranslate ${
                 selectedPc === k.pc
                   ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25 scale-[1.02]"
-                  : "bg-secondary text-white border-white/5 hover:border-primary/40 hover:bg-secondary/70"
+                  : "bg-secondary text-foreground border-foreground/5 hover:border-primary/40 hover:bg-secondary/70"
               }`}
               translate="no"
             >

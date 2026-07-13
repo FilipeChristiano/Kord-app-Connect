@@ -24,3 +24,9 @@ id = "sOdaaet0KYrGDVdov7OJ8"
 uri = "file://artifacts/acordes/public/images/hero-keyboard-v5.png"
 type = "image"
 title = "piano keyboard horizontal landscape"
+
+[[generated]]
+id = "S9DXjypVPl1X_qy3tpzD6"
+uri = "file://artifacts/acordes/public/images/hero-light.png"
+type = "image"
+title = "Light theme hero keyboard"

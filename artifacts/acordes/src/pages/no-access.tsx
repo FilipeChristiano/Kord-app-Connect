@@ -112,21 +112,21 @@ export default function NoAccessPage() {
 
   return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 py-12">
-      <div className="max-w-lg w-full bg-card/60 border border-white/10 rounded-2xl p-8 shadow-2xl shadow-black/40 backdrop-blur">
+      <div className="max-w-lg w-full bg-card/60 border border-foreground/10 rounded-2xl p-8 shadow-2xl shadow-black/40 backdrop-blur">
         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-700 flex items-center justify-center shadow-lg shadow-primary/20 mb-6">
           <Sparkles className="w-7 h-7 text-primary-foreground" />
         </div>
 
-        <h1 className="font-display text-3xl font-bold text-white mb-3">
+        <h1 className="font-display text-3xl font-bold text-foreground mb-3">
           {iosApp ? "Conta sem acesso ativo" : "Assine o Kordi"}
         </h1>
 
-        <p className="text-white/70 mb-6 leading-relaxed">
+        <p className="text-foreground/70 mb-6 leading-relaxed">
           {iosApp ? (
             email ? (
               <>
                 Sua conta{" "}
-                <span className="text-white font-medium">{email}</span> ainda
+                <span className="text-foreground font-medium">{email}</span> ainda
                 não tem um acesso ativo. Assim que ele estiver ativo, o app
                 libera automaticamente.
               </>
@@ -136,7 +136,7 @@ export default function NoAccessPage() {
           ) : email ? (
             <>
               Sua conta{" "}
-              <span className="text-white font-medium">{email}</span> foi
+              <span className="text-foreground font-medium">{email}</span> foi
               criada. Para desbloquear tudo, ative sua assinatura mensal:
             </>
           ) : (
@@ -148,22 +148,22 @@ export default function NoAccessPage() {
             botão/link de compra ou orientar o usuário a assinar fora do app.
             Nada de painel de preço, benefícios de venda ou instruções. */}
         {!iosApp && (
-          <div className="bg-white/5 border border-primary/25 rounded-xl p-5 mb-5">
+          <div className="bg-foreground/5 border border-primary/25 rounded-xl p-5 mb-5">
             <div className="flex items-baseline gap-2 mb-4">
-              <span className="font-display text-4xl font-bold text-white">
+              <span className="font-display text-4xl font-bold text-foreground">
                 {plan ? formatPrice(plan.unit_amount, plan.currency) : "R$ 49,90"}
               </span>
-              <span className="text-white/60 text-sm">/mês no cartão</span>
+              <span className="text-foreground/60 text-sm">/mês no cartão</span>
             </div>
             <ul className="space-y-2.5">
               {BENEFITS.map((b) => (
-                <li key={b} className="flex items-start gap-2.5 text-sm text-white/80">
+                <li key={b} className="flex items-start gap-2.5 text-sm text-foreground/80">
                   <Check className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                   {b}
                 </li>
               ))}
             </ul>
-            <p className="text-white/50 text-xs mt-4">
+            <p className="text-foreground/50 text-xs mt-4">
               Sem fidelidade — cancele quando quiser.
             </p>
           </div>
@@ -172,9 +172,9 @@ export default function NoAccessPage() {
         {iosApp ? null : isAndroidApp ? (
           /* App Android (Play Store): sem botão nem link de compra dentro do
              app, conforme a política da loja — apenas orientação em texto. */
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 text-sm text-white/70 text-center">
+          <div className="bg-foreground/5 border border-foreground/10 rounded-xl p-4 mb-4 text-sm text-foreground/70 text-center">
             A assinatura é feita pelo site do Kordi. Abra{" "}
-            <span className="text-white font-medium">kordi.app.br</span> no
+            <span className="text-foreground font-medium">kordi.app.br</span> no
             navegador do seu celular ou computador (por exemplo, Chrome) e
             entre com a mesma conta para assinar.
           </div>
@@ -200,20 +200,20 @@ export default function NoAccessPage() {
           </>
         )}
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 text-sm text-white/70">
+        <div className="bg-foreground/5 border border-foreground/10 rounded-xl p-4 mb-4 text-sm text-foreground/70">
           <div className="flex items-start gap-3">
             <Mail className="w-4 h-4 mt-0.5 text-primary shrink-0" />
             {iosApp ? (
               /* iOS: sem menção a compra/pagamento (regra 3.1.1 da Apple) */
               <div>
-                <strong className="text-white">Já tem acesso?</strong>{" "}
+                <strong className="text-foreground">Já tem acesso?</strong>{" "}
                 Entre exatamente com o mesmo e-mail da sua conta Kordi.
                 Verificamos automaticamente a cada poucos segundos — assim que
                 o acesso estiver ativo, esta página libera sozinha.
               </div>
             ) : (
               <div>
-                <strong className="text-white">Já assinou ou comprou antes?</strong>{" "}
+                <strong className="text-foreground">Já assinou ou comprou antes?</strong>{" "}
                 Use exatamente o mesmo e-mail da compra. Verificamos
                 automaticamente a cada poucos segundos — assim que o pagamento
                 for confirmado, esta página libera sozinha.
@@ -227,7 +227,7 @@ export default function NoAccessPage() {
             type="button"
             onClick={handleRecheck}
             disabled={checking}
-            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-colors disabled:opacity-70"
+            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/10 text-foreground font-medium transition-colors disabled:opacity-70"
           >
             <RefreshCw className={`w-4 h-4 ${checking ? "animate-spin" : ""}`} />
             {checking ? "Verificando..." : "Verificar agora"}
@@ -235,7 +235,7 @@ export default function NoAccessPage() {
           <button
             type="button"
             onClick={() => signOut({ redirectUrl: basePath || "/" })}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-colors"
+            className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-foreground/5 hover:bg-foreground/10 border border-foreground/10 text-foreground font-medium transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Sair
