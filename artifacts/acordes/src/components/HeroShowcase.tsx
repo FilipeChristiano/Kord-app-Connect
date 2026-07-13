@@ -107,8 +107,9 @@ function SceneSofisticador(_: SceneProps) {
     const t = setTimeout(() => setDone(true), 1300);
     return () => clearTimeout(t);
   }, []);
-  const antes = ["C", "G", "Am", "F"];
-  const depois = ["C7M(9)", "G7sus4", "Am9", "F6/9"];
+  /* refrão real de "Santo Pra Sempre" sofisticado pelo motor real do app */
+  const antes = ["F9", "Am7", "G", "C"];
+  const depois = ["F7M(9)", "Am7(9)", "G7sus4", "C7M(9)"];
   const niveis = ["Original", "Suave", "Intermediário", "Avançado"];
   return (
     <div className="h-full flex flex-col">
@@ -155,7 +156,7 @@ function SceneSofisticador(_: SceneProps) {
             ))}
           </AnimatePresence>
         </div>
-        <p className="text-slate-400 text-[10px] font-medium font-mono">Tua graça me alcançou…</p>
+        <p className="text-slate-400 text-[10px] font-medium font-mono">E os anjos clamam: Santo…</p>
         <motion.div
           animate={{ opacity: done ? 1 : 0 }}
           transition={{ duration: 0.4 }}
@@ -220,7 +221,6 @@ function SceneAudioLab({ sound }: SceneProps) {
     const stop = playClip(STEMS[activeStem].file, {
       vol: 0.85,
       dur: (STEM_STEP - 120) / 1000,
-      startAt: activeStem === 2 ? 1.4 : 0.6,
     });
     return stop;
   }, [sound, activeStem]);
@@ -300,8 +300,8 @@ function SceneAudioLab({ sound }: SceneProps) {
             transition={{ delay: 0.2 }}
             className="bg-[#fdfcf9] rounded-xl px-3 py-2.5 mt-auto"
           >
-            <p className="font-mono text-[11px] font-bold text-[#7C3AED]">D  A/C#  Bm7  G9</p>
-            <p className="text-[9.5px] text-slate-500 font-medium">Santo pra sempre…</p>
+            <p className="font-mono text-[11px] font-bold text-[#7C3AED]">F9  Am7  G  Em7</p>
+            <p className="text-[9.5px] text-slate-500 font-medium">E os anjos clamam: Santo…</p>
           </motion.div>
         )}
       </div>
@@ -310,7 +310,7 @@ function SceneAudioLab({ sound }: SceneProps) {
 }
 
 /* 3 — Metrônomo: medidor circular de BPM igual ao da tela real */
-const BPM_TARGET = 128;
+const BPM_TARGET = 96;
 const BPM_MIN = 40;
 const BPM_MAX = 240;
 
@@ -388,7 +388,7 @@ function SceneMetronomo({ sound }: SceneProps) {
     return () => clearInterval(t);
   }, [locked]);
 
-  /* clique REAL do metrônomo a 128 BPM enquanto as bolinhas pulsam */
+  /* clique nas batidas REAIS detectadas pelo app (96 BPM) enquanto as bolinhas pulsam */
   useEffect(() => {
     if (!locked || !sound) return;
     return playClip("landing-audio/metronomo.mp3", { vol: 0.7, dur: 2.6 });
@@ -598,7 +598,7 @@ function SceneFavoritos(_: SceneProps) {
       <PageTitle icon={Heart} plain="Seu" accent="repertório" />
       <div className="flex flex-col gap-2">
         {[
-          { t: "Santo Pra Sempre", d: "Tom D · 128 BPM" },
+          { t: "Santo Pra Sempre", d: "Tom Db · 96 BPM" },
           { t: "Ensaio de domingo", d: "Tom Eb · setlist" },
         ].map((s, i) => (
           <motion.div
