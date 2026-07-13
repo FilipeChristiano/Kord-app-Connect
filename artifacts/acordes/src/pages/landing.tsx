@@ -260,7 +260,7 @@ export default function LandingPage() {
                 </h1>
                 
                 <p className="text-lg sm:text-xl text-slate-600 leading-relaxed font-medium mb-10 max-w-2xl mx-auto lg:mx-0">
-                  O parceiro que prepara o seu som no ensaio e te acompanha no ao vivo — do primeiro acorde ao louvor.
+                  O parceiro que prepara o seu som no ensaio e te acompanha no ao vivo.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
