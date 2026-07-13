@@ -10,12 +10,12 @@ import {
   Zap,
   Mic2,
   ListMusic,
-  PlaySquare,
   BadgeCheck,
   Plus
 } from "lucide-react";
 
 import { isIosApp, isAndroidTwa } from "@/lib/native-app";
+import { HeroShowcase } from "@/components/HeroShowcase";
 import {
   AcordeDemo,
   AudioLabDemo,
@@ -287,24 +287,11 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Imagem de Hero Gerada */}
+              {/* Prévia animada do app */}
               <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none">
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-[#C24BF7]/20 rounded-[2.5rem] transform rotate-3 scale-105 blur-lg opacity-60 animate-pulse"></div>
                 <div className="relative rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl shadow-slate-900/10 transform transition-transform hover:scale-[1.02] duration-500">
-                  <img 
-                    src={`${basePath}/images/hero-light.png`} 
-                    alt="Teclado moderno em estúdio claro" 
-                    className="w-full h-auto object-cover aspect-video"
-                  />
-                  <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md border border-white p-4 rounded-2xl shadow-lg flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                      <PlaySquare className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">Som de piano real</p>
-                      <p className="text-xs text-slate-500 font-medium">Gravado nota a nota em estúdio.</p>
-                    </div>
-                  </div>
+                  <HeroShowcase />
                 </div>
               </div>
             </div>
