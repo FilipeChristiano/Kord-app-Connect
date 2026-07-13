@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 import { useAccess } from "@/hooks/use-access";
+import { isIosApp } from "@/lib/native-app";
 import { motion, AnimatePresence } from "framer-motion";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -56,7 +57,9 @@ export function Layout({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
   const { data: access } = useAccess();
   const [openingPortal, setOpeningPortal] = useState(false);
-  const isStripeSubscriber = access?.accessSource === "stripe";
+  // App Store 3.1.1: dentro do app iOS não pode haver nenhum link/botão
+  // relacionado a assinatura/pagamento externo (portal Stripe incluído).
+  const isStripeSubscriber = access?.accessSource === "stripe" && !isIosApp();
 
   const handleSignOut = () => {
     setMobileMenuOpen(false);
