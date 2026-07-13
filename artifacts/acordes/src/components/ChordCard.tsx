@@ -56,7 +56,16 @@ export function ChordCard({ chord, index = 0 }: ChordCardProps) {
             </div>
           </div>
           
-          <h3 className="font-display text-3xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors notranslate" translate="no">
+          <h3
+            className={`font-display font-bold text-foreground mb-3 group-hover:text-primary transition-colors whitespace-nowrap notranslate ${
+              chord.name.length > 14
+                ? "text-xl"
+                : chord.name.length > 10
+                  ? "text-2xl"
+                  : "text-3xl"
+            }`}
+            translate="no"
+          >
             {chord.name}
           </h3>
           
