@@ -268,11 +268,18 @@
   cursor: not-allowed;
 }
 
-/* Wordmark branco (imagem) adaptado ao tema claro: inverte para escuro
-   preservando aproximadamente o matiz do detalhe violeta. Aplicar somente
-   onde o fundo acompanha o tema (não nas telas de login, de fundo escuro fixo). */
-.light .wordmark-adaptive {
-  filter: invert(1) hue-rotate(180deg);
+/* Troca de imagem por tema: elementos .dark-only aparecem no tema escuro
+   (padrão) e .light-only apenas no claro. Usado para o wordmark (branco no
+   escuro, escuro no claro). Telas de login mantêm fundo escuro fixo e usam
+   só a versão branca, sem essas classes. */
+.light-only {
+  display: none;
+}
+.light .light-only {
+  display: block;
+}
+.light .dark-only {
+  display: none;
 }
 
 /* ===== Gradientes oficiais Kordi ===== */

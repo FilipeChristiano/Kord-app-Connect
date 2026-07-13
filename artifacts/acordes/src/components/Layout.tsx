@@ -120,7 +120,13 @@ export function Layout({ children }: { children: ReactNode }) {
               <img
                 src={`${basePath}/wordmark.svg`}
                 alt="Kordi"
-                className="wordmark-adaptive h-4 sm:h-[1.15rem] w-auto select-none"
+                className="dark-only h-4 sm:h-[1.15rem] w-auto select-none"
+                draggable={false}
+              />
+              <img
+                src={`${basePath}/wordmark-light.png`}
+                alt="Kordi"
+                className="light-only h-4 sm:h-[1.15rem] w-auto select-none"
                 draggable={false}
               />
             </Link>

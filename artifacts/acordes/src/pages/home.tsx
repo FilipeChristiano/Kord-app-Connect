@@ -91,7 +91,13 @@ export default function Home() {
               <img
                 src={`${import.meta.env.BASE_URL}wordmark.svg`}
                 alt=""
-                className="wordmark-adaptive h-7 sm:h-9 lg:h-10 w-auto select-none"
+                className="dark-only h-7 sm:h-9 lg:h-10 w-auto select-none"
+                draggable={false}
+              />
+              <img
+                src={`${import.meta.env.BASE_URL}wordmark-light.png`}
+                alt=""
+                className="light-only h-7 sm:h-9 lg:h-10 w-auto select-none"
                 draggable={false}
               />
             </motion.div>

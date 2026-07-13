@@ -13,6 +13,6 @@ Regra: o `:root` do index.css define o tema ESCURO (padrão). A classe `.light` 
 - Novas telas internas: usar SEMPRE tokens semânticos (`text-foreground`, `bg-foreground/5`, `border-border`, `bg-card`, `bg-modal`...) — nunca `text-white`/`bg-white/5`/`border-white/10` cravados. Não usar variantes `dark:`.
 - Texto branco sobre botões/gradientes coloridos fixos (btn-kordi, bg-primary, chips) continua `text-white` (correto nos dois temas).
 - Papel de cifra permanece claro nos dois temas (não converter).
-- Wordmark branco (imagem): usar classe `wordmark-adaptive` (filter invert no `.light`) só onde o fundo acompanha o tema; sign-in/up têm fundo escuro fixo (Clerk escuro é limitação aceita da v1).
+- Wordmark: há dois assets em public/ — `wordmark.svg` (branco, tema escuro) e `wordmark-light.png` (texto escuro, fornecido pelo usuário). Renderizar os dois `<img>` com as classes `dark-only`/`light-only` (utilitárias no index.css) onde o fundo acompanha o tema; sign-in/up têm fundo escuro fixo e usam só a versão branca (Clerk escuro é limitação aceita da v1).
 - Landing (`landing.tsx`/`landing-demos.tsx`) é sempre clara com classes literais — o tema não a afeta.
 - Utilidades compartilhadas `glass`, `glass-card`, `btn-kordi`, `text-gradient-primary` vivem no index.css e são temáveis; ao refatorar CSS global, checar consumo com grep antes de remover (a reforma da landing removeu-as e quebrou telas internas silenciosamente).
