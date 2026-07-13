@@ -287,10 +287,10 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Prévia animada do app */}
-              <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-[#C24BF7]/20 rounded-[2.5rem] transform rotate-3 scale-105 blur-lg opacity-60 animate-pulse"></div>
-                <div className="relative rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl shadow-slate-900/10 transform transition-transform hover:scale-[1.02] duration-500">
+              {/* Prévia animada do app em mockup de celular */}
+              <div className="relative mx-auto">
+                <div className="absolute inset-4 bg-gradient-to-tr from-primary/25 to-[#C24BF7]/25 rounded-[3rem] transform rotate-3 scale-105 blur-2xl opacity-70 animate-pulse"></div>
+                <div className="relative transform transition-transform hover:scale-[1.02] duration-500">
                   <HeroShowcase />
                 </div>
               </div>
