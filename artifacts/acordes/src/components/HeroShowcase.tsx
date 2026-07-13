@@ -339,8 +339,8 @@ function SceneAudioLab({ sound }: SceneProps) {
   );
 }
 
-/* 3 — Metrônomo: demonstração real com "Jó" (mesmo áudio que o app analisa) — detector real do app: 144 BPM */
-const BPM_TARGET = 144;
+/* 3 — Metrônomo: demonstração real com "Jó" (arquivo original do dono) — detector real do app: 132 BPM */
+const BPM_TARGET = 132;
 const BPM_MIN = 40;
 const BPM_MAX = 240;
 
@@ -411,14 +411,14 @@ function SceneMetronomo({ sound }: SceneProps) {
     };
   }, []);
 
-  /* bolinhas alinhadas com o primeiro clique do áudio (2,695 s − 2,3 s do travamento) */
+  /* bolinhas alinhadas com o primeiro clique do áudio (2,715 s − 2,3 s do travamento) */
   useEffect(() => {
     if (!locked) return;
     let iv = 0;
     const d = setTimeout(() => {
       setBeat(0);
       iv = window.setInterval(() => setBeat((b) => (b + 1) % 4), 60000 / BPM_TARGET);
-    }, 395);
+    }, 415);
     return () => {
       clearTimeout(d);
       window.clearInterval(iv);
@@ -432,7 +432,8 @@ function SceneMetronomo({ sound }: SceneProps) {
   }, [sound]);
 
   const listening = !locked && progress === 0;
-  const accent = ["#9673FF", "#94A3B8", "#EAB308", "#94A3B8"];
+  /* batidas todas iguais (sem tempo forte), como o app toca */
+  const accent = ["#9673FF", "#9673FF", "#9673FF", "#9673FF"];
 
   return (
     <div className="h-full flex flex-col">
@@ -470,7 +471,7 @@ function SceneMetronomo({ sound }: SceneProps) {
         ) : (
           <div className="mt-2">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.14em]">Acentuação</span>
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.14em]">Compasso</span>
               <span className="text-[9px] font-bold text-slate-300">{beat >= 0 ? beat + 1 : 1} / 4</span>
             </div>
             <div className="flex items-center gap-2.5">
@@ -636,8 +637,8 @@ function SceneFavoritos(_: SceneProps) {
       <PageTitle icon={Heart} plain="Seu" accent="repertório" />
       <div className="flex flex-col gap-2">
         {[
-          { t: "Santo Pra Sempre", d: "Tom Db · 96 BPM" },
-          { t: "Jó", d: "Midian Lima · 144 BPM" },
+          { t: "Santo Pra Sempre", d: "Tom Db · 144 BPM" },
+          { t: "Jó", d: "Midian Lima · 132 BPM" },
         ].map((s, i) => (
           <motion.div
             key={s.t}
