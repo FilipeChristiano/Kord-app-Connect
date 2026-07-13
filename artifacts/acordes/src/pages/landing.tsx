@@ -63,14 +63,21 @@ function formatPrice(unitAmount: number, currency: string) {
   }).format(unitAmount / 100);
 }
 
+interface SectionScreenshot {
+  src: string;
+  alt: string;
+  label: string;
+}
+
 interface SectionProps {
   tag: string;
   title: React.ReactNode;
   description: string;
   children: React.ReactNode;
+  screenshots?: SectionScreenshot[];
 }
 
-function FeatureSection({ tag, title, description, children }: SectionProps) {
+function FeatureSection({ tag, title, description, children, screenshots }: SectionProps) {
   return (
     <section className="bg-card/50 border border-white/10 rounded-3xl p-6 sm:p-10 mb-6">
       <span className="inline-block text-[11px] font-bold tracking-[0.18em] uppercase text-primary bg-primary/10 border border-primary/20 rounded-full px-3 py-1 mb-4">
@@ -83,6 +90,34 @@ function FeatureSection({ tag, title, description, children }: SectionProps) {
         {description}
       </p>
       {children}
+      {screenshots && screenshots.length > 0 && (
+        <div
+          className={`mt-8 grid gap-4 ${
+            screenshots.length > 1 ? "sm:grid-cols-2" : ""
+          }`}
+        >
+          {screenshots.map((s) => (
+            <figure key={s.src}>
+              <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/50 shadow-xl shadow-black/40">
+                <div className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.04] border-b border-white/10">
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
+                </div>
+                <img
+                  src={`${basePath}/screenshots/${s.src}`}
+                  alt={s.alt}
+                  loading="lazy"
+                  className="w-full block max-h-[420px] object-cover object-top"
+                />
+              </div>
+              <figcaption className="text-xs text-white/40 mt-2 text-center">
+                {s.label}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -259,6 +294,13 @@ export default function LandingPage() {
               </>
             }
             description="Variações sofisticadas de cada acorde — voicings que fogem da forma comum que todo mundo copia da internet — com diagrama de mãos, aplicações práticas e som de piano de verdade. Toque nos acordes abaixo e ouça agora:"
+            screenshots={[
+              {
+                src: "screenshot-2-dicionario.jpg",
+                alt: "Tela do dicionário de acordes do Kordi",
+                label: "Tela real do app — Dicionário de acordes",
+              },
+            ]}
           >
             <AcordeDemo />
           </FeatureSection>
@@ -272,6 +314,13 @@ export default function LandingPage() {
               </>
             }
             description="Cole qualquer cifra no Kordi: mude o tom na hora (os acordes mudam, a letra fica no lugar) e deixe o Sofisticador trocar os acordes simples por versões sofisticadas, em três níveis — Suave, Intermediário e Avançado. Teste a mudança de tom no trecho abaixo:"
+            screenshots={[
+              {
+                src: "modulo-sofisticador.jpg",
+                alt: "Tela do Sofisticador de Cifra do Kordi",
+                label: "Tela real do app — Sofisticador de Cifra",
+              },
+            ]}
           >
             <CifraDemo />
           </FeatureSection>
@@ -284,7 +333,14 @@ export default function LandingPage() {
                 <span className="text-primary">de qualquer música</span>
               </>
             }
-            description="Digite o nome de uma música e o Kordi encontra a cifra, vincula o áudio e separa Voz, Instrumental e Metrônomo: tire a voz para montar playback ou deixe só a voz para estudar o vocal. Veja o fluxo completo:"
+            description="Digite o nome de uma música e o Kordi encontra a cifra, vincula o áudio e separa Voz, Instrumental e Metrônomo: tire a voz para montar playback ou deixe só a voz para estudar o vocal. Veja o fluxo completo e ouça o resultado:"
+            screenshots={[
+              {
+                src: "modulo-audiolab.jpg",
+                alt: "Tela do Audio Lab do Kordi",
+                label: "Tela real do app — Audio Lab",
+              },
+            ]}
           >
             <AudioLabDemo />
           </FeatureSection>
@@ -298,6 +354,18 @@ export default function LandingPage() {
               </>
             }
             description="Metrônomo preciso para estudar no andamento certo e pads contínuos para sustentar o som entre as músicas — com Fade In, Fade Out e Low Cut para encaixar no seu som. Tudo funcionando de verdade aqui embaixo:"
+            screenshots={[
+              {
+                src: "modulo-metronomo.jpg",
+                alt: "Tela do Metrônomo Inteligente do Kordi",
+                label: "Tela real do app — Metrônomo Inteligente",
+              },
+              {
+                src: "modulo-pads.jpg",
+                alt: "Tela do Pad Worship Contínuo do Kordi",
+                label: "Tela real do app — Pad Worship Contínuo",
+              },
+            ]}
           >
             <div className="grid sm:grid-cols-2 gap-4">
               <MetronomoDemo />

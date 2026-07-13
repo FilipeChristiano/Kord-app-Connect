@@ -249,8 +249,11 @@ export function CifraDemo() {
 // ─── 3. Audio Lab: animação roteirizada do fluxo real ───────────────────────
 
 // Roteiro: digitar título → encontrar cifra → baixar áudio → separar → mesa.
-// "Grandioso És Tu" é hino de domínio público.
-const TYPED_TITLE = "Grandioso És Tu";
+// Trecho de 30s enviado pelo dono do app; stems separados com o mesmo motor
+// de máxima qualidade do Audio Lab (Demucs). BPM/1º tempo medidos do trecho.
+const TYPED_TITLE = "Midian Lima - Jó";
+const LAB_BPM = 64.6;
+const LAB_FIRST_BEAT = 0.372;
 
 type LabStep = "typing" | "searching" | "found" | "downloading" | "separating" | "mixer";
 
@@ -263,10 +266,17 @@ const STEP_AFTER: Record<LabStep, { next: LabStep; delay: number }> = {
   mixer: { next: "mixer", delay: 0 },
 };
 
-const MIXER_CHANNELS = [
-  { label: "Voz", color: "#9673FF" },
-  { label: "Instrumental", color: "#34d399" },
-  { label: "Metrônomo", color: "#fbbf24" },
+type LabChannelId = "voz" | "instrumental" | "metronomo";
+
+const MIXER_CHANNELS: {
+  id: LabChannelId;
+  label: string;
+  color: string;
+  file: string | null;
+}[] = [
+  { id: "voz", label: "Voz", color: "#9673FF", file: "lab-voz.mp3" },
+  { id: "instrumental", label: "Instrumental", color: "#34d399", file: "lab-instrumental.mp3" },
+  { id: "metronomo", label: "Metrônomo", color: "#fbbf24", file: null },
 ];
 
 function ProgressBar({ running, ms }: { running: boolean; ms: number }) {
@@ -324,11 +334,148 @@ export function AudioLabDemo() {
   };
   const idx = stepIndex[step];
 
-  const stages = [
-    { icon: Search, label: "Encontrando a cifra" },
-    { icon: Download, label: "Baixando o áudio" },
-    { icon: Scissors, label: "Separando voz e instrumentos" },
-  ];
+  // ── Mesa de mistura REAL: stems do trecho separados pelo Kordi ──
+  const [labPlaying, setLabPlaying] = useState(false);
+  const [labLoading, setLabLoading] = useState(false);
+  const [labError, setLabError] = useState(false);
+  const [vols, setVols] = useState<Record<LabChannelId, number>>({
+    voz: 0.9,
+    instrumental: 0.9,
+    metronomo: 0.4,
+  });
+  const volsRef = useRef(vols);
+  volsRef.current = vols;
+  const labBuffersRef = useRef<Map<LabChannelId, AudioBuffer> | null>(null);
+  const labOffsetRef = useRef(0);
+  // Token de geração: invalida startLab() pendente após cancelar/reiniciar,
+  // para o áudio nunca começar "sozinho" depois de um reset.
+  const labSeqRef = useRef(0);
+  const labLoadingRef = useRef(false);
+  const labPlayRef = useRef<{
+    srcs: AudioBufferSourceNode[];
+    gains: Map<LabChannelId, GainNode>;
+    startedAt: number;
+    offset: number;
+    endTimer: number;
+  } | null>(null);
+
+  function stopLab(remember: boolean) {
+    const pb = labPlayRef.current;
+    labPlayRef.current = null;
+    setLabPlaying(false);
+    if (!pb) return;
+    window.clearTimeout(pb.endTimer);
+    const a = getAudio();
+    const elapsed = a ? Math.max(0, a.ctx.currentTime - pb.startedAt) : 0;
+    labOffsetRef.current = remember ? pb.offset + elapsed : 0;
+    pb.srcs.forEach((s) => {
+      s.onended = null;
+      try {
+        s.stop();
+      } catch {
+        /* já parado */
+      }
+      try {
+        s.disconnect();
+      } catch {
+        /* já desconectado */
+      }
+    });
+    pb.gains.forEach((g) => g.disconnect());
+  }
+
+  function cancelPendingLab() {
+    labSeqRef.current += 1;
+    labLoadingRef.current = false;
+    setLabLoading(false);
+  }
+
+  useEffect(() => {
+    return () => {
+      cancelPendingLab();
+      stopLab(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function startLab() {
+    const a = getAudio();
+    if (!a || labLoadingRef.current) return;
+    const seq = ++labSeqRef.current;
+    if (!labBuffersRef.current) {
+      labLoadingRef.current = true;
+      setLabLoading(true);
+      try {
+        const withFile = MIXER_CHANNELS.filter(
+          (c): c is (typeof MIXER_CHANNELS)[number] & { file: string } => !!c.file,
+        );
+        const entries = await Promise.all(
+          withFile.map(async (c) => {
+            const r = await fetch(`${import.meta.env.BASE_URL}landing/${c.file}`);
+            if (!r.ok) throw new Error(String(r.status));
+            const buf = await a.ctx.decodeAudioData(await r.arrayBuffer());
+            return [c.id, buf] as const;
+          }),
+        );
+        if (seq !== labSeqRef.current) return;
+        labBuffersRef.current = new Map(entries);
+        setLabError(false);
+      } catch {
+        if (seq === labSeqRef.current) setLabError(true);
+        return;
+      } finally {
+        if (seq === labSeqRef.current) {
+          labLoadingRef.current = false;
+          setLabLoading(false);
+        }
+      }
+    }
+    if (seq !== labSeqRef.current) return;
+    stopLab(true);
+    const buffers = labBuffersRef.current;
+    const dur = buffers.get("voz")?.duration ?? 30;
+    let offset = labOffsetRef.current;
+    if (offset >= dur - 0.25) offset = 0;
+    const t0 = a.ctx.currentTime + 0.08;
+    const gains = new Map<LabChannelId, GainNode>();
+    const srcs: AudioBufferSourceNode[] = [];
+    for (const ch of MIXER_CHANNELS) {
+      const g = a.ctx.createGain();
+      g.gain.value = volsRef.current[ch.id];
+      g.connect(a.ctx.destination);
+      gains.set(ch.id, g);
+      const buf = ch.file ? buffers.get(ch.id) : undefined;
+      if (buf) {
+        const src = a.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(g);
+        src.start(t0, offset);
+        srcs.push(src);
+      }
+    }
+    // Cliques do metrônomo ancorados no relógio do AudioContext (sem deriva)
+    const clickGain = gains.get("metronomo");
+    if (clickGain) {
+      const beat = 60 / LAB_BPM;
+      for (let k = 0; LAB_FIRST_BEAT + k * beat <= dur; k++) {
+        const bt = LAB_FIRST_BEAT + k * beat;
+        if (bt < offset) continue;
+        clickAt(a.ctx, clickGain, t0 + (bt - offset), k % 4 === 0);
+      }
+    }
+    const endTimer = window.setTimeout(
+      () => stopLab(false),
+      (dur - offset) * 1000 + 300,
+    );
+    labPlayRef.current = { srcs, gains, startedAt: t0, offset, endTimer };
+    setLabPlaying(true);
+  }
+
+  function setChannelVol(id: LabChannelId, v: number) {
+    setVols((p) => ({ ...p, [id]: v }));
+    const g = labPlayRef.current?.gains.get(id);
+    if (g) g.gain.value = v;
+  }
 
   return (
     <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-6">
@@ -439,30 +586,81 @@ export function AudioLabDemo() {
         }`}
       >
         <style>{`@keyframes kordi-wave { from { transform: scaleY(0.45); } to { transform: scaleY(1.05); } }`}</style>
+
+        {/* Player real: stems do trecho separados pelo Kordi */}
+        <div className="flex items-center gap-3 mb-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (labLoading) {
+                cancelPendingLab();
+              } else if (labPlaying) {
+                stopLab(true);
+              } else {
+                void startLab();
+              }
+            }}
+            aria-label={labPlaying ? "Pausar trecho" : "Ouvir trecho separado"}
+            className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary-700 text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/25 hover:brightness-110 transition-all shrink-0"
+          >
+            {labLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : labPlaying ? (
+              <Pause className="w-5 h-5" />
+            ) : (
+              <Play className="w-5 h-5 ml-0.5" />
+            )}
+          </button>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">Jó — Midian Lima</p>
+            <p className="text-xs text-white/50">
+              Trecho de 30s separado pelo Kordi — aperte o play e mexa nos
+              volumes de cada canal
+            </p>
+          </div>
+        </div>
+        {labError && (
+          <p className="text-xs text-rose-400 mb-3">
+            Não foi possível carregar o áudio da demonstração. Tente de novo.
+          </p>
+        )}
+
         <div className="grid grid-cols-3 gap-2.5">
-          {MIXER_CHANNELS.map(({ label, color }, ch) => (
+          {MIXER_CHANNELS.map(({ id, label, color }, ch) => (
             <div
-              key={label}
+              key={id}
               className="bg-white/5 border border-white/10 rounded-xl p-3"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold truncate">{label}</span>
                 <Volume2 className="w-3.5 h-3.5 shrink-0" style={{ color }} />
               </div>
-              <div className="flex items-end gap-[2px] h-10" aria-hidden="true">
+              <div className="flex items-end gap-[2px] h-10 mb-2" aria-hidden="true">
                 {Array.from({ length: 14 }).map((_, i) => (
                   <div
                     key={i}
                     className="flex-1 rounded-full"
                     style={{
-                      height: `${30 + 65 * Math.abs(Math.sin(i * 0.8 + ch * 2.1))}%`,
+                      height: `${(30 + 65 * Math.abs(Math.sin(i * 0.8 + ch * 2.1))) * Math.max(0.15, vols[id])}%`,
                       backgroundColor: color,
-                      opacity: 0.85,
+                      opacity: labPlaying ? 0.9 : 0.35,
                       animation: `kordi-wave ${0.7 + ch * 0.15}s ease-in-out ${i * 0.05}s infinite alternate`,
+                      animationPlayState: labPlaying ? "running" : "paused",
+                      transition: "opacity 0.4s",
                     }}
                   />
                 ))}
               </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round(vols[id] * 100)}
+                onChange={(e) => setChannelVol(id, Number(e.target.value) / 100)}
+                aria-label={`Volume do canal ${label}`}
+                className="w-full"
+                style={{ accentColor: color }}
+              />
             </div>
           ))}
         </div>
@@ -470,12 +668,17 @@ export function AudioLabDemo() {
 
       <div className="flex items-center justify-between gap-3 mt-4">
         <p className="text-xs text-white/40 leading-relaxed">
-          Reprodução do fluxo real do Audio Lab: digite o nome, o Kordi acha a
-          cifra, vincula o áudio e separa Voz, Instrumental e Metrônomo.
+          Fluxo real do Audio Lab: digite o nome, o Kordi acha a cifra, vincula
+          o áudio e separa Voz, Instrumental e Metrônomo — e o resultado acima
+          é áudio de verdade, separado pelo Kordi.
         </p>
         <button
           type="button"
-          onClick={() => setCycle((c) => c + 1)}
+          onClick={() => {
+            cancelPendingLab();
+            stopLab(false);
+            setCycle((c) => c + 1);
+          }}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-medium transition-colors shrink-0"
         >
           <RotateCcw className="w-3.5 h-3.5 text-primary" />

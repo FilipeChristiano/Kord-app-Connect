@@ -15,6 +15,13 @@ in-browser DSP separation. Per-song the user picks fast vs máxima.
   write-to-temp-then-rename pattern.
 - **demucs 4.0.1 has no `demucs.api`.** Use `demucs.pretrained.get_model` +
   `demucs.apply.apply_model` + `demucs.audio.AudioFile`; save stems with soundfile.
+- **The demucs CLI cannot save output in this env** — torchaudio now routes saves
+  through torchcodec (not installed): `ImportError: TorchCodec is required`. For any
+  ad-hoc separation, run `artifacts/api-server/scripts/separate_stems.py <in> <out_dir>`
+  (saves via soundfile); a 30s clip finishes in well under 2 min in the foreground.
+- **Backgrounded shell jobs die between agent bash sessions** even with
+  setsid/nohup/disown — don't rely on them for long processing; run in the
+  foreground within the tool timeout or via a workflow.
 - **Full-song separation is NOT real-time on 2 CPUs.** Expect ~5-6 min wall time
   for a ~3.5 min song (model load + inference + transcode), not the ~real-time a
   short 30s clip suggests. Keep the job timeout generous (12 min) and the UI copy
