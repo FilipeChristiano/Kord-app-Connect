@@ -254,11 +254,11 @@ export default function LandingPage() {
             tag="Dicionário de acordes"
             title={
               <>
-                Veja o acorde no teclado.{" "}
-                <span className="text-primary">Ouça como ele soa.</span>
+                Acordes sofisticados,{" "}
+                <span className="text-primary">longe do óbvio</span>
               </>
             }
-            description="Centenas de acordes com diagrama de mãos, aplicações práticas e som de piano de verdade. Toque nos acordes abaixo e ouça agora:"
+            description="Variações sofisticadas de cada acorde — voicings que fogem da forma comum que todo mundo copia da internet — com diagrama de mãos, aplicações práticas e som de piano de verdade. Toque nos acordes abaixo e ouça agora:"
           >
             <AcordeDemo />
           </FeatureSection>
@@ -267,11 +267,11 @@ export default function LandingPage() {
             tag="Cifras inteligentes"
             title={
               <>
-                Qualquer cifra,{" "}
-                <span className="text-primary">no seu tom</span>
+                Cifras no seu tom —{" "}
+                <span className="text-primary">e com acordes sofisticados</span>
               </>
             }
-            description="Cole qualquer cifra no Kordi e mude o tom na hora — os acordes mudam, a letra fica no lugar. Teste com o trecho abaixo:"
+            description="Cole qualquer cifra no Kordi: mude o tom na hora (os acordes mudam, a letra fica no lugar) e deixe o Sofisticador trocar os acordes simples por versões sofisticadas, em três níveis — Suave, Intermediário e Avançado. Teste a mudança de tom no trecho abaixo:"
           >
             <CifraDemo />
           </FeatureSection>
