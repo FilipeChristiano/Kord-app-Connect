@@ -81,6 +81,34 @@ function nearestSample(midi: number) {
   );
 }
 
+// Notas ativas/agendadas, para permitir interrupção imediata (ex.: demo da landing).
+interface ActiveNote {
+  cancelled: boolean;
+  src: AudioBufferSourceNode | null;
+  g: GainNode | null;
+  c: AudioContext;
+}
+const activeNotes = new Set<ActiveNote>();
+
+/** Interrompe (com fade curto) todas as notas de piano tocando ou agendadas. */
+export function stopPianoNotes(fade = 0.08) {
+  activeNotes.forEach((n) => {
+    n.cancelled = true;
+    if (n.src && n.g) {
+      try {
+        const t = n.c.currentTime;
+        n.g.gain.cancelScheduledValues(t);
+        n.g.gain.setValueAtTime(n.g.gain.value, t);
+        n.g.gain.linearRampToValueAtTime(0.0001, t + fade);
+        n.src.stop(t + fade + 0.02);
+      } catch {
+        /* fonte já parada */
+      }
+    }
+  });
+  activeNotes.clear();
+}
+
 /**
  * Toca uma nota de piano real. `when` é relativo ao instante da chamada
  * (ancorado antes do carregamento, para arpejos não desalinharem);
@@ -95,8 +123,13 @@ export function pianoNote(
 ) {
   const sample = nearestSample(midi);
   const base = a.ctx.currentTime + 0.03;
+  const handle: ActiveNote = { cancelled: false, src: null, g: null, c: a.ctx };
+  activeNotes.add(handle);
   void loadPianoBuffer(a.ctx, sample.file).then((buffer) => {
-    if (!buffer || a.ctx.state !== "running") return;
+    if (!buffer || a.ctx.state !== "running" || handle.cancelled) {
+      activeNotes.delete(handle);
+      return;
+    }
     const c = a.ctx;
     const t = Math.max(c.currentTime + 0.005, base + when);
     const src = c.createBufferSource();
@@ -108,9 +141,12 @@ export function pianoNote(
     g.gain.linearRampToValueAtTime(0.0001, t + dur);
     src.connect(g).connect(a.master);
     src.start(t, 0, dur + 0.1);
+    handle.src = src;
+    handle.g = g;
     src.onended = () => {
       src.disconnect();
       g.disconnect();
+      activeNotes.delete(handle);
     };
   });
 }
