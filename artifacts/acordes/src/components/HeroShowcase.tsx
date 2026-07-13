@@ -17,6 +17,8 @@ import {
   Volume2,
   VolumeX,
   FileText,
+  UploadCloud,
+  FileAudio,
 } from "lucide-react";
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { CHORDS, CATEGORY_COLORS } from "@/data/chords";
@@ -341,6 +343,8 @@ function SceneAudioLab({ sound }: SceneProps) {
 
 /* 3 — Metrônomo: demonstração real com "Jó" (arquivo original do dono) — detector real do app: 132 BPM */
 const BPM_TARGET = 132;
+/* upload rápido do arquivo antes da análise; o áudio e todos os timers deslocam junto */
+const UPLOAD_MS = 1400;
 const BPM_MIN = 40;
 const BPM_MAX = 240;
 
@@ -386,10 +390,17 @@ function ArcGauge({ progress, listening }: { progress: number; listening: boolea
 }
 
 function SceneMetronomo({ sound }: SceneProps) {
+  const [uploading, setUploading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [progress, setProgress] = useState(0);
   const [beat, setBeat] = useState(-1);
   const raf = useRef<number | undefined>(undefined);
+
+  /* fase de upload rápida antes da análise */
+  useEffect(() => {
+    const t = setTimeout(() => setUploading(false), UPLOAD_MS);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -404,7 +415,7 @@ function SceneMetronomo({ sound }: SceneProps) {
         else setLocked(true);
       };
       raf.current = requestAnimationFrame(step);
-    }, 1400);
+    }, UPLOAD_MS + 1400);
     return () => {
       clearTimeout(t);
       if (raf.current) cancelAnimationFrame(raf.current);
@@ -425,10 +436,17 @@ function SceneMetronomo({ sound }: SceneProps) {
     };
   }, [locked]);
 
-  /* "Jó" REAL tocando desde o início; o clique entra quando o BPM trava (batidas do detector do app) */
+  /* "Jó" REAL começa a tocar após o upload; o clique entra quando o BPM trava (batidas do detector do app) */
   useEffect(() => {
     if (!sound) return;
-    return playClip("landing-audio/metronomo-jo.mp3", { vol: 0.9, dur: 8.3, fadeOut: 0.8 });
+    let stop: (() => void) | void;
+    const t = setTimeout(() => {
+      stop = playClip("landing-audio/metronomo-jo.mp3", { vol: 0.9, dur: 8.3, fadeOut: 0.8 });
+    }, UPLOAD_MS);
+    return () => {
+      clearTimeout(t);
+      if (stop) stop();
+    };
   }, [sound]);
 
   const listening = !locked && progress === 0;
@@ -443,7 +461,19 @@ function SceneMetronomo({ sound }: SceneProps) {
         <ArcGauge progress={listening ? 0 : progress} listening={listening} />
 
         <div className="mt-1 min-h-[30px]">
-          {listening ? (
+          {uploading ? (
+            <div className="flex items-center gap-2">
+              <motion.span
+                animate={{ y: [0, -2, 0] }}
+                transition={{ duration: 0.7, repeat: Infinity }}
+                className="shrink-0"
+              >
+                <UploadCloud className="w-3.5 h-3.5 text-[#9673FF]" />
+              </motion.span>
+              <span className="text-[9px] font-bold text-[#9673FF] uppercase tracking-wider">Enviando sua música…</span>
+              <FileAudio className="w-3.5 h-3.5 text-slate-400 ml-auto" />
+            </div>
+          ) : listening ? (
             <div className="flex items-center gap-2">
               <motion.span
                 animate={{ opacity: [1, 0.3, 1], scale: [1, 1.25, 1] }}
@@ -464,7 +494,24 @@ function SceneMetronomo({ sound }: SceneProps) {
           )}
         </div>
 
-        {listening ? (
+        {uploading ? (
+          <div className="mt-2">
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl px-2.5 py-2">
+              <FileAudio className="w-4 h-4 text-[#9673FF] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-semibold text-slate-200 truncate">jo-midian-lima.mp3</p>
+                <div className="mt-1 h-1 rounded-full bg-white/10 overflow-hidden">
+                  <motion.div
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: (UPLOAD_MS - 250) / 1000, ease: "easeOut" }}
+                    className="h-full rounded-full bg-gradient-to-r from-[#9673FF] to-[#C24BF7]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : listening ? (
           <div className="mt-2">
             <Waveform color="bg-red-400" bars={16} />
           </div>
@@ -563,8 +610,8 @@ function ScenePad({ sound }: SceneProps) {
   );
 }
 
-/* 5 — Dicionário: acordes REAIS do módulo (dados + diagrama + piano de verdade) */
-const DICT_IDS = ["C7M", "Cm7", "Csus4"] as const;
+/* 5 — Dicionário: acordes REAIS do módulo (dados + diagrama + piano de verdade) — os mesmos acordes sofisticados da música da cena anterior */
+const DICT_IDS = ["C9M", "G7sus4", "F9M"] as const;
 const DICT_CHORDS = DICT_IDS.map((id) => CHORDS.find((c) => c.id === id)!).filter(Boolean);
 const DICT_STEP = 1250;
 
@@ -663,10 +710,10 @@ function SceneFavoritos(_: SceneProps) {
 
 const SCENES: { Comp: (p: SceneProps) => React.ReactElement; ms: number }[] = [
   { Comp: SceneSofisticador, ms: 4200 },
-  { Comp: SceneAudioLab, ms: T_LAB_END },
-  { Comp: SceneMetronomo, ms: 8600 },
-  { Comp: ScenePad, ms: 5400 },
   { Comp: SceneAcordes, ms: 250 + DICT_STEP * 3 + 900 },
+  { Comp: SceneAudioLab, ms: T_LAB_END },
+  { Comp: SceneMetronomo, ms: 8600 + UPLOAD_MS },
+  { Comp: ScenePad, ms: 5400 },
   { Comp: SceneFavoritos, ms: 3200 },
 ];
 
