@@ -107,11 +107,10 @@ function SceneSofisticador(_: SceneProps) {
     const t = setTimeout(() => setDone(true), 1300);
     return () => clearTimeout(t);
   }, []);
-  /* refrão real de "Santo Pra Sempre" (letra + cifra) sofisticado pelo motor real do app */
+  /* trecho real de "Santo Pra Sempre" (letra + cifra) sofisticado pelo motor real do app (nível intermediário) */
   const linhas: { chords: [string, string][]; lyric: string }[] = [
-    { chords: [["F9", "F7M(9)"], ["Am7", "Am7(9)"], ["G", "G7sus4"]], lyric: "E os anjos clamam: Santo" },
-    { chords: [["Em7", "Em7(9)"], ["Am7", "Am7(9)"]], lyric: "Toda criação: Santo" },
-    { chords: [["Dm7", "Dm7(9)"], ["G", "G7sus4"]], lyric: "Exaltado És, Santo" },
+    { chords: [["C", "C7M(9)"], ["C4", "C4"], ["C", "C7M(9)"]], lyric: "As muitas gerações rendidas em louvor" },
+    { chords: [["Am7", "Am7(9)"], ["G", "G7sus4"], ["F9", "F7M(9)"]], lyric: "Cantando ao cordeiro uma canção" },
   ];
   const niveis = ["Original", "Suave", "Intermediário", "Avançado"];
   return (
@@ -340,8 +339,8 @@ function SceneAudioLab({ sound }: SceneProps) {
   );
 }
 
-/* 3 — Metrônomo: demonstração real com "Jó" (arquivo do usuário) detectado pelo app */
-const BPM_TARGET = 66;
+/* 3 — Metrônomo: demonstração real com "Jó" (mesmo áudio que o app analisa) — detector real do app: 144 BPM */
+const BPM_TARGET = 144;
 const BPM_MIN = 40;
 const BPM_MAX = 240;
 
@@ -412,14 +411,14 @@ function SceneMetronomo({ sound }: SceneProps) {
     };
   }, []);
 
-  /* bolinhas alinhadas com o primeiro clique do áudio (2,715 s − 2,3 s do travamento) */
+  /* bolinhas alinhadas com o primeiro clique do áudio (2,695 s − 2,3 s do travamento) */
   useEffect(() => {
     if (!locked) return;
     let iv = 0;
     const d = setTimeout(() => {
       setBeat(0);
       iv = window.setInterval(() => setBeat((b) => (b + 1) % 4), 60000 / BPM_TARGET);
-    }, 415);
+    }, 395);
     return () => {
       clearTimeout(d);
       window.clearInterval(iv);
@@ -638,7 +637,7 @@ function SceneFavoritos(_: SceneProps) {
       <div className="flex flex-col gap-2">
         {[
           { t: "Santo Pra Sempre", d: "Tom Db · 96 BPM" },
-          { t: "Jó", d: "Midian Lima · 66 BPM" },
+          { t: "Jó", d: "Midian Lima · 144 BPM" },
         ].map((s, i) => (
           <motion.div
             key={s.t}
