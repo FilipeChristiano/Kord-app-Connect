@@ -228,8 +228,9 @@ function ClerkProviderWithRoutes() {
 
 function PreviewBadge() {
   const [location] = useLocation();
-  // Não exibir sobre as páginas de exportação de artes
-  if (location.startsWith("/arte/")) return null;
+  // TEMPORÁRIO (artes Instagram): badge desativado durante as capturas.
+  // Restaurar para: if (location.startsWith("/arte/")) return null;
+  if (location) return null;
   return (
     <div className="fixed bottom-3 left-3 z-[60] pointer-events-none select-none rounded-full bg-primary/15 border border-primary/30 text-primary text-[10px] font-semibold px-2.5 py-1 backdrop-blur-sm">
       Prévia (dev) — sem login

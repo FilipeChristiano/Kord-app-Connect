@@ -23,13 +23,20 @@ function Frame({ children }: { children: React.ReactNode }) {
 function PhoneMockup({
   src,
   width,
+  screenHeight,
+  offsetY = 0,
   style,
 }: {
   src: string;
   width: number;
+  /** Altura visível da "tela" do celular (janela de recorte) */
+  screenHeight?: number;
+  /** Quanto rolar a captura para cima dentro da janela (px na largura original de 402) */
+  offsetY?: number;
   style?: React.CSSProperties;
 }) {
   const bezel = Math.round(width * 0.045);
+  const scale = (width - bezel * 2) / 402;
   return (
     <div
       style={{
@@ -51,7 +58,23 @@ function PhoneMockup({
           position: "relative",
         }}
       >
-        <img src={src} alt="" style={{ width: "100%", display: "block" }} draggable={false} />
+        <div
+          style={{
+            height: screenHeight ? screenHeight * scale : undefined,
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={src}
+            alt=""
+            style={{
+              width: "100%",
+              display: "block",
+              transform: `translateY(-${offsetY * scale}px)`,
+            }}
+            draggable={false}
+          />
+        </div>
         {/* Notch */}
         <div
           style={{
@@ -121,26 +144,32 @@ function Arte5() {
         {/* Mockups do app — celular central grande + dois de apoio */}
         <div className="relative w-full flex justify-center" style={{ marginTop: 78, flex: 1 }}>
           <PhoneMockup
-            src={`${basePath}/screenshots/screenshot-3-metronomo.jpg`}
+            src={`${basePath}/screenshots/insta-metronomo.jpg`}
             width={330}
+            offsetY={330}
+            screenHeight={620}
             style={{
               position: "absolute", left: 92, top: 66,
               transform: "rotate(-9deg)",
-              opacity: 0.9,
+              opacity: 0.92,
             }}
           />
           <PhoneMockup
-            src={`${basePath}/screenshots/screenshot-4-sofisticador.jpg`}
+            src={`${basePath}/screenshots/insta-audiolab.jpg`}
             width={330}
+            offsetY={80}
+            screenHeight={620}
             style={{
               position: "absolute", right: 92, top: 66,
               transform: "rotate(9deg)",
-              opacity: 0.9,
+              opacity: 0.92,
             }}
           />
           <PhoneMockup
-            src={`${basePath}/screenshots/screenshot-2-dicionario.jpg`}
+            src={`${basePath}/screenshots/insta-acorde.jpg`}
             width={400}
+            offsetY={160}
+            screenHeight={620}
             style={{ position: "relative", zIndex: 10 }}
           />
         </div>
