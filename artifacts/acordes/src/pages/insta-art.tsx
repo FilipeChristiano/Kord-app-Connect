@@ -20,43 +20,84 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 // ─── Arte 5: Chamada geral ───────────────────────────────────────────────────
 
-function Arte5() {
-  const modules = [
-    { label: "Cifras sofisticadas", desc: "como os grandes tecladistas tocam" },
-    { label: "Dicionário vivo", desc: "cada acorde no piano, com som real" },
-    { label: "Audio Lab", desc: "separe a voz do instrumental" },
-    { label: "Metrônomo sincronizado", desc: "BPM direto do áudio" },
-  ];
+function PhoneMockup({
+  src,
+  width,
+  style,
+}: {
+  src: string;
+  width: number;
+  style?: React.CSSProperties;
+}) {
+  const bezel = Math.round(width * 0.045);
+  return (
+    <div
+      style={{
+        width,
+        borderRadius: width * 0.16,
+        padding: bezel,
+        background: "linear-gradient(160deg, #2A3042 0%, #101420 60%)",
+        border: "1px solid rgba(150,115,255,0.35)",
+        boxShadow:
+          "0 60px 120px -30px rgba(0,0,0,0.85), 0 0 90px -20px rgba(150,115,255,0.45), inset 0 1px 0 rgba(255,255,255,0.12)",
+        ...style,
+      }}
+    >
+      <div
+        style={{
+          borderRadius: width * 0.125,
+          overflow: "hidden",
+          background: "#070A12",
+          position: "relative",
+        }}
+      >
+        <img src={src} alt="" style={{ width: "100%", display: "block" }} draggable={false} />
+        {/* Notch */}
+        <div
+          style={{
+            position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
+            width: width * 0.32, height: width * 0.055, borderRadius: 999, background: "#000",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
+function Arte5() {
   return (
     <Frame>
-      {/* Glows de fundo */}
+      {/* Glow central atrás do mockup */}
       <div
         className="absolute pointer-events-none"
         style={{
-          top: -260, right: -220, width: 720, height: 720, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(150,115,255,0.22) 0%, rgba(150,115,255,0) 65%)",
+          top: 420, left: "50%", transform: "translateX(-50%)",
+          width: 1100, height: 1100, borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(150,115,255,0.30) 0%, rgba(194,75,247,0.14) 40%, rgba(7,10,18,0) 70%)",
+        }}
+      />
+      {/* Glows laterais da marca */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: -240, right: -240, width: 700, height: 700, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(194,75,247,0.18) 0%, rgba(194,75,247,0) 65%)",
         }}
       />
       <div
         className="absolute pointer-events-none"
         style={{
-          bottom: -300, left: -260, width: 800, height: 800, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(75,69,232,0.20) 0%, rgba(75,69,232,0) 65%)",
+          bottom: -320, left: -260, width: 820, height: 820, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(75,69,232,0.22) 0%, rgba(75,69,232,0) 65%)",
         }}
       />
-      {/* Linhas de "pauta" sutis */}
-      <div className="absolute inset-x-0 pointer-events-none" style={{ top: 0, bottom: 0, opacity: 0.05 }}>
-        {[...Array(9)].map((_, i) => (
-          <div key={i} className="absolute inset-x-0" style={{ top: 150 * (i + 1), height: 1, background: "#9673FF" }} />
-        ))}
-      </div>
 
-      <div className="relative flex flex-col h-full" style={{ padding: "88px 92px 72px" }}>
+      <div className="relative flex flex-col items-center h-full text-center" style={{ padding: "84px 80px 0" }}>
         {/* Marca */}
-        <div className="flex items-center gap-5">
-          <img src={`${basePath}/logo.png`} alt="" style={{ height: 76 }} draggable={false} />
-          <span className="font-display font-black tracking-tight" style={{ fontSize: 54 }}>
+        <div className="flex items-center gap-4">
+          <img src={`${basePath}/logo.png`} alt="" style={{ height: 64 }} draggable={false} />
+          <span className="font-display font-black tracking-tight" style={{ fontSize: 46 }}>
             Kordi
           </span>
         </div>
@@ -64,56 +105,65 @@ function Arte5() {
         {/* Headline */}
         <h1
           className="font-display font-black tracking-tight"
-          style={{ fontSize: 73, lineHeight: 1.12, marginTop: 110, letterSpacing: "-0.03em", whiteSpace: "nowrap" }}
+          style={{ fontSize: 78, lineHeight: 1.1, marginTop: 66, letterSpacing: "-0.03em", whiteSpace: "nowrap" }}
         >
           O som que inspira.
           <br />
           <span className="text-gradient-kordi">A ferramenta que liberta.</span>
         </h1>
 
-        <p style={{ fontSize: 34, lineHeight: 1.45, marginTop: 44, color: "#B9C2D6", maxWidth: 820, fontWeight: 500 }}>
+        {/* Subhead */}
+        <p style={{ fontSize: 33, lineHeight: 1.5, marginTop: 36, color: "#B9C2D6", fontWeight: 500 }}>
           O parceiro que prepara o seu som no ensaio
           <br />e te acompanha no ao vivo.
         </p>
 
-        {/* Módulos */}
-        <div className="flex flex-col" style={{ gap: 44, marginTop: 110 }}>
-          {modules.map((m) => (
-            <div key={m.label} className="flex items-center" style={{ gap: 26 }}>
-              <div
-                className="shrink-0 flex items-center justify-center"
-                style={{
-                  width: 24, height: 24, borderRadius: "50%",
-                  background: "rgba(150,115,255,0.16)",
-                  border: "2px solid rgba(150,115,255,0.6)",
-                }}
-              >
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#9673FF" }} />
-              </div>
-              <p style={{ fontSize: 30, fontWeight: 500, color: "#8E99AF", whiteSpace: "nowrap" }}>
-                <span style={{ fontWeight: 800, color: "#F8FAFC" }}>{m.label}</span>
-                <span style={{ color: "#5E6A82", margin: "0 14px" }}>—</span>
-                {m.desc}
-              </p>
-            </div>
-          ))}
+        {/* Mockups do app — celular central grande + dois de apoio */}
+        <div className="relative w-full flex justify-center" style={{ marginTop: 78, flex: 1 }}>
+          <PhoneMockup
+            src={`${basePath}/screenshots/screenshot-3-metronomo.jpg`}
+            width={330}
+            style={{
+              position: "absolute", left: 92, top: 66,
+              transform: "rotate(-9deg)",
+              opacity: 0.9,
+            }}
+          />
+          <PhoneMockup
+            src={`${basePath}/screenshots/screenshot-4-sofisticador.jpg`}
+            width={330}
+            style={{
+              position: "absolute", right: 92, top: 66,
+              transform: "rotate(9deg)",
+              opacity: 0.9,
+            }}
+          />
+          <PhoneMockup
+            src={`${basePath}/screenshots/screenshot-2-dicionario.jpg`}
+            width={400}
+            style={{ position: "relative", zIndex: 10 }}
+          />
         </div>
 
-        {/* CTA */}
-        <div className="mt-auto flex items-center justify-between">
-          <div
-            className="bg-gradient-cta inline-flex items-center justify-center font-display font-black"
-            style={{
-              fontSize: 40, padding: "30px 64px", borderRadius: 999,
-              boxShadow: "0 0 60px -12px rgba(194,75,247,0.55), inset 0 1px 0 rgba(255,255,255,0.25)",
-            }}
-          >
-            kordi.app.br
-          </div>
-          <p style={{ fontSize: 26, fontWeight: 700, color: "#5E6A82", letterSpacing: "0.14em", textTransform: "uppercase" }}>
-            Feito para tecladistas
-          </p>
+        {/* CTA fixo sobre a base */}
+        <div
+          className="absolute bg-gradient-cta inline-flex items-center justify-center font-display font-black"
+          style={{
+            bottom: 64, left: "50%", transform: "translateX(-50%)", zIndex: 20,
+            fontSize: 38, padding: "28px 72px", borderRadius: 999, whiteSpace: "nowrap",
+            boxShadow: "0 24px 70px -12px rgba(0,0,0,0.7), 0 0 60px -10px rgba(194,75,247,0.6), inset 0 1px 0 rgba(255,255,255,0.25)",
+          }}
+        >
+          kordi.app.br
         </div>
+        {/* Fade da base para o CTA respirar */}
+        <div
+          className="absolute inset-x-0 pointer-events-none"
+          style={{
+            bottom: 0, height: 300, zIndex: 15,
+            background: "linear-gradient(180deg, rgba(7,10,18,0) 0%, rgba(7,10,18,0.92) 75%)",
+          }}
+        />
       </div>
     </Frame>
   );
