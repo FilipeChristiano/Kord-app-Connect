@@ -41,6 +41,7 @@ const SignUpPage = lazy(() => import("@/pages/sign-up"));
 const LandingPage = lazy(() => import("@/pages/landing"));
 const NoAccessPage = lazy(() => import("@/pages/no-access"));
 const PrivacidadePage = lazy(() => import("@/pages/privacidade"));
+const InstaArtPage = lazy(() => import("@/pages/insta-art"));
 
 const queryClient = new QueryClient();
 
@@ -155,6 +156,8 @@ function AppRoutes() {
       </Route>
       {/* Páginas públicas, acessíveis sem login */}
       <Route path="/privacidade" component={PrivacidadePage} />
+      {/* TEMPORÁRIO: páginas de exportação das artes de Instagram */}
+      <Route path="/arte/:n" component={InstaArtPage} />
       <Route path="/assinar" component={LandingPage} />
       <Route>
         {PREVIEW_MODE ? (
@@ -224,6 +227,9 @@ function ClerkProviderWithRoutes() {
 }
 
 function PreviewBadge() {
+  const [location] = useLocation();
+  // Não exibir sobre as páginas de exportação de artes
+  if (location.startsWith("/arte/")) return null;
   return (
     <div className="fixed bottom-3 left-3 z-[60] pointer-events-none select-none rounded-full bg-primary/15 border border-primary/30 text-primary text-[10px] font-semibold px-2.5 py-1 backdrop-blur-sm">
       Prévia (dev) — sem login

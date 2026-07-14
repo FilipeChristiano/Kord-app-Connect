@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "VOY15nb87_9tzADqhRAAp"
@@ -30,3 +29,9 @@ id = "S9DXjypVPl1X_qy3tpzD6"
 uri = "file://artifacts/acordes/public/images/hero-light.png"
 type = "image"
 title = "Light theme hero keyboard"
+
+[[outputs]]
+id = "TmLNCN77A0U425V14mHK8"
+uri = "file://exports/kordi-arte-5-chamada-geral.jpg"
+type = "image"
+title = "Arte 5 — Chamada Geral (1080x1350)"
