@@ -240,7 +240,7 @@ function PreviewBadge() {
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <WouterRouter base={basePath}>
         <ClerkProviderWithRoutes />
         {PREVIEW_MODE && <PreviewBadge />}
