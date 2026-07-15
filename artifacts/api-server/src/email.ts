@@ -8,7 +8,7 @@ const FROM_ADDRESS = "Kordi <contato@kordi.app.br>";
 const BRAND_PURPLE = "#9673FF";
 const BRAND_DARK = "#070A12";
 
-function welcomeHtml(firstName: string | null, email: string): string {
+export function welcomeHtml(firstName: string | null, email: string): string {
   const greeting = firstName ? `Olá, ${firstName}!` : "Olá!";
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -18,7 +18,7 @@ function welcomeHtml(firstName: string | null, email: string): string {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;">
         <tr>
           <td style="background:${BRAND_DARK};padding:28px 32px;">
-            <img src="https://kordi.app.br/wordmark-light.png" alt="Kordi" width="132" style="display:block;width:132px;height:auto;border:0;" />
+            <img src="https://kordi.app.br/email-logo.png" alt="Kordi" width="160" style="display:block;width:160px;height:auto;border:0;" />
           </td>
         </tr>
         <tr>
