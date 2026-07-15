@@ -1,4 +1,5 @@
 import { getStripeSync, getUncachableStripeClient } from "./stripeClient";
+import { sendWelcomeEmail } from "./email";
 
 export class WebhookHandlers {
   static async processWebhook(payload: Buffer, signature: string): Promise<void> {
@@ -29,6 +30,28 @@ export class WebhookHandlers {
     try {
       event = JSON.parse(payload.toString("utf8"));
     } catch {
+      return;
+    }
+
+    // Boas-vindas: checkout de assinatura concluído com pagamento OK
+    if (event.type === "checkout.session.completed") {
+      const session = event.data?.object as
+        | {
+            mode?: string;
+            payment_status?: string;
+            customer_details?: { email?: string | null; name?: string | null };
+          }
+        | undefined;
+      if (
+        session?.mode === "subscription" &&
+        session.payment_status === "paid" &&
+        session.customer_details?.email
+      ) {
+        await sendWelcomeEmail({
+          email: session.customer_details.email,
+          name: session.customer_details.name ?? null,
+        });
+      }
       return;
     }
 
