@@ -8,7 +8,7 @@ const FROM_ADDRESS = "Kordi <contato@kordi.app.br>";
 const BRAND_PURPLE = "#9673FF";
 const BRAND_DARK = "#070A12";
 
-function welcomeHtml(firstName: string | null): string {
+function welcomeHtml(firstName: string | null, email: string): string {
   const greeting = firstName ? `Olá, ${firstName}!` : "Olá!";
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -18,7 +18,7 @@ function welcomeHtml(firstName: string | null): string {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;">
         <tr>
           <td style="background:${BRAND_DARK};padding:28px 32px;">
-            <span style="font-size:22px;font-weight:bold;letter-spacing:4px;color:#ffffff;">K O R D I</span>
+            <img src="https://kordi.app.br/wordmark-light.png" alt="Kordi" width="132" style="display:block;width:132px;height:auto;border:0;" />
           </td>
         </tr>
         <tr>
@@ -33,14 +33,28 @@ function welcomeHtml(firstName: string | null): string {
               <li><strong>Audio Lab</strong> — envie uma música e pratique com os instrumentos separados.</li>
               <li><strong>Metrônomo e Pad</strong> — para estudar com base rítmica e harmônica.</li>
             </ol>
-            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
-              <tr><td style="border-radius:10px;background:${BRAND_PURPLE};">
-                <a href="https://kordi.app.br" style="display:inline-block;padding:13px 28px;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;">Abrir o Kordi</a>
+            <h2 style="margin:0 0 12px;font-size:16px;color:#111827;">Como acessar sua conta</h2>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:#f9fafb;border-radius:12px;">
+              <tr><td style="padding:18px 20px;">
+                <p style="margin:0 0 10px;font-size:14px;line-height:1.7;color:#374151;">
+                  <strong>1.</strong> Toque no botão abaixo (ou acesse <a href="https://kordi.app.br/sign-in" style="color:${BRAND_PURPLE};">kordi.app.br/sign-in</a>)
+                </p>
+                <p style="margin:0 0 10px;font-size:14px;line-height:1.7;color:#374151;">
+                  <strong>2.</strong> Toque em <strong>"Criar conta"</strong> se for seu primeiro acesso — ou faça login se já tiver conta
+                </p>
+                <p style="margin:0 0 10px;font-size:14px;line-height:1.7;color:#374151;">
+                  <strong>3.</strong> Use <u>este mesmo e-mail</u> (<strong>${email}</strong>) — é ele que libera o seu acesso
+                </p>
+                <p style="margin:0;font-size:14px;line-height:1.7;color:#374151;">
+                  <strong>4.</strong> Pronto! Todas as ferramentas estarão liberadas
+                </p>
               </td></tr>
             </table>
-            <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:#374151;">
-              <strong>Importante:</strong> entre (ou crie sua conta) usando <u>este mesmo e-mail</u> — é ele que libera o seu acesso.
-            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+              <tr><td style="border-radius:10px;background:${BRAND_PURPLE};">
+                <a href="https://kordi.app.br/sign-in" style="display:inline-block;padding:13px 28px;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;">Acessar o Kordi</a>
+              </td></tr>
+            </table>
             <p style="margin:0;font-size:14px;line-height:1.6;color:#6b7280;">
               Dica: no celular, você pode adicionar o Kordi à tela inicial e usar como aplicativo.
             </p>
@@ -100,7 +114,7 @@ export async function sendWelcomeEmail(params: {
         from: FROM_ADDRESS,
         to: [email],
         subject: "Bem-vindo ao Kordi — seu acesso está liberado 🎹",
-        html: welcomeHtml(firstName),
+        html: welcomeHtml(firstName, email),
       }),
     });
 
