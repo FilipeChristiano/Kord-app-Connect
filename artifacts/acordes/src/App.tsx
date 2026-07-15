@@ -239,8 +239,10 @@ function PreviewBadge() {
 }
 
 function App() {
+  // storageKey v2: força o novo padrão claro mesmo para quem já tinha
+  // "dark" salvo do padrão antigo; a escolha manual segue sendo lembrada
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="kordi-theme-v2">
       <WouterRouter base={basePath}>
         <ClerkProviderWithRoutes />
         {PREVIEW_MODE && <PreviewBadge />}
