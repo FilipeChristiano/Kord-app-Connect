@@ -24,15 +24,9 @@ function welcomeHtml(firstName: string | null, email: string): string {
         <tr>
           <td style="padding:32px;">
             <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">${greeting} Bem-vindo ao Kordi 🎹</h1>
-            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">
-              Sua assinatura está ativa e você já pode usar tudo. Para começar bem, aqui vão os primeiros passos:
+            <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#374151;">
+              Sua assinatura está ativa! Siga os passos abaixo para acessar sua conta:
             </p>
-            <ol style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:1.8;color:#374151;">
-              <li><strong>Dicionário de acordes</strong> — veja qualquer acorde no teclado, com áudio real de piano.</li>
-              <li><strong>Sofisticador</strong> — cole uma cifra simples e receba versões mais ricas dos acordes.</li>
-              <li><strong>Audio Lab</strong> — envie uma música e pratique com os instrumentos separados.</li>
-              <li><strong>Metrônomo e Pad</strong> — para estudar com base rítmica e harmônica.</li>
-            </ol>
             <h2 style="margin:0 0 12px;font-size:16px;color:#111827;">Como acessar sua conta</h2>
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:#f9fafb;border-radius:12px;">
               <tr><td style="padding:18px 20px;">
