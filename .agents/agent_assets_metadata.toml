@@ -35,3 +35,9 @@ id = "TmLNCN77A0U425V14mHK8"
 uri = "file://exports/kordi-arte-5-chamada-geral.jpg"
 type = "image"
 title = "Arte 5 — Chamada Geral (1080x1350)"
+
+[[outputs]]
+id = "Z25mLMtLGGDCXlFygbTkT"
+uri = "file://artifacts/kordi-video/public/audio/bg_music.mp3"
+type = "audio"
+title = "background music"
