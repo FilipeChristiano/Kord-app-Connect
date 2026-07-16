@@ -28,3 +28,9 @@ load from `cifra.key ?? detectKeyFromChart(body)`.
 + first/last-chord tonic bonus. Root-only scoring was wrong: it picked C major for
 a G-major song because a D-major chord (non-diatonic to C, would be Dm) wasn't
 penalized. Keep the quality check.
+
+**Sofisticador (`src/data/substitutions.ts`) has its OWN `detectTonality`** —
+it must stay quality-aware too (+2 root+quality match, +1 root only) with a
+first/last-chord tonic bonus. Root-only scoring picked C major for a G-major
+song (G Bm7 | Dm7 G7 C — internal ii-V of IV), turning the I-degree G into
+G7sus4 instead of G7M(9).

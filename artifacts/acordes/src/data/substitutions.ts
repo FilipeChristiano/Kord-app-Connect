@@ -338,14 +338,58 @@ function detectTonality(
 ): Tonality {
   if (tokens.length === 0) return { keySemitone: 0, isMinor: false };
 
-  const roots = tokens
-    .map((t) => NOTE_TO_SEMITONE[normalizeRoot(t.root)] ?? -1)
-    .filter((s) => s >= 0);
+  const parsedTokens = tokens
+    .map((t) => ({
+      sem: NOTE_TO_SEMITONE[normalizeRoot(t.root)] ?? -1,
+      quality: t.quality,
+    }))
+    .filter((t) => t.sem >= 0);
 
-  // Encontra a melhor tonalidade maior por pontuação diatônica
+  const isMinorQual = (q: string) =>
+    /^m(?!aj)/.test(q) || q === "°" || q === "dim" || q === "dim7";
+  const isDimQual = (q: string) =>
+    q === "°" || q === "dim" || q === "dim7" || q === "m7(b5)" || q === "m7b5";
+  const isDominantQual = (q: string) => /^(7|9|11|13)/.test(q);
+
+  // Qualidade esperada em cada grau do campo maior:
+  // I/IV maior, ii/iii/vi menor, V maior ou dominante, vii diminuto
+  const qualityMatchesDegree = (degree: number, q: string): boolean => {
+    switch (degree) {
+      case 0:
+      case 3:
+        return !isMinorQual(q) && !isDominantQual(q);
+      case 1:
+      case 2:
+      case 5:
+        return isMinorQual(q) && !isDimQual(q);
+      case 4:
+        return !isMinorQual(q); // maior, sus ou dominante
+      case 6:
+        return isDimQual(q);
+      default:
+        return false;
+    }
+  };
+
+  // Encontra a melhor tonalidade maior por pontuação diatônica PONDERADA:
+  // +2 quando raiz E qualidade batem com o grau, +1 quando só a raiz é
+  // diatônica. Bônus de tônica: música que começa/termina no acorde maior
+  // da tônica pesa a favor dessa tonalidade (desempata ii-V internos, ex.:
+  // G Bm7 | Dm7 G7 C — em Sol, não em Dó).
+  const firstTok = parsedTokens[0];
+  const lastTok = parsedTokens[parsedTokens.length - 1];
+
   let bestMajorKey = 0, bestScore = -1;
   for (let k = 0; k < 12; k++) {
-    const score = roots.filter((r) => MAJOR_SCALE.some((s) => (s + k) % 12 === r)).length;
+    let score = 0;
+    for (const t of parsedTokens) {
+      const rel = (t.sem - k + 12) % 12;
+      const degree = MAJOR_SCALE.indexOf(rel);
+      if (degree < 0) continue;
+      score += qualityMatchesDegree(degree, t.quality) ? 2 : 1;
+    }
+    if (firstTok && firstTok.sem === k && !isMinorQual(firstTok.quality)) score += 3;
+    if (lastTok && lastTok.sem === k && !isMinorQual(lastTok.quality)) score += 3;
     if (score > bestScore) { bestScore = score; bestMajorKey = k; }
   }
 
