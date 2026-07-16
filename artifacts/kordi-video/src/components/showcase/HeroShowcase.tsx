@@ -15,6 +15,7 @@ import {
   Waves,
   Square,
   Volume2,
+  VolumeX,
   FileText,
   UploadCloud,
   FileAudio,
@@ -22,6 +23,47 @@ import {
 import { PianoKeyboard } from "@/components/PianoKeyboard";
 import { CHORDS, CATEGORY_COLORS } from "@/data/chords";
 import { splitHands } from "@/lib/notes";
+import { playChordVoicing, stopPianoNotes } from "@/lib/piano";
+
+/* ── Áudio da demonstração (desligado por padrão; o usuário ativa no botão) ── */
+const activeStops = new Set<() => void>();
+
+function stopAllDemoAudio() {
+  Array.from(activeStops).forEach((s) => s());
+}
+
+function playClip(
+  path: string,
+  opts: { vol?: number; dur?: number; fadeIn?: number; fadeOut?: number; startAt?: number } = {},
+) {
+  const { vol = 0.9, dur, fadeIn = 0.12, fadeOut = 0.35, startAt = 0 } = opts;
+  const a = new Audio(`${import.meta.env.BASE_URL}${path}`);
+  a.volume = 0;
+  if (startAt > 0) a.currentTime = startAt;
+  let stopped = false;
+  let iv = 0;
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    window.clearInterval(iv);
+    a.pause();
+    a.removeAttribute("src");
+    a.load();
+    activeStops.delete(stop);
+  };
+  activeStops.add(stop);
+  a.play().catch(() => stop());
+  const started = performance.now();
+  iv = window.setInterval(() => {
+    const t = (performance.now() - started) / 1000;
+    let v = vol;
+    if (t < fadeIn) v = vol * (t / fadeIn);
+    if (dur !== undefined && t > dur - fadeOut) v = vol * Math.max(0, (dur - t) / fadeOut);
+    a.volume = Math.max(0, Math.min(1, v));
+    if (dur !== undefined && t >= dur) stop();
+  }, 50);
+  return stop;
+}
 
 function Waveform({ color, bars = 18 }: { color: string; bars?: number }) {
   return (
@@ -42,6 +84,7 @@ function Waveform({ color, bars = 18 }: { color: string; bars?: number }) {
   );
 }
 
+/* Cabeçalho de página igual ao do app: ícone gradiente + título com destaque roxo */
 function PageTitle({ icon: Icon, plain, accent }: { icon: any; plain: string; accent: string }) {
   return (
     <div className="flex items-center gap-2 mb-3">
@@ -55,13 +98,18 @@ function PageTitle({ icon: Icon, plain, accent }: { icon: any; plain: string; ac
   );
 }
 
+interface SceneProps {
+  sound: boolean;
+}
+
 /* 1 — Sofisticador: níveis + papel de cifra, igual à tela real */
-export function SceneSofisticador() {
+function SceneSofisticador(_: SceneProps) {
   const [done, setDone] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setDone(true), 1300);
     return () => clearTimeout(t);
   }, []);
+  /* trecho real de "Santo Pra Sempre" (letra + cifra) sofisticado pelo motor real do app (nível intermediário) */
   const linhas: { chords: [string, string][]; lyric: string }[] = [
     { chords: [["C", "C7M(9)"], ["C4", "C4"], ["C", "C7M(9)"]], lyric: "As muitas gerações rendidas em louvor" },
     { chords: [["Am7", "Am7(9)"], ["G", "G7sus4"], ["F9", "F7M(9)"]], lyric: "Cantando ao cordeiro uma canção" },
@@ -126,25 +174,24 @@ export function SceneSofisticador() {
   );
 }
 
-/* 2 — Audio Lab: busca, download, separação e a MESA com 15 s reais da música */
+/* 2 — Audio Lab: busca, download, separação e a MESA com 15 s REAIS da música */
 const QUERY = "santo pra sempre - gabriel guedes";
 const TYPE_MS = 52;
 const T_TYPED = QUERY.length * TYPE_MS;
 const T_DOWNLOAD = T_TYPED + 350;
 const T_ISOLATE = T_DOWNLOAD + 1300;
-const T_CIFRA = T_ISOLATE + 2000;
-export const T_MESA = T_CIFRA + 4000;
+const T_MESA = T_ISOLATE + 2000;
 const MESA_FASES: { at: number; label: string; canais: boolean[] }[] = [
   { at: 0, label: "Tudo junto", canais: [true, true, true] },
   { at: 6000, label: "Só a voz", canais: [true, false, false] },
   { at: 10500, label: "Só o instrumental", canais: [false, true, false] },
 ];
-export const T_LAB_END = T_MESA + 15600;
+const T_LAB_END = T_MESA + 15600;
 const CANAIS = ["Voz", "Instrumental", "Metrônomo"];
 
-export function SceneAudioLab() {
+function SceneAudioLab({ sound }: SceneProps) {
   const [typed, setTyped] = useState(0);
-  const [phase, setPhase] = useState<"typing" | "download" | "isolate" | "cifra" | "mesa">("typing");
+  const [phase, setPhase] = useState<"typing" | "download" | "isolate" | "mesa">("typing");
   const [pct, setPct] = useState(0);
   const [stemsOn, setStemsOn] = useState(0);
   const [fase, setFase] = useState(0);
@@ -166,7 +213,6 @@ export function SceneAudioLab() {
     const timers = [
       setTimeout(() => setPhase("download"), T_DOWNLOAD),
       setTimeout(() => setPhase("isolate"), T_ISOLATE),
-      setTimeout(() => setPhase("cifra"), T_CIFRA),
       setTimeout(() => setPhase("mesa"), T_MESA),
       ...CANAIS.map((_, i) => setTimeout(() => setStemsOn(i + 1), T_ISOLATE + 500 * i)),
       ...MESA_FASES.map((f, i) => setTimeout(() => setFase(i), T_MESA + f.at)),
@@ -180,11 +226,17 @@ export function SceneAudioLab() {
     return () => clearInterval(t);
   }, [phase]);
 
+  /* 15 s REAIS da música separada pelo app: tudo junto → só a voz → só o instrumental */
+  useEffect(() => {
+    if (!sound || phase !== "mesa") return;
+    return playClip("landing-audio/audiolab-demo.mp3", { vol: 0.95, dur: 15, fadeIn: 0.1, fadeOut: 0.8 });
+  }, [sound, phase]);
+
   return (
     <div className="h-full flex flex-col">
       <PageTitle icon={AudioWaveform} plain="Audio" accent="Lab" />
       <div className="bg-white/[0.04] border border-white/10 rounded-2xl px-3 py-3 flex flex-col gap-2.5 flex-1">
-        {phase !== "mesa" && phase !== "cifra" && (
+        {phase !== "mesa" && (
           <>
             <p className="text-[11px] font-bold text-white flex items-center gap-1.5">
               <Search className="w-3 h-3 text-[#9673FF]" /> Pesquisar pelo título
@@ -234,59 +286,6 @@ export function SceneAudioLab() {
               );
             })}
           </div>
-        )}
-
-        {phase === "cifra" && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2 flex-1">
-            <div className="flex items-center justify-between">
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cifra pronta</p>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[9px] font-bold">
-                <Check className="w-2.5 h-2.5" /> Em segundos
-              </span>
-            </div>
-            <div className="bg-[#fdfcf9] rounded-xl px-2.5 py-2.5 shadow-inner">
-              {[
-                { chords: ["C7M(9)", "C4", "C7M(9)"], lyric: "As muitas gerações rendidas em louvor" },
-                { chords: ["Am7(9)", "G7sus4", "F7M(9)"], lyric: "Cantando ao cordeiro uma canção" },
-              ].map((linha, li) => (
-                <div key={li} className={li > 0 ? "mt-1.5" : ""}>
-                  <div className="flex flex-wrap gap-1.5 mb-0.5">
-                    {linha.chords.map((c, i) => (
-                      <motion.span
-                        key={i}
-                        initial={{ opacity: 0, y: 6, scale: 0.85 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: 0.3, delay: 0.2 + (li * 3 + i) * 0.12 }}
-                        className="px-1.5 py-0.5 rounded-md font-mono text-[9.5px] font-bold bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/30"
-                      >
-                        {c}
-                      </motion.span>
-                    ))}
-                  </div>
-                  <p className="text-slate-500 text-[9px] font-medium font-mono leading-tight">{linha.lyric}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-1.5">
-              <motion.span
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.4 }}
-                className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#9673FF]/15 border border-[#9673FF]/40 text-[#9673FF] text-[9px] font-bold"
-              >
-                <Wand2 className="w-2.5 h-2.5" /> Sofisticar
-              </motion.span>
-              <motion.span
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.7 }}
-                className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white/[0.05] border border-white/15 text-slate-300 text-[9px] font-bold"
-              >
-                Mudar tom: Db → C
-              </motion.span>
-            </div>
-            <p className="text-[8.5px] text-slate-500 font-medium mt-auto truncate">Santo Pra Sempre · cifra gerada pelo Kordi</p>
-          </motion.div>
         )}
 
         {phase === "mesa" && (
@@ -342,9 +341,10 @@ export function SceneAudioLab() {
   );
 }
 
-/* 3 — Metrônomo: demonstração real com "Jó" — detector real do app: 132 BPM */
+/* 3 — Metrônomo: demonstração real com "Jó" (arquivo original do dono) — detector real do app: 132 BPM */
 const BPM_TARGET = 132;
-export const UPLOAD_MS = 1400;
+/* upload rápido do arquivo antes da análise; o áudio e todos os timers deslocam junto */
+const UPLOAD_MS = 1400;
 const BPM_MIN = 40;
 const BPM_MAX = 240;
 
@@ -389,13 +389,14 @@ function ArcGauge({ progress, listening }: { progress: number; listening: boolea
   );
 }
 
-export function SceneMetronomo() {
+function SceneMetronomo({ sound }: SceneProps) {
   const [uploading, setUploading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [progress, setProgress] = useState(0);
   const [beat, setBeat] = useState(-1);
   const raf = useRef<number | undefined>(undefined);
 
+  /* fase de upload rápida antes da análise */
   useEffect(() => {
     const t = setTimeout(() => setUploading(false), UPLOAD_MS);
     return () => clearTimeout(t);
@@ -421,6 +422,7 @@ export function SceneMetronomo() {
     };
   }, []);
 
+  /* bolinhas alinhadas com o primeiro clique do áudio (2,715 s − 2,3 s do travamento) */
   useEffect(() => {
     if (!locked) return;
     let iv = 0;
@@ -434,7 +436,21 @@ export function SceneMetronomo() {
     };
   }, [locked]);
 
+  /* "Jó" REAL começa a tocar após o upload; o clique entra quando o BPM trava (batidas do detector do app) */
+  useEffect(() => {
+    if (!sound) return;
+    let stop: (() => void) | void;
+    const t = setTimeout(() => {
+      stop = playClip("landing-audio/metronomo-jo.mp3", { vol: 0.9, dur: 8.3, fadeOut: 0.8 });
+    }, UPLOAD_MS);
+    return () => {
+      clearTimeout(t);
+      if (stop) stop();
+    };
+  }, [sound]);
+
   const listening = !locked && progress === 0;
+  /* batidas todas iguais (sem tempo forte), como o app toca */
   const accent = ["#9673FF", "#9673FF", "#9673FF", "#9673FF"];
 
   return (
@@ -528,13 +544,17 @@ export function SceneMetronomo() {
   );
 }
 
-/* 4 — Pad Continuous: réplica da tela real */
-export function ScenePad() {
+/* 4 — Pad Continuous: réplica da tela real, tocando o pad REAL do app */
+function ScenePad({ sound }: SceneProps) {
   const [playing, setPlaying] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setPlaying(true), 900);
     return () => clearTimeout(t);
   }, []);
+  useEffect(() => {
+    if (!playing || !sound) return;
+    return playClip("pads/pad-C.mp3", { vol: 0.9, dur: 4.0, fadeIn: 0.8, fadeOut: 1.2 });
+  }, [playing, sound]);
   return (
     <div className="h-full flex flex-col">
       <PageTitle icon={Waves} plain="Pad Worship" accent="Contínuo" />
@@ -590,17 +610,36 @@ export function ScenePad() {
   );
 }
 
-/* 5 — Dicionário: acordes reais do módulo (dados + diagrama de piano de verdade) */
+/* 5 — Dicionário: acordes REAIS do módulo (dados + diagrama + piano de verdade) — os mesmos acordes sofisticados da música da cena anterior */
 const DICT_IDS = ["C9M", "G7sus4", "F9M"] as const;
 const DICT_CHORDS = DICT_IDS.map((id) => CHORDS.find((c) => c.id === id)!).filter(Boolean);
-export const DICT_STEP = 1250;
+const DICT_STEP = 1250;
 
-export function SceneAcordes() {
+function SceneAcordes({ sound }: SceneProps) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     const timers = DICT_CHORDS.map((_, i) => setTimeout(() => setShown(i + 1), 250 + i * DICT_STEP));
     return () => timers.forEach(clearTimeout);
   }, []);
+
+  /* toca cada acorde com o MESMO motor de piano real do dicionário */
+  useEffect(() => {
+    if (!sound || shown === 0) return;
+    const chord = DICT_CHORDS[shown - 1];
+    const { leftHand, rightHand } = splitHands(chord.notes, chord.category);
+    playChordVoicing(leftHand, rightHand);
+  }, [sound, shown]);
+
+  /* corta as notas pendentes ao sair da cena ou desligar o som */
+  useEffect(() => {
+    if (!sound) return;
+    const stop = () => stopPianoNotes();
+    activeStops.add(stop);
+    return () => {
+      activeStops.delete(stop);
+      stopPianoNotes();
+    };
+  }, [sound]);
 
   return (
     <div className="h-full flex flex-col">
@@ -639,7 +678,7 @@ export function SceneAcordes() {
 }
 
 /* 6 — Favoritos */
-export function SceneFavoritos() {
+function SceneFavoritos(_: SceneProps) {
   return (
     <div className="h-full flex flex-col">
       <PageTitle icon={Heart} plain="Seu" accent="repertório" />
@@ -669,18 +708,30 @@ export function SceneFavoritos() {
   );
 }
 
-/* Moldura do celular igual à da página de vendas */
-export function PhoneFrame({
-  children,
-  activeIndex,
-  total = 6,
-}: {
-  children: React.ReactNode;
-  activeIndex: number;
-  total?: number;
-}) {
+const SCENES: { Comp: (p: SceneProps) => React.ReactElement; ms: number }[] = [
+  { Comp: SceneSofisticador, ms: 4200 },
+  { Comp: SceneAcordes, ms: 250 + DICT_STEP * 3 + 900 },
+  { Comp: SceneAudioLab, ms: T_LAB_END },
+  { Comp: SceneMetronomo, ms: 8600 + UPLOAD_MS },
+  { Comp: ScenePad, ms: 5400 },
+  { Comp: SceneFavoritos, ms: 3200 },
+];
+
+export function HeroShowcase() {
+  const [idx, setIdx] = useState(0);
+  const [sound] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIdx((i) => (i + 1) % SCENES.length), SCENES[idx].ms);
+    return () => clearTimeout(t);
+  }, [idx]);
+
+  useEffect(() => stopAllDemoAudio, []);
+
+  const { Comp } = SCENES[idx];
   return (
-    <div className="relative w-[300px]" aria-label="Prévia animada do Kordi no celular">
+    <div className="relative mx-auto w-[270px] sm:w-[300px]" aria-label="Prévia animada do Kordi no celular">
+      {/* moldura do celular */}
       <div className="relative rounded-[2.8rem] border-[10px] border-slate-900 bg-[#07070E] shadow-2xl shadow-slate-900/30 overflow-hidden aspect-[9/18]">
         {/* status bar */}
         <div className="absolute top-0 inset-x-0 h-9 flex items-center justify-between px-5 pt-1 z-10">
@@ -692,7 +743,7 @@ export function PhoneFrame({
           </div>
         </div>
 
-        {/* barra do app: logo à esquerda + menu à direita */}
+        {/* barra do app, igual à real: logo à esquerda + menu à direita */}
         <div className="absolute top-9 inset-x-0 h-9 flex items-center justify-between px-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#C24BF7] to-[#4B45E8] flex items-center justify-center">
@@ -704,14 +755,27 @@ export function PhoneFrame({
         </div>
 
         {/* conteúdo */}
-        <div className="absolute inset-0 pt-[5.2rem] pb-9 px-4">{children}</div>
+        <div className="absolute inset-0 pt-[5.2rem] pb-9 px-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${idx}-${sound}`}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.3 }}
+              className="h-full"
+            >
+              <Comp sound={sound} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
         {/* indicador de progresso */}
         <div className="absolute bottom-3.5 inset-x-0 flex items-center justify-center gap-1.5">
-          {Array.from({ length: total }).map((_, i) => (
+          {SCENES.map((_, i) => (
             <span
               key={i}
-              className={`h-1 rounded-full transition-all duration-300 ${i === activeIndex ? "w-5 bg-[#9673FF]" : "w-1.5 bg-white/15"}`}
+              className={`h-1 rounded-full transition-all duration-300 ${i === idx ? "w-5 bg-[#9673FF]" : "w-1.5 bg-white/15"}`}
             />
           ))}
         </div>

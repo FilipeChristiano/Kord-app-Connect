@@ -2,33 +2,20 @@ import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { Intro } from './video_scenes/Intro';
-import { Sofisticador } from './video_scenes/Sofisticador';
-import { Dicionario } from './video_scenes/Dicionario';
-import { AudioLab } from './video_scenes/AudioLab';
-import { Metronomo } from './video_scenes/Metronomo';
-import { Pads } from './video_scenes/Pads';
-import { Favoritos } from './video_scenes/Favoritos';
+import { Showcase } from './video_scenes/Showcase';
 import { Outro } from './video_scenes/Outro';
 
+/* showcase = duração exata de um ciclo completo do HeroShowcase da página de vendas:
+   4200 + 4900 + 20966 + 10000 + 5400 + 3200 = 48666 ms */
 export const SCENE_DURATIONS = {
   intro: 4000,
-  sofisticador: 4200,
-  dicionario: 4900,
-  audiolab: 25000,
-  metronomo: 10000,
-  pads: 5400,
-  favoritos: 3200,
+  showcase: 48666,
   outro: 4500
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   intro: Intro,
-  sofisticador: Sofisticador,
-  dicionario: Dicionario,
-  audiolab: AudioLab,
-  metronomo: Metronomo,
-  pads: Pads,
-  favoritos: Favoritos,
+  showcase: Showcase,
   outro: Outro,
 };
 

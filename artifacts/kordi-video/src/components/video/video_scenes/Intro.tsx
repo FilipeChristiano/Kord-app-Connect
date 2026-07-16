@@ -23,7 +23,7 @@ export function Intro() {
     >
       <div className="relative z-10 text-center flex flex-col items-center">
         <motion.img
-          src={`${import.meta.env.BASE_URL}logo-light.png`}
+          src={`${import.meta.env.BASE_URL}logo-transparent.png`}
           alt="Kordi"
           draggable={false}
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
