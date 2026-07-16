@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/kordi-video/"
+title = "Vídeo de Apresentação Kordi"
+version = "1.0.0"
+id = "artifacts/kordi-video"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/kordi-video/" ]
+localPort = 19882
+
+[services.development]
+run = "pnpm --filter @workspace/kordi-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kordi-video", "run", "build" ]
+publicDir = "artifacts/kordi-video/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19882"
+BASE_PATH = "/kordi-video/"
