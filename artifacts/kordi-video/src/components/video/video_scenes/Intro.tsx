@@ -14,7 +14,7 @@ export function Intro() {
   }, []);
 
   return (
-    <motion.div 
+    <motion.div
       className="absolute inset-0 flex flex-col items-center justify-center"
       initial={{ opacity: 0, scale: 1.1 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -22,22 +22,28 @@ export function Intro() {
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className="relative z-10 text-center flex flex-col items-center">
-        <motion.div
-          initial={{ opacity: 0, y: 50, rotateX: -30 }}
-          animate={phase >= 1 ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 50, rotateX: -30 }}
+        <motion.img
+          src={`${import.meta.env.BASE_URL}logo-light.png`}
+          alt="Kordi"
+          draggable={false}
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          animate={phase >= 1 ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 50, scale: 0.9 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          className="text-[12vw] font-black tracking-tighter leading-none text-white"
-        >
-          KORDI
-        </motion.div>
-        
+          className="h-[28vh] w-auto drop-shadow-[0_8px_40px_rgba(150,115,255,0.35)]"
+        />
+
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={phase >= 2 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mt-[2vh]"
+          className="mt-[3vh]"
         >
-          <p className="text-[3vw] font-medium text-white/80">O app definitivo para músicos</p>
+          <p className="text-[2.6vw] font-semibold text-white/85 tracking-tight">
+            O app do{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C24BF7] to-[#9673FF] font-bold">
+              tecladista inteligente
+            </span>
+          </p>
         </motion.div>
       </div>
     </motion.div>

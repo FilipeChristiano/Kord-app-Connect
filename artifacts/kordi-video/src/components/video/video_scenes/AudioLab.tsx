@@ -11,7 +11,7 @@ export function AudioLab() {
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C24BF7] to-[#9673FF]">aqui</span>.
         </>
       }
-      subtitle="O Kordi baixa a música, isola a voz e o instrumental — e você ouve o resultado na hora."
+      subtitle="Qualquer música vira cifra pronta em segundos — com tom ajustável e sofisticação em um clique. E ainda: voz e instrumental isolados na hora."
       phoneIndex={2}
     >
       <SceneAudioLab />

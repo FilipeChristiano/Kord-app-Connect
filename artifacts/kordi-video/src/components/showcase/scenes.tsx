@@ -132,7 +132,8 @@ const TYPE_MS = 52;
 const T_TYPED = QUERY.length * TYPE_MS;
 const T_DOWNLOAD = T_TYPED + 350;
 const T_ISOLATE = T_DOWNLOAD + 1300;
-export const T_MESA = T_ISOLATE + 2000;
+const T_CIFRA = T_ISOLATE + 2000;
+export const T_MESA = T_CIFRA + 4000;
 const MESA_FASES: { at: number; label: string; canais: boolean[] }[] = [
   { at: 0, label: "Tudo junto", canais: [true, true, true] },
   { at: 6000, label: "Só a voz", canais: [true, false, false] },
@@ -143,7 +144,7 @@ const CANAIS = ["Voz", "Instrumental", "Metrônomo"];
 
 export function SceneAudioLab() {
   const [typed, setTyped] = useState(0);
-  const [phase, setPhase] = useState<"typing" | "download" | "isolate" | "mesa">("typing");
+  const [phase, setPhase] = useState<"typing" | "download" | "isolate" | "cifra" | "mesa">("typing");
   const [pct, setPct] = useState(0);
   const [stemsOn, setStemsOn] = useState(0);
   const [fase, setFase] = useState(0);
@@ -165,6 +166,7 @@ export function SceneAudioLab() {
     const timers = [
       setTimeout(() => setPhase("download"), T_DOWNLOAD),
       setTimeout(() => setPhase("isolate"), T_ISOLATE),
+      setTimeout(() => setPhase("cifra"), T_CIFRA),
       setTimeout(() => setPhase("mesa"), T_MESA),
       ...CANAIS.map((_, i) => setTimeout(() => setStemsOn(i + 1), T_ISOLATE + 500 * i)),
       ...MESA_FASES.map((f, i) => setTimeout(() => setFase(i), T_MESA + f.at)),
@@ -182,7 +184,7 @@ export function SceneAudioLab() {
     <div className="h-full flex flex-col">
       <PageTitle icon={AudioWaveform} plain="Audio" accent="Lab" />
       <div className="bg-white/[0.04] border border-white/10 rounded-2xl px-3 py-3 flex flex-col gap-2.5 flex-1">
-        {phase !== "mesa" && (
+        {phase !== "mesa" && phase !== "cifra" && (
           <>
             <p className="text-[11px] font-bold text-white flex items-center gap-1.5">
               <Search className="w-3 h-3 text-[#9673FF]" /> Pesquisar pelo título
@@ -232,6 +234,59 @@ export function SceneAudioLab() {
               );
             })}
           </div>
+        )}
+
+        {phase === "cifra" && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cifra pronta</p>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[9px] font-bold">
+                <Check className="w-2.5 h-2.5" /> Em segundos
+              </span>
+            </div>
+            <div className="bg-[#fdfcf9] rounded-xl px-2.5 py-2.5 shadow-inner">
+              {[
+                { chords: ["C7M(9)", "C4", "C7M(9)"], lyric: "As muitas gerações rendidas em louvor" },
+                { chords: ["Am7(9)", "G7sus4", "F7M(9)"], lyric: "Cantando ao cordeiro uma canção" },
+              ].map((linha, li) => (
+                <div key={li} className={li > 0 ? "mt-1.5" : ""}>
+                  <div className="flex flex-wrap gap-1.5 mb-0.5">
+                    {linha.chords.map((c, i) => (
+                      <motion.span
+                        key={i}
+                        initial={{ opacity: 0, y: 6, scale: 0.85 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.3, delay: 0.2 + (li * 3 + i) * 0.12 }}
+                        className="px-1.5 py-0.5 rounded-md font-mono text-[9.5px] font-bold bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/30"
+                      >
+                        {c}
+                      </motion.span>
+                    ))}
+                  </div>
+                  <p className="text-slate-500 text-[9px] font-medium font-mono leading-tight">{linha.lyric}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1.5">
+              <motion.span
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.4 }}
+                className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#9673FF]/15 border border-[#9673FF]/40 text-[#9673FF] text-[9px] font-bold"
+              >
+                <Wand2 className="w-2.5 h-2.5" /> Sofisticar
+              </motion.span>
+              <motion.span
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.7 }}
+                className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 rounded-lg bg-white/[0.05] border border-white/15 text-slate-300 text-[9px] font-bold"
+              >
+                Mudar tom: Db → C
+              </motion.span>
+            </div>
+            <p className="text-[8.5px] text-slate-500 font-medium mt-auto truncate">Santo Pra Sempre · cifra gerada pelo Kordi</p>
+          </motion.div>
         )}
 
         {phase === "mesa" && (

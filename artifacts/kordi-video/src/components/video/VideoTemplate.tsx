@@ -14,7 +14,7 @@ export const SCENE_DURATIONS = {
   intro: 4000,
   sofisticador: 4200,
   dicionario: 4900,
-  audiolab: 21000,
+  audiolab: 25000,
   metronomo: 10000,
   pads: 5400,
   favoritos: 3200,
