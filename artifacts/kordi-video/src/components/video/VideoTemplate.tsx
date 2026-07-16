@@ -2,27 +2,33 @@ import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { Intro } from './video_scenes/Intro';
-import { Transposicao } from './video_scenes/Transposicao';
 import { Sofisticador } from './video_scenes/Sofisticador';
+import { Dicionario } from './video_scenes/Dicionario';
 import { AudioLab } from './video_scenes/AudioLab';
 import { Metronomo } from './video_scenes/Metronomo';
+import { Pads } from './video_scenes/Pads';
+import { Favoritos } from './video_scenes/Favoritos';
 import { Outro } from './video_scenes/Outro';
 
 export const SCENE_DURATIONS = {
   intro: 4000,
-  transposicao: 6000,
-  sofisticador: 5500,
-  audiolab: 5500,
-  metronomo: 5500,
+  sofisticador: 4200,
+  dicionario: 4900,
+  audiolab: 21000,
+  metronomo: 10000,
+  pads: 5400,
+  favoritos: 3200,
   outro: 4500
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   intro: Intro,
-  transposicao: Transposicao,
   sofisticador: Sofisticador,
+  dicionario: Dicionario,
   audiolab: AudioLab,
   metronomo: Metronomo,
+  pads: Pads,
+  favoritos: Favoritos,
   outro: Outro,
 };
 
@@ -96,7 +102,7 @@ export default function VideoTemplate({
 
       <audio
         ref={audioRef}
-        src={`${import.meta.env.BASE_URL}audio/bg_music.mp3`}
+        src={`${import.meta.env.BASE_URL}audio/composite_audio.mp3`}
         preload="auto"
         autoPlay
         muted={muted}

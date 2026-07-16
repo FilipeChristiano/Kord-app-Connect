@@ -41,3 +41,9 @@ id = "Z25mLMtLGGDCXlFygbTkT"
 uri = "file://artifacts/kordi-video/public/audio/bg_music.mp3"
 type = "audio"
 title = "background music"
+
+[[outputs]]
+id = "MhxxjL5sruiPA83mdUpYA"
+uri = "file://artifacts/kordi-video/public/audio/bg_music_58.mp3"
+type = "audio"
+title = "kordi_video_bg"
