@@ -47,3 +47,9 @@ id = "MhxxjL5sruiPA83mdUpYA"
 uri = "file://artifacts/kordi-video/public/audio/bg_music_58.mp3"
 type = "audio"
 title = "kordi_video_bg"
+
+[[outputs]]
+id = "HgiIAEKbIJFftMkxQtS8s"
+uri = "file://exports/kordi-apresentacao.mp4"
+type = "video"
+title = "Vídeo de Apresentação Kordi (MP4)"

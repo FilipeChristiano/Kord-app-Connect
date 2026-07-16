@@ -20,5 +20,6 @@
 - [Modos de loja iOS/Android](store-app-modes.md) — dentro dos apps das lojas o site esconde preço/compra: iOS nada (3.1.1), Android só texto; qualquer superfície nova de preço deve checar o modo.
 - [stripe-replit-sync backfill](stripe-sync-backfill.md) — syncBackfill() sem params não sincroniza nada: usar { object: "all" }; acesso Stripe lido do schema stripe, allowed_emails só Hotmart legado.
 - [api-server esbuild externals](api-server-bundle-externals.md) — deps do api-server devem estar no package.json dele; dep hoisted da raiz é bundlada e ESM com import.meta.url crasha o CJS em prod; validar com `node dist/index.cjs`.
+- [Gravação de MP4 no servidor](video-server-recording.md) — export do preview falhou p/ usuário; Xvfb+chromium+pulse+ffmpeg em UMA chamada bash, marcador ?rec=1 p/ corte exato.
 - [Kordi video usa HeroShowcase verbatim](kordi-video-showcase.md) — vídeo de apresentação copia 100% o showcase da landing; áudio real do componente, música de fundo só na intro/outro.
 - [Landing demo assets](landing-demo-assets.md) — áudios da demo /assinar vêm do pipeline REAL (cifra→Demucs→beats) de Santo Pra Sempre; nunca inventar áudio/cifra; ver passos p/ regenerar.

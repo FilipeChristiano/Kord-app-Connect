@@ -60,8 +60,29 @@ export default function VideoTemplate({
     audio.play().catch(() => {});
   }, [currentSceneKey, baseSceneKey, muted]);
 
+  const recMarker =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('rec');
+  const MARKER_COLORS: Record<string, string> = {
+    intro: '#ff0000',
+    showcase: '#00ff00',
+    outro: '#0000ff',
+  };
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-bg-dark">
+      {recMarker && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: 64,
+            height: 8,
+            background: MARKER_COLORS[baseSceneKey] ?? '#000',
+            zIndex: 9999,
+          }}
+        />
+      )}
       {/* Persistent Background Layer */}
       <div className="absolute inset-0">
         <motion.div className="absolute w-[80vw] h-[80vw] rounded-full opacity-20 blur-3xl"
