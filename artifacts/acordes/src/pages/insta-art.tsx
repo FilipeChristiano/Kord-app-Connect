@@ -4,6 +4,7 @@
  */
 
 import { useParams } from "wouter";
+import type { ReactNode } from "react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -198,7 +199,7 @@ function Arte5() {
   );
 }
 
-const ARTES: Record<string, () => JSX.Element> = {
+const ARTES: Record<string, () => ReactNode> = {
   "5": Arte5,
 };
 

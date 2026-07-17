@@ -132,10 +132,10 @@ function fft(re: Float32Array, im: Float32Array): void {
 }
 
 // ── Cromagrama: vetor de 12 classes de altura por quadro ──────────────────────
-function computeChromaFrames(
+async function computeChromaFrames(
   mono: Float32Array,
   sampleRate: number,
-): { chroma: Float32Array[]; bass: Float32Array[]; energy: Float32Array } {
+): Promise<{ chroma: Float32Array[]; bass: Float32Array[]; energy: Float32Array }> {
   const half = FRAME >> 1;
   const hann = new Float32Array(FRAME);
   for (let i = 0; i < FRAME; i++) {
@@ -169,6 +169,9 @@ function computeChromaFrames(
   const im = new Float32Array(FRAME);
 
   for (let fi = 0; fi < numFrames; fi++) {
+    // Cede a thread a cada bloco de quadros para a UI (spinner, toques)
+    // continuar respondendo no mobile durante a análise.
+    if (fi > 0 && fi % 200 === 0) await tick();
     const start = fi * HOP;
     im.fill(0);
     for (let i = 0; i < FRAME; i++) re[i] = mono[start + i] * hann[i];
@@ -481,7 +484,7 @@ export async function analyzeAudioBuffer(
   onProgress?.("tom");
   await tick();
   const mono = await renderMono(buffer, ANALYSIS_RATE);
-  const { chroma, bass, energy } = computeChromaFrames(mono, ANALYSIS_RATE);
+  const { chroma, bass, energy } = await computeChromaFrames(mono, ANALYSIS_RATE);
   const key = detectKey(averageChroma(chroma));
 
   onProgress?.("bpm");

@@ -22,6 +22,7 @@ import { Layout } from "@/components/Layout";
 import { KeepAlive } from "@/components/KeepAlive";
 import { useAccess } from "@/hooks/use-access";
 import { clerkAppearance, clerkLocalization } from "@/lib/clerk-appearance";
+import { getAudio } from "@/lib/piano";
 
 // Páginas carregadas sob demanda (code-splitting): o app abre com um bundle
 // inicial pequeno e cada tela baixa seu código só quando visitada.
@@ -228,9 +229,7 @@ function ClerkProviderWithRoutes() {
 
 function PreviewBadge() {
   const [location] = useLocation();
-  // TEMPORÁRIO (artes Instagram): badge desativado durante as capturas.
-  // Restaurar para: if (location.startsWith("/arte/")) return null;
-  if (location) return null;
+  if (location.startsWith("/arte/")) return null;
   return (
     <div className="fixed bottom-3 left-3 z-[60] pointer-events-none select-none rounded-full bg-primary/15 border border-primary/30 text-primary text-[10px] font-semibold px-2.5 py-1 backdrop-blur-sm">
       Prévia (dev) — sem login
@@ -239,6 +238,13 @@ function PreviewBadge() {
 }
 
 function App() {
+  // Registra os liberadores de áudio já na abertura: no primeiro toque do
+  // usuário o contexto destrava e os samples de piano são pré-carregados,
+  // para o primeiro "ouvir acorde" tocar sem espera.
+  useEffect(() => {
+    getAudio();
+  }, []);
+
   // storageKey v2: força o novo padrão claro mesmo para quem já tinha
   // "dark" salvo do padrão antigo; a escolha manual segue sendo lembrada
   return (

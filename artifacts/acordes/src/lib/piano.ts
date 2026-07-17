@@ -29,6 +29,9 @@ export function getAudio(): AudioHandle | null {
         if (ctx?.state === "running") {
           window.removeEventListener("pointerdown", unlock);
           window.removeEventListener("keydown", unlock);
+          // Pré-carrega todos os samples assim que o áudio é liberado, para o
+          // primeiro acorde tocar na hora (sem "clique morto" esperando o mp3).
+          if (ctx) warmPiano(ctx, PIANO_SAMPLES.map((s) => s.file));
         }
       }).catch(() => undefined);
     };
