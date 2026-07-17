@@ -24,4 +24,5 @@
 - [api-server esbuild externals](api-server-bundle-externals.md) — deps do api-server devem estar no package.json dele; dep hoisted da raiz é bundlada e ESM com import.meta.url crasha o CJS em prod; validar com `node dist/index.cjs`.
 - [Gravação de MP4 no servidor](video-server-recording.md) — export do preview falhou p/ usuário; Xvfb+chromium+pulse+ffmpeg em UMA chamada bash, marcador ?rec=1 p/ corte exato.
 - [Kordi video usa HeroShowcase verbatim](kordi-video-showcase.md) — vídeo de apresentação copia 100% o showcase da landing; áudio real do componente, música de fundo só na intro/outro.
+- [yt-dlp exige runtime JS](yt-dlp-js-runtime.md) — YouTube exige EJS; sempre passar --js-runtimes node (deno não existe no ambiente); 403 esporádico é transitório.
 - [Landing demo assets](landing-demo-assets.md) — áudios da demo /assinar vêm do pipeline REAL (cifra→Demucs→beats) de Santo Pra Sempre; nunca inventar áudio/cifra; ver passos p/ regenerar.

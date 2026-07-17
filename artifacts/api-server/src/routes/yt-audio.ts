@@ -84,6 +84,11 @@ function downloadAudio(id: string, outPath: string): Promise<void> {
     // Template sem extensão: o yt-dlp resolve a extensão e remuxa para .m4a.
     const outTemplate = outPath.replace(/\.m4a$/, ".%(ext)s");
     const args = [
+      // O YouTube passou a exigir um runtime JavaScript para extração (EJS).
+      // O padrão do yt-dlp é só o deno, que não existe no ambiente publicado;
+      // habilitamos o Node (sempre presente, é o runtime do próprio servidor).
+      "--js-runtimes",
+      "node",
       "-f",
       "bestaudio[ext=m4a]/bestaudio",
       "--remux-video",
