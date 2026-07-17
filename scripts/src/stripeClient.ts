@@ -6,6 +6,12 @@ import { StripeSync } from "stripe-replit-sync";
  * Not cached -- tokens can rotate, so fetch fresh each time.
  */
 async function getStripeCredentials(): Promise<{ secretKey: string; webhookSecret?: string }> {
+  // Chave direta da conta do usuário (tem prioridade sobre a integração).
+  const directKey = process.env.STRIPE_SECRET_KEY;
+  if (directKey) {
+    return { secretKey: directKey };
+  }
+
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? "repl " + process.env.REPL_IDENTITY
