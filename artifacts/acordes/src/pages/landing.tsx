@@ -414,6 +414,12 @@ export default function LandingPage() {
                 <div className="flex-1 space-y-4">
                   <h3 className="font-display text-2xl font-black text-slate-900">Plano Pro</h3>
                   {showPurchase && (
+                    <div className="inline-flex items-center gap-2 bg-primary/10 text-primary font-black text-sm px-3 py-1.5 rounded-full">
+                      <Zap className="w-4 h-4" />
+                      7 dias grátis para testar
+                    </div>
+                  )}
+                  {showPurchase && (
                     <div className="flex items-baseline gap-2">
                       <span className="font-display text-5xl font-black text-slate-900 tracking-tight">
                         {plan ? (
@@ -427,7 +433,9 @@ export default function LandingPage() {
                       </span>
                     </div>
                   )}
-                  <p className="text-sm text-slate-500 font-medium">Cancele a qualquer momento. Sem burocracia.</p>
+                  <p className="text-sm text-slate-500 font-medium">
+                    Você só paga depois dos 7 dias. Cancele a qualquer momento, sem burocracia.
+                  </p>
                 </div>
 
                 <div className="flex-1 w-full">
@@ -450,13 +458,15 @@ export default function LandingPage() {
                       >
                         <span className="relative z-10 flex items-center gap-2">
                           {subscribing ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                          {subscribing ? "Abrindo pagamento..." : "Assinar e Liberar Acesso"}
+                          {subscribing ? "Abrindo pagamento..." : "Começar 7 dias grátis"}
                         </span>
                       </button>
                       {checkoutError && (
                         <p className="text-rose-500 text-sm font-bold text-center bg-rose-50 p-2 rounded-lg">{checkoutError}</p>
                       )}
-                      <p className="text-xs text-center text-slate-400 font-medium">Pagamento seguro pela Stripe. Acesso imediato após a compra.</p>
+                      <p className="text-xs text-center text-slate-400 font-medium">
+                        Pagamento seguro pela Stripe. Acesso imediato — a primeira cobrança só acontece após os 7 dias grátis.
+                      </p>
                     </div>
                   ) : (
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-sm text-slate-700 text-center font-medium shadow-inner">

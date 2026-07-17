@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { pool } from "../db";
 import { getUncachableStripeClient } from "../stripeClient";
-import { PRODUCT_NAME } from "../plan";
+import { PRODUCT_NAME, TRIAL_DAYS } from "../plan";
 
 const router: IRouter = Router();
 
@@ -96,7 +96,7 @@ router.get("/stripe/plan", async (_req: Request, res: Response) => {
       return res.status(404).json({ error: "plan_not_found" });
     }
 
-    return res.json({ plan: rows[0] });
+    return res.json({ plan: { ...rows[0], trial_days: TRIAL_DAYS } });
   } catch (err) {
     console.error("[/api/stripe/plan] error:", err);
     return res.status(500).json({ error: "plan_lookup_failed" });
@@ -140,6 +140,7 @@ router.post("/stripe/checkout", async (req: Request, res: Response) => {
         payment_method_types: ["card"],
         line_items: [{ price: priceId, quantity: 1 }],
         mode: "subscription",
+        subscription_data: { trial_period_days: TRIAL_DAYS },
         locale: "pt-BR",
         success_url: `${baseUrl}/sign-up?checkout=success`,
         cancel_url: `${baseUrl}/assinar?checkout=cancel`,
@@ -168,6 +169,7 @@ router.post("/stripe/checkout", async (req: Request, res: Response) => {
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
+      subscription_data: { trial_period_days: TRIAL_DAYS },
       locale: "pt-BR",
       success_url: `${baseUrl}/?checkout=success`,
       cancel_url: `${baseUrl}/?checkout=cancel`,

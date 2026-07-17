@@ -7,7 +7,8 @@ import { getUncachableStripeClient } from "./stripeClient";
  * publicação não exige nenhum passo manual na Stripe.
  */
 export const PRODUCT_NAME = "Kordi — Assinatura Mensal";
-export const MONTHLY_AMOUNT_CENTS = 4990; // R$ 49,90
+export const MONTHLY_AMOUNT_CENTS = 3990; // R$ 39,90
+export const TRIAL_DAYS = 7; // primeiros 7 dias grátis
 const CURRENCY = "brl";
 const PRODUCT_DESCRIPTION =
   "Acesso completo ao Kordi: dicionário de acordes, cifras inteligentes, sofisticador, audio lab, metrônomo, pads e modo estudo.";

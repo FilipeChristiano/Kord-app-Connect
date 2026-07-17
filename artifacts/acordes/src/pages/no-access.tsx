@@ -149,11 +149,14 @@ export default function NoAccessPage() {
             Nada de painel de preço, benefícios de venda ou instruções. */}
         {!iosApp && (
           <div className="bg-foreground/5 border border-primary/25 rounded-xl p-5 mb-5">
+            <div className="inline-flex items-center gap-1.5 bg-primary/15 text-primary font-semibold text-xs px-2.5 py-1 rounded-full mb-3">
+              7 dias grátis para testar
+            </div>
             <div className="flex items-baseline gap-2 mb-4">
               <span className="font-display text-4xl font-bold text-foreground">
-                {plan ? formatPrice(plan.unit_amount, plan.currency) : "R$ 49,90"}
+                {plan ? formatPrice(plan.unit_amount, plan.currency) : "R$ 39,90"}
               </span>
-              <span className="text-foreground/60 text-sm">/mês no cartão</span>
+              <span className="text-foreground/60 text-sm">/mês após o teste</span>
             </div>
             <ul className="space-y-2.5">
               {BENEFITS.map((b) => (
@@ -164,7 +167,8 @@ export default function NoAccessPage() {
               ))}
             </ul>
             <p className="text-foreground/50 text-xs mt-4">
-              Sem fidelidade — cancele quando quiser.
+              Sem fidelidade — cancele quando quiser. A primeira cobrança só
+              acontece depois dos 7 dias grátis.
             </p>
           </div>
         )}
@@ -195,7 +199,7 @@ export default function NoAccessPage() {
               ) : (
                 <CreditCard className="w-5 h-5" />
               )}
-              {subscribing ? "Abrindo pagamento..." : "Assinar agora"}
+              {subscribing ? "Abrindo pagamento..." : "Começar 7 dias grátis"}
             </button>
           </>
         )}
