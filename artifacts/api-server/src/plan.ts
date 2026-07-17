@@ -67,17 +67,32 @@ export async function ensurePlan(): Promise<void> {
     (p) => p.recurring?.interval === "month" && p.currency === CURRENCY,
   );
 
-  const correct = monthly.find((p) => p.unit_amount === MONTHLY_AMOUNT_CENTS);
-  if (!correct) {
+  let correctId = monthly.find(
+    (p) => p.unit_amount === MONTHLY_AMOUNT_CENTS,
+  )?.id;
+  if (!correctId) {
     const price = await stripe.prices.create({
       product: productId,
       unit_amount: MONTHLY_AMOUNT_CENTS,
       currency: CURRENCY,
       recurring: { interval: "month" },
     });
+    correctId = price.id;
     console.log(
       `[stripe] preço mensal criado: ${price.id} (${MONTHLY_AMOUNT_CENTS} ${CURRENCY})`,
     );
+  }
+
+  // Garante que o preço padrão do produto é o correto (um preço que é
+  // default do produto não pode ser arquivado antes da troca)
+  const product = await stripe.products.retrieve(productId);
+  const defaultPriceId =
+    typeof product.default_price === "string"
+      ? product.default_price
+      : product.default_price?.id;
+  if (defaultPriceId !== correctId) {
+    await stripe.products.update(productId, { default_price: correctId });
+    console.log(`[stripe] preço padrão do produto atualizado: ${correctId}`);
   }
 
   // Desativa preços mensais ativos com valor diferente do configurado
