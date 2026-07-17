@@ -33,24 +33,43 @@ export class WebhookHandlers {
       return;
     }
 
-    // Boas-vindas: checkout de assinatura concluído com pagamento OK
+    // Boas-vindas: checkout de assinatura concluído. Com teste grátis, a
+    // Stripe manda payment_status "no_payment_required" (nada é cobrado no
+    // ato) — também conta como sucesso.
     if (event.type === "checkout.session.completed") {
       const session = event.data?.object as
         | {
             mode?: string;
             payment_status?: string;
+            subscription?: string | null;
+            customer?: string | null;
             customer_details?: { email?: string | null; name?: string | null };
           }
         | undefined;
+      const paidOk =
+        session?.payment_status === "paid" ||
+        session?.payment_status === "no_payment_required";
       if (
         session?.mode === "subscription" &&
-        session.payment_status === "paid" &&
+        paidOk &&
         session.customer_details?.email
       ) {
         await sendWelcomeEmail({
           email: session.customer_details.email,
           name: session.customer_details.name ?? null,
         });
+
+        // Anti-abuso do teste grátis: se este e-mail já teve QUALQUER outra
+        // assinatura antes (em qualquer customer com o mesmo e-mail), encerra
+        // o período de teste na hora — a cobrança começa imediatamente.
+        try {
+          await WebhookHandlers.endTrialIfRepeat(
+            session.customer_details.email,
+            typeof session.subscription === "string" ? session.subscription : null,
+          );
+        } catch (err) {
+          console.error("[stripe-webhook] trial dedupe failed:", err);
+        }
       }
       return;
     }
@@ -83,6 +102,47 @@ export class WebhookHandlers {
       }
     } catch (err) {
       console.error("[stripe-webhook] refund access rule failed:", err);
+    }
+  }
+
+  /**
+   * Se o e-mail já teve outra assinatura (qualquer status) antes desta,
+   * encerra o teste grátis imediatamente (trial_end: "now"). Impede que a
+   * mesma pessoa repita o período grátis assinando de novo com o mesmo
+   * e-mail depois de cancelar.
+   */
+  static async endTrialIfRepeat(
+    email: string,
+    newSubscriptionId: string | null,
+  ): Promise<void> {
+    if (!newSubscriptionId) return;
+    const stripe = await getUncachableStripeClient();
+
+    const newSub = await stripe.subscriptions.retrieve(newSubscriptionId);
+    if (newSub.status !== "trialing") return;
+
+    const customers = await stripe.customers.list({
+      email: email.trim().toLowerCase(),
+      limit: 100,
+    });
+    for (const customer of customers.data) {
+      const subs = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: "all",
+        limit: 100,
+      });
+      const hadPrevious = subs.data.some(
+        (s) => s.id !== newSubscriptionId && s.created < newSub.created,
+      );
+      if (hadPrevious) {
+        await stripe.subscriptions.update(newSubscriptionId, {
+          trial_end: "now",
+        });
+        console.log(
+          `[stripe-webhook] repeat subscriber ${email} => trial ended now on ${newSubscriptionId}`,
+        );
+        return;
+      }
     }
   }
 }

@@ -21,7 +21,7 @@ async function getStripeCredentials(): Promise<{ secretKey: string; webhookSecre
   }
 
   const resp = await fetch(
-    `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=stripe`,
+    `https://${hostname}/api/v2/connection?include_secrets=true`,
     {
       headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken },
       signal: AbortSignal.timeout(10_000),
@@ -33,9 +33,13 @@ async function getStripeCredentials(): Promise<{ secretKey: string; webhookSecre
   }
 
   const data = (await resp.json()) as {
-    items?: Array<{ settings?: { secret_key?: string; secret?: string; webhook_secret?: string } }>;
+    items?: Array<{
+      connector_name?: string;
+      settings?: { secret_key?: string; secret?: string; webhook_secret?: string };
+    }>;
   };
-  const settings = data.items?.[0]?.settings;
+  const settings = data.items?.find((i) => i.connector_name === "stripe")
+    ?.settings;
   const secretKey = settings?.secret_key ?? settings?.secret;
 
   if (!secretKey) {

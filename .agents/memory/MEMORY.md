@@ -18,6 +18,7 @@
 - [BPM síncope bossa (acordes)](bpm-syncopation.md) — teste de família ACF (2/3·B,4/3·B) corrige espúrios de síncope; exige família mensurável na grade e nunca troca oitava.
 - [Chord dictionary enharmonics](chord-enharmonics.md) — ids em bemol legado, names duplos "C#7M/Db7M"; popups mostram o token clicado (prop label) e as imagens do dicionário, nunca voicings computados.
 - [Modos de loja iOS/Android](store-app-modes.md) — dentro dos apps das lojas o site esconde preço/compra: iOS nada (3.1.1), Android só texto; qualquer superfície nova de preço deve checar o modo.
+- [Stripe connector fetch](stripe-connector-fetch.md) — filtro connector_names do proxy pode voltar vazio: buscar todas as conexões e filtrar por nome; chave em settings.secret.
 - [stripe-replit-sync backfill](stripe-sync-backfill.md) — syncBackfill() sem params não sincroniza nada: usar { object: "all" }; acesso Stripe lido do schema stripe, allowed_emails só Hotmart legado.
 - [api-server esbuild externals](api-server-bundle-externals.md) — deps do api-server devem estar no package.json dele; dep hoisted da raiz é bundlada e ESM com import.meta.url crasha o CJS em prod; validar com `node dist/index.cjs`.
 - [Gravação de MP4 no servidor](video-server-recording.md) — export do preview falhou p/ usuário; Xvfb+chromium+pulse+ffmpeg em UMA chamada bash, marcador ?rec=1 p/ corte exato.
