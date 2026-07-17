@@ -1,8 +1,9 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { getAuth, clerkClient } from "@clerk/express";
+import { getAuth } from "@clerk/express";
 import { pool } from "../db";
 import { getUncachableStripeClient } from "../stripeClient";
 import { PRODUCT_NAME, TRIAL_DAYS } from "../plan";
+import { getVerifiedEmail } from "../verifiedEmail";
 
 const router: IRouter = Router();
 
@@ -14,11 +15,10 @@ const router: IRouter = Router();
 async function resolveEmail(req: Request): Promise<string | null> {
   const auth = getAuth(req);
   if (auth?.userId) {
-    const user = await clerkClient.users.getUser(auth.userId);
-    const email =
-      user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)
-        ?.emailAddress ?? user.emailAddresses[0]?.emailAddress;
-    if (email) return email.trim().toLowerCase();
+    // Só e-mail verificado — o portal de cobrança e o checkout usam esse
+    // e-mail para localizar o cliente na Stripe.
+    const email = await getVerifiedEmail(auth.userId);
+    if (email) return email;
   }
 
   const isDev = process.env.NODE_ENV === "development";

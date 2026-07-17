@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { getAccessInfo } from "../db";
+import { getVerifiedEmail } from "../verifiedEmail";
 
 const router: IRouter = Router();
 
@@ -13,20 +14,19 @@ router.get("/me", async (req: Request, res: Response) => {
   }
 
   try {
-    const user = await clerkClient.users.getUser(userId);
-    const primaryEmail =
-      user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)
-        ?.emailAddress ?? user.emailAddresses[0]?.emailAddress;
+    // Só e-mail VERIFICADO conta para liberar acesso (posse comprovada).
+    const primaryEmail = await getVerifiedEmail(userId);
 
     if (!primaryEmail) {
       return res.json({
         authenticated: true,
         allowed: false,
         email: null,
-        reason: "no_email",
+        reason: "no_verified_email",
       });
     }
 
+    const user = await clerkClient.users.getUser(userId);
     const access = await getAccessInfo(primaryEmail);
 
     return res.json({
