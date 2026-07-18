@@ -94,7 +94,9 @@ function findPotScript(): string | null {
   return null;
 }
 const POT_SCRIPT = findPotScript();
-if (!POT_SCRIPT) {
+if (POT_SCRIPT) {
+  console.log(`[yt-audio] gerador de PO token: ${POT_SCRIPT}`);
+} else {
   console.warn(
     "[yt-audio] gerador de PO token não encontrado; downloads podem ser bloqueados em produção",
   );
@@ -125,13 +127,22 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
       "--no-playlist",
       "--no-progress",
       "--no-cache-dir",
-      "--quiet",
+      // Verboso para diagnosticarmos nos logs de produção se o gerador de
+      // PO tokens foi carregado e usado (linhas [pot] no stderr).
+      "--verbose",
       "-o",
       outTemplate,
       url,
     ];
     const child = spawn("yt-dlp", args, {
       stdio: ["ignore", "ignore", "pipe"],
+      env: {
+        ...process.env,
+        // O gerador de PO tokens grava cache em $XDG_CACHE_HOME (ou $HOME).
+        // Em produção o HOME pode não ser gravável — e se o mkdir falha, o
+        // script aborta e o token nunca é gerado. Apontamos para o tmpdir.
+        XDG_CACHE_HOME: path.join(os.tmpdir(), "bgutil-pot-cache"),
+      },
     });
     let stderr = "";
     child.stderr?.on("data", (d: Buffer) => {
@@ -147,8 +158,22 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
     });
     child.on("close", (code) => {
       clearTimeout(timer);
+      // Diagnóstico: versão do yt-dlp e situação dos provedores de PO token.
+      const diag = stderr
+        .split("\n")
+        .filter((l) => /\[pot|yt-dlp version|js runtime|bgutil/i.test(l))
+        .slice(0, 12);
+      if (code !== 0 && diag.length) {
+        console.warn(`[yt-audio] diagnóstico:\n${diag.join("\n")}`);
+      }
       if (code === 0 && existsSync(outPath)) resolve();
-      else reject(new Error(`yt-dlp exit ${code}: ${stderr.slice(0, 500)}`));
+      else {
+        const errLines = stderr
+          .split("\n")
+          .filter((l) => /ERROR|WARNING/i.test(l))
+          .join("\n");
+        reject(new Error(`yt-dlp exit ${code}: ${errLines.slice(0, 500)}`));
+      }
     });
   });
 }
