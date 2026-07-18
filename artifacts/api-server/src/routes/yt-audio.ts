@@ -148,10 +148,7 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
             `youtubepot-bgutilscript:server_home=${POT_SCRIPT}`,
           ]
         : []),
-      // Rastro do PO token nos logs (diagnóstico em produção).
-      "--extractor-args",
-      "youtube:pot_trace=true",
-      // Cookies de conta (solução documentada p/ IP exigindo login).
+      // Cookies de conta (opcional, via secret YOUTUBE_COOKIES).
       ...(COOKIES_FILE ? ["--cookies", COOKIES_FILE] : []),
       ...extraArgs,
       "-f",
@@ -221,10 +218,27 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
 // barrado com "Sign in to confirm you're not a bot" ou 403 (comum em IPs de
 // datacenter, como o do app publicado). O cliente "tv" e o "web_embedded"
 // costumam passar sem login onde o cliente padrão é bloqueado.
+// Em todos os modos: pot_trace registra nos logs se o PO token foi gerado e
+// fetch_pot=always força a geração da prova anti-robô mesmo quando o yt-dlp
+// acharia desnecessária (IPs de datacenter precisam dela sempre).
 const CLIENT_FALLBACKS: string[][] = [
-  [],
-  ["--extractor-args", "youtube:player_client=web_embedded"],
-  ["--extractor-args", "youtube:player_client=tv"],
+  ["--extractor-args", "youtube:pot_trace=true;fetch_pot=always"],
+  [
+    "--extractor-args",
+    "youtube:player_client=mweb;pot_trace=true;fetch_pot=always",
+  ],
+  [
+    "--extractor-args",
+    "youtube:player_client=web_embedded;pot_trace=true;fetch_pot=always",
+  ],
+  [
+    "--extractor-args",
+    "youtube:player_client=tv;pot_trace=true;fetch_pot=always",
+  ],
+  [
+    "--extractor-args",
+    "youtube:player_client=tv_embedded;pot_trace=true;fetch_pot=always",
+  ],
 ];
 
 function isBlockedError(err: unknown): boolean {
@@ -232,20 +246,49 @@ function isBlockedError(err: unknown): boolean {
   return /sign in to confirm|not a bot|403|429/i.test(msg);
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 // Baixa a melhor faixa de áudio M4A e remuxa (sem recodificar) para `outPath`.
+// O bloqueio anti-bot do YouTube em IPs de datacenter é intermitente, então
+// além da cadeia de clientes alternativos, repetimos a rodada inteira uma vez
+// após uma pausa curta antes de desistir.
+// Orçamento total de tempo para todas as tentativas somadas: precisa caber na
+// paciência do navegador/gateway. Tentativas bloqueadas falham rápido (a
+// recusa vem na extração, ~10-20s), então dentro deste teto cabem várias.
+const TOTAL_BUDGET_MS = 150_000;
+
 async function downloadAudio(id: string, outPath: string): Promise<void> {
   let lastErr: unknown = null;
-  for (const extra of CLIENT_FALLBACKS) {
-    try {
-      await runYtDlp(id, outPath, extra);
-      return;
-    } catch (err) {
-      lastErr = err;
-      // Timeout ou erro que não é de bloqueio: não adianta trocar de cliente.
-      if (!isBlockedError(err)) throw err;
-      console.warn(
-        `[yt-audio] bloqueado (${extra.join(" ") || "cliente padrão"}), tentando próximo cliente...`,
-      );
+  const start = Date.now();
+  const ROUNDS = 2;
+  const total = CLIENT_FALLBACKS.length * ROUNDS;
+  let attempt = 0;
+  for (let round = 1; round <= ROUNDS; round++) {
+    for (const extra of CLIENT_FALLBACKS) {
+      attempt++;
+      const elapsed = Date.now() - start;
+      if (attempt > 1 && elapsed > TOTAL_BUDGET_MS) {
+        console.warn(
+          `[yt-audio] orçamento de tempo esgotado (${Math.round(elapsed / 1000)}s); desistindo.`,
+        );
+        throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+      }
+      const t0 = Date.now();
+      try {
+        await runYtDlp(id, outPath, extra);
+        return;
+      } catch (err) {
+        lastErr = err;
+        // Timeout ou erro que não é de bloqueio: não adianta trocar de cliente.
+        if (!isBlockedError(err)) throw err;
+        console.warn(
+          `[yt-audio] bloqueado (tentativa ${attempt}/${total}, ${extra[1] ?? "padrão"}, ${Math.round((Date.now() - t0) / 1000)}s), tentando próximo cliente...`,
+        );
+      }
+    }
+    if (round < ROUNDS && Date.now() - start < TOTAL_BUDGET_MS) {
+      console.warn(`[yt-audio] todos os clientes bloqueados; nova rodada em 4s...`);
+      await sleep(4000);
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
