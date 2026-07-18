@@ -7,6 +7,7 @@ import {
   mkdirSync,
   readdirSync,
   statSync,
+  writeFileSync,
 } from "node:fs";
 import { unlink } from "node:fs/promises";
 import os from "node:os";
@@ -104,6 +105,29 @@ if (POT_SCRIPT) {
   );
 }
 
+// Cookies do YouTube (secret YOUTUBE_COOKIES, formato Netscape "cookies.txt").
+// É a solução documentada do yt-dlp para IPs barrados com exigência de login.
+// Gravamos numa cópia em tmp porque o yt-dlp reescreve o arquivo de cookies.
+function setupCookies(): string | null {
+  const raw = process.env.YOUTUBE_COOKIES;
+  if (!raw || !raw.trim()) return null;
+  try {
+    const file = path.join(os.tmpdir(), "yt-cookies.txt");
+    // Normaliza: alguns copiam com \r\n; o formato exige tabs e cabeçalho.
+    let text = raw.replace(/\r\n/g, "\n").trim() + "\n";
+    if (!text.startsWith("# Netscape") && !text.startsWith("# HTTP Cookie")) {
+      text = "# Netscape HTTP Cookie File\n" + text;
+    }
+    writeFileSync(file, text, { mode: 0o600 });
+    console.log("[yt-audio] cookies do YouTube configurados");
+    return file;
+  } catch (err) {
+    console.warn(`[yt-audio] falha ao preparar cookies: ${String(err)}`);
+    return null;
+  }
+}
+const COOKIES_FILE = setupCookies();
+
 // Uma tentativa de download com os argumentos extras informados.
 function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -124,6 +148,11 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
             `youtubepot-bgutilscript:server_home=${POT_SCRIPT}`,
           ]
         : []),
+      // Rastro do PO token nos logs (diagnóstico em produção).
+      "--extractor-args",
+      "youtube:pot_trace=true",
+      // Cookies de conta (solução documentada p/ IP exigindo login).
+      ...(COOKIES_FILE ? ["--cookies", COOKIES_FILE] : []),
       ...extraArgs,
       "-f",
       "bestaudio[ext=m4a]/bestaudio",
@@ -166,8 +195,13 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
       // Diagnóstico: versão do yt-dlp e situação dos provedores de PO token.
       const diag = stderr
         .split("\n")
-        .filter((l) => /\[pot|yt-dlp version|js runtime|bgutil/i.test(l))
-        .slice(0, 12);
+        .filter(
+          (l) =>
+            /generating pot|fetched.*token|pot.*(error|fail|reject|unavailable)|trace:|cookie/i.test(
+              l,
+            ) && !/Command-line|Encodings/i.test(l),
+        )
+        .slice(0, 20);
       if (code !== 0 && diag.length) {
         console.warn(`[yt-audio] diagnóstico:\n${diag.join("\n")}`);
       }
