@@ -77,8 +77,8 @@ function downloadAudioOnce(id: string, outPath: string): Promise<void> {
   return p;
 }
 
-// Baixa a melhor faixa de áudio M4A e remuxa (sem recodificar) para `outPath`.
-function downloadAudio(id: string, outPath: string): Promise<void> {
+// Uma tentativa de download com os argumentos extras informados.
+function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const url = `https://www.youtube.com/watch?v=${id}`;
     // Template sem extensão: o yt-dlp resolve a extensão e remuxa para .m4a.
@@ -89,6 +89,7 @@ function downloadAudio(id: string, outPath: string): Promise<void> {
       // habilitamos o Node (sempre presente, é o runtime do próprio servidor).
       "--js-runtimes",
       "node",
+      ...extraArgs,
       "-f",
       "bestaudio[ext=m4a]/bestaudio",
       "--remux-video",
@@ -122,6 +123,40 @@ function downloadAudio(id: string, outPath: string): Promise<void> {
       else reject(new Error(`yt-dlp exit ${code}: ${stderr.slice(0, 500)}`));
     });
   });
+}
+
+// Clientes alternativos do YouTube tentados em sequência quando o servidor é
+// barrado com "Sign in to confirm you're not a bot" ou 403 (comum em IPs de
+// datacenter, como o do app publicado). O cliente "tv" e o "web_embedded"
+// costumam passar sem login onde o cliente padrão é bloqueado.
+const CLIENT_FALLBACKS: string[][] = [
+  [],
+  ["--extractor-args", "youtube:player_client=web_embedded"],
+  ["--extractor-args", "youtube:player_client=tv"],
+];
+
+function isBlockedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /sign in to confirm|not a bot|403|429/i.test(msg);
+}
+
+// Baixa a melhor faixa de áudio M4A e remuxa (sem recodificar) para `outPath`.
+async function downloadAudio(id: string, outPath: string): Promise<void> {
+  let lastErr: unknown = null;
+  for (const extra of CLIENT_FALLBACKS) {
+    try {
+      await runYtDlp(id, outPath, extra);
+      return;
+    } catch (err) {
+      lastErr = err;
+      // Timeout ou erro que não é de bloqueio: não adianta trocar de cliente.
+      if (!isBlockedError(err)) throw err;
+      console.warn(
+        `[yt-audio] bloqueado (${extra.join(" ") || "cliente padrão"}), tentando próximo cliente...`,
+      );
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
 // Garante que o áudio do vídeo está no cache e devolve o caminho do arquivo.

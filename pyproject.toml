@@ -11,7 +11,7 @@ dependencies = [
     "soundfile>=0.14.0",
     "torch>=2.0",
     "torchaudio>=2.0",
-    "yt-dlp>=2026.6.9",
+    "yt-dlp[default]>=2026.7.4",
 ]
 
 # Ambiente é CPU-only (sem GPU). Forçamos a build de CPU do torch/torchaudio

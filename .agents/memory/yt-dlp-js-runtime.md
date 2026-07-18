@@ -1,16 +1,24 @@
 ---
-name: yt-dlp exige runtime JS (node)
-description: Extração do YouTube via yt-dlp precisa de --js-runtimes node neste ambiente
+name: yt-dlp exige runtime JS (node) + solver EJS
+description: Extração do YouTube precisa de --js-runtimes node, do pacote yt-dlp-ejs e de fallback de clientes
 ---
 
-Regra: toda invocação de yt-dlp para YouTube deve incluir `--js-runtimes node`.
+Regras para qualquer uso de yt-dlp com YouTube neste projeto:
 
-**Why:** desde ~2026 o YouTube exige um runtime JavaScript para extração (EJS).
-O padrão do yt-dlp habilita só o deno, que NÃO existe no ambiente Replit
-(dev nem produção) — sem a flag, tudo falha com "No supported JavaScript
-runtime could be found" (visto quebrando a mesa de mistura em produção).
-Node está sempre presente (é o runtime do api-server).
+1. Sempre passar `--js-runtimes node` (o padrão só habilita deno, que não
+   existe no ambiente Replit; node está sempre presente).
+2. Instalar via extra `yt-dlp[default]` — isso traz o `yt-dlp-ejs` (solver de
+   desafios). Sem ele, clientes alternativos falham com "Signature solving
+   failed" / "Requested format is not available".
+3. IP de datacenter (app publicado) pode ser barrado com "Sign in to confirm
+   you're not a bot". Solução: fallback de clientes em sequência —
+   padrão → `youtube:player_client=web_embedded` → `tv`. Em teste, o
+   `web_embedded` baixou onde o `tv` falhou.
 
-**How to apply:** ao adicionar qualquer novo uso de yt-dlp (rotas, scripts),
-incluir `--js-runtimes node` nos args. Erros 403 esporádicos do YouTube são
-transitórios — repetir antes de investigar.
+**Why:** a mesa de mistura quebrou 2x em produção (jul/2026): primeiro por
+falta de runtime JS, depois por bot-check no IP publicado. 403/429 esporádicos
+são transitórios — retry resolve.
+
+**How to apply:** ver downloadAudio/CLIENT_FALLBACKS na rota de yt-audio do
+api-server; novos usos de yt-dlp devem repetir o mesmo padrão. Dependência
+fica no pyproject.toml + uv.lock (produção instala a partir deles).
