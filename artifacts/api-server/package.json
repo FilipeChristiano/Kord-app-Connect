@@ -14,15 +14,21 @@
     "@replit/connectors-sdk": "^0.4.1",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
+    "axios": "1.13.5",
+    "bgutils-js": "3.2.0",
+    "commander": "14.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2",
     "drizzle-orm": "catalog:",
     "express": "^5",
     "http-proxy-middleware": "^4.0.0",
+    "jsdom": "27.4.0",
     "openai": "^6.27.0",
     "pg": "^8.20.0",
+    "proxy-agent": "6.5.0",
     "stripe-replit-sync": "^1.0.0",
-    "svix": "^1.94.0"
+    "svix": "^1.94.0",
+    "youtubei.js": "16.0.1"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

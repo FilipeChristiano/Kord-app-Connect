@@ -1,24 +1,28 @@
 ---
-name: yt-dlp exige runtime JS (node) + solver EJS
-description: Extração do YouTube precisa de --js-runtimes node, do pacote yt-dlp-ejs e de fallback de clientes
+name: yt-dlp no YouTube — runtime node, solver EJS e PO tokens
+description: Requisitos para yt-dlp funcionar em dev e no servidor publicado (IP de datacenter barrado por bot-check)
 ---
 
 Regras para qualquer uso de yt-dlp com YouTube neste projeto:
 
 1. Sempre passar `--js-runtimes node` (o padrão só habilita deno, que não
    existe no ambiente Replit; node está sempre presente).
-2. Instalar via extra `yt-dlp[default]` — isso traz o `yt-dlp-ejs` (solver de
+2. Instalar via extra `yt-dlp[default]` — traz o `yt-dlp-ejs` (solver de
    desafios). Sem ele, clientes alternativos falham com "Signature solving
    failed" / "Requested format is not available".
-3. IP de datacenter (app publicado) pode ser barrado com "Sign in to confirm
-   you're not a bot". Solução: fallback de clientes em sequência —
-   padrão → `youtube:player_client=web_embedded` → `tv`. Em teste, o
-   `web_embedded` baixou onde o `tv` falhou.
+3. IP de datacenter (app publicado) é barrado com "Sign in to confirm you're
+   not a bot" em TODOS os player_clients. Correção real: PO tokens via plugin
+   pip `bgutil-ytdlp-pot-provider` + script bgutil vendorizado (modo script,
+   bundlar com esbuild NÃO funciona — jsdom lê assets por __dirname; vendorizar
+   o build ESM e colocar as deps no package.json do api-server). Passar
+   `--extractor-args youtubepot-bgutilscript:script_path=<abs>` em toda tentativa.
+4. Manter fallback de clientes só p/ erros de bloqueio: padrão → web_embedded
+   → tv (tv falha em alguns vídeos; web_embedded costuma passar).
 
-**Why:** a mesa de mistura quebrou 2x em produção (jul/2026): primeiro por
-falta de runtime JS, depois por bot-check no IP publicado. 403/429 esporádicos
-são transitórios — retry resolve.
+**Why:** a mesa de mistura quebrou em produção repetidamente por essas camadas
+(runtime ausente → solver ausente → bot-check por IP). 403/429 esporádicos são
+transitórios — retry resolve.
 
-**How to apply:** ver downloadAudio/CLIENT_FALLBACKS na rota de yt-audio do
-api-server; novos usos de yt-dlp devem repetir o mesmo padrão. Dependência
-fica no pyproject.toml + uv.lock (produção instala a partir deles).
+**How to apply:** ver downloadAudio/CLIENT_FALLBACKS/findPotScript na rota
+yt-audio do api-server; novos usos de yt-dlp devem repetir o padrão. Deps
+python ficam no pyproject.toml + uv.lock (produção instala a partir deles).

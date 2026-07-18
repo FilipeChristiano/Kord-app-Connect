@@ -77,6 +77,29 @@ function downloadAudioOnce(id: string, outPath: string): Promise<void> {
   return p;
 }
 
+// Gerador de PO tokens (prova de origem) do YouTube — necessário no servidor
+// publicado, cujo IP de datacenter é barrado com "Sign in to confirm you're
+// not a bot" em TODOS os clientes. O plugin bgutil-ytdlp-pot-provider (pip)
+// chama este script Node para gerar o token. Vendorizado em vendor/bgutil-pot;
+// as dependências dele estão no package.json do api-server.
+function findPotScript(): string | null {
+  const dir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
+  const candidates = [
+    path.resolve(dir, "..", "vendor", "bgutil-pot", "generate_once.js"),
+    path.resolve(dir, "..", "..", "vendor", "bgutil-pot", "generate_once.js"),
+    path.resolve(process.cwd(), "artifacts", "api-server", "vendor", "bgutil-pot", "generate_once.js"),
+    path.resolve(process.cwd(), "vendor", "bgutil-pot", "generate_once.js"),
+  ];
+  for (const c of candidates) if (existsSync(c)) return c;
+  return null;
+}
+const POT_SCRIPT = findPotScript();
+if (!POT_SCRIPT) {
+  console.warn(
+    "[yt-audio] gerador de PO token não encontrado; downloads podem ser bloqueados em produção",
+  );
+}
+
 // Uma tentativa de download com os argumentos extras informados.
 function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -89,6 +112,11 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
       // habilitamos o Node (sempre presente, é o runtime do próprio servidor).
       "--js-runtimes",
       "node",
+      // Habilita o gerador de PO tokens (contorna o bloqueio de bot do
+      // YouTube em IPs de datacenter, como o do servidor publicado).
+      ...(POT_SCRIPT
+        ? ["--extractor-args", `youtubepot-bgutilscript:script_path=${POT_SCRIPT}`]
+        : []),
       ...extraArgs,
       "-f",
       "bestaudio[ext=m4a]/bestaudio",
