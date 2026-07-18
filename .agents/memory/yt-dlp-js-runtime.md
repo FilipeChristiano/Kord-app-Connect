@@ -15,7 +15,11 @@ Regras para qualquer uso de yt-dlp com YouTube neste projeto:
    pip `bgutil-ytdlp-pot-provider` + script bgutil vendorizado (modo script,
    bundlar com esbuild NÃO funciona — jsdom lê assets por __dirname; vendorizar
    o build ESM e colocar as deps no package.json do api-server). Passar
-   `--extractor-args youtubepot-bgutilscript:script_path=<abs>` em toda tentativa.
+   `--extractor-args youtubepot-bgutilscript:server_home=<dir>` onde <dir>
+   contém `build/generate_once.js` — o arg `script_path` NÃO é o caminho do
+   arquivo (o plugin faz join(arg,'../..','build',...)). Validar com
+   `-v --extractor-args youtube:pot_trace=true` procurando
+   "Generating POT via script"; sem isso o plugin falha silenciosamente.
 4. Manter fallback de clientes só p/ erros de bloqueio: padrão → web_embedded
    → tv (tv falha em alguns vídeos; web_embedded costuma passar).
 
