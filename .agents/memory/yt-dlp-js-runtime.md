@@ -30,3 +30,6 @@ transitórios — retry resolve.
 **How to apply:** ver downloadAudio/CLIENT_FALLBACKS/findPotScript na rota
 yt-audio do api-server; novos usos de yt-dlp devem repetir o padrão. Deps
 python ficam no pyproject.toml + uv.lock (produção instala a partir deles).
+
+## IPv6 de datacenter é banido em bloco
+Logs de produção provaram: PO token gerado com sucesso (bgutil:script-node) e mesmo assim "Sign in to confirm you're not a bot". A chave de cache mostrava IP de saída IPv6 do GCP (2600:1900::/…) — o YouTube bane faixas /64 de IPv6 de datacenter inteiras. **Correção: `--force-ipv4` em todos os spawns do yt-dlp.** Sempre checar o campo `ip` no cache spec do pot_trace para saber por qual família de IP o servidor está saindo.

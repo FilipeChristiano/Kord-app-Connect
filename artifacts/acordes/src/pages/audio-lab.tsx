@@ -1784,7 +1784,7 @@ export default function AudioLab() {
               )}
 
               {cifraStatus === "failed" && cifraNotice && (
-                <div className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-200/90 bg-amber-500/10 dark:bg-amber-500/10 border border-amber-600/40 dark:border-amber-500/25 rounded-xl px-4 py-3">
+                <div className="flex items-start gap-2 text-sm text-amber-900 bg-amber-100 border border-amber-400/60 rounded-xl px-4 py-3">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{cifraNotice}</span>
                 </div>
@@ -1918,7 +1918,7 @@ export default function AudioLab() {
                       <UploadCloud className="w-4 h-4" /> Enviar áudio (MP3, WAV)
                     </button>
                     {liveError && (
-                      <div className="mt-4 flex items-start gap-2 text-left text-sm text-amber-700 dark:text-amber-200/90 bg-amber-500/10 dark:bg-amber-500/10 border border-amber-600/40 dark:border-amber-500/25 rounded-xl px-4 py-3">
+                      <div className="mt-4 flex items-start gap-2 text-left text-sm text-amber-900 bg-amber-100 border border-amber-400/60 rounded-xl px-4 py-3">
                         <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                         <span>{liveError}</span>
                       </div>
@@ -2040,14 +2040,14 @@ export default function AudioLab() {
                   )}
 
                   {fastFallbackNotice && (
-                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-700 dark:text-amber-200/90 bg-amber-500/10 dark:bg-amber-500/10 border border-amber-600/40 dark:border-amber-500/25 rounded-xl px-4 py-3">
+                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-900 bg-amber-100 border border-amber-400/60 rounded-xl px-4 py-3">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                       <span>{fastFallbackNotice}</span>
                     </div>
                   )}
 
                   {fastMixError && (
-                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-700 dark:text-amber-200/90 bg-amber-500/10 dark:bg-amber-500/10 border border-amber-600/40 dark:border-amber-500/25 rounded-xl px-4 py-3">
+                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-900 bg-amber-100 border border-amber-400/60 rounded-xl px-4 py-3">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                       <span>{fastMixError}</span>
                     </div>
@@ -2114,7 +2114,7 @@ export default function AudioLab() {
                   )}
 
                   {hqError && (
-                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-700 dark:text-amber-200/90 bg-amber-500/10 dark:bg-amber-500/10 border border-amber-600/40 dark:border-amber-500/25 rounded-xl px-4 py-3">
+                    <div className="mt-3 flex items-start gap-2 text-sm text-amber-900 bg-amber-100 border border-amber-400/60 rounded-xl px-4 py-3">
                       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                       <span>{hqError}</span>
                     </div>
@@ -3108,7 +3108,7 @@ function StemMixer({
       </div>
 
       {loadState === "error" && (
-        <p className="text-[12px] text-amber-700 dark:text-amber-200/90">
+        <p className="text-[12px] text-amber-900">
           Não foi possível carregar o áudio para a mistura. Tente novamente.
         </p>
       )}

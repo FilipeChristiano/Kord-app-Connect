@@ -140,6 +140,10 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
       // habilitamos o Node (sempre presente, é o runtime do próprio servidor).
       "--js-runtimes",
       "node",
+      // Força IPv4: o YouTube bane faixas inteiras de IPv6 de datacenter
+      // (o deployment sai por IPv6 do Google e era barrado mesmo com o PO
+      // token gerado com sucesso — confirmado nos logs de produção).
+      "--force-ipv4",
       // Habilita o gerador de PO tokens (contorna o bloqueio de bot do
       // YouTube em IPs de datacenter, como o do servidor publicado).
       ...(POT_SCRIPT
