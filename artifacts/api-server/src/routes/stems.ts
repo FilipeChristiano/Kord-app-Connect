@@ -28,8 +28,8 @@ const router: IRouter = Router();
 const VIDEO_ID = /^[\w-]{11}$/;
 const KEY_RE = /^[\w-]{6,80}$/;
 const STEM_CACHE = join(os.tmpdir(), "harmonic-stems");
-// Separação completa numa CPU modesta leva alguns minutos; folga generosa.
-const SEPARATE_TIMEOUT_MS = 12 * 60 * 1000;
+// Músicas de até 15 minutos precisam de mais tempo para separação em CPU.
+const SEPARATE_TIMEOUT_MS = 30 * 60 * 1000;
 const MAX_UPLOAD_BYTES = 60 * 1024 * 1024;
 // Retenção do cache de faixas geradas: evita crescimento ilimitado no disco.
 const STEM_TTL_MS = 24 * 60 * 60 * 1000;

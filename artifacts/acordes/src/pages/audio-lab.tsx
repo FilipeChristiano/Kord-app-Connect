@@ -83,7 +83,7 @@ import { useCifrasFavoritas } from "@/hooks/use-cifras-favoritas";
 import { processChordChartFull, type SophisticationLevel } from "@/data/substitutions";
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
-const MAX_DURATION = 12 * 60; // 12 minutos (limita memória/CPU mesmo com arquivos comprimidos)
+const MAX_DURATION = 15 * 60; // 15 minutos (limita memória/CPU mesmo com arquivos comprimidos)
 const MAX_RECORD_SECONDS = 30; // gravação de canto: um trecho curto já identifica a música
 const ACCEPT = ".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-m4a,audio/mp4,audio/*";
 
@@ -701,9 +701,9 @@ export default function AudioLab() {
     }
 
     // Acompanha o status até concluir. A separação completa pode levar alguns
-    // minutos; consultamos a cada 3s com um teto generoso (~12 min).
+    // minutos; o prazo inclui separação e análise de batidas de músicas de até 15 min.
     const startedAt = Date.now();
-    const MAX_WAIT_MS = 12 * 60 * 1000;
+    const MAX_WAIT_MS = 35 * 60 * 1000;
     const tick = async () => {
       if (hqRunIdRef.current !== runId) return;
       const status = await pollStemsStatus(key);
@@ -999,7 +999,7 @@ export default function AudioLab() {
 
         if (buffer.duration > MAX_DURATION) {
           setPhase("error");
-          setError("Esse áudio é muito longo. Envie uma música ou um trecho de até 12 minutos.");
+          setError("Esse áudio é muito longo. Envie uma música ou um trecho de até 15 minutos.");
           return;
         }
 
@@ -1537,7 +1537,7 @@ export default function AudioLab() {
                     Escolher áudio
                   </span>
                   <p className="text-xs text-muted-foreground/60 mt-4">
-                    MP3, WAV ou M4A • até 50MB
+                    MP3, WAV ou M4A • até 15 minutos • até 50MB
                   </p>
                 </div>
 
