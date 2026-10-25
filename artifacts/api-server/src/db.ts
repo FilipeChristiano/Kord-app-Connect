@@ -13,6 +13,32 @@ export interface AccessInfo {
   source: "stripe" | "hotmart" | "manual" | null;
 }
 
+// A tabela não existe no schema do Drizzle (ainda não migrado) — criada aqui
+// sob demanda, mesmo padrão usado para `welcome_emails` em email.ts.
+let allowedEmailsTableReady: Promise<void> | null = null;
+
+function ensureAllowedEmailsTable(): Promise<void> {
+  if (!allowedEmailsTableReady) {
+    allowedEmailsTableReady = pool
+      .query(
+        `CREATE TABLE IF NOT EXISTS allowed_emails (
+           email TEXT PRIMARY KEY,
+           source TEXT,
+           transaction_id TEXT,
+           product_id TEXT,
+           status TEXT NOT NULL,
+           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+         )`,
+      )
+      .then(() => undefined)
+      .catch((err) => {
+        allowedEmailsTableReady = null;
+        throw err;
+      });
+  }
+  return allowedEmailsTableReady;
+}
+
 /**
  * Acesso liberado se:
  *  1. existe assinatura Stripe ativa (ou em trial) para o e-mail — os dados
@@ -43,6 +69,7 @@ export async function getAccessInfo(email: string): Promise<AccessInfo> {
     console.error("[access] stripe subscription check failed:", err);
   }
 
+  await ensureAllowedEmailsTable();
   const { rows } = await pool.query<{ status: string; source: string }>(
     "SELECT status, source FROM allowed_emails WHERE email = $1",
     [normalized],
@@ -70,6 +97,7 @@ export async function upsertAllowedEmail(params: {
   status: "active" | "revoked";
 }): Promise<void> {
   const email = params.email.trim().toLowerCase();
+  await ensureAllowedEmailsTable();
   await pool.query(
     `INSERT INTO allowed_emails (email, source, transaction_id, product_id, status, updated_at)
      VALUES ($1, $2, $3, $4, $5, NOW())
@@ -85,6 +113,7 @@ export async function upsertAllowedEmail(params: {
 
 export async function revokeAllowedEmail(email: string): Promise<void> {
   const normalized = email.trim().toLowerCase();
+  await ensureAllowedEmailsTable();
   await pool.query(
     "UPDATE allowed_emails SET status = 'revoked', updated_at = NOW() WHERE email = $1",
     [normalized],

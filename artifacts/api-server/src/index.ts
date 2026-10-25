@@ -67,20 +67,15 @@ initStripe()
     });
   })
   .catch((error) => {
-    // Em desenvolvimento, a conexão da Stripe (sandbox) pode estar ausente ou
-    // expirada — não derruba o servidor inteiro por isso: as demais rotas
-    // (acesso via banco, transcrição, etc.) continuam funcionando e as rotas
-    // da Stripe reportam o próprio erro. Em produção o start continua estrito.
-    if (process.env.NODE_ENV === "development") {
-      console.error(
-        "[startup] Stripe indisponível em desenvolvimento — servidor segue sem ela:",
-        error instanceof Error ? error.message : error,
-      );
-      app.listen(port, () => {
-        console.log(`Server listening on port ${port} (sem Stripe)`);
-      });
-      return;
-    }
-    console.error("[startup] failed to start server:", error);
-    process.exit(1);
+    // A Stripe pode estar ausente/indisponível (chave inválida, sandbox fora
+    // do ar) sem que isso derrube o servidor inteiro: as demais rotas (acesso
+    // via banco, transcrição, cifra, etc.) não dependem dela e continuam
+    // funcionando — só as rotas da própria Stripe reportam o erro.
+    console.error(
+      "[startup] Stripe indisponível — servidor segue sem ela:",
+      error instanceof Error ? error.message : error,
+    );
+    app.listen(port, () => {
+      console.log(`Server listening on port ${port} (sem Stripe)`);
+    });
   });

@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/dist
+**/.turbo
+**/*.log
+.pythonlibs
+.venv
+__pycache__
+**/.replit-artifact
+screenshots
+exports
+*.tsbuildinfo

@@ -54,3 +54,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 .venv
+
+# docker-compose com credenciais reais (não comitar) — use docker-compose.yml
+# como template e mantenha os valores reais só localmente/no Portainer.
+docker-compose.local.yml

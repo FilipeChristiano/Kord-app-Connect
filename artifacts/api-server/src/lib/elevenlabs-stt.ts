@@ -1,15 +1,12 @@
-import { ReplitConnectors } from "@replit/connectors-sdk";
-
 // ─────────────────────────────────────────────────────────────────────────────
-// ElevenLabs Scribe (speech-to-text) via integração gerenciada pelo Replit.
+// ElevenLabs Scribe (speech-to-text) via API direta (ELEVENLABS_API_KEY).
 //
 // Diferente do gpt-4o-transcribe (que devolve só o texto), o Scribe devolve
 // timestamps por PALAVRA. Isso permite posicionar os acordes sobre a sílaba
 // certa da letra — alinhamento preciso, não estimado.
-//
-// A autenticação é injetada pelo connector (sem chave no código). Ver o skill
-// `integrations` / blueprint "elevenlabs".
 // ─────────────────────────────────────────────────────────────────────────────
+
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io";
 
 export interface ScribeWord {
   text: string;
@@ -23,27 +20,8 @@ export interface ScribeResult {
   words: ScribeWord[];
 }
 
-function getClient(): ReplitConnectors {
-  return new ReplitConnectors();
-}
-
-// Verifica se o connector do ElevenLabs está conectado a este projeto. O
-// resultado é cacheado por 60s para não bater na API a cada chamada de status.
-let availCache: { value: boolean; expires: number } | null = null;
-
-export async function isElevenLabsConfigured(): Promise<boolean> {
-  const now = Date.now();
-  if (availCache && availCache.expires > now) return availCache.value;
-
-  let value = false;
-  try {
-    const conns = await getClient().listConnections({ connector_names: "elevenlabs" });
-    value = conns.some((c) => (c.status ?? "").toLowerCase() !== "error");
-  } catch {
-    value = false;
-  }
-  availCache = { value, expires: now + 60_000 };
-  return value;
+export function isElevenLabsConfigured(): boolean {
+  return Boolean(process.env.ELEVENLABS_API_KEY);
 }
 
 interface ScribeApiWord {
@@ -73,9 +51,14 @@ export async function transcribeWithElevenLabs(
   form.append("diarize", "false");
   form.append("tag_audio_events", "false");
 
-  const pfetch = getClient().createProxyFetch("elevenlabs");
-  const res = await pfetch("/v1/speech-to-text", {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) {
+    throw new Error("ELEVENLABS_API_KEY não configurada");
+  }
+
+  const res = await fetch(`${ELEVENLABS_BASE_URL}/v1/speech-to-text`, {
     method: "POST",
+    headers: { "xi-api-key": apiKey },
     body: form,
     signal: AbortSignal.timeout(5 * 60 * 1000),
   });

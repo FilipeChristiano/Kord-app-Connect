@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: registry.connectprojetosesistemas.com.br/kordi-frontend:latest
+    networks:
+      - connectprojetosesistemas3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.kordi.rule=Host(`kordi.connectprojetosesistemas.com.br`)
+        - traefik.http.routers.kordi.entrypoints=websecure
+        - traefik.http.routers.kordi.tls=true
+        - traefik.http.routers.kordi.tls.certresolver=letsencryptresolver
+        - traefik.http.services.kordi.loadbalancer.server.port=80
+
+  backend:
+    image: registry.connectprojetosesistemas.com.br/kordi-backend:latest
+    networks:
+      - connectprojetosesistemas3
+    environment:
+      # --- infra ---
+      - PORT=3001
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://kordi:CHANGE_ME_DB_PASSWORD@kordi-postgres:5432/kordi
+      - ALLOWED_ORIGINS=https://kordi.connectprojetosesistemas.com.br
+      # Não é Replit, mas o código usa essa var para montar a URL do webhook
+      # da Stripe (https://<REPLIT_DOMAINS>/api/stripe/webhook) — só precisa
+      # ser o domínio público real, nada de Replit de verdade é necessário.
+      - REPLIT_DOMAINS=kordi.connectprojetosesistemas.com.br
+
+      # --- Clerk (auth) ---
+      - CLERK_SECRET_KEY=CHANGE_ME_CLERK_SECRET_KEY
+      - CLERK_PUBLISHABLE_KEY=CHANGE_ME_CLERK_PUBLISHABLE_KEY
+
+      # --- Stripe (cobrança) ---
+      - STRIPE_SECRET_KEY=CHANGE_ME_STRIPE_SECRET_KEY
+
+      # --- Hotmart (liberação de acesso via webhook) ---
+      - HOTMART_HOTTOK=CHANGE_ME_HOTMART_HOTTOK
+
+      # --- OpenAI (transcrição/cifra) — chave direta da OpenAI funciona aqui,
+      # não precisa do connector gerenciado do Replit ---
+      - AI_INTEGRATIONS_OPENAI_API_KEY=CHANGE_ME_OPENAI_API_KEY
+      - AI_INTEGRATIONS_OPENAI_BASE_URL=https://api.openai.com/v1
+
+      # --- Resend (e-mail de boas-vindas) ---
+      - RESEND_API_KEY=CHANGE_ME_RESEND_API_KEY
+
+      # --- ElevenLabs (transcrição com timestamp por palavra — opcional) ---
+      - ELEVENLABS_API_KEY=CHANGE_ME_ELEVENLABS_API_KEY
+
+      # --- opcionais (deixe vazio se não for usar agora) ---
+      - TRANSCRIPTION_WORKER_URL=
+      - YOUTUBE_COOKIES=
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 2560M
+        reservations:
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.kordi-api.rule=Host(`kordi.connectprojetosesistemas.com.br`) && PathPrefix(`/api`)
+        - traefik.http.routers.kordi-api.entrypoints=websecure
+        - traefik.http.routers.kordi-api.tls=true
+        - traefik.http.routers.kordi-api.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.kordi-api.priority=100
+        - traefik.http.services.kordi-api.loadbalancer.server.port=3001
+
+  kordi-postgres:
+    image: postgres:16-alpine
+    networks:
+      - connectprojetosesistemas3
+    environment:
+      - POSTGRES_USER=kordi
+      - POSTGRES_PASSWORD=CHANGE_ME_DB_PASSWORD
+      - POSTGRES_DB=kordi
+    volumes:
+      - kordi_postgres_data:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  connectprojetosesistemas3:
+    external: true
+
+volumes:
+  kordi_postgres_data:

@@ -1,6 +1,4 @@
-// Envio de e-mails transacionais via Resend (integração Replit "resend").
-// A chave de API fica no cofre de conectores — o SDK cuida da autenticação.
-import { ReplitConnectors } from "@replit/connectors-sdk";
+// Envio de e-mails transacionais via Resend (API direta — RESEND_API_KEY).
 import { pool } from "./db";
 
 const FROM_ADDRESS = "Kordi <contato@kordi.app.br>";
@@ -88,6 +86,12 @@ export async function sendWelcomeEmail(params: {
 }): Promise<void> {
   const email = params.email.trim().toLowerCase();
 
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error("[email] RESEND_API_KEY não configurada — pulando envio");
+    return;
+  }
+
   try {
     await ensureWelcomeTable();
     const { rowCount } = await pool.query(
@@ -100,10 +104,12 @@ export async function sendWelcomeEmail(params: {
     }
 
     const firstName = params.name?.trim().split(/\s+/)[0] || null;
-    const connectors = new ReplitConnectors();
-    const resp = await connectors.proxy("resend", "/emails", {
+    const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
         from: FROM_ADDRESS,
         to: [email],
