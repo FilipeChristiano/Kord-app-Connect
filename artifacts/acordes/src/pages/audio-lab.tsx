@@ -40,13 +40,12 @@ import {
   type AudioAnalysisResult,
 } from "@/lib/audio-analysis";
 import { transcribeAudio, type TranscribeOutcome } from "@/lib/transcription";
+import { captureYoutubeAudio, isYoutubeCaptureSupported } from "@/lib/youtube-capture";
 import { analyzeChordsRemote } from "@/lib/chord-remote";
 import {
   fetchCifra,
   fetchCifraByLyrics,
-  fetchYoutubeAudio,
   pickCifra,
-  prepareStemsYoutube,
   prepareStemsUpload,
   pollStemsStatus,
   stemsFileUrl,
@@ -353,6 +352,10 @@ export default function AudioLab() {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
 
+  // Player incorporado do YouTube (usado também para capturar o áudio da aba
+  // na Mesa de Mistura — ver youtube-capture.ts).
+  const ytIframeRef = useRef<HTMLIFrameElement | null>(null);
+
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -507,12 +510,8 @@ export default function AudioLab() {
       liveBlobUrlRef.current = url;
       return url;
     }
-    const ytId = cifraMeta?.youtubeId;
-    if (inputMode === "search" && ytId) {
-      return `/api/yt-audio?id=${encodeURIComponent(ytId)}`;
-    }
     return null;
-  }, [inputMode, cifraMeta]);
+  }, []);
 
   // ── "Sem voz" AO VIVO: começa a tocar com o cancelamento de centro ligado ──
   // O efeito é aplicado em tempo real (nós nativos do Web Audio), então começa
@@ -523,15 +522,46 @@ export default function AudioLab() {
     setLiveError("");
 
     if (!el.getAttribute("src")) {
+      if (!audioFileRef.current) {
+        const ytId = cifraMeta?.youtubeId;
+        if (inputMode === "search" && ytId) {
+          if (!isYoutubeCaptureSupported()) {
+            setLiveError(
+              "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente.",
+            );
+            return;
+          }
+          const iframe = ytIframeRef.current;
+          if (!iframe) {
+            setLiveError("Não consegui preparar o player do YouTube. Tente recarregar a página.");
+            return;
+          }
+          setLiveLoading(true);
+          const res = await captureYoutubeAudio(iframe);
+          if (!res.ok || !res.blob) {
+            setLiveLoading(false);
+            setLiveError(
+              res.reason === "cancelled"
+                ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
+                : "Não consegui capturar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+            );
+            return;
+          }
+          audioFileRef.current = new File([res.blob], "audio.webm", {
+            type: res.blob.type || "audio/webm",
+          });
+          setStemFileName(
+            cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
+          );
+        } else {
+          setLiveError("Envie o arquivo de áudio da música para usar o estúdio.");
+          return;
+        }
+      }
       const src = resolveLiveSrc();
       if (!src) {
         setLiveError("Envie o arquivo de áudio da música para usar o estúdio.");
         return;
-      }
-      if (inputMode === "search" && !audioFileRef.current) {
-        setStemFileName(
-          cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
-        );
       }
       setLiveLoading(true);
       el.src = src;
@@ -577,19 +607,30 @@ export default function AudioLab() {
     if (!file) {
       const ytId = cifraMeta?.youtubeId;
       if (inputMode === "search" && ytId) {
+        if (!isYoutubeCaptureSupported()) {
+          setVocalsError(
+            "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente.",
+          );
+          return;
+        }
+        const iframe = ytIframeRef.current;
+        if (!iframe) {
+          setVocalsError("Não consegui preparar o player do YouTube. Tente recarregar a página.");
+          return;
+        }
         setVocalsFetching(true);
         try {
-          const res = await fetchYoutubeAudio(ytId);
+          const res = await captureYoutubeAudio(iframe);
           if (stemRunIdRef.current !== runId) return;
-          if (!res.ok) {
+          if (!res.ok || !res.blob) {
             setVocalsError(
-              res.reason === "unauthorized"
-                ? "Sua sessão expirou. Atualize a página e entre novamente."
-                : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+              res.reason === "cancelled"
+                ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
+                : "Não consegui capturar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
             );
             return;
           }
-          file = new File([res.blob], "audio.mp3", { type: "audio/mpeg" });
+          file = new File([res.blob], "audio.webm", { type: res.blob.type || "audio/webm" });
           audioFileRef.current = file;
           setStemFileName(
             cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
@@ -661,26 +702,51 @@ export default function AudioLab() {
     setHqError("");
     setHqStatus("preparing");
 
-    // Descobre a fonte: arquivo enviado tem prioridade; senão, vídeo da pesquisa.
-    let outcome: Awaited<ReturnType<typeof prepareStemsYoutube>>;
-    const file = audioFileRef.current;
-    if (file) {
-      outcome = await prepareStemsUpload(file);
-    } else {
+    // Descobre a fonte: arquivo enviado tem prioridade; senão, captura o áudio
+    // do player do YouTube na própria aba e envia como se fosse um upload.
+    let outcome: Awaited<ReturnType<typeof prepareStemsUpload>>;
+    let file = audioFileRef.current;
+    if (!file) {
       const ytId = cifraMeta?.youtubeId;
       if (inputMode === "search" && ytId) {
+        if (!isYoutubeCaptureSupported()) {
+          setHqStatus("error");
+          setHqError(
+            "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente.",
+          );
+          return;
+        }
+        const iframe = ytIframeRef.current;
+        if (!iframe) {
+          setHqStatus("error");
+          setHqError("Não consegui preparar o player do YouTube. Tente recarregar a página.");
+          return;
+        }
+        const res = await captureYoutubeAudio(iframe);
+        if (hqRunIdRef.current !== runId) return;
+        if (!res.ok || !res.blob) {
+          setHqStatus("error");
+          setHqError(
+            res.reason === "cancelled"
+              ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
+              : "Não consegui capturar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+          );
+          return;
+        }
+        file = new File([res.blob], "audio.webm", { type: res.blob.type || "audio/webm" });
+        audioFileRef.current = file;
         if (!stemFileName) {
           setStemFileName(
             cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
           );
         }
-        outcome = await prepareStemsYoutube(ytId);
       } else {
         setHqStatus("error");
         setHqError("Envie o arquivo de áudio da música para usar a máxima qualidade.");
         return;
       }
     }
+    outcome = await prepareStemsUpload(file);
     if (hqRunIdRef.current !== runId) return;
 
     if (!outcome.ok) {
@@ -736,18 +802,29 @@ export default function AudioLab() {
     if (!file) {
       const ytId = cifraMeta?.youtubeId;
       if (inputMode === "search" && ytId) {
+        if (!isYoutubeCaptureSupported()) {
+          setLiveError(
+            "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente.",
+          );
+          return;
+        }
+        const iframe = ytIframeRef.current;
+        if (!iframe) {
+          setLiveError("Não consegui preparar o player do YouTube. Tente recarregar a página.");
+          return;
+        }
         setInstDownloadBusy(true);
         try {
-          const res = await fetchYoutubeAudio(ytId);
-          if (!res.ok) {
+          const res = await captureYoutubeAudio(iframe);
+          if (!res.ok || !res.blob) {
             setLiveError(
-              res.reason === "unauthorized"
-                ? "Sua sessão expirou. Atualize a página e entre novamente."
-                : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+              res.reason === "cancelled"
+                ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
+                : "Não consegui capturar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
             );
             return;
           }
-          file = new File([res.blob], "audio.mp3", { type: "audio/mpeg" });
+          file = new File([res.blob], "audio.webm", { type: res.blob.type || "audio/webm" });
           audioFileRef.current = file;
         } finally {
           setInstDownloadBusy(false);
@@ -807,19 +884,35 @@ export default function AudioLab() {
     if (!file) {
       const ytId = cifraMeta?.youtubeId;
       if (inputMode === "search" && ytId) {
+        if (!isYoutubeCaptureSupported()) {
+          setFastMixError(
+            "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente.",
+          );
+          return;
+        }
+        const iframe = ytIframeRef.current;
+        if (!iframe) {
+          setFastMixError("Não consegui preparar o player do YouTube. Tente recarregar a página.");
+          return;
+        }
         setFastMixFetching(true);
         try {
-          const res = await fetchYoutubeAudio(ytId);
+          // Toca o vídeo oficial do YouTube na própria aba e grava o áudio que
+          // está tocando — pede permissão do navegador (compartilhar a aba com
+          // áudio); não baixa nada pelo servidor.
+          const res = await captureYoutubeAudio(iframe);
           if (fastRunIdRef.current !== runId) return;
-          if (!res.ok) {
+          if (!res.ok || !res.blob) {
             setFastMixError(
-              res.reason === "unauthorized"
-                ? "Sua sessão expirou. Atualize a página e entre novamente."
-                : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
+              res.reason === "cancelled"
+                ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
+                : res.reason === "unsupported"
+                  ? "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente."
+                  : "Não consegui capturar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
             );
             return;
           }
-          file = new File([res.blob], "audio.mp3", { type: "audio/mpeg" });
+          file = new File([res.blob], "audio.webm", { type: res.blob.type || "audio/webm" });
           audioFileRef.current = file;
           setStemFileName(
             cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
@@ -1760,6 +1853,7 @@ export default function AudioLab() {
                       {cifraMeta.youtubeId ? (
                         <div className="overflow-hidden rounded-2xl border border-foreground/10 bg-black aspect-video">
                           <iframe
+                            ref={ytIframeRef}
                             key={cifraMeta.youtubeId}
                             src={`https://www.youtube-nocookie.com/embed/${cifraMeta.youtubeId}?enablejsapi=1`}
                             title={`${cifraMeta.title} — ${cifraMeta.artist}`}
@@ -2021,7 +2115,8 @@ export default function AudioLab() {
                   {fastMixFetching && (
                     <div className="mt-3 flex items-center gap-2 text-[12px] text-foreground/60">
                       <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
-                      Baixando o áudio da música do YouTube…
+                      Autorize o compartilhamento de áudio da aba quando o navegador pedir — a
+                      música toca uma vez para capturarmos o áudio…
                     </div>
                   )}
 

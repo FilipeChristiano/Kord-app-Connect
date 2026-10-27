@@ -16,7 +16,7 @@ services:
           memory: 64M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.kordi.rule=Host(`kordi.connectprojetosesistemas.com.br`)
+        - traefik.http.routers.kordi.rule=Host(`kordi.connectprojetosesistemas.com.br`) || Host(`kordi.app.br`)
         - traefik.http.routers.kordi.entrypoints=websecure
         - traefik.http.routers.kordi.tls=true
         - traefik.http.routers.kordi.tls.certresolver=letsencryptresolver
@@ -31,11 +31,12 @@ services:
       - PORT=3001
       - NODE_ENV=production
       - DATABASE_URL=postgresql://kordi:CHANGE_ME_DB_PASSWORD@kordi-postgres:5432/kordi
-      - ALLOWED_ORIGINS=https://kordi.connectprojetosesistemas.com.br
+      - ALLOWED_ORIGINS=https://kordi.connectprojetosesistemas.com.br,https://kordi.app.br
       # Não é Replit, mas o código usa essa var para montar a URL do webhook
-      # da Stripe (https://<REPLIT_DOMAINS>/api/stripe/webhook) — só precisa
-      # ser o domínio público real, nada de Replit de verdade é necessário.
-      - REPLIT_DOMAINS=kordi.connectprojetosesistemas.com.br
+      # da Stripe (https://<primeiro-domínio>/api/stripe/webhook) — o código só
+      # usa o PRIMEIRO domínio da lista pra registrar o webhook, então deixe
+      # aqui o domínio que você sabe que já está no ar.
+      - REPLIT_DOMAINS=kordi.app.br,kordi.connectprojetosesistemas.com.br
 
       # --- Clerk (auth) ---
       - CLERK_SECRET_KEY=CHANGE_ME_CLERK_SECRET_KEY
@@ -58,6 +59,10 @@ services:
       # --- ElevenLabs (transcrição com timestamp por palavra — opcional) ---
       - ELEVENLABS_API_KEY=CHANGE_ME_ELEVENLABS_API_KEY
 
+      # --- ScraperAPI (busca de cifra pronta no CifraClub — serviço de
+      # terceiros que lida com a proteção anti-bot do site) ---
+      - SCRAPER_API_KEY=CHANGE_ME_SCRAPER_API_KEY
+
       # --- opcionais (deixe vazio se não for usar agora) ---
       - TRANSCRIPTION_WORKER_URL=
       - YOUTUBE_COOKIES=
@@ -72,7 +77,7 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=true
-        - traefik.http.routers.kordi-api.rule=Host(`kordi.connectprojetosesistemas.com.br`) && PathPrefix(`/api`)
+        - traefik.http.routers.kordi-api.rule=(Host(`kordi.connectprojetosesistemas.com.br`) || Host(`kordi.app.br`)) && PathPrefix(`/api`)
         - traefik.http.routers.kordi-api.entrypoints=websecure
         - traefik.http.routers.kordi-api.tls=true
         - traefik.http.routers.kordi-api.tls.certresolver=letsencryptresolver

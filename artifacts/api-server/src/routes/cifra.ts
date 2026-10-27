@@ -1,6 +1,7 @@
 import express, { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth } from "@clerk/express";
 import { getOpenAI } from "../lib/openai-client";
+import { pool } from "../db";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busca de CIFRA PRONTA (feita por humanos) no CifraClub.
@@ -164,8 +165,27 @@ function parseTitleArtist(html: string, hit: CifraHit): { title: string; artist:
   return { title, artist };
 }
 
-async function fetchText(url: string, timeoutMs: number): Promise<{ ok: boolean; status: number; text: string }> {
+function scraperApiUrl(url: string): string | null {
+  const key = process.env.SCRAPER_API_KEY;
+  if (!key) return null;
+  // Só o CifraClub bloqueia o fetch direto — rotear YouTube/DuckDuckGo pelo
+  // proxy também gasta créditos à toa e pode mudar o formato da resposta
+  // (ex.: a busca do YouTube parou de achar o videoId quando passou por aqui).
   try {
+    if (new URL(url).hostname !== "www.cifraclub.com.br") return null;
+  } catch {
+    return null;
+  }
+  return `https://api.scraperapi.com/?api_key=${key}&url=${encodeURIComponent(url)}`;
+}
+
+async function fetchText(url: string, timeoutMs: number): Promise<{ ok: boolean; status: number; text: string }> {
+  const proxied = scraperApiUrl(url);
+  try {
+    if (proxied) {
+      const r = await fetch(proxied, { signal: AbortSignal.timeout(timeoutMs) });
+      return { ok: r.ok, status: r.status, text: await r.text() };
+    }
     const r = await fetch(url, {
       headers: {
         "user-agent": UA,
@@ -180,11 +200,76 @@ async function fetchText(url: string, timeoutMs: number): Promise<{ ok: boolean;
   }
 }
 
+
+// Cache permanente das cifras já resolvidas (chave: slug artista+música do
+// CifraClub). Evita rebuscar/re-raspar uma música que algum usuário já pediu
+// antes — a pesquisa só acontece na primeira vez que ela é buscada.
+let cifraCacheTableReady: Promise<void> | null = null;
+function ensureCifraCacheTable(): Promise<void> {
+  if (!cifraCacheTableReady) {
+    cifraCacheTableReady = pool
+      .query(
+        `CREATE TABLE IF NOT EXISTS cifra_cache (
+           artist_slug TEXT NOT NULL,
+           song_slug TEXT NOT NULL,
+           url TEXT NOT NULL,
+           title TEXT NOT NULL,
+           artist TEXT NOT NULL,
+           key TEXT,
+           body TEXT NOT NULL,
+           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+           PRIMARY KEY (artist_slug, song_slug)
+         )`,
+      )
+      .then(() => undefined)
+      .catch((err) => {
+        cifraCacheTableReady = null;
+        throw err;
+      });
+  }
+  return cifraCacheTableReady;
+}
+
+async function getCachedCifra(artist: string, song: string): Promise<Parsed | null> {
+  try {
+    await ensureCifraCacheTable();
+    const { rows } = await pool.query<Parsed>(
+      "SELECT url, title, artist, key, body FROM cifra_cache WHERE artist_slug = $1 AND song_slug = $2",
+      [artist, song],
+    );
+    return rows[0] ?? null;
+  } catch (err) {
+    console.error("[cifra-cache] read failed:", err);
+    return null;
+  }
+}
+
+async function cacheCifra(artist: string, song: string, parsed: Parsed): Promise<void> {
+  try {
+    await ensureCifraCacheTable();
+    await pool.query(
+      `INSERT INTO cifra_cache (artist_slug, song_slug, url, title, artist, key, body)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (artist_slug, song_slug) DO UPDATE SET
+         url = EXCLUDED.url, title = EXCLUDED.title, artist = EXCLUDED.artist,
+         key = EXCLUDED.key, body = EXCLUDED.body`,
+      [artist, song, parsed.url, parsed.title, parsed.artist, parsed.key, parsed.body],
+    );
+  } catch (err) {
+    console.error("[cifra-cache] write failed:", err);
+  }
+}
+
 // Tenta a página de impressão de uma música; só conta se tiver o <pre> da cifra.
 // O site às vezes responde 500 na página de impressão de ALGUMAS músicas — nesse
 // caso caímos para a página normal, que também traz o <pre> com a cifra.
+// Primeiro consulta o cache (banco); só raspa o CifraClub se for a primeira vez.
 async function fetchPrint(artist: string, song: string): Promise<Parsed | null> {
   if (!artist || !song) return null;
+
+  const cached = await getCachedCifra(artist, song);
+  if (cached) return cached;
+
   const baseUrl = `https://www.cifraclub.com.br/${artist}/${song}/`;
   let page = await fetchText(`${baseUrl}imprimir.html`, 18000);
   let body = page.ok && page.text ? parseBody(page.text) : null;
@@ -195,13 +280,15 @@ async function fetchPrint(artist: string, song: string): Promise<Parsed | null> 
   }
   if (!body) return null;
   const { title, artist: a } = parseTitleArtist(page.text, { artist, song });
-  return {
+  const parsed: Parsed = {
     url: baseUrl,
     title,
     artist: a,
     key: parseKey(page.text),
     body,
   };
+  await cacheCifra(artist, song, parsed);
+  return parsed;
 }
 
 // Lista os slugs de músicas de um artista a partir da página dele.

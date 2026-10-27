@@ -24,13 +24,18 @@ export function useAccess() {
     },
     staleTime: 10_000,
     retry: 1,
-    // Auto-poll while the user is on a "not allowed yet" state so the page
-    // unlocks as soon as the Hotmart webhook arrives — without manual refresh.
+    // Auto-poll enquanto o usuário está em "ainda não liberado" (libera assim
+    // que o webhook chega, sem precisar recarregar) OU quando a última
+    // tentativa falhou (ex.: backend reiniciando durante um deploy) — sem
+    // isso, uma falha passageira deixava a aba travada em erro para sempre,
+    // só saindo desse estado com um reload manual.
     refetchInterval: (query) => {
+      if (query.state.status === "error") return 5_000;
       const data = query.state.data;
       if (data?.authenticated && !data?.allowed) return 8_000;
       return false;
     },
     refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
