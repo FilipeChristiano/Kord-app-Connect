@@ -10,14 +10,127 @@ export const pool = new Pool({
 
 export interface AccessInfo {
   allowed: boolean;
-  source: "stripe" | "hotmart" | "manual" | null;
+  source: "stripe" | "hotmart" | "manual" | "code" | null;
+}
+
+let accessCodeTablesReady: Promise<void> | null = null;
+
+export function ensureAccessCodeTables(): Promise<void> {
+  if (!accessCodeTablesReady) {
+    accessCodeTablesReady = pool
+      .query(
+        `CREATE TABLE IF NOT EXISTS access_codes (
+           code TEXT PRIMARY KEY,
+           max_redemptions INTEGER NOT NULL,
+           duration_days INTEGER NOT NULL,
+           active BOOLEAN NOT NULL DEFAULT TRUE,
+           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+         );
+         CREATE TABLE IF NOT EXISTS access_code_redemptions (
+           code TEXT NOT NULL REFERENCES access_codes(code),
+           email TEXT NOT NULL,
+           redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+           expires_at TIMESTAMPTZ NOT NULL,
+           PRIMARY KEY (code, email)
+         );`,
+      )
+      .then(() => undefined)
+      .catch((err) => {
+        accessCodeTablesReady = null;
+        throw err;
+      });
+  }
+  return accessCodeTablesReady;
+}
+
+export type RedeemResult =
+  | { ok: true; expiresAt: Date }
+  | { ok: false; reason: "invalid_code" | "code_exhausted" | "already_redeemed" };
+
+/**
+ * Resgata um código de acesso temporário para o e-mail. Atômico: trava a
+ * linha do código (FOR UPDATE) para o limite de resgates nunca estourar.
+ */
+export async function redeemAccessCode(
+  rawCode: string,
+  email: string,
+): Promise<RedeemResult> {
+  const code = rawCode.trim().toUpperCase();
+  const normalized = email.trim().toLowerCase();
+  await ensureAccessCodeTables();
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query<{
+      max_redemptions: number;
+      duration_days: number;
+    }>(
+      "SELECT max_redemptions, duration_days FROM access_codes WHERE code = $1 AND active = TRUE FOR UPDATE",
+      [code],
+    );
+    const row = rows[0];
+    if (!row) {
+      await client.query("ROLLBACK");
+      return { ok: false, reason: "invalid_code" };
+    }
+
+    const existing = await client.query(
+      "SELECT 1 FROM access_code_redemptions WHERE code = $1 AND email = $2",
+      [code, normalized],
+    );
+    if (existing.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return { ok: false, reason: "already_redeemed" };
+    }
+
+    const used = await client.query<{ n: string }>(
+      "SELECT COUNT(*) AS n FROM access_code_redemptions WHERE code = $1",
+      [code],
+    );
+    if (Number(used.rows[0]!.n) >= row.max_redemptions) {
+      await client.query("ROLLBACK");
+      return { ok: false, reason: "code_exhausted" };
+    }
+
+    const ins = await client.query<{ expires_at: Date }>(
+      `INSERT INTO access_code_redemptions (code, email, expires_at)
+       VALUES ($1, $2, NOW() + make_interval(days => $3))
+       RETURNING expires_at`,
+      [code, normalized, row.duration_days],
+    );
+    await client.query("COMMIT");
+    return { ok: true, expiresAt: ins.rows[0]!.expires_at };
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createAccessCode(params: {
+  code: string;
+  maxRedemptions: number;
+  durationDays: number;
+}): Promise<void> {
+  await ensureAccessCodeTables();
+  await pool.query(
+    `INSERT INTO access_codes (code, max_redemptions, duration_days)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (code) DO UPDATE SET
+       max_redemptions = EXCLUDED.max_redemptions,
+       duration_days = EXCLUDED.duration_days,
+       active = TRUE`,
+    [params.code.trim().toUpperCase(), params.maxRedemptions, params.durationDays],
+  );
 }
 
 // A tabela não existe no schema do Drizzle (ainda não migrado) — criada aqui
 // sob demanda, mesmo padrão usado para `welcome_emails` em email.ts.
 let allowedEmailsTableReady: Promise<void> | null = null;
 
-function ensureAllowedEmailsTable(): Promise<void> {
+export function ensureAllowedEmailsTable(): Promise<void> {
   if (!allowedEmailsTableReady) {
     allowedEmailsTableReady = pool
       .query(
@@ -49,6 +162,20 @@ function ensureAllowedEmailsTable(): Promise<void> {
  */
 export async function getAccessInfo(email: string): Promise<AccessInfo> {
   const normalized = email.trim().toLowerCase();
+
+  // Acesso temporário por código promocional (ver redeemAccessCode)
+  try {
+    await ensureAccessCodeTables();
+    const { rows } = await pool.query(
+      `SELECT 1 FROM access_code_redemptions
+        WHERE email = $1 AND expires_at > NOW()
+        LIMIT 1`,
+      [normalized],
+    );
+    if (rows.length > 0) return { allowed: true, source: "code" };
+  } catch (err) {
+    console.error("[access] access code check failed:", err);
+  }
 
   try {
     const { rows } = await pool.query(

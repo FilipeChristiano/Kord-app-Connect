@@ -46,6 +46,9 @@ export default function NoAccessPage() {
   const [checking, setChecking] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [iosApp] = useState(isIosApp);
   const [isAndroidApp] = useState(() => !isIosApp() && isAndroidTwa());
 
@@ -97,6 +100,42 @@ export default function NoAccessPage() {
       );
     } finally {
       setSubscribing(false);
+    }
+  }
+
+  async function handleRedeem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setRedeeming(true);
+    setCodeError(null);
+    try {
+      const res = await fetch("/api/redeem-code", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      if (res.ok) {
+        await queryClient.invalidateQueries({ queryKey: ["access"] });
+        await queryClient.refetchQueries({ queryKey: ["access"] });
+        return;
+      }
+      const { error } = await res.json().catch(() => ({ error: "" }));
+      setCodeError(
+        error === "invalid_code"
+          ? "Código inválido."
+          : error === "code_exhausted"
+            ? "Este código já atingiu o limite de usos."
+            : error === "already_redeemed"
+              ? "Você já usou este código."
+              : error === "too_many_attempts"
+                ? "Muitas tentativas. Aguarde alguns minutos."
+                : "Não foi possível validar o código. Tente novamente.",
+      );
+    } catch {
+      setCodeError("Não foi possível validar o código. Tente novamente.");
+    } finally {
+      setRedeeming(false);
     }
   }
 
@@ -202,6 +241,40 @@ export default function NoAccessPage() {
               {subscribing ? "Abrindo pagamento..." : "Começar 7 dias grátis"}
             </button>
           </>
+        )}
+
+        {/* Código de acesso gratuito (não é compra; oculto no iOS por política da Apple) */}
+        {!iosApp && (
+          <form onSubmit={handleRedeem} className="mb-4">
+            <label
+              htmlFor="access-code"
+              className="block text-sm text-foreground/70 mb-2"
+            >
+              Tem um código de acesso gratuito?
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="access-code"
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Digite seu código"
+                autoComplete="off"
+                autoCapitalize="characters"
+                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-foreground/5 border border-foreground/10 text-foreground placeholder:text-foreground/40 uppercase tracking-wider focus:outline-none focus:border-primary/50"
+              />
+              <button
+                type="submit"
+                disabled={redeeming || !code.trim()}
+                className="px-5 py-3 rounded-xl bg-foreground/10 hover:bg-foreground/15 border border-foreground/10 text-foreground font-medium transition-colors disabled:opacity-60"
+              >
+                {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "Resgatar"}
+              </button>
+            </div>
+            {codeError && (
+              <p className="text-red-400 text-sm mt-2">{codeError}</p>
+            )}
+          </form>
         )}
 
         <div className="bg-foreground/5 border border-foreground/10 rounded-xl p-4 mb-4 text-sm text-foreground/70">

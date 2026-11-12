@@ -42,7 +42,8 @@ const SignUpPage = lazy(() => import("@/pages/sign-up"));
 const LandingPage = lazy(() => import("@/pages/landing"));
 const NoAccessPage = lazy(() => import("@/pages/no-access"));
 const PrivacidadePage = lazy(() => import("@/pages/privacidade"));
-const InstaArtPage = lazy(() => import("@/pages/insta-art"));
+const AdminPage = lazy(() => import("@/pages/admin"));
+const InstaArtPage =lazy(() => import("@/pages/insta-art"));
 
 const queryClient = new QueryClient();
 
@@ -157,6 +158,8 @@ function AppRoutes() {
       </Route>
       {/* Páginas públicas, acessíveis sem login */}
       <Route path="/privacidade" component={PrivacidadePage} />
+      {/* Painel administrativo: login próprio (não usa Clerk) */}
+      <Route path="/admin" component={AdminPage} />
       {/* TEMPORÁRIO: páginas de exportação das artes de Instagram */}
       <Route path="/arte/:n" component={InstaArtPage} />
       <Route path="/assinar" component={LandingPage} />

@@ -4,7 +4,7 @@ import { useAuth } from "@clerk/react";
 export interface AccessInfo {
   authenticated: boolean;
   allowed: boolean;
-  accessSource?: "stripe" | "hotmart" | "manual" | null;
+  accessSource?: "stripe" | "hotmart" | "manual" | "code" | null;
   email: string | null;
   name?: string | null;
 }
