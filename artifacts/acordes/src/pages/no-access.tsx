@@ -1,6 +1,6 @@
 import { useClerk, useUser } from "@clerk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LogOut,
   Mail,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { isIosApp, isAndroidTwa } from "@/lib/native-app";
+import { getStoredPromoCode, clearStoredPromoCode } from "@/lib/promo-code";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -49,6 +50,15 @@ export default function NoAccessPage() {
   const [code, setCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
+  // Código digitado no cadastro: resgata automaticamente uma única vez.
+  useEffect(() => {
+    const stored = getStoredPromoCode();
+    if (!stored || isIosApp()) return;
+    setCode(stored);
+    void redeem(stored);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [iosApp] = useState(isIosApp);
   const [isAndroidApp] = useState(() => !isIosApp() && isAndroidTwa());
 
@@ -103,9 +113,13 @@ export default function NoAccessPage() {
     }
   }
 
-  async function handleRedeem(e: React.FormEvent) {
+  function handleRedeem(e: React.FormEvent) {
     e.preventDefault();
-    if (!code.trim()) return;
+    void redeem(code);
+  }
+
+  async function redeem(value: string) {
+    if (!value.trim()) return;
     setRedeeming(true);
     setCodeError(null);
     try {
@@ -113,8 +127,9 @@ export default function NoAccessPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code: value }),
       });
+      if (![403, 429, 500].includes(res.status)) clearStoredPromoCode();
       if (res.ok) {
         await queryClient.invalidateQueries({ queryKey: ["access"] });
         await queryClient.refetchQueries({ queryKey: ["access"] });

@@ -63,6 +63,13 @@ services:
       # terceiros que lida com a proteção anti-bot do site) ---
       - SCRAPER_API_KEY=CHANGE_ME_SCRAPER_API_KEY
 
+      # --- Painel /admin: cria o 1º administrador (proprietário) no primeiro
+      # login, só se ainda não existir nenhum. Valores vêm do stack.env /
+      # Environment variables do Portainer. Depois do 1º login, pode apagar
+      # ADMIN_BOOTSTRAP_PASSWORD do Portainer e redeployar. ---
+      - ADMIN_BOOTSTRAP_EMAIL=${ADMIN_BOOTSTRAP_EMAIL:-}
+      - ADMIN_BOOTSTRAP_PASSWORD=${ADMIN_BOOTSTRAP_PASSWORD:-}
+
       # --- opcionais (deixe vazio se não for usar agora) ---
       - TRANSCRIPTION_WORKER_URL=
       - YOUTUBE_COOKIES=

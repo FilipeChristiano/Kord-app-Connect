@@ -103,16 +103,16 @@ function parseKey(html: string): string | null {
 
 // Converte o bloco <pre> em texto limpo, preservando o alinhamento monoespaçado
 // (acordes sobre a letra) e descartando linhas de TABLATURA (riffs).
-function parseBody(html: string): string | null {
-  const m = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
-  if (!m) return null;
-  let body = m[1].replace(/<[^>]+>/g, "");
-  body = decodeEntities(body);
+// Versão do parser: quando muda, as entradas antigas do cache (possivelmente
+// CORTADAS pelo parser anterior) são ignoradas e a cifra é baixada de novo.
+const PARSER_VERSION = 2;
+
+function cleanPreBlock(inner: string): string {
   const isTabLine = (l: string) =>
     /^\s*[EADGBe]\|/.test(l) ||
     /^\s*\[tab\b/i.test(l) ||
     /^\s*parte\s+\d+\s+de\s+\d+\s*$/i.test(l);
-  body = body
+  return decodeEntities(inner.replace(/<[^>]+>/g, ""))
     .replace(/\r\n?/g, "\n")
     .split("\n")
     .map((l) => l.replace(/[ \t]+$/g, ""))
@@ -120,6 +120,37 @@ function parseBody(html: string): string | null {
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+// Uma cifra longa pode vir dividida em VÁRIOS blocos <pre> na página. Antes só o
+// primeiro era lido, e o resto da música se perdia. Agora juntamos, na ordem,
+// todos os blocos com conteúdo de cifra (descartando repetidos e blocos
+// minúsculos, como legendas), e só caímos no maior bloco se nenhum se qualificar.
+function parseBody(html: string): string | null {
+  const blocks: string[] = [];
+  const re = /<pre[^>]*>([\s\S]*?)<\/pre>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const cleaned = cleanPreBlock(m[1]);
+    if (cleaned) blocks.push(cleaned);
+  }
+  if (blocks.length === 0) return null;
+
+  const substantial = blocks.filter(
+    (b) => b.split("\n").filter((l) => l.trim()).length >= 3,
+  );
+  const unique = [...new Set(substantial)];
+  const body =
+    unique.length > 0
+      ? unique.join("\n\n")
+      : blocks.reduce((a, b) => (b.length > a.length ? b : a));
+  if (blocks.length > 1) {
+    console.log(
+      `[cifra] ${blocks.length} blocos <pre> (tamanhos: ${blocks
+        .map((b) => b.length)
+        .join(", ")}); usando ${unique.length || 1}`,
+    );
+  }
   return body || null;
 }
 
@@ -219,7 +250,8 @@ function ensureCifraCacheTable(): Promise<void> {
            body TEXT NOT NULL,
            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
            PRIMARY KEY (artist_slug, song_slug)
-         )`,
+         );
+         ALTER TABLE cifra_cache ADD COLUMN IF NOT EXISTS v INTEGER NOT NULL DEFAULT 1;`,
       )
       .then(() => undefined)
       .catch((err) => {
@@ -234,8 +266,8 @@ async function getCachedCifra(artist: string, song: string): Promise<Parsed | nu
   try {
     await ensureCifraCacheTable();
     const { rows } = await pool.query<Parsed>(
-      "SELECT url, title, artist, key, body FROM cifra_cache WHERE artist_slug = $1 AND song_slug = $2",
-      [artist, song],
+      "SELECT url, title, artist, key, body FROM cifra_cache WHERE artist_slug = $1 AND song_slug = $2 AND v = $3",
+      [artist, song, PARSER_VERSION],
     );
     return rows[0] ?? null;
   } catch (err) {
@@ -248,12 +280,12 @@ async function cacheCifra(artist: string, song: string, parsed: Parsed): Promise
   try {
     await ensureCifraCacheTable();
     await pool.query(
-      `INSERT INTO cifra_cache (artist_slug, song_slug, url, title, artist, key, body)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO cifra_cache (artist_slug, song_slug, url, title, artist, key, body, v)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (artist_slug, song_slug) DO UPDATE SET
          url = EXCLUDED.url, title = EXCLUDED.title, artist = EXCLUDED.artist,
-         key = EXCLUDED.key, body = EXCLUDED.body`,
-      [artist, song, parsed.url, parsed.title, parsed.artist, parsed.key, parsed.body],
+         key = EXCLUDED.key, body = EXCLUDED.body, v = EXCLUDED.v`,
+      [artist, song, parsed.url, parsed.title, parsed.artist, parsed.key, parsed.body, PARSER_VERSION],
     );
   } catch (err) {
     console.error("[cifra-cache] write failed:", err);

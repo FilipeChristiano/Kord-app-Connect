@@ -478,7 +478,17 @@ export default function LandingPage() {
               </div>
             </div>
             
-            <p className="text-center text-sm text-slate-500 font-medium mt-8">
+            {!iosApp && (
+              <p className="text-center text-sm text-slate-600 font-medium mt-8 bg-white border border-slate-200 rounded-xl py-3 px-4 max-w-md mx-auto shadow-sm">
+                🎟️ Tem um <strong>código de acesso gratuito</strong>?{" "}
+                <Link href="/sign-up?promo=1" className="text-primary hover:underline font-bold">
+                  Crie sua conta e informe o código
+                </Link>
+                .
+              </p>
+            )}
+
+            <p className="text-center text-sm text-slate-500 font-medium mt-6">
               Já assinou? <Link href="/sign-up" className="text-primary hover:underline font-bold">Crie sua conta</Link> com o e-mail da compra ou <Link href="/sign-in" className="text-primary hover:underline font-bold">entre aqui</Link>.
             </p>
           </div>

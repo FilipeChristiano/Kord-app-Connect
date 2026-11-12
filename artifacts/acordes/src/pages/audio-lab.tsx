@@ -45,6 +45,7 @@ import { analyzeChordsRemote } from "@/lib/chord-remote";
 import {
   fetchCifra,
   fetchCifraByLyrics,
+  fetchYoutubeAudio,
   pickCifra,
   prepareStemsUpload,
   pollStemsStatus,
@@ -312,6 +313,7 @@ export default function AudioLab() {
   // ── Mesa de mistura RÁPIDA (gera voz + sem voz no navegador) ───────────────
   const [fastMixBusy, setFastMixBusy] = useState(false);
   const [fastMixFetching, setFastMixFetching] = useState(false);
+  const [fastMixFetchMode, setFastMixFetchMode] = useState<"server" | "capture">("server");
   const [fastMixProgress, setFastMixProgress] = useState(0);
   const [fastMixUrls, setFastMixUrls] = useState<{ vocals: string; instrumental: string } | null>(
     null,
@@ -884,35 +886,44 @@ export default function AudioLab() {
     if (!file) {
       const ytId = cifraMeta?.youtubeId;
       if (inputMode === "search" && ytId) {
-        if (!isYoutubeCaptureSupported()) {
-          setFastMixError(
-            "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente.",
-          );
-          return;
-        }
-        const iframe = ytIframeRef.current;
-        if (!iframe) {
-          setFastMixError("Não consegui preparar o player do YouTube. Tente recarregar a página.");
-          return;
-        }
         setFastMixFetching(true);
+        setFastMixFetchMode("server");
         try {
-          // Toca o vídeo oficial do YouTube na própria aba e grava o áudio que
-          // está tocando — pede permissão do navegador (compartilhar a aba com
-          // áudio); não baixa nada pelo servidor.
-          const res = await captureYoutubeAudio(iframe);
+          // 1ª opção: o SERVIDOR extrai o áudio do vídeo (yt-dlp) e devolve o
+          // arquivo — funciona em qualquer aparelho, sem pedir permissão nem
+          // tocar a música. Pode levar alguns segundos (e fica em cache).
+          const dl = await fetchYoutubeAudio(ytId);
           if (fastRunIdRef.current !== runId) return;
-          if (!res.ok || !res.blob) {
-            setFastMixError(
-              res.reason === "cancelled"
-                ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
-                : res.reason === "unsupported"
-                  ? "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente."
-                  : "Não consegui capturar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
-            );
+          if (dl.ok) {
+            file = new File([dl.blob], "audio.m4a", { type: dl.blob.type || "audio/mp4" });
+          } else if (dl.reason === "unauthorized") {
+            setFastMixError("Sua sessão expirou. Atualize a página e entre novamente.");
             return;
           }
-          file = new File([res.blob], "audio.webm", { type: res.blob.type || "audio/webm" });
+
+          // 2ª opção (reserva): se o servidor não conseguiu extrair (ex.: o
+          // YouTube barrou), grava o áudio da própria aba — computador apenas.
+          if (!file) {
+            const iframe = ytIframeRef.current;
+            if (!isYoutubeCaptureSupported() || !iframe) {
+              setFastMixError(
+                "Não consegui baixar o áudio dessa música agora. Tente de novo em instantes ou envie o arquivo (MP3/WAV) manualmente.",
+              );
+              return;
+            }
+            setFastMixFetchMode("capture");
+            const res = await captureYoutubeAudio(iframe);
+            if (fastRunIdRef.current !== runId) return;
+            if (!res.ok || !res.blob) {
+              setFastMixError(
+                res.reason === "cancelled"
+                  ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
+                  : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo (MP3/WAV) manualmente.",
+              );
+              return;
+            }
+            file = new File([res.blob], "audio.webm", { type: res.blob.type || "audio/webm" });
+          }
           audioFileRef.current = file;
           setStemFileName(
             cifraMeta?.title ? `${cifraMeta.title} — áudio do YouTube` : "Áudio do YouTube",
@@ -2115,8 +2126,9 @@ export default function AudioLab() {
                   {fastMixFetching && (
                     <div className="mt-3 flex items-center gap-2 text-[12px] text-foreground/60">
                       <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />
-                      Autorize o compartilhamento de áudio da aba quando o navegador pedir — a
-                      música toca uma vez para capturarmos o áudio…
+                      {fastMixFetchMode === "server"
+                        ? "Baixando o áudio da música… pode levar alguns segundos."
+                        : "Não deu para baixar direto. Autorize o compartilhamento de áudio da aba quando o navegador pedir — a música toca uma vez para capturarmos o áudio…"}
                     </div>
                   )}
 
