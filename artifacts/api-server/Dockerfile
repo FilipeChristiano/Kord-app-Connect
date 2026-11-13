@@ -43,7 +43,11 @@ WORKDIR /app/artifacts/api-server
 EXPOSE 3001
 
 # O YouTube muda com frequência e versões velhas do yt-dlp param de funcionar.
-# A cada subida do container, atualiza yt-dlp (e o provedor de PO token) em
-# segundo plano — sem rebuild e sem atrasar o servidor. Se falhar (sem rede),
-# segue com a versão que veio na imagem.
-CMD ["sh", "-c", "(uv pip install --python /app/.venv/bin/python --upgrade 'yt-dlp[default]' bgutil-ytdlp-pot-provider > /tmp/ytdlp-update.log 2>&1 || true) & exec node dist/index.cjs"]
+# A cada subida do container, atualiza SÓ o yt-dlp em segundo plano — sem
+# rebuild e sem atrasar o servidor. Se falhar (sem rede), segue com a versão
+# que veio na imagem.
+# ATENÇÃO: o plugin bgutil-ytdlp-pot-provider fica FIXO em 1.3.1 porque precisa
+# ter a mesma versão principal do script vendorizado em vendor/bgutil-pot
+# (a 2.x quebra com "Plugin and script major versions are mismatched").
+# Só atualize os dois JUNTOS.
+CMD ["sh", "-c", "(uv pip install --python /app/.venv/bin/python --upgrade 'yt-dlp[default]' 'bgutil-ytdlp-pot-provider==1.3.1' > /tmp/ytdlp-update.log 2>&1 || true) & exec node dist/index.cjs"]
