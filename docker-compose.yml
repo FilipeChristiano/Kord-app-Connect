@@ -73,6 +73,8 @@ services:
       # --- opcionais (deixe vazio se não for usar agora) ---
       - TRANSCRIPTION_WORKER_URL=
       - YOUTUBE_COOKIES=
+      # Proxy residencial p/ baixar áudio do YouTube sem cookies. Ex.: http://usuario:senha@host:porta
+      - YT_PROXY=${YT_PROXY:-}
     deploy:
       replicas: 1
       restart_policy:

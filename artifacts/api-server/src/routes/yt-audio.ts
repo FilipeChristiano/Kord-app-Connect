@@ -128,6 +128,12 @@ function setupCookies(): string | null {
 }
 const COOKIES_FILE = setupCookies();
 
+const YT_PROXY = process.env.YT_PROXY?.trim() || null;
+if (YT_PROXY) {
+  // Nunca registra usuário/senha do proxy nos logs.
+  console.log(`[yt-audio] proxy configurado: ${YT_PROXY.replace(/\/\/[^@/]*@/, "//***@")}`);
+}
+
 // Uma tentativa de download com os argumentos extras informados.
 function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -152,6 +158,10 @@ function runYtDlp(id: string, outPath: string, extraArgs: string[]): Promise<voi
             `youtubepot-bgutilscript:server_home=${POT_SCRIPT}`,
           ]
         : []),
+      // Proxy (opcional, secret YT_PROXY): saída por IP residencial, que o
+      // YouTube não barra como faz com datacenter — dispensa cookies.
+      // Ex.: http://usuario:senha@host:porta
+      ...(YT_PROXY ? ["--proxy", YT_PROXY] : []),
       // Cookies de conta (opcional, via secret YOUTUBE_COOKIES).
       ...(COOKIES_FILE ? ["--cookies", COOKIES_FILE] : []),
       ...extraArgs,

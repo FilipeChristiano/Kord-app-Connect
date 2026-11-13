@@ -42,4 +42,8 @@ ENV PATH="/app/.venv/bin:${PATH}" \
 WORKDIR /app/artifacts/api-server
 EXPOSE 3001
 
-CMD ["node", "dist/index.cjs"]
+# O YouTube muda com frequência e versões velhas do yt-dlp param de funcionar.
+# A cada subida do container, atualiza yt-dlp (e o provedor de PO token) em
+# segundo plano — sem rebuild e sem atrasar o servidor. Se falhar (sem rede),
+# segue com a versão que veio na imagem.
+CMD ["sh", "-c", "(uv pip install --python /app/.venv/bin/python --upgrade 'yt-dlp[default]' bgutil-ytdlp-pot-provider > /tmp/ytdlp-update.log 2>&1 || true) & exec node dist/index.cjs"]
