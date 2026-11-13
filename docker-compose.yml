@@ -75,6 +75,11 @@ services:
       - YOUTUBE_COOKIES=
       # Proxy residencial p/ baixar áudio do YouTube sem cookies. Ex.: http://usuario:senha@host:porta
       - YT_PROXY=${YT_PROXY:-}
+      # Cache PERMANENTE (volume): cada música/separação é processada uma única vez
+      - YT_AUDIO_CACHE_DIR=/data/cache/yt-audio
+      - STEMS_CACHE_DIR=/data/cache/stems
+    volumes:
+      - kordi_media_cache:/data/cache
     deploy:
       replicas: 1
       restart_policy:
@@ -122,3 +127,4 @@ networks:
 
 volumes:
   kordi_postgres_data:
+  kordi_media_cache:

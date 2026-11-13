@@ -2,7 +2,7 @@ import express, { Router, type IRouter, type Request, type Response } from "expr
 import { getAuth } from "@clerk/express";
 import { spawn } from "node:child_process";
 import { createReadStream, existsSync, mkdirSync, statSync } from "node:fs";
-import { readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { readdir, readFile, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import os from "node:os";
 import { join, resolve } from "node:path";
@@ -27,13 +27,20 @@ const router: IRouter = Router();
 
 const VIDEO_ID = /^[\w-]{11}$/;
 const KEY_RE = /^[\w-]{6,80}$/;
-const STEM_CACHE = join(os.tmpdir(), "harmonic-stems");
+// Cache PERMANENTE das faixas separadas (voz + sem voz): a separação é cara
+// (minutos de CPU), então cada música é processada uma única vez. Em produção
+// STEMS_CACHE_DIR aponta para um volume Docker (sobrevive a redeploys).
+const STEM_CACHE =
+  process.env.STEMS_CACHE_DIR?.trim() || join(os.tmpdir(), "harmonic-stems");
 // Músicas de até 15 minutos precisam de mais tempo para separação em CPU.
 const SEPARATE_TIMEOUT_MS = 30 * 60 * 1000;
 const MAX_UPLOAD_BYTES = 60 * 1024 * 1024;
-// Retenção do cache de faixas geradas: evita crescimento ilimitado no disco.
-const STEM_TTL_MS = 24 * 60 * 60 * 1000;
-const STEM_MAX_DIRS = 40;
+// Retenção do cache de faixas: por padrão NÃO expira por idade (TTL 0); só há um
+// teto de segurança de quantidade (≈14 MB por música → 1.000 ≈ 14 GB), que
+// descarta as menos usadas. Ajustável por env.
+const STEM_TTL_MS =
+  Math.max(0, Number(process.env.STEMS_CACHE_TTL_DAYS ?? 0)) * 24 * 60 * 60 * 1000;
+const STEM_MAX_DIRS = Math.max(1, Number(process.env.STEMS_CACHE_MAX_SONGS ?? 1000));
 
 type Mode = "vocals" | "instrumental";
 type Status = "processing" | "ready" | "error";
@@ -343,7 +350,7 @@ async function pruneStemCache(): Promise<void> {
         continue;
       }
       if (e.isDirectory()) {
-        if (now - info.mtimeMs > STEM_TTL_MS) {
+        if (STEM_TTL_MS > 0 && now - info.mtimeMs > STEM_TTL_MS) {
           await rm(full, { recursive: true, force: true }).catch(() => {});
         } else {
           dirs.push({ path: full, mtime: info.mtimeMs });
@@ -370,6 +377,9 @@ function ensureSeparation(
   opts: { cleanupSource?: boolean } = {},
 ): JobState {
   if (stemsReady(key)) {
+    // Marca como "usado agora" (o descarte por teto tira os menos usados).
+    const now = new Date();
+    void utimes(keyDir(key), now, now).catch(() => {});
     const ready: JobState = { status: "ready" };
     jobs.set(key, ready);
     return ready;

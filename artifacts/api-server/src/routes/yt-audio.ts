@@ -9,7 +9,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { unlink } from "node:fs/promises";
+import { unlink, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -32,10 +32,17 @@ import path from "node:path";
 const router: IRouter = Router();
 
 const VIDEO_ID = /^[\w-]{11}$/;
-const CACHE_DIR = path.join(os.tmpdir(), "harmonic-yt-audio");
+// Cache PERMANENTE: cada música baixada (por id do vídeo) fica em disco e nunca
+// é baixada de novo — assim o proxy pago só é usado na primeira vez. Em produção
+// YT_AUDIO_CACHE_DIR aponta para um volume Docker (sobrevive a redeploys).
+const CACHE_DIR =
+  process.env.YT_AUDIO_CACHE_DIR?.trim() ||
+  path.join(os.tmpdir(), "harmonic-yt-audio");
 const DOWNLOAD_TIMEOUT_MS = 90_000;
-// Limite simples do cache em disco (descarta os arquivos mais antigos acima disso).
-const MAX_CACHE_BYTES = 400 * 1024 * 1024;
+// Teto de segurança do cache (GB), só para o disco nunca encher; ao passar dele
+// descartamos os menos usados. 0 = sem limite. Padrão: 15 GB (~3.000 músicas).
+const MAX_CACHE_BYTES =
+  Math.max(0, Number(process.env.YT_AUDIO_CACHE_MAX_GB ?? 15)) * 1024 ** 3;
 
 function cachePath(id: string): string {
   return path.join(CACHE_DIR, `${id}.m4a`);
@@ -52,6 +59,7 @@ async function pruneCache(): Promise<void> {
         return { full, size: st.size, mtime: st.mtimeMs };
       })
       .sort((a, b) => b.mtime - a.mtime);
+    if (MAX_CACHE_BYTES === 0) return; // sem limite
     let total = 0;
     for (const f of files) {
       total += f.size;
@@ -313,9 +321,18 @@ async function downloadAudio(id: string, outPath: string): Promise<void> {
 export async function ensureYoutubeAudio(id: string): Promise<string> {
   mkdirSync(CACHE_DIR, { recursive: true });
   const outPath = cachePath(id);
+  // Arquivo vazio/corrompido (ex.: queda no meio) não conta como cache.
+  if (existsSync(outPath) && statSync(outPath).size === 0) {
+    await unlink(outPath).catch(() => {});
+  }
   if (!existsSync(outPath)) {
+    console.log(`[yt-audio] baixando ${id} (cache miss — usa o proxy)`);
     await downloadAudioOnce(id, outPath);
     void pruneCache();
+  } else {
+    // Marca como "usado agora": o descarte (se houver) tira os menos usados.
+    const now = new Date();
+    void utimes(outPath, now, now).catch(() => {});
   }
   return outPath;
 }
