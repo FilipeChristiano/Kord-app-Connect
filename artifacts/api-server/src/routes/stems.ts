@@ -1,5 +1,6 @@
 import express, { Router, type IRouter, type Request, type Response } from "express";
 import { getAuth } from "@clerk/express";
+import { getSettings, fillMessage } from "../settings";
 import { spawn } from "node:child_process";
 import { createReadStream, existsSync, mkdirSync, statSync } from "node:fs";
 import { readdir, readFile, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
@@ -41,6 +42,117 @@ const MAX_UPLOAD_BYTES = 60 * 1024 * 1024;
 const STEM_TTL_MS =
   Math.max(0, Number(process.env.STEMS_CACHE_TTL_DAYS ?? 0)) * 24 * 60 * 60 * 1000;
 const STEM_MAX_DIRS = Math.max(1, Number(process.env.STEMS_CACHE_MAX_SONGS ?? 1000));
+
+// ── Limites de recurso da separação (Demucs em CPU é MUITO pesado) ────────────
+// O servidor é pequeno e compartilhado, então a separação roda com folga. Os
+// valores (fila, threads, duração máxima, cota diária e mensagens) são editados
+// no painel /admin (aba Configurações) — ver settings.ts. Defaults por env STEMS_*.
+
+// Semáforo: no máximo `stemsMaxConcurrent` separações ativas; o resto espera.
+// O limite é lido a cada chamada, então mudar no painel vale na hora.
+let activeSeparations = 0;
+const separationWaiters: Array<() => void> = [];
+
+function drainSeparationQueue(): void {
+  while (
+    separationWaiters.length > 0 &&
+    activeSeparations < getSettings().stemsMaxConcurrent
+  ) {
+    activeSeparations++;
+    separationWaiters.shift()!();
+  }
+}
+
+async function acquireSeparationSlot(): Promise<void> {
+  await new Promise<void>((resolveWait) => {
+    separationWaiters.push(resolveWait);
+    drainSeparationQueue();
+  });
+}
+
+function releaseSeparationSlot(): void {
+  activeSeparations--;
+  drainSeparationQueue();
+}
+
+// Duração real das últimas separações (min) → estimativa de espera para o usuário.
+const recentSeparationMinutes: number[] = [];
+
+function recordSeparationMinutes(minutes: number): void {
+  recentSeparationMinutes.push(minutes);
+  if (recentSeparationMinutes.length > 5) recentSeparationMinutes.shift();
+}
+
+/** Minutos até uma vaga liberar (estimativa): média real das últimas separações. */
+export function estimateWaitMinutes(): number {
+  const cfg = getSettings();
+  const avg =
+    recentSeparationMinutes.length > 0
+      ? recentSeparationMinutes.reduce((a, b) => a + b, 0) / recentSeparationMinutes.length
+      : cfg.stemsAvgMinutes;
+  return Math.max(1, Math.ceil(avg / cfg.stemsMaxConcurrent));
+}
+
+function separationIsBusy(): boolean {
+  const cfg = getSettings();
+  return activeSeparations + separationWaiters.length >= cfg.stemsMaxConcurrent + cfg.stemsMaxQueue;
+}
+
+/** Situação atual da fila (para o painel /admin). */
+export function getSeparationStats(): { active: number; queued: number } {
+  return { active: activeSeparations, queued: separationWaiters.length };
+}
+
+// Cota diária por usuário (em memória; zera ao reiniciar o servidor).
+const dailyUse = new Map<string, { count: number; resetAt: number }>();
+
+// Devolve quanto falta (ms) para a cota do usuário zerar, ou 0 se ainda tem saldo.
+function dailyLimitResetInMs(userId: string): number {
+  const limit = getSettings().stemsDailyLimit;
+  if (limit === 0) return 0;
+  const now = Date.now();
+  const entry = dailyUse.get(userId);
+  if (!entry || entry.resetAt <= now || entry.count < limit) return 0;
+  return entry.resetAt - now;
+}
+
+// Devolve 1 uso (pedido recusado depois de admitido não deve gastar a cota).
+function refundDailyUse(userId: string): void {
+  const entry = dailyUse.get(userId);
+  if (entry && entry.count > 0) entry.count -= 1;
+}
+
+function countDailyUse(userId: string): void {
+  if (getSettings().stemsDailyLimit === 0) return;
+  const now = Date.now();
+  const entry = dailyUse.get(userId);
+  if (!entry || entry.resetAt <= now) {
+    dailyUse.set(userId, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 });
+  } else {
+    entry.count += 1;
+  }
+}
+
+// Duração (s) do áudio via ffprobe; null se não der para saber.
+function probeDurationSec(file: string): Promise<number | null> {
+  return new Promise((resolveProbe) => {
+    const p = spawn("ffprobe", [
+      "-v", "error",
+      "-show_entries", "format=duration",
+      "-of", "default=noprint_wrappers=1:nokey=1",
+      file,
+    ]);
+    let out = "";
+    p.stdout?.on("data", (d: Buffer) => {
+      out += d.toString();
+    });
+    p.on("error", () => resolveProbe(null));
+    p.on("close", () => {
+      const n = parseFloat(out.trim());
+      resolveProbe(Number.isFinite(n) && n > 0 ? n : null);
+    });
+  });
+}
 
 type Mode = "vocals" | "instrumental";
 type Status = "processing" | "ready" | "error";
@@ -101,17 +213,25 @@ function stemsReady(key: string): boolean {
 // ── Execução do separador (Demucs) + transcodificação para MP3 ────────────────
 function runPythonSeparation(srcPath: string, outDir: string): Promise<void> {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(pythonBin(), [scriptPath("separate_stems.py"), srcPath, outDir, "7"], {
-      cwd: WORKSPACE_ROOT,
-      env: {
-        ...process.env,
-        // Mantém os pesos do modelo em cache dentro do workspace (gravável).
-        TORCH_HOME: join(WORKSPACE_ROOT, ".cache", "torch"),
-        NUMBA_CACHE_DIR: join(WORKSPACE_ROOT, ".cache", "numba"),
-        OMP_NUM_THREADS: String(Math.max(1, os.cpus().length)),
+    // `nice -n 19`: prioridade mínima de CPU — a API do Kordi (mesmo container)
+    // nunca fica esperando a separação. Threads limitadas por STEMS_THREADS.
+    const child = spawn(
+      "nice",
+      ["-n", "19", pythonBin(), scriptPath("separate_stems.py"), srcPath, outDir, "7"],
+      {
+        cwd: WORKSPACE_ROOT,
+        env: {
+          ...process.env,
+          // Mantém os pesos do modelo em cache dentro do workspace (gravável).
+          TORCH_HOME: join(WORKSPACE_ROOT, ".cache", "torch"),
+          NUMBA_CACHE_DIR: join(WORKSPACE_ROOT, ".cache", "numba"),
+          OMP_NUM_THREADS: String(getSettings().stemsThreads),
+          MKL_NUM_THREADS: String(getSettings().stemsThreads),
+          STEMS_THREADS: String(getSettings().stemsThreads),
+        },
+        stdio: ["ignore", "pipe", "pipe"],
       },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    );
     let stdout = "";
     let stderr = "";
     child.stdout?.on("data", (d: Buffer) => {
@@ -393,7 +513,21 @@ function ensureSeparation(
   const task = (async () => {
     const src = await getSource();
     try {
-      await separate(key, src);
+      // Música longa demais estoura a memória: recusa antes de separar.
+      const maxSeconds = getSettings().stemsMaxSeconds;
+      if (maxSeconds > 0) {
+        const dur = await probeDurationSec(src);
+        if (dur !== null && dur > maxSeconds) throw new Error("too_long");
+      }
+      // Espera a vez (limite de separações simultâneas definido no painel).
+      await acquireSeparationSlot();
+      const startedAt = Date.now();
+      try {
+        await separate(key, src);
+        recordSeparationMinutes((Date.now() - startedAt) / 60_000);
+      } finally {
+        releaseSeparationSlot();
+      }
     } finally {
       if (opts.cleanupSource) await rm(src, { force: true }).catch(() => {});
     }
@@ -426,6 +560,37 @@ function requireAuth(req: Request, res: Response): boolean {
   return true;
 }
 
+// Decide se uma separação NOVA pode começar: fila cheia → "busy"; cota diária
+// do usuário estourada → "limit". Se liberada, já conta o uso. Devolve o corpo
+// da resposta 429 quando bloqueia, ou null quando pode seguir.
+function admitNewSeparation(
+  req: Request,
+): { status: string; message: string; retryAfterSeconds: number } | null {
+  if (separationIsBusy()) {
+    const wait = estimateWaitMinutes();
+    return {
+      status: "busy",
+      message: fillMessage(getSettings().msgBusy, { espera: wait }),
+      retryAfterSeconds: wait * 60,
+    };
+  }
+  const userId = getAuth(req)?.userId ?? "anon";
+  const resetMs = dailyLimitResetInMs(userId);
+  if (resetMs > 0) {
+    const cfg = getSettings();
+    return {
+      status: "limit",
+      message: fillMessage(cfg.msgLimit, {
+        limite: cfg.stemsDailyLimit,
+        horas: Math.max(1, Math.ceil(resetMs / 3_600_000)),
+      }),
+      retryAfterSeconds: Math.ceil(resetMs / 1000),
+    };
+  }
+  countDailyUse(userId);
+  return null;
+}
+
 // ── Preparação a partir do YouTube ────────────────────────────────────────────
 router.post("/stems/prepare-yt", express.json({ limit: "1kb" }), (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
@@ -434,6 +599,13 @@ router.post("/stems/prepare-yt", express.json({ limit: "1kb" }), (req: Request, 
     return res.status(400).json({ status: "bad_request", message: "Vídeo inválido." });
   }
   const key = `yt_${id}`;
+  if (!stemsReady(key) && !inFlight.has(key)) {
+    const blocked = admitNewSeparation(req);
+    if (blocked) {
+      res.setHeader("Retry-After", String(blocked.retryAfterSeconds));
+      return res.status(429).json(blocked);
+    }
+  }
   const state = ensureSeparation(key, () => ensureYoutubeAudio(id));
   return res.json({ key, status: state.status });
 });
@@ -453,6 +625,11 @@ router.post(
     }
     const key = `up_${createHash("sha1").update(body).digest("hex").slice(0, 32)}`;
     if (!stemsReady(key) && !inFlight.has(key)) {
+      const blocked = admitNewSeparation(req);
+      if (blocked) {
+        res.setHeader("Retry-After", String(blocked.retryAfterSeconds));
+        return res.status(429).json(blocked);
+      }
       mkdirSync(STEM_CACHE, { recursive: true });
       const srcPath = join(STEM_CACHE, `${key}.src`);
       try {
@@ -460,6 +637,20 @@ router.post(
       } catch (err) {
         console.error("[/api/stems] falha ao salvar upload:", err);
         return res.status(500).json({ status: "error", message: "Não foi possível preparar." });
+      }
+      const cfgUpload = getSettings();
+      if (cfgUpload.stemsMaxSeconds > 0) {
+        const dur = await probeDurationSec(srcPath);
+        if (dur !== null && dur > cfgUpload.stemsMaxSeconds) {
+          await rm(srcPath, { force: true }).catch(() => {});
+          refundDailyUse(getAuth(req)?.userId ?? "anon");
+          return res.status(422).json({
+            status: "too_long",
+            message: fillMessage(cfgUpload.msgTooLong, {
+              minutos: Math.round(cfgUpload.stemsMaxSeconds / 60),
+            }),
+          });
+        }
       }
       const state = ensureSeparation(key, async () => srcPath, { cleanupSource: true });
       return res.json({ key, status: state.status });

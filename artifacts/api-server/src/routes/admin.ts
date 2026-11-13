@@ -25,6 +25,13 @@ import {
   type AdminUser,
 } from "../adminAuth";
 import { MONTHLY_AMOUNT_CENTS, TRIAL_DAYS } from "../plan";
+import {
+  DEFAULT_SETTINGS,
+  getSettings,
+  saveSettings,
+  resetSettings,
+} from "../settings";
+import { getSeparationStats, estimateWaitMinutes } from "./stems";
 
 const router: IRouter = Router();
 
@@ -402,6 +409,47 @@ router.delete(
       [String(req.params.code).toUpperCase(), String(req.params.email).toLowerCase()],
     );
     return res.json({ ok: true });
+  }),
+);
+
+// ======================= configurações (limites e mensagens) =======================
+
+function settingsPayload() {
+  return {
+    settings: getSettings(),
+    defaults: DEFAULT_SETTINGS,
+    stats: { ...getSeparationStats(), estimateWaitMinutes: estimateWaitMinutes() },
+  };
+}
+
+router.get(
+  "/admin/settings",
+  handler(async (_req, res) => {
+    return res.json(settingsPayload());
+  }),
+);
+
+router.put(
+  "/admin/settings",
+  handler(async (req, res) => {
+    try {
+      await saveSettings((req.body ?? {}) as Record<string, unknown>, me(res).email);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.startsWith("invalid_")) {
+        return res.status(400).json({ error: "invalid_setting", field: msg.slice(8) });
+      }
+      throw err;
+    }
+    return res.json(settingsPayload());
+  }),
+);
+
+router.post(
+  "/admin/settings/reset",
+  handler(async (_req, res) => {
+    await resetSettings();
+    return res.json(settingsPayload());
   }),
 );
 

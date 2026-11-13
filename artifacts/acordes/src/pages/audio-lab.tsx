@@ -711,31 +711,39 @@ export default function AudioLab() {
     if (!file) {
       const ytId = cifraMeta?.youtubeId;
       if (inputMode === "search" && ytId) {
-        if (!isYoutubeCaptureSupported()) {
-          setHqStatus("error");
-          setHqError(
-            "Esse recurso funciona no computador (Chrome ou Edge). No celular, baixe o áudio da música e envie o arquivo manualmente.",
-          );
-          return;
-        }
-        const iframe = ytIframeRef.current;
-        if (!iframe) {
-          setHqStatus("error");
-          setHqError("Não consegui preparar o player do YouTube. Tente recarregar a página.");
-          return;
-        }
-        const res = await captureYoutubeAudio(iframe);
+        // 1ª opção: o servidor extrai o áudio (usa o cache permanente: se a
+        // música já foi baixada, não gasta o proxy de novo).
+        const dl = await fetchYoutubeAudio(ytId);
         if (hqRunIdRef.current !== runId) return;
-        if (!res.ok || !res.blob) {
+        if (dl.ok) {
+          file = new File([dl.blob], "audio.m4a", { type: dl.blob.type || "audio/mp4" });
+        } else if (dl.reason === "unauthorized") {
           setHqStatus("error");
-          setHqError(
-            res.reason === "cancelled"
-              ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
-              : "Não consegui capturar o áudio dessa música agora. Você pode enviar o arquivo manualmente.",
-          );
+          setHqError("Sua sessão expirou. Atualize a página e entre novamente.");
           return;
+        } else {
+          // 2ª opção (reserva): captura o áudio da aba (computador apenas).
+          const iframe = ytIframeRef.current;
+          if (!isYoutubeCaptureSupported() || !iframe) {
+            setHqStatus("error");
+            setHqError(
+              "Não consegui baixar o áudio dessa música agora. Tente de novo em instantes ou envie o arquivo (MP3/WAV) manualmente.",
+            );
+            return;
+          }
+          const res = await captureYoutubeAudio(iframe);
+          if (hqRunIdRef.current !== runId) return;
+          if (!res.ok || !res.blob) {
+            setHqStatus("error");
+            setHqError(
+              res.reason === "cancelled"
+                ? "Captura cancelada. Pra usar, autorize o compartilhamento de áudio da aba quando o navegador pedir."
+                : "Não consegui obter o áudio dessa música agora. Você pode enviar o arquivo (MP3/WAV) manualmente.",
+            );
+            return;
+          }
+          file = new File([res.blob], "audio.webm", { type: res.blob.type || "audio/webm" });
         }
-        file = new File([res.blob], "audio.webm", { type: res.blob.type || "audio/webm" });
         audioFileRef.current = file;
         if (!stemFileName) {
           setStemFileName(
@@ -755,6 +763,16 @@ export default function AudioLab() {
       if (outcome.reason === "unauthorized") {
         setHqStatus("error");
         setHqError("Sua sessão expirou. Atualize a página e entre novamente.");
+      } else if (
+        outcome.reason === "busy" ||
+        outcome.reason === "limit" ||
+        outcome.reason === "too_long"
+      ) {
+        // Recusa do servidor (fila cheia / limite diário / música longa): mostra o
+        // motivo e já oferece a mesa rápida, que roda no aparelho do usuário.
+        fallbackToFast(
+          outcome.message ?? "A máxima qualidade não está disponível agora.",
+        );
       } else {
         fallbackToFast("Não consegui preparar a máxima qualidade agora. Tente novamente em instantes.");
       }
@@ -778,6 +796,12 @@ export default function AudioLab() {
       if (hqRunIdRef.current !== runId) return;
       if (status === "ready") {
         setHqStatus("ready");
+        return;
+      }
+      if (status === "too_long") {
+        fallbackToFast(
+          "Essa música é longa demais para a máxima qualidade. Use a mesa de mistura rápida.",
+        );
         return;
       }
       if (status === "error") {

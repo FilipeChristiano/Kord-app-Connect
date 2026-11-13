@@ -13,6 +13,7 @@
 # Uso: separate_stems.py <input_audio> <out_dir> [segment_seconds]
 # Saída (stdout): JSON {"ok": true, "sr": 44100} ou {"ok": false, "error": "..."}
 # ─────────────────────────────────────────────────────────────────────────────
+import gc
 import json
 import os
 import sys
@@ -36,7 +37,9 @@ def main() -> int:
         from demucs.audio import AudioFile, convert_audio
         from demucs.pretrained import get_model
 
-        torch.set_num_threads(max(1, os.cpu_count() or 2))
+        # Threads limitadas (STEMS_THREADS, padrão 1): o servidor é compartilhado
+        # e a separação não pode ocupar todos os núcleos.
+        torch.set_num_threads(max(1, int(os.environ.get("STEMS_THREADS", "1"))))
 
         model = get_model("htdemucs")
         model.cpu().eval()
@@ -61,24 +64,31 @@ def main() -> int:
                 split=True,
                 progress=False,
             )[0]
-        sources = sources * std + mean
+        # Memória enxuta: libera a entrada e desfaz a normalização IN-PLACE
+        # (sem criar cópias de ~100 MB por faixa).
+        del wav, ref
+        gc.collect()
+        sources.mul_(std).add_(mean)
 
         names = list(model.sources)  # ex.: ['drums','bass','other','vocals']
         vidx = names.index("vocals")
-        vocals = sources[vidx]
-        instrumental = None
-        for i, _name in enumerate(names):
-            if i == vidx:
-                continue
-            instrumental = sources[i] if instrumental is None else instrumental + sources[i]
-        if instrumental is None:
-            instrumental = vocals * 0.0
 
         def to_np(t):
             # Demucs: [channels, samples] → soundfile espera [samples, channels].
             return t.transpose(0, 1).contiguous().cpu().numpy()
 
-        sf.write(os.path.join(out_dir, "vocals.wav"), to_np(vocals), sr, subtype="PCM_16")
+        # Grava a voz primeiro e libera, depois monta o instrumental somando os
+        # demais instrumentos em um único buffer.
+        sf.write(
+            os.path.join(out_dir, "vocals.wav"), to_np(sources[vidx]), sr, subtype="PCM_16"
+        )
+        gc.collect()
+        instrumental = torch.zeros_like(sources[vidx])
+        for i, _name in enumerate(names):
+            if i != vidx:
+                instrumental.add_(sources[i])
+        del sources
+        gc.collect()
         sf.write(
             os.path.join(out_dir, "instrumental.wav"),
             to_np(instrumental),

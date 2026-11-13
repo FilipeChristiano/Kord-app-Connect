@@ -152,9 +152,25 @@ export async function fetchYoutubeAudio(youtubeId: string): Promise<YoutubeAudio
 // ─────────────────────────────────────────────────────────────────────────────
 export type StemsPrepareOutcome =
   | { ok: true; key: string; status: "processing" | "ready" }
-  | { ok: false; reason: "unauthorized" | "error" | "network" };
+  | {
+      ok: false;
+      reason: "unauthorized" | "error" | "network" | "busy" | "limit" | "too_long";
+      message?: string;
+    };
 
-export type StemsStatus = "processing" | "ready" | "error" | "unknown";
+export type StemsStatus = "processing" | "ready" | "error" | "unknown" | "too_long";
+
+// Traduz a resposta de recusa do servidor (fila cheia, cota diária, música longa).
+async function stemsRefusal(r: Response): Promise<StemsPrepareOutcome> {
+  if (r.status === 401) return { ok: false, reason: "unauthorized" };
+  if (r.status === 429 || r.status === 422) {
+    const data = (await r.json().catch(() => ({}))) as { status?: string; message?: string };
+    const reason =
+      data.status === "limit" ? "limit" : data.status === "too_long" ? "too_long" : "busy";
+    return { ok: false, reason, message: data.message };
+  }
+  return { ok: false, reason: "error" };
+}
 
 // Inicia a preparação de máxima qualidade a partir de um vídeo do YouTube.
 export async function prepareStemsYoutube(youtubeId: string): Promise<StemsPrepareOutcome> {
@@ -167,8 +183,7 @@ export async function prepareStemsYoutube(youtubeId: string): Promise<StemsPrepa
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    if (r.status === 401) return { ok: false, reason: "unauthorized" };
-    if (!r.ok) return { ok: false, reason: "error" };
+    if (!r.ok) return stemsRefusal(r);
     const data = (await r.json()) as { key?: string; status?: string };
     if (!data.key) return { ok: false, reason: "error" };
     return { ok: true, key: data.key, status: data.status === "ready" ? "ready" : "processing" };
@@ -186,8 +201,7 @@ export async function prepareStemsUpload(file: File): Promise<StemsPrepareOutcom
       headers: { "Content-Type": file.type || "application/octet-stream" },
       body: file,
     });
-    if (r.status === 401) return { ok: false, reason: "unauthorized" };
-    if (!r.ok) return { ok: false, reason: "error" };
+    if (!r.ok) return stemsRefusal(r);
     const data = (await r.json()) as { key?: string; status?: string };
     if (!data.key) return { ok: false, reason: "error" };
     return { ok: true, key: data.key, status: data.status === "ready" ? "ready" : "processing" };
@@ -203,9 +217,9 @@ export async function pollStemsStatus(key: string): Promise<StemsStatus> {
       credentials: "include",
     });
     if (!r.ok) return "error";
-    const data = (await r.json()) as { status?: string };
+    const data = (await r.json()) as { status?: string; error?: string };
     if (data.status === "ready") return "ready";
-    if (data.status === "error") return "error";
+    if (data.status === "error") return data.error === "too_long" ? "too_long" : "error";
     if (data.status === "unknown") return "unknown";
     return "processing";
   } catch {

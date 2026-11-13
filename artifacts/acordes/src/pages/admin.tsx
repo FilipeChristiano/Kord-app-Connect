@@ -37,6 +37,7 @@ const ERRORS: Record<string, string> = {
   cannot_delete_self: "Você não pode excluir a si mesmo.",
   wrong_password: "Senha atual incorreta.",
   forbidden: "Sem permissão para esta ação.",
+  invalid_setting: "Valor inválido em um dos campos. Confira os limites indicados.",
 };
 
 async function api<T = unknown>(
@@ -610,6 +611,225 @@ function UsersTab({ me }: { me: Admin }) {
   );
 }
 
+/* ------------------- Configurações (limites e mensagens) ------------------- */
+
+interface Settings {
+  stemsMaxConcurrent: number;
+  stemsMaxQueue: number;
+  stemsThreads: number;
+  stemsMaxSeconds: number;
+  stemsDailyLimit: number;
+  stemsAvgMinutes: number;
+  msgBusy: string;
+  msgLimit: string;
+  msgTooLong: string;
+}
+interface SettingsPayload {
+  settings: Settings;
+  defaults: Settings;
+  stats: { active: number; queued: number; estimateWaitMinutes: number };
+}
+
+const NUM_FIELDS: {
+  key: keyof Settings;
+  label: string;
+  hint: string;
+  min: number;
+  max: number;
+}[] = [
+  {
+    key: "stemsMaxConcurrent",
+    label: "Separações simultâneas",
+    hint: "Quantas músicas a Máxima qualidade processa AO MESMO TEMPO. Recomendado: 1 (cada uma usa ~2 GB de RAM; 2 pode derrubar o servidor).",
+    min: 1,
+    max: 4,
+  },
+  {
+    key: "stemsMaxQueue",
+    label: "Tamanho da fila de espera",
+    hint: "Quantos pedidos podem esperar a vez. Acima disso o usuário recebe a mensagem de “servidor ocupado”.",
+    min: 0,
+    max: 20,
+  },
+  {
+    key: "stemsThreads",
+    label: "Núcleos de CPU por separação",
+    hint: "Quantos núcleos cada separação pode usar. 1 deixa o resto do servidor livre (mais lento); 2 é mais rápido, mas satura o servidor.",
+    min: 1,
+    max: 4,
+  },
+  {
+    key: "stemsMaxSeconds",
+    label: "Duração máxima da música (segundos)",
+    hint: "Músicas mais longas são recusadas (a memória cresce com a duração). 360 = 6 min. 0 = sem limite (não recomendado).",
+    min: 0,
+    max: 1800,
+  },
+  {
+    key: "stemsDailyLimit",
+    label: "Limite diário por usuário",
+    hint: "Separações NOVAS por usuário a cada 24 h. Músicas já separadas antes não contam. 0 = sem limite.",
+    min: 0,
+    max: 1000,
+  },
+  {
+    key: "stemsAvgMinutes",
+    label: "Tempo médio estimado de uma separação (min)",
+    hint: "Usado só até o servidor medir o tempo real das últimas separações. Alimenta o {espera} da mensagem.",
+    min: 1,
+    max: 60,
+  },
+];
+
+const MSG_FIELDS: { key: keyof Settings; label: string; hint: string }[] = [
+  {
+    key: "msgBusy",
+    label: "Mensagem: servidor ocupado (fila cheia)",
+    hint: "Marcador: {espera} = minutos estimados até poder tentar de novo.",
+  },
+  {
+    key: "msgLimit",
+    label: "Mensagem: limite diário atingido",
+    hint: "Marcadores: {limite} = cota diária, {horas} = horas até a cota zerar.",
+  },
+  {
+    key: "msgTooLong",
+    label: "Mensagem: música longa demais",
+    hint: "Marcador: {minutos} = duração máxima permitida.",
+  },
+];
+
+function SettingsTab() {
+  const [data, setData] = useState<SettingsPayload | null>(null);
+  const [form, setForm] = useState<Settings | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ error?: string; ok?: string }>({});
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    api<SettingsPayload>("GET", "/settings")
+      .then((d) => {
+        setData(d);
+        setForm(d.settings);
+      })
+      .catch((e) => setError(errMsg(e)));
+  }, []);
+  useEffect(load, [load]);
+
+  if (error) return <Msg error={error} />;
+  if (!data || !form) return <Loader2 className="w-5 h-5 animate-spin text-foreground/50" />;
+
+  const dirty = JSON.stringify(form) !== JSON.stringify(data.settings);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg({});
+    try {
+      const d = await api<SettingsPayload>("PUT", "/settings", form);
+      setData(d);
+      setForm(d.settings);
+      setMsg({ ok: "Configurações salvas. Já valem para os próximos pedidos." });
+    } catch (err) {
+      setMsg({ error: errMsg(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reset() {
+    if (!confirm("Voltar todos os limites e mensagens aos valores padrão?")) return;
+    setBusy(true);
+    setMsg({});
+    try {
+      const d = await api<SettingsPayload>("POST", "/settings/reset");
+      setData(d);
+      setForm(d.settings);
+      setMsg({ ok: "Valores padrão restaurados." });
+    } catch (err) {
+      setMsg({ error: errMsg(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const f = form;
+  const wait = data.stats.estimateWaitMinutes;
+
+  return (
+    <form onSubmit={save}>
+      <Card title="Situação agora">
+        <div className="grid grid-cols-3 gap-3">
+          <Stat label="Separando" value={data.stats.active} hint="em processamento" />
+          <Stat label="Na fila" value={data.stats.queued} hint="aguardando a vez" />
+          <Stat label="Espera estimada" value={`${wait} min`} hint="para liberar uma vaga" />
+        </div>
+      </Card>
+
+      <Card title="Limites da Máxima qualidade">
+        <p className="text-foreground/60 text-sm mb-4">
+          A separação completa (Demucs) é pesada e roda no servidor. Estes limites
+          protegem o servidor; valem na hora, sem precisar de deploy.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {NUM_FIELDS.map((n) => (
+            <div key={n.key}>
+              <label className="block text-sm font-medium text-foreground mb-1">{n.label}</label>
+              <input
+                className={inputCls}
+                type="number"
+                min={n.min}
+                max={n.max}
+                value={f[n.key] as number}
+                onChange={(e) => setForm({ ...f, [n.key]: Number(e.target.value) })}
+                required
+              />
+              <p className="text-foreground/50 text-xs mt-1">
+                {n.hint} <span className="text-foreground/40">(permitido: {n.min} a {n.max})</span>
+              </p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card title="Mensagens ao usuário">
+        <p className="text-foreground/60 text-sm mb-4">
+          Texto mostrado na tela quando um limite é atingido. Os marcadores entre
+          chaves são trocados pelos valores reais.
+        </p>
+        <div className="space-y-4">
+          {MSG_FIELDS.map((m) => (
+            <div key={m.key}>
+              <label className="block text-sm font-medium text-foreground mb-1">{m.label}</label>
+              <textarea
+                className={`${inputCls} min-h-[72px]`}
+                maxLength={300}
+                value={f[m.key] as string}
+                onChange={(e) => setForm({ ...f, [m.key]: e.target.value })}
+                required
+              />
+              <p className="text-foreground/50 text-xs mt-1">{m.hint}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="flex flex-wrap items-center gap-2 mb-8">
+        <button className={btnPrimary} disabled={busy || !dirty}>
+          {busy && <Loader2 className="w-4 h-4 animate-spin" />} Salvar configurações
+        </button>
+        <button type="button" className={btnGhost} onClick={reset} disabled={busy}>
+          Restaurar padrões
+        </button>
+        <button type="button" className={btnGhost} onClick={load} disabled={busy}>
+          <RefreshCw className="w-4 h-4" /> Atualizar situação
+        </button>
+      </div>
+      <Msg error={msg.error} ok={msg.ok} />
+    </form>
+  );
+}
+
 /* ---------------------------- Minha senha ------------------------------ */
 
 function PasswordTab() {
@@ -643,7 +863,7 @@ function PasswordTab() {
 
 /* -------------------------------- Página ------------------------------- */
 
-type Tab = "overview" | "subscribers" | "codes" | "users" | "password";
+type Tab = "overview" | "subscribers" | "codes" | "settings" | "users" | "password";
 
 export default function AdminPage() {
   const [admin, setAdmin] = useState<Admin | null | undefined>(undefined);
@@ -682,6 +902,7 @@ export default function AdminPage() {
     { id: "overview", label: "Visão geral" },
     { id: "subscribers", label: "Assinantes" },
     { id: "codes", label: "Cupons" },
+    { id: "settings", label: "Configurações" },
     ...(admin.role === "owner" ? [{ id: "users" as Tab, label: "Administradores" }] : []),
     { id: "password", label: "Minha senha" },
   ];
@@ -718,6 +939,7 @@ export default function AdminPage() {
         {tab === "overview" && <OverviewTab />}
         {tab === "subscribers" && <SubscribersTab />}
         {tab === "codes" && <CodesTab />}
+        {tab === "settings" && <SettingsTab />}
         {tab === "users" && admin.role === "owner" && <UsersTab me={admin} />}
         {tab === "password" && <PasswordTab />}
       </main>
